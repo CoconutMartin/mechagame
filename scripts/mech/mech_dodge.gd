@@ -1,8 +1,9 @@
 class_name MechDodge
 extends Node
-## Double tap Space for a dodge roll. The mech rolls fully around its middle and moves fast in the
-## chosen direction: A / D = side, W = forward, S or no key = back. Costs energy.
-## The roll is visual (the Roll node). The collision body only slides along the ground.
+## Double tap Space for a dodge roll: the mech dives head-first toward the chosen direction, spins one
+## full turn around its own length (a barrel roll), then comes back up onto its feet.
+## Directions: A / D = side, W = forward, S or no key = back. Costs energy.
+## The dive and roll are visual (the Roll node). The collision body only slides along the ground.
 
 signal dodge_started
 signal dodge_ended
@@ -23,10 +24,16 @@ signal dodge_ended
 @export var energy_cost: float = 25.0
 ## After the dodge the mech cannot move for this long, in seconds.
 @export var recovery_time: float = 0.25
-## Height of the roll center above the feet, in meters.
-@export var roll_pivot_height: float = 5.0
-## The body lifts this much at the middle of the roll, so it does not cut into the ground.
-@export var lift_height: float = 1.5
+## Height of the body center above the feet, in meters.
+@export var body_center_height: float = 5.0
+## Body center height while diving and rolling, in meters. About half the shoulder width,
+## so the shoulders do not cut into the ground while the body spins.
+@export var roll_center_height: float = 4.2
+## How far the body leans into the dive, in degrees (90 = flat).
+@export var dive_angle_deg: float = 80.0
+## Parts of the dodge time: the dive ends at dive_end, the roll ends at roll_end, then the body rises.
+@export_range(0.0, 1.0) var dive_end: float = 0.25
+@export_range(0.0, 1.0) var roll_end: float = 0.75
 
 var is_dodging: bool = false
 ## World direction of the current dodge.
@@ -36,7 +43,8 @@ var _clock: float = 0.0
 var _last_press: float = -10.0
 var _time: float = 0.0
 var _recover_left: float = 0.0
-var _roll_axis: Vector3 = Vector3.FORWARD
+## Axis the body leans around for the dive (the top turns toward the dodge direction).
+var _dive_axis: Vector3 = Vector3.FORWARD
 var _suppress_jump: bool = false
 
 
@@ -103,8 +111,8 @@ func _start() -> void:
 	elif input.forward_held:
 		local = Vector3(0.0, 0.0, -1.0)  # W: forward.
 	direction = (mech.global_basis * local).normalized()
-	# Roll axis: the top of the body turns toward the move direction.
-	_roll_axis = Vector3.UP.cross(local).normalized()
+	# Dive axis: the top of the body leans toward the move direction.
+	_dive_axis = Vector3.UP.cross(local).normalized()
 	is_dodging = true
 	_time = 0.0
 	_last_press = -10.0
@@ -114,8 +122,15 @@ func _start() -> void:
 
 func _update_roll() -> void:
 	var progress := clampf(_time / duration, 0.0, 1.0)
-	var angle := TAU * smoothstep(0.0, 1.0, progress)
-	var turn := Basis(_roll_axis, angle)
-	var pivot := Vector3(0.0, roll_pivot_height, 0.0)
-	var lift := Vector3(0.0, lift_height * sin(progress * PI), 0.0)
-	roll.transform = Transform3D(turn, pivot - turn * pivot + lift)
+	# Dive: 0 to 1 while leaning in, 1 during the roll, 1 to 0 while rising.
+	var dive := 1.0
+	if progress < dive_end:
+		dive = smoothstep(0.0, dive_end, progress)
+	elif progress > roll_end:
+		dive = 1.0 - smoothstep(roll_end, 1.0, progress)
+	# Barrel roll: one full turn around the body's own length, during the middle part.
+	var spin := TAU * smoothstep(dive_end, roll_end, progress)
+	var turn := Basis(_dive_axis, deg_to_rad(dive_angle_deg) * dive) * Basis(Vector3.UP, spin)
+	# Keep the body center on a path that drops a little while diving, then rises again.
+	var center := Vector3(0.0, lerpf(body_center_height, roll_center_height, dive), 0.0)
+	roll.transform = Transform3D(turn, center - turn * Vector3(0.0, body_center_height, 0.0))
