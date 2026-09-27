@@ -23,6 +23,8 @@ signal landed(fall_speed: float)
 
 ## Total mech weight in tons. Phase 2 computes this from parts.
 @export var mass_tons: float = 60.0
+## Mech height in meters. Sway and footstep shake scale with it (10 m = base). Phase 2 computes it from parts.
+@export var height_m: float = 10.0
 
 @export_group("Ground")
 ## Top forward walking speed in m/s.
@@ -42,15 +44,14 @@ signal landed(fall_speed: float)
 
 @export_group("Turning")
 ## The torso and the legs turn separately. The torso turns toward the camera aim (torso turn speed),
-## inside these twist limits. The legs turn toward the aim more slowly. The camera cannot look
-## past the twist limits. A / D strafe.
+## inside these twist limits. The legs turn only with A / D. The camera cannot look past the limits.
 ## Largest torso twist to the left of the legs, in degrees.
 @export var torso_twist_left_deg: float = 180.0
 ## Largest torso twist to the right of the legs, in degrees.
 @export var torso_twist_right_deg: float = 180.0
-## Leg turn speed toward the aim while moving, in degrees per second. Steady (no speed-up).
+## Leg turn speed (A / D) while moving, in degrees per second. Steady (no speed-up).
 @export var leg_turn_speed_deg: float = 60.0
-## Leg turn speed toward the aim while standing still, in degrees per second.
+## Leg turn speed (A / D) while standing still, in degrees per second.
 @export var leg_turn_speed_standing_deg: float = 30.0
 ## Top torso turn speed toward the camera direction (degrees per second).
 @export var turn_speed_deg: float = 58.8
@@ -92,10 +93,14 @@ signal landed(fall_speed: float)
 @export_group("Wall Bump")
 ## Bumps slower than this (m/s into the wall) only slide along the wall.
 @export var bump_min_speed: float = 3.0
-## Part of the speed into the wall that bounces back (0 to 1).
-@export_range(0.0, 1.0) var bump_restitution: float = 0.5
-## Speed after a bump = speed x this value. 0.5 = 50% slower.
-@export_range(0.0, 1.0) var bump_speed_keep: float = 0.5
+## Restitution = bounce-back speed / speed into the wall. It grows with the impact speed:
+## min at bump_min_speed, max at bump_full_speed and above.
+@export_range(0.0, 1.0) var bump_restitution_min: float = 0.4
+@export_range(0.0, 1.0) var bump_restitution_max: float = 0.9
+## Extra slowdown after a bump, at bump_full_speed and above (0.3 = 30% slower). Less at lower speed.
+@export_range(0.0, 1.0) var bump_slowdown_max: float = 0.3
+## Impact speed (m/s into the wall) that gives the strongest bounce and slowdown. Boost speed is 13.65.
+@export var bump_full_speed: float = 13.65
 ## Energy used each second while boosting.
 @export var boost_energy_per_second: float = 30.0
 ## Air boost acceleration and top speed = ground boost values x this value. 0.25 = 75% less.
@@ -421,18 +426,16 @@ func _update_settle(delta: float) -> void:
 	_aim_yaw = wrapf(input.aim_yaw + offset, -PI, PI)
 
 
-## Turns the legs (the mech root) toward the camera aim at a steady speed, slower when standing still.
+## Turns the legs (the mech root) with A / D at a steady speed, slower when standing still.
 func _turn_legs(delta: float) -> void:
 	leg_turn_rate = 0.0
 	if landing_recovery.is_recovering() or kneel.is_kneeling:
 		return
+	# A / D only, at a steady speed (no speed-up). The legs never follow the aim.
 	var moving := get_horizontal_speed() > footsteps.min_speed
 	var speed := leg_turn_speed_deg if moving else leg_turn_speed_standing_deg
-	var error := wrapf(input.aim_yaw - rotation.y, -PI, PI)
-	var step := deg_to_rad(speed) * delta
-	var turn := clampf(error, -step, step)
-	rotation.y = wrapf(rotation.y + turn, -PI, PI)
-	leg_turn_rate = turn / delta
+	leg_turn_rate = input.turn_input * deg_to_rad(speed)
+	rotation.y = wrapf(rotation.y + leg_turn_rate * delta, -PI, PI)
 
 
 ## Keeps the torso aim inside the twist limits of the current leg heading.
@@ -454,7 +457,10 @@ func _check_bump(velocity_before: Vector3) -> void:
 		var into_wall := -horizontal.dot(normal)
 		if into_wall < bump_min_speed:
 			continue
-		var bounced := (horizontal + normal * into_wall * (1.0 + bump_restitution)) * bump_speed_keep
+		var impact := clampf((into_wall - bump_min_speed) / (bump_full_speed - bump_min_speed), 0.0, 1.0)
+		var restitution := lerpf(bump_restitution_min, bump_restitution_max, impact)
+		var keep := 1.0 - bump_slowdown_max * impact
+		var bounced := (horizontal + normal * into_wall * (1.0 + restitution)) * keep
 		velocity.x = bounced.x
 		velocity.z = bounced.z
 		_stop_deceleration = 0.0

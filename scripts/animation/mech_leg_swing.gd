@@ -26,13 +26,15 @@ extends Node
 @export var knee_lift_deg: float = 20.4
 ## Body drop at each foot strike, in meters.
 @export var bob_height: float = 0.3
-## Body roll toward the planted leg while walking, in degrees.
-## Base sway for a 10 m mech. Taller mechs will sway more (Phase 2).
-@export var sway_deg: float = 0.45
-## Body roll while running, in degrees.
-@export var run_sway_deg: float = 0.6
-## Body side shift toward the planted leg, in meters.
-@export var sway_shift: float = 0.045
+## Body roll toward the planted leg while walking, in degrees, for a 10 m mech.
+## Sway scales with Mech.height_m (a 20 m mech sways twice as much).
+@export var sway_deg: float = 0.9
+## Body roll while running, in degrees, for a 10 m mech.
+@export var run_sway_deg: float = 1.2
+## Body side shift toward the planted leg, in meters, for a 10 m mech.
+@export var sway_shift: float = 0.09
+## Mech height (meters) for the sway values above.
+@export var sway_reference_height: float = 10.0
 
 @export_group("Turn Steps")
 ## Knee lift for steps while turning in place, as a part of the walking knee lift (0 to 1).
@@ -178,6 +180,7 @@ func _physics_process(delta: float) -> void:
 		upper_body.position.y = lerpf(upper_body.position.y, _upper_rest_y - kneel_drop, k)
 		upper_body.rotation.z = lerpf(upper_body.rotation.z, 0.0, k)
 		upper_body.position.x = lerpf(upper_body.position.x, _upper_rest_x, k)
-	var sway := deg_to_rad(lerpf(sway_deg, run_sway_deg, _run)) * _walk_amount * cos(phase)
+	var size := mech.height_m / sway_reference_height
+	var sway := deg_to_rad(lerpf(sway_deg, run_sway_deg, _run)) * size * _walk_amount * cos(phase)
 	upper_body.rotation.z = sway
-	upper_body.position.x = _upper_rest_x - sway_shift * _walk_amount * cos(phase)
+	upper_body.position.x = _upper_rest_x - sway_shift * size * _walk_amount * cos(phase)

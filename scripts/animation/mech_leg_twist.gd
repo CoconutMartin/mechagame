@@ -10,7 +10,7 @@ extends Node
 @export var max_twist_deg: float = 75.0
 ## Twist speed in degrees per second.
 @export var twist_speed_deg: float = 240.0
-## Below this speed (m/s) the legs turn back to face forward.
+## Below this speed (m/s) the legs keep their current twist.
 @export var min_speed: float = 1.0
 
 ## True when the legs step backward. MechLegSwing reads it.
@@ -18,7 +18,8 @@ var moving_backward: bool = false
 
 
 func _physics_process(delta: float) -> void:
-	var target := 0.0
+	# Stopped: the legs keep their last twist (no reset).
+	var target := lower_body.rotation.y
 	var local_velocity := mech.global_basis.inverse() * mech.velocity
 	local_velocity.y = 0.0
 	moving_backward = false

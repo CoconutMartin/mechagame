@@ -8,8 +8,10 @@ extends Camera3D
 
 @export_group("Footstep")
 ## Downward camera jolt per footstep, in meters.
-@export var footstep_kick: float = 0.18
-@export var footstep_trauma: float = 0.25
+@export var footstep_kick: float = 0.117
+@export var footstep_trauma: float = 0.2
+## Mech height (meters) for the footstep values above. Taller mechs shake more.
+@export var footstep_reference_height: float = 10.0
 
 @export_group("Landing")
 ## Shake added per m/s of fall speed at landing.
@@ -72,7 +74,8 @@ func _process(delta: float) -> void:
 
 
 func _on_footstep(strength: float) -> void:
-	add_shake(footstep_trauma * strength, footstep_kick * strength)
+	var size := mech.height_m / footstep_reference_height
+	add_shake(footstep_trauma * strength * size, footstep_kick * strength * size)
 
 
 func _on_bumped(strength: float) -> void:
