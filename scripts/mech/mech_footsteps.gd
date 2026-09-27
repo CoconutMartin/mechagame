@@ -17,6 +17,8 @@ signal footstep(strength: float)
 @export var turn_step_angle_deg: float = 20.0
 ## Footstep shake strength for turning steps (0 to 1).
 @export var turn_step_strength: float = 0.3
+## Footstep shake strength for the planned steps after a boost stop (heavy steps).
+@export var planned_step_strength: float = 1.4
 
 ## 0 to 1: how far the current stride is done.
 var _progress: float = 0.0
@@ -26,8 +28,8 @@ var _stride_plan: Array[float] = []
 
 
 func _physics_process(delta: float) -> void:
-	if not mech.is_on_floor() or mech.is_boosting:
-		return
+	if not mech.is_on_floor() or mech.is_boosting or mech.is_skidding:
+		return  # No steps while boosting or skidding: the feet slide.
 	var speed := mech.get_horizontal_speed()
 	var strength := clampf(speed / mech.walk_speed, 0.4, 1.0)
 	if speed >= min_speed:
@@ -43,6 +45,8 @@ func _physics_process(delta: float) -> void:
 		_step_count += 1
 		if not _stride_plan.is_empty():
 			_stride_plan.pop_front()
+			if mech.is_exiting_boost:
+				strength = planned_step_strength  # Heavy steps after a boost stop.
 		footstep.emit(strength)
 
 

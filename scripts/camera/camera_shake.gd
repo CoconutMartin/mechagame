@@ -25,6 +25,8 @@ extends Camera3D
 @export_group("Boost")
 ## Steady shake while boosting (0 to 1).
 @export var boost_trauma: float = 0.4
+## Steady shake while the feet slide in a boost skid stop (0 to 1).
+@export var skid_trauma: float = 0.45
 ## Steady shake while in the air and falling (0 to 1).
 @export var air_trauma: float = 0.28
 ## Steady shake while rising after a jump (0 to 1). Shake grows with trauma squared,
@@ -70,6 +72,8 @@ func _process(delta: float) -> void:
 	_trauma = maxf(_trauma - trauma_decay * delta, 0.0)
 	if mech.is_boosting:
 		_trauma = maxf(_trauma, boost_trauma)
+	if mech.is_skidding:
+		_trauma = maxf(_trauma, skid_trauma)
 	if not mech.is_on_floor():
 		_trauma = maxf(_trauma, air_rising_trauma if mech.velocity.y > 0.0 else air_trauma)
 	_kick = lerpf(_kick, 0.0, 1.0 - exp(-kick_recovery * delta))

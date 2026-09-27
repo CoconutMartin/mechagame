@@ -15,6 +15,8 @@ extends Node
 @export var aim_twist_deg: float = 30.0
 ## Sideways tilt toward the rifle while aiming, in degrees.
 @export var aim_tilt_deg: float = 6.0
+## Backward lean while skidding to a stop after a boost, in degrees.
+@export var skid_lean_back_deg: float = 15.0
 ## Forward lean while running, in degrees.
 @export var run_lean_deg: float = 12.0
 ## Forward lean after a landing from landing_lean_full_height or higher, in degrees.
@@ -29,6 +31,7 @@ extends Node
 
 var _boost: float = 0.0
 var _run: float = 0.0
+var _skid: float = 0.0
 
 
 func _ready() -> void:
@@ -41,6 +44,7 @@ func _physics_process(delta: float) -> void:
 	var blend := 1.0 - exp(-blend_speed * delta)
 	_boost = lerpf(_boost, 1.0 if boosting_on_ground else 0.0, blend)
 	_run = lerpf(_run, 1.0 if mech.is_running else 0.0, blend)
+	_skid = lerpf(_skid, 1.0 if mech.is_skidding else 0.0, 1.0 - exp(-blend_speed * 2.0 * delta))
 	var aim := smoothstep(0.0, 1.0, weapon_pose.aim_amount)
 	var kneel_amount := smoothstep(0.0, 1.0, kneel.amount)
 	var fall_ratio := clampf(mech.landing_recovery.fall_height / landing_lean_full_height, 0.0, 1.0)
@@ -49,6 +53,8 @@ func _physics_process(delta: float) -> void:
 	var lean := deg_to_rad(boost_lean_deg) * _boost + deg_to_rad(run_lean_deg) * _run
 	lean = maxf(lean, deg_to_rad(kneel_lean_deg) * kneel_amount)
 	lean = maxf(lean, deg_to_rad(landing_lean_deg) * landing)
+	# Positive X leans back.
+	lean -= deg_to_rad(skid_lean_back_deg) * _skid
 	torso.rotation = Vector3(
 		-lean,
 		mech.get_torso_twist() - deg_to_rad(aim_twist_deg) * aim,

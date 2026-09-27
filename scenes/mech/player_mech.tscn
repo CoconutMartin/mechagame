@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://scripts/mech/mech_air_steer.gd" id="airsteer"]
 [ext_resource type="Script" path="res://scripts/mech/mech_kneel.gd" id="kneel"]
 [ext_resource type="Script" path="res://scripts/animation/torso_pose.gd" id="torsopose"]
+[ext_resource type="Script" path="res://scripts/effects/skid_dust.gd" id="skiddust"]
 [ext_resource type="Script" path="res://scripts/animation/weapon_pose.gd" id="weaponpose"]
 [ext_resource type="Script" path="res://scripts/camera/camera_shake.gd" id="shake"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/long_rifle.tscn" id="rifle"]
@@ -300,6 +301,11 @@ mech = NodePath("../..")
 torso = NodePath("../../Visual/Upper/Torso")
 weapon_pose = NodePath("../WeaponPose")
 kneel = NodePath("../../MechKneel")
+
+[node name="SkidDust" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "feet")]
+script = ExtResource("skiddust")
+mech = NodePath("../..")
+feet = [NodePath("../../Visual/Upper/Lower/HipL/KneeL/FootL"), NodePath("../../Visual/Upper/Lower/HipR/KneeR/FootR")]
 
 [node name="ArmIKRight" type="Node" parent="Animation" node_paths=PackedStringArray("root_joint", "mid_joint", "target")]
 script = ExtResource("ik")

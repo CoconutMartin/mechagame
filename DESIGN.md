@@ -55,7 +55,8 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Walk stop | 2 steps from full walk speed | slower speeds take fewer steps |
 | Boost start | Shift held: 3 walking steps (skipped if the mech already walked 3 steps), then always 4 running steps (run speed 1.25x walk = 11.4 m/s, 12° torso lean), then boost | HUD shows "Boost ready in N steps" |
 | Boost speed | 1.5x walk = 13.65 m/s (49 km/h) | boost acceleration 20 m/s². Boost ends when Shift is released |
-| Boost exit | one low leap forward (5 m/s up, about 6 m) that lands on one leg, then 2 medium steps (4.8 m) and 2 small steps (3.4 m). Ends at walk speed with a move key held, or stopped with no key. No landing delay for the leap | if all keys are released: hop, then 4 steps to a stop |
+| Boost exit (SKID, current) | feet plant and slide (14 m/s² slowdown, about 6 m in 0.7 s, down to 4 m/s), knees bent, torso leans 15° back, dust from the feet, camera shake. Then 2 heavy steps (3.0 m, 2.4 m) to a stop, or walking again with W held | `Mech.boost_exit_style` = SKID |
+| Boost exit (LEAP, "revert 1") | one low leap forward (5 m/s up, about 6 m) that lands on one leg, then 2 medium steps (4.8 m) and 2 small steps (3.4 m) | `Mech.boost_exit_style` = LEAP. Also saved as commit f51bd42 | if all keys are released: hop, then 4 steps to a stop |
 | Boost energy use | 30 per second (50% of jump jets), capacity 100 | about 3.3 s of boost |
 | Energy recharge | 17.5 per second after 2 s delay | empty energy locks boost until 30% |
 | Jump jet charge | hold Space on the ground. 1 s = 33%, 2 s = 63%, 3 s = 100% of 9 m | the mech stops and crouches while it charges. Charge uses 33.3 energy per second (full charge = full tank). Charges below 10% cancel |
@@ -208,6 +209,7 @@ scenes/weapons/     long_rifle.tscn (markers: GripRight, GripLeft, Muzzle).
 scripts/camera/     mech_camera_rig.gd (follow and mouse look), aim_spring.gd (aim overshoot), camera_shake.gd, camera_ads.gd (aim down sight zoom).
 scripts/world/      greybox_block.gd (box with collision, set size in Inspector).
 scripts/ui/         debug_hud.gd, aim_reticle.gd.
+scripts/effects/    skid_dust.gd (placeholder dust while skidding).
 scripts/core/       mouse_capture.gd.
 ```
 
@@ -251,6 +253,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 19: torso twist 85° each side. All camera shake 50% less and smoothed. W stands up from a kneel.
 - Phase 1 revision 20: torso twist 80°. Camera stays behind the torso (no free orbit). Lower-leg twist up to 90°. Shake 40% sharper.
 - Phase 1 revision 21: mech aim jitter and overshoot removed. Torso turn 50% slower. Vertical aim 70% slower. Lower-leg twist 60°. Shake intensity 0.75.
+- Phase 1 revision 23: boost stop is a skid stop. "revert 1" = set `boost_exit_style` to LEAP (the version at commit f51bd42).
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.

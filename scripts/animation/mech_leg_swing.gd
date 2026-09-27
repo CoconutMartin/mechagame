@@ -52,6 +52,15 @@ extends Node
 ## Body drop at each foot strike while running, in meters.
 @export var run_bob_height: float = 0.5
 
+@export_group("Boost Skid")
+## Skid pose: the left leg braces forward, the right leg stays under the body, knees bent.
+@export var skid_front_hip_deg: float = 28.0
+@export var skid_front_knee_deg: float = 20.0
+@export var skid_back_hip_deg: float = -8.0
+@export var skid_back_knee_deg: float = 35.0
+## Body drop in the skid pose, in meters.
+@export var skid_drop: float = 0.6
+
 @export_group("Boost Exit Leap")
 ## Leap pose: the left leg reaches forward to land, the right leg trails.
 @export var leap_front_hip_deg: float = 35.0
@@ -99,6 +108,7 @@ var _run: float = 0.0
 var _turn_step: float = 0.0
 var _stride_scale: float = 1.0
 var _leap: float = 0.0
+var _skid: float = 0.0
 var _upper_rest_x: float = 0.0
 var _air_knee: float = 0.0
 var _upper_rest_y: float = 0.0
@@ -125,6 +135,7 @@ func _physics_process(delta: float) -> void:
 	_boost_crouch = lerpf(_boost_crouch, 1.0 if mech.is_boosting and on_floor else 0.0, blend)
 	_air_knee = lerpf(_air_knee, 0.0 if on_floor else 1.0, blend)
 	_run = lerpf(_run, 1.0 if mech.is_running else 0.0, blend)
+	_skid = lerpf(_skid, 1.0 if mech.is_skidding else 0.0, 1.0 - exp(-blend_speed * 2.5 * delta))
 	var leaping := mech.is_exiting_boost and not on_floor
 	_leap = lerpf(_leap, 1.0 if leaping else 0.0, 1.0 - exp(-blend_speed * 2.0 * delta))
 	# Longer planned strides (boost exit big step) swing the legs wider.
@@ -162,6 +173,14 @@ func _physics_process(delta: float) -> void:
 	# A crouch shortens the legs. Lower the body by the same amount so the feet stay down.
 	var crouch_drop := leg_length * (1.0 - cos(crouch))
 	upper_body.position.y = _upper_rest_y - bob - crouch_drop
+
+	# Boost skid: braced stance while the feet slide.
+	if _skid > 0.001:
+		hip_left.rotation.x = lerpf(hip_left.rotation.x, deg_to_rad(skid_front_hip_deg), _skid)
+		knee_left.rotation.x = lerpf(knee_left.rotation.x, -deg_to_rad(skid_front_knee_deg), _skid)
+		hip_right.rotation.x = lerpf(hip_right.rotation.x, deg_to_rad(skid_back_hip_deg), _skid)
+		knee_right.rotation.x = lerpf(knee_right.rotation.x, -deg_to_rad(skid_back_knee_deg), _skid)
+		upper_body.position.y -= skid_drop * _skid
 
 	# Boost exit leap: left leg forward to land on, right leg trailing.
 	if _leap > 0.001:

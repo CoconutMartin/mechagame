@@ -84,7 +84,18 @@ signal landed(fall_speed: float)
 @export var run_speed_multiplier: float = 1.25
 ## Speed gain while boosting (m/s per second).
 @export var boost_acceleration: float = 20.0
-## When boost stops on the ground, the mech leaps forward and lands on one leg (upward speed, m/s).
+enum BoostExit { SKID, LEAP }
+## How the mech stops a ground boost.
+## SKID: feet plant and slide, body leans back, dust, then heavy steps.
+## LEAP ("revert 1"): a leap that lands on one leg, then 2 medium and 2 small steps.
+@export var boost_exit_style: BoostExit = BoostExit.SKID
+## SKID: slowdown while the feet slide (m/s per second).
+@export var skid_deceleration: float = 14.0
+## SKID: the slide ends at this speed (m/s). Then the heavy steps start, or the walk with a move key.
+@export var skid_end_speed: float = 4.0
+## SKID: stride lengths (meters) of the heavy steps to a stop after the slide, when no move key is held.
+@export var skid_stop_strides: PackedFloat32Array = PackedFloat32Array([3.0, 2.4])
+## LEAP: upward speed of the leap (m/s).
 @export var boost_exit_leap_velocity: float = 5.0
 ## After the leap, the mech slows down over these steps (stride length of each, in meters):
 ## 2 medium steps, then 2 small steps. Ends at walk speed with a move key held, or stopped with no key.
@@ -124,6 +135,8 @@ var is_running: bool = false
 var is_air_boosting: bool = false
 ## True from the end of a ground boost until the mech is back at walk speed or stopped.
 var is_exiting_boost: bool = false
+## True while the feet slide in a boost skid stop.
+var is_skidding: bool = false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _was_on_floor: bool = true
@@ -238,12 +251,16 @@ func _update_boost(delta: float) -> void:
 	if is_boosting:
 		is_exiting_boost = false
 	elif was_ground_boosting and is_on_floor() and get_horizontal_speed() > walk_speed * 1.05:
-		# One leap forward that lands on one leg, then medium and small steps to slow down.
 		is_exiting_boost = true
-		_in_exit_leap = true
 		_exit_deceleration = 0.0
 		_stop_deceleration = 0.0
-		velocity.y = boost_exit_leap_velocity
+		if boost_exit_style == BoostExit.SKID:
+			# Feet plant and slide, then heavy steps.
+			is_skidding = true
+		else:
+			# One leap forward that lands on one leg, then medium and small steps to slow down.
+			_in_exit_leap = true
+			velocity.y = boost_exit_leap_velocity
 		boost_exit_step.emit()
 
 
@@ -268,6 +285,10 @@ func _update_horizontal(delta: float) -> void:
 		var steered := air_steer.steer(steer_wish, delta, boost_speed, boost_acceleration * air_boost_multiplier)
 		velocity.x = steered.x
 		velocity.z = steered.z
+		return
+
+	if is_skidding:
+		_update_skid(delta, has_input)
 		return
 
 	var target := Vector3.ZERO
@@ -302,6 +323,23 @@ func _update_horizontal(delta: float) -> void:
 		_stop_deceleration = 0.0
 		is_exiting_boost = false
 		_landing_stop = false
+
+
+## Skid stop: the feet slide and the mech slows fast. At the end: heavy steps to a stop,
+## or back to walking if a move key is held.
+func _update_skid(delta: float, has_input: bool) -> void:
+	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+	horizontal = horizontal.move_toward(Vector3.ZERO, skid_deceleration * delta)
+	velocity.x = horizontal.x
+	velocity.z = horizontal.z
+	if horizontal.length() > skid_end_speed:
+		return
+	is_skidding = false
+	_stop_deceleration = 0.0
+	if has_input:
+		is_exiting_boost = false
+	else:
+		footsteps.start_stride_plan(skid_stop_strides)
 
 
 ## Walk speed for a move direction. Moving to the side is slower than forward.
@@ -488,6 +526,7 @@ func _check_landing(fall_speed: float) -> void:
 			footsteps.start_stride_plan(boost_exit_strides)
 			_exit_deceleration = 0.0
 		else:
+			is_skidding = false
 			# Landing with sideways speed from a jump: walk it out in a set number of steps.
 			_landing_stop = get_horizontal_speed() > footsteps.min_speed
 			is_exiting_boost = false
