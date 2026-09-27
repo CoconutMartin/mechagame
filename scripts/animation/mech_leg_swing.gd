@@ -165,6 +165,8 @@ func _physics_process(delta: float) -> void:
 	# Low stance while boosting on the ground.
 	var boost_crouch := deg_to_rad(boost_crouch_deg) * _boost_crouch
 	var dodge_tuck := deg_to_rad(dodge_tuck_deg) * dodge.get_tuck()
+	# Dodge recovery crouch (only the part above upright).
+	dodge_tuck = maxf(dodge_tuck, deg_to_rad(dodge.recover_crouch_deg) * maxf(dodge.get_recovery_pose(), 0.0))
 	var crouch := maxf(maxf(maxf(landing_crouch, charge_crouch), boost_crouch), dodge_tuck)
 
 	hip_left.rotation.x = hip + knee_lift * maxf(0.0, -lift) + trail + air * 0.5 + crouch
@@ -175,7 +177,9 @@ func _physics_process(delta: float) -> void:
 	# Lowest at foot strike (phase = 0, PI), highest between steps.
 	var bob := lerpf(bob_height, run_bob_height, _run) * _walk_amount * (cos(2.0 * phase) + 1.0) * 0.5
 	# A crouch shortens the legs. Lower the body by the same amount so the feet stay down.
-	var crouch_drop := leg_length * (1.0 - cos(crouch))
+	# During a dodge the Roll node places the body, so the tuck does not lower it.
+	var drop_angle := crouch if not dodge.is_dodging else maxf(maxf(landing_crouch, charge_crouch), boost_crouch)
+	var crouch_drop := leg_length * (1.0 - cos(drop_angle))
 	upper_body.position.y = _upper_rest_y - bob - crouch_drop
 
 	# Boost skid: braced stance while the feet slide.

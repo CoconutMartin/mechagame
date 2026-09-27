@@ -6,6 +6,10 @@ extends Node
 ## TorsoPose adds these values to the torso.
 
 @export var mech: Mech
+## The inertia sway pauses while the dodge and its recovery move the body.
+@export var dodge: MechDodge
+## After a pause, the inertia sway fades back in over this time, in seconds.
+@export var fade_in_time: float = 0.5
 ## Lean per m/s² of forward speed change, in degrees. Slowing down = lean forward.
 @export var lean_per_accel_deg: float = 1.2
 ## Roll per m/s² of sideways speed change, in degrees.
@@ -32,6 +36,7 @@ var _roll := AimSpring.new(0.0)
 var _yaw := AimSpring.new(0.0)
 var _last_velocity: Vector3 = Vector3.ZERO
 var _accel: Vector3 = Vector3.ZERO
+var _fade: float = 1.0
 
 
 func _ready() -> void:
@@ -43,13 +48,19 @@ func _physics_process(delta: float) -> void:
 	var velocity := Vector3(mech.velocity.x, 0.0, mech.velocity.z)
 	var raw_accel := (velocity - _last_velocity) / delta
 	_last_velocity = velocity
+	if dodge != null and dodge.is_animating():
+		_fade = 0.0
+		raw_accel = Vector3.ZERO
+		_accel = Vector3.ZERO
+	else:
+		_fade = move_toward(_fade, 1.0, delta / fade_in_time)
 	_accel = _accel.lerp(raw_accel, 1.0 - exp(-accel_smoothing * delta))
 	# Speed change in the leg frame: -Z forward, +X right.
 	var local := mech.global_basis.inverse() * _accel
 	var limit := max_angle_deg
-	var lean_target := clampf(local.z * lean_per_accel_deg, -limit, limit)
-	var roll_target := clampf(local.x * roll_per_accel_deg, -limit, limit)
-	var yaw_target := clampf(-rad_to_deg(mech.leg_turn_rate) * turn_lag_seconds, -limit, limit)
+	var lean_target := clampf(local.z * lean_per_accel_deg, -limit, limit) * _fade
+	var roll_target := clampf(local.x * roll_per_accel_deg, -limit, limit) * _fade
+	var yaw_target := clampf(-rad_to_deg(mech.leg_turn_rate) * turn_lag_seconds, -limit, limit) * _fade
 	_lean.update(lean_target, frequency, damping, 90.0, delta)
 	_roll.update(roll_target, frequency, damping, 90.0, delta)
 	_yaw.update(yaw_target, frequency, damping, 90.0, delta)

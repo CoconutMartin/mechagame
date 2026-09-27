@@ -312,17 +312,19 @@ hip_right = NodePath("../../Visual/Roll/Upper/Lower/HipR")
 knee_left = NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL")
 knee_right = NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR")
 
-[node name="InertiaSway" type="Node" parent="Animation" node_paths=PackedStringArray("mech")]
+[node name="InertiaSway" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "dodge")]
 script = ExtResource("inertia")
 mech = NodePath("../..")
+dodge = NodePath("../../MechDodge")
 
-[node name="TorsoPose" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "torso", "weapon_pose", "kneel", "inertia")]
+[node name="TorsoPose" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "torso", "weapon_pose", "kneel", "inertia", "dodge")]
 script = ExtResource("torsopose")
 mech = NodePath("../..")
 torso = NodePath("../../Visual/Roll/Upper/Torso")
 weapon_pose = NodePath("../WeaponPose")
 kneel = NodePath("../../MechKneel")
 inertia = NodePath("../InertiaSway")
+dodge = NodePath("../../MechDodge")
 
 [node name="SkidBodyTurn" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "body")]
 script = ExtResource("skidturn")

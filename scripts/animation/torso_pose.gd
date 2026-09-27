@@ -11,6 +11,8 @@ extends Node
 @export var kneel: MechKneel
 ## Body inertia (lean, roll, yaw) added on top of the pose.
 @export var inertia: InertiaSway
+## Dodge recovery pose (torso lean toward the dodge direction).
+@export var dodge: MechDodge
 ## Forward lean while boosting on the ground, in degrees.
 @export var boost_lean_deg: float = 35.0
 ## Torso turn to the right while aiming, in degrees. Brings the left shoulder forward.
@@ -79,7 +81,9 @@ func _physics_process(delta: float) -> void:
 	# Positive X leans back.
 	lean -= deg_to_rad(_skid_lean.value)
 	lean += deg_to_rad(inertia.lean_deg)
+	var recovery := dodge.get_recovery_lean()
+	lean += deg_to_rad(recovery.x)
 	torso.rotation = Vector3(
 		-lean,
 		mech.get_torso_twist() - deg_to_rad(aim_twist_deg) * aim + deg_to_rad(inertia.yaw_deg),
-		-deg_to_rad(aim_tilt_deg) * aim + deg_to_rad(_skid_roll.value) + deg_to_rad(inertia.roll_deg))
+		-deg_to_rad(aim_tilt_deg) * aim + deg_to_rad(_skid_roll.value) + deg_to_rad(inertia.roll_deg) + deg_to_rad(recovery.y))
