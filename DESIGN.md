@@ -72,7 +72,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Camera crosshair | yellow dot at screen center |
 | Mech aim reticle | blue ring. It shows where the weapon really points: body turn lag plus jitter |
 | Aim jitter | 0.6° at full walk speed, 1.2° while boosting (2x), 2.4° in the air (2x boost) |
-| Aim down sight (RMB) | FOV 70° to 35°, camera distance 8.5 m to 6 m, mouse sensitivity 50%. Rifle goes from high ready to the shoulder and points at the mech aim |
+| Aim down sight (RMB) | camera moves to the right side of the head (1.8 m right, 2.2 m back, head height 9.6 m), FOV 70° to 35°, mouse sensitivity 50%. Rifle goes to the shoulder and points at the mech aim. Left hand moves back on the handguard, both elbows go down |
 
 ### Current camera tuning (Phase 1)
 
@@ -136,8 +136,9 @@ All of this logic lives in one function so it is easy to tune.
 - Now (Phase 1): placeholder animation on box parts.
   - `MechLegSwing`: hip swing, knee bend, body bob, sway.
   - `MechLegTwist`: legs and pelvis turn toward the move direction (up to 75°). Walking backward keeps the legs forward and steps in reverse.
-  - `TwoBoneIK`: arms reach grip markers on the weapon. The long rifle is held with two hands in a high ready position: stock low at the right chest, muzzle up 45° and 20° to the left.
-  - `WeaponPose`: blends the rifle between high ready and the aim pose (RMB).
+  - `TwoBoneIK`: arms reach grip markers on the weapon. The long rifle is held across the chest (port arms style): muzzle up 45° toward the upper left, right hand low on the pistol grip with the right elbow low, left hand high on the handguard near the muzzle with the left elbow high.
+  - `WeaponPose`: blends the rifle between the rest pose and the aim pose (RMB). It also moves the left grip (GripLeftRest / GripLeftAim) and the elbow directions.
+  - Crouch: 18° hip bend while boosting on the ground. Landing crouch 8° (short fall) to 40° (9 m fall or higher).
 - Phase 8: complete animation on rigged .glb models. Walk cycles for biped, reverse-joint, tank, and quad legs. Leg IK so feet stay on slopes and steps. Torso twist toward the aim. Weapon recoil. Boost and jump jet poses.
 
 ## Destructible parts
@@ -222,6 +223,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 7: directional jumps (move key while charging). Air boost at 25% power. Mech crosshair overshoot removed; the last 25% of a turn is at half speed.
 - Phase 1 revision 8: directional jump 10 m at full charge. Air boost top speed 25%. Air jitter 2x boost jitter. Camera aim spring and body turn 30% slower. Body turn settle swings (2° each side) before lock-in.
 - Phase 1 revision 9: air boost energy use +300% (120 per second). Camera shake in the air.
+- Phase 1 revision 10: crouch while ground boosting, landing crouch depth by fall height, ADS camera at the side of the head, rifle held across the chest with the muzzle up (text requirements; the reference image shows the muzzle down).
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.

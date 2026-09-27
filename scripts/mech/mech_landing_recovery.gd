@@ -23,6 +23,8 @@ extends Node
 
 var time_left: float = 0.0
 var duration: float = 0.0
+## Height of the last fall that gave a delay, in meters.
+var fall_height: float = 0.0
 
 var _peak_y: float = 0.0
 
@@ -53,6 +55,7 @@ func _on_landed(_fall_speed: float) -> void:
 	_peak_y = mech.global_position.y
 	if height < ignore_height or mech.is_exiting_boost:
 		return
+	fall_height = height
 	if height < min_height:
 		duration = short_fall_delay
 	else:

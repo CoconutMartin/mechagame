@@ -156,10 +156,10 @@ mesh = SubResource("mesh_Hand")
 surface_material_override/0 = ExtResource("armor")
 
 [node name="Rifle" parent="Visual/Upper" instance=ExtResource("rifle")]
-transform = Transform3D(0.93969, 0.24184, 0.24184, 0, 0.70711, -0.70711, -0.34202, 0.66446, 0.66446, 0.9, 6.8, -2)
+transform = Transform3D(0.43837, 0.63554, 0.63554, 0, 0.70711, -0.70711, -0.89879, 0.30998, 0.30998, 1.8, 5.8, -2.4)
 
 [node name="RiflePoseHighReady" type="Marker3D" parent="Visual/Upper"]
-transform = Transform3D(0.93969, 0.24184, 0.24184, 0, 0.70711, -0.70711, -0.34202, 0.66446, 0.66446, 0.9, 6.8, -2)
+transform = Transform3D(0.43837, 0.63554, 0.63554, 0, 0.70711, -0.70711, -0.89879, 0.30998, 0.30998, 1.8, 5.8, -2.4)
 
 [node name="AimAnchor" type="Marker3D" parent="Visual/Upper"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 8.1, -1.2)
@@ -248,13 +248,18 @@ aim_origin = NodePath("../Visual/Upper/AimAnchor")
 
 [node name="Animation" type="Node" parent="."]
 
-[node name="WeaponPose" type="Node" parent="Animation" node_paths=PackedStringArray("weapon", "rest_pose", "aim_anchor", "mech_aim", "input")]
+[node name="WeaponPose" type="Node" parent="Animation" node_paths=PackedStringArray("weapon", "rest_pose", "aim_anchor", "mech_aim", "input", "left_grip_target", "left_grip_rest", "left_grip_aim", "arm_ik_left", "arm_ik_right")]
 script = ExtResource("weaponpose")
 weapon = NodePath("../../Visual/Upper/Rifle")
 rest_pose = NodePath("../../Visual/Upper/RiflePoseHighReady")
 aim_anchor = NodePath("../../Visual/Upper/AimAnchor")
 mech_aim = NodePath("../../MechAim")
 input = NodePath("../../MechInput")
+left_grip_target = NodePath("../../Visual/Upper/Rifle/GripLeft")
+left_grip_rest = NodePath("../../Visual/Upper/Rifle/GripLeftRest")
+left_grip_aim = NodePath("../../Visual/Upper/Rifle/GripLeftAim")
+arm_ik_left = NodePath("../ArmIKLeft")
+arm_ik_right = NodePath("../ArmIKRight")
 
 [node name="LegTwist" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "lower_body")]
 script = ExtResource("legtwist")
