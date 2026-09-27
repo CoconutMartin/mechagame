@@ -1,6 +1,7 @@
 class_name MechJumpCharge
 extends Node
 ## Hold jump on the ground to charge the jump jets. Release to jump.
+## Hold a move key while charging to jump in that direction.
 ## Height = full_height x charge. The charge follows height_at_second:
 ## 1 s = 33%, 2 s = 63%, 3 s = 100%. Values between whole seconds are blended.
 ## Charging uses energy at a steady rate. If energy runs out, the charge stops growing.
@@ -17,13 +18,20 @@ extends Node
 @export var full_energy_cost: float = 100.0
 ## Charges below this fraction of full height cancel the jump.
 @export var min_charge: float = 0.1
+## A move key released this many seconds before the jump still sets the jump direction.
+## This lets you release the move key and Space at the same time.
+@export var direction_memory: float = 0.25
 
 ## 0 to 1: fraction of full height while charging.
 var charge: float = 0.0
 var is_charging: bool = false
+## Move direction held when the jump launched (length 0 to 1). Zero = straight up.
+var launch_direction: Vector3 = Vector3.ZERO
 
 var _charge_time: float = 0.0
 var _launch_height: float = 0.0
+var _charge_direction: Vector3 = Vector3.ZERO
+var _direction_age: float = 0.0
 
 
 func _ready() -> void:
@@ -40,6 +48,7 @@ func _physics_process(delta: float) -> void:
 	if not mech.is_on_floor() or landing_recovery.is_recovering():
 		_reset()
 		return
+	_remember_direction(delta)
 	if input.jump_held:
 		is_charging = true
 		var full_time := get_full_charge_time()
@@ -49,6 +58,7 @@ func _physics_process(delta: float) -> void:
 	elif is_charging:
 		if charge >= min_charge:
 			_launch_height = charge * full_height
+			launch_direction = _charge_direction
 		_reset()
 
 
@@ -65,6 +75,16 @@ func _height_for_time(time: float) -> float:
 	if second >= height_at_second.size():
 		return height_at_second[height_at_second.size() - 1]
 	return lerpf(before, height_at_second[second], time - second)
+
+
+func _remember_direction(delta: float) -> void:
+	if input.move_direction.length_squared() > 0.01:
+		_charge_direction = input.move_direction
+		_direction_age = 0.0
+	else:
+		_direction_age += delta
+		if _direction_age > direction_memory:
+			_charge_direction = Vector3.ZERO
 
 
 func _reset() -> void:

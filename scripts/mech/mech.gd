@@ -1,8 +1,9 @@
 class_name Mech
 extends CharacterBody3D
 ## Moves a heavy mech. Reads what to do from a MechInput node.
-## Jumps come from MechJumpCharge. In the air, a move key uses free steering (MechAirSteer, up to 5 m).
-## Shift + a move key in the air fires the boosters and uses energy.
+## Jumps come from MechJumpCharge. A move key held while charging gives a directional jump.
+## In the air, a move key uses free steering (MechAirSteer, up to 5 m).
+## Shift + a move key in the air fires the boosters at reduced power and uses energy.
 ## All tuning values are in the Inspector. Units: meters, seconds.
 
 signal jumped
@@ -43,9 +44,11 @@ signal landed(fall_speed: float)
 @export var turn_speed_deg: float = 84.0
 ## How fast the body gains turn speed (degrees per second per second).
 @export var turn_acceleration_deg: float = 360.0
-## How far the body turns past the aim at full turn speed, in degrees. Slow turns overshoot less.
-## The body stays there until you move the mouse, so you center the mech crosshair yourself.
-@export var turn_overshoot_deg: float = 3.0
+## Near the end of a turn the body slows down. The slow zone starts when the gap to the aim
+## is this fraction of the gap at the start of the turn.
+@export_range(0.0, 1.0) var turn_slow_zone: float = 0.25
+## Turn speed in the slow zone = turn speed x this value.
+@export_range(0.1, 1.0) var turn_slow_multiplier: float = 0.5
 
 @export_group("Boost")
 ## Boost top speed = walk speed x this value.
@@ -60,8 +63,12 @@ signal landed(fall_speed: float)
 @export var boost_exit_steps: int = 2
 ## Energy used each second while boosting.
 @export var boost_energy_per_second: float = 30.0
+## Air boost acceleration = boost acceleration x this value. 0.25 = 75% less than on the ground.
+@export var air_boost_multiplier: float = 0.25
 
 @export_group("Air")
+## Sideways speed of a directional jump (move key held while charging), in m/s.
+@export var directional_jump_speed: float = 9.1
 ## Multiplier on world gravity. Above 1 makes the mech fall faster and feel heavier.
 @export var gravity_scale: float = 2.2
 @export var max_fall_speed: float = 60.0
@@ -80,9 +87,9 @@ var _walk_steps: int = 0
 var _exit_deceleration: float = 0.0
 var _stop_deceleration: float = 0.0
 var _landing_stop: bool = false
+var _airborne: bool = false
 var _turn_velocity: float = 0.0
-var _turn_holding: bool = false
-var _hold_mouse_yaw: float = 0.0
+var _turn_start_error: float = 0.0
 
 
 func _ready() -> void:
@@ -159,9 +166,9 @@ func _update_horizontal(delta: float) -> void:
 	var speed := get_horizontal_speed()
 
 	if not on_floor and not is_boosting:
-		if _was_on_floor:
-			# First air frame (jump, hop, or walking off an edge).
-			air_steer.begin_flight()
+		if not _airborne:
+			# First air frame (hop or walking off an edge). Jumps start the flight at launch.
+			_start_flight()
 		# Free steering, or momentum only after the free steering is used.
 		var steered := air_steer.steer(Vector3.ZERO if _in_exit_hop else wish, delta)
 		velocity.x = steered.x
@@ -179,7 +186,7 @@ func _update_horizontal(delta: float) -> void:
 		rate = _get_stop_deceleration() if on_floor else deceleration
 	elif is_boosting:
 		target = wish * get_boost_speed()
-		rate = boost_acceleration
+		rate = boost_acceleration if on_floor else boost_acceleration * air_boost_multiplier
 	else:
 		target = wish * _get_walk_speed(wish)
 		rate = _get_exit_deceleration() if is_exiting_boost and on_floor else acceleration
@@ -251,37 +258,43 @@ func _update_vertical(delta: float) -> void:
 			# Launch speed that reaches the charged height.
 			# The half-frame term cancels the extra rise from the physics frame step.
 			velocity.y = sqrt(2.0 * gravity * height) - 0.5 * gravity * delta
+			var sideways := jump_charge.launch_direction * directional_jump_speed
+			velocity.x = sideways.x
+			velocity.z = sideways.z
+			_start_flight()
 			jumped.emit()
 	else:
 		velocity.y = maxf(velocity.y - gravity * delta, -max_fall_speed)
 
 
-## Turns the body toward the aim with momentum. A fast turn goes past the aim by up to turn_overshoot_deg
-## and stops there. The body holds until the mouse moves again. It does not snap back to the camera crosshair.
+func _start_flight() -> void:
+	_airborne = true
+	air_steer.begin_flight()
+
+
+## Turns the body toward the aim with no overshoot. The last part of each turn is slower,
+## so the mech crosshair eases onto the camera crosshair.
 func _turn_body(delta: float) -> void:
-	if _turn_holding:
-		if absf(wrapf(input.mouse_yaw - _hold_mouse_yaw, -PI, PI)) < deg_to_rad(0.05):
-			return
-		_turn_holding = false
-
 	var error := wrapf(input.aim_yaw - rotation.y, -PI, PI)
+	var gap := absf(error)
+	if gap < deg_to_rad(0.1):
+		_turn_start_error = 0.0
+	_turn_start_error = maxf(_turn_start_error, gap)
+
 	var max_speed := deg_to_rad(turn_speed_deg)
+	if gap < _turn_start_error * turn_slow_zone:
+		max_speed *= turn_slow_multiplier
 	var accel := deg_to_rad(turn_acceleration_deg)
-	# Braking after the aim is passed. At full speed this stops the body exactly overshoot past the aim.
-	var brake := max_speed * max_speed / (2.0 * deg_to_rad(turn_overshoot_deg))
+	# Brake in time to stop exactly on the aim.
+	var desired := signf(error) * minf(max_speed, sqrt(2.0 * accel * gap))
+	_turn_velocity = move_toward(_turn_velocity, desired, accel * delta)
 
-	var passed_aim := _turn_velocity != 0.0 and signf(error) != signf(_turn_velocity)
-	if passed_aim:
-		_turn_velocity = move_toward(_turn_velocity, 0.0, brake * delta)
-		if _turn_velocity == 0.0:
-			_turn_holding = true
-			_hold_mouse_yaw = input.mouse_yaw
-	else:
-		_turn_velocity = move_toward(_turn_velocity, signf(error) * max_speed, accel * delta)
-
-	rotation.y = wrapf(rotation.y + _turn_velocity * delta, -PI, PI)
-	if absf(error) < 0.002 and absf(_turn_velocity) < 0.05:
+	var step := _turn_velocity * delta
+	if signf(step) == signf(error) and absf(step) >= gap:
+		rotation.y = wrapf(rotation.y + error, -PI, PI)
 		_turn_velocity = 0.0
+	else:
+		rotation.y = wrapf(rotation.y + step, -PI, PI)
 
 
 func _check_landing(fall_speed: float) -> void:
@@ -290,5 +303,6 @@ func _check_landing(fall_speed: float) -> void:
 		# Landing with sideways speed from a jump: walk it out in a set number of steps.
 		_landing_stop = not is_exiting_boost and get_horizontal_speed() > footsteps.min_speed
 		_stop_deceleration = 0.0
+		_airborne = false
 		landed.emit(fall_speed)
 	_was_on_floor = on_floor

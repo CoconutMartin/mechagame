@@ -67,10 +67,5 @@ func _process(delta: float) -> void:
 	_pitch_node.rotation = Vector3(pitch, 0.0, 0.0)
 
 
-## Yaw set by the mouse, before the aim spring.
-func get_mouse_yaw() -> float:
-	return _target_yaw
-
-
 func _goal_position() -> Vector3:
 	return target.get_global_transform_interpolated().origin + Vector3.UP * pivot_height
