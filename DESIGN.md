@@ -47,16 +47,17 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 
 | Value | Current | Result |
 |---|---|---|
-| Walk speed | 14 m/s (50 km/h) | about 1.4 s to full speed |
-| Acceleration / deceleration | 10 / 14 m/s² | heavy start and stop |
-| Boost speed | 36 m/s (130 km/h) | about 0.5 s to full speed |
-| Boost energy use | 30 per second, capacity 100 | about 3.3 s of boost |
-| Energy recharge | 35 per second after 0.6 s delay | empty energy locks boost until 30% |
+| Walk speed | 9.1 m/s (33 km/h) | about 1.4 s to full speed |
+| Acceleration / deceleration | 6.5 / 9 m/s² | heavy start and stop |
+| Boost speed | 1.5x walk = 13.65 m/s (49 km/h) | boost acceleration 20 m/s² |
+| Boost exit | small hop (6 m/s up), then 2 steps down to walk speed | only when boost stops on the ground above walk speed |
+| Boost energy use | 30 per second (50% of jump jets), capacity 100 | about 3.3 s of boost |
+| Energy recharge | 35 per second after 4 s delay | empty energy locks boost until 30% |
 | Jump | 17 m/s, gravity x2.2 | about 6.7 m high |
-| Jump jets | hold Space, start 0.25 s after jump | energy use 2x boost (60 per second), rise up to 8 m/s, about 19 m high on a full tank |
+| Jump jets | hold Space, start 0.25 s after jump | energy use 60 per second (2x boost), thrust 25.8 m/s² (net climb 4.2 m/s²), rise up to 8 m/s, about 19 m high on a full tank |
 | Air control | 35% | boost gives full control in air |
-| Body turn speed | 140°/s | body turns toward the camera direction |
-| Footstep stride | 7 m | one camera shake per stride, none while boosting |
+| Body turn | 140°/s max, 600°/s² acceleration | a full-speed turn goes 10° past the aim, then comes back |
+| Footstep stride | 6 m | one camera shake per stride, none while boosting |
 
 ### Current camera tuning (Phase 1)
 
@@ -109,7 +110,10 @@ All of this logic lives in one function so it is easy to tune.
 
 ## Animation
 
-- Now (Phase 1): placeholder leg swing on box parts (`MechLegSwing`).
+- Now (Phase 1): placeholder animation on box parts.
+  - `MechLegSwing`: hip swing, knee bend, body bob, sway.
+  - `MechLegTwist`: legs and pelvis turn toward the move direction (up to 75°). Walking backward keeps the legs forward and steps in reverse.
+  - `TwoBoneIK`: arms reach grip markers on the weapon. The long rifle is held with two hands in a collapsed low ready position: stock at the right chest, muzzle down 40° and 35° to the left.
 - Phase 8: complete animation on rigged .glb models. Walk cycles for biped, reverse-joint, tank, and quad legs. Leg IK so feet stay on slopes and steps. Torso twist toward the aim. Weapon recoil. Boost and jump jet poses.
 
 ## Destructible parts
@@ -157,7 +161,9 @@ scenes/levels/      test_map.tscn (main scene).
 scenes/mech/        player_mech.tscn.
 scenes/props/       greybox_block, car, lamppost, person, box_truck (8 m), semi_truck (16.5 m).
 scenes/ui/          debug_hud.tscn.
-scripts/mech/       mech.gd (movement), mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd, mech_leg_swing.gd (placeholder walk animation).
+scripts/mech/       mech.gd (movement), mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd.
+scripts/animation/  mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd (placeholder animation).
+scenes/weapons/     long_rifle.tscn (markers: GripRight, GripLeft, Muzzle).
 scripts/camera/     mech_camera_rig.gd (follow and mouse look), aim_spring.gd (aim overshoot), camera_shake.gd.
 scripts/world/      greybox_block.gd (box with collision, set size in Inspector).
 scripts/ui/         debug_hud.gd.
@@ -169,6 +175,7 @@ scripts/core/       mouse_capture.gd.
 - `Mech` (CharacterBody3D) does physics movement only. It reads intent from `MechInput`.
 - `MechInput` reads keyboard and mouse. An AI input node can replace it in Phase 4.
 - `MechEnergy` stores energy. Boost uses it now. Weapons use it in Phase 3.
+- Mech visual tree: `Visual > Upper` (torso, head, arms, rifle) `> Lower` (pelvis, legs). Upper faces the aim. Lower twists toward the move direction.
 - `MechLegSwing` is placeholder walk animation: hip swing, knee bend, body bob, and sway. Legs trail back while boosting and bend in the air. It reads the walk cycle from `MechFootsteps`, so each foot strike matches a footstep shake.
 - `MechFootsteps` emits a `footstep` signal per stride. `CameraShake` listens to it and to `Mech.landed`.
 - `MechCameraRig` is `top_level`, so it does not rotate with the mech. The mech body turns toward the camera yaw.
@@ -181,5 +188,8 @@ scripts/core/       mouse_capture.gd.
 - Phase 1: test map ground is 400 x 400 m with invisible walls at the edge. Distance fog hides the edge.
 - Phase 1: the camera follows the mouse on a damped spring, so fast aim moves overshoot a little.
 - Graphics settings menu goes in Phase 5.
+- Phase 1: walk speed 9.1 m/s, boost 1.5x walk, hop and 2 steps when boost stops, 4 s energy recharge delay, body turn overshoot 10°.
+- Phase 1: weapon is a 9 m long rifle held with two hands in collapsed low ready. Phase 3 adds aiming poses.
+- Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.
 - Phase 1: mechs pass through cars, lampposts, and people. Phase 4 makes these destructible.

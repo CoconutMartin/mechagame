@@ -7,7 +7,7 @@ signal footstep(strength: float)
 
 @export var mech: Mech
 ## Meters traveled per footstep.
-@export var stride_length: float = 7.0
+@export var stride_length: float = 6.0
 ## Below this speed (m/s) the mech takes no steps.
 @export var min_speed: float = 1.0
 

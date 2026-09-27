@@ -6,7 +6,8 @@ extends Node
 
 @export var mech: Mech
 @export var footsteps: MechFootsteps
-## Moves up and down with the walk. Hips must be children of this node.
+@export var leg_twist: MechLegTwist
+## Moves up and down with the walk. The hips must be inside this node.
 @export var upper_body: Node3D
 @export var hip_left: Node3D
 @export var hip_right: Node3D
@@ -15,7 +16,7 @@ extends Node
 
 @export_group("Walk")
 ## Largest hip swing forward and back, in degrees, at full walk speed.
-@export var hip_swing_deg: float = 22.0
+@export var hip_swing_deg: float = 28.0
 ## Largest knee bend of the leg that swings forward, in degrees.
 @export var knee_bend_deg: float = 30.0
 ## Body drop at each foot strike, in meters.
@@ -52,16 +53,19 @@ func _physics_process(delta: float) -> void:
 	_air_knee = lerpf(_air_knee, 0.0 if on_floor else 1.0, blend)
 
 	var phase := footsteps.get_cycle_phase()
+	# Walking backward: the lifted leg moves back, so the knee bend flips.
+	var lift := sin(phase) * (-1.0 if leg_twist.moving_backward else 1.0)
 	var hip := deg_to_rad(hip_swing_deg) * _walk_amount * cos(phase)
-	var trail := -deg_to_rad(boost_trail_deg) * _trail
+	# Legs trail behind the move direction. Backward, the legs face forward, so the trail flips.
+	var trail := -deg_to_rad(boost_trail_deg) * _trail * (-1.0 if leg_twist.moving_backward else 1.0)
 	# The leg that moves forward lifts its foot by bending the knee.
 	var knee := deg_to_rad(knee_bend_deg) * _walk_amount
 	var air := deg_to_rad(air_knee_deg) * _air_knee
 
 	hip_left.rotation.x = hip + trail + air * 0.5
 	hip_right.rotation.x = -hip + trail + air * 0.5
-	knee_left.rotation.x = -knee * maxf(0.0, -sin(phase)) - air
-	knee_right.rotation.x = -knee * maxf(0.0, sin(phase)) - air
+	knee_left.rotation.x = -knee * maxf(0.0, -lift) - air
+	knee_right.rotation.x = -knee * maxf(0.0, lift) - air
 
 	# Lowest at foot strike (phase = 0, PI), highest between steps.
 	upper_body.position.y = _upper_rest_y - bob_height * _walk_amount * (cos(2.0 * phase) + 1.0) * 0.5
