@@ -3,7 +3,7 @@ extends CharacterBody3D
 ## Moves a heavy mech. Reads what to do from a MechInput node.
 ## Jumps come from MechJumpCharge. A move key held while charging gives a directional jump.
 ## In the air, a move key uses free steering (MechAirSteer, up to 5 m).
-## Shift + a move key in the air fires the boosters at reduced power and uses energy.
+## Shift + a move key in the air fires the boosters at reduced power (a small extra speed) and uses energy.
 ## All tuning values are in the Inspector. Units: meters, seconds.
 
 signal jumped
@@ -41,14 +41,24 @@ signal landed(fall_speed: float)
 
 @export_group("Turning")
 ## Top body turn speed toward the camera direction (degrees per second).
-@export var turn_speed_deg: float = 84.0
+@export var turn_speed_deg: float = 58.8
 ## How fast the body gains turn speed (degrees per second per second).
-@export var turn_acceleration_deg: float = 360.0
+@export var turn_acceleration_deg: float = 252.0
 ## Near the end of a turn the body slows down. The slow zone starts when the gap to the aim
 ## is this fraction of the gap at the start of the turn.
 @export_range(0.0, 1.0) var turn_slow_zone: float = 0.25
 ## Turn speed in the slow zone = turn speed x this value.
 @export_range(0.1, 1.0) var turn_slow_multiplier: float = 0.5
+## Size of each settle swing past the aim, in degrees.
+@export var turn_settle_swing_deg: float = 2.0
+## Turns smaller than this (degrees) lock in with no settle swings.
+@export var turn_settle_min_turn_deg: float = 5.0
+## Seconds for the first swing (past the aim).
+@export var turn_settle_first_time: float = 0.15
+## Seconds for the second swing (to the other side of the aim).
+@export var turn_settle_second_time: float = 0.3
+## Seconds for the snap back onto the aim.
+@export var turn_settle_snap_time: float = 0.08
 
 @export_group("Boost")
 ## Boost top speed = walk speed x this value.
@@ -63,12 +73,14 @@ signal landed(fall_speed: float)
 @export var boost_exit_steps: int = 2
 ## Energy used each second while boosting.
 @export var boost_energy_per_second: float = 30.0
-## Air boost acceleration = boost acceleration x this value. 0.25 = 75% less than on the ground.
+## Air boost acceleration and top speed = ground boost values x this value. 0.25 = 75% less.
+## The air boost speed adds to the jump momentum.
 @export var air_boost_multiplier: float = 0.25
 
 @export_group("Air")
-## Sideways speed of a directional jump (move key held while charging), in m/s.
-@export var directional_jump_speed: float = 9.1
+## Forward length of a directional jump at full charge, in meters (move key held while charging).
+## Lower charges go shorter by the same fraction as their height: 33% charge = 3.3 m.
+@export var directional_jump_full_distance: float = 10.0
 ## Multiplier on world gravity. Above 1 makes the mech fall faster and feel heavier.
 @export var gravity_scale: float = 2.2
 @export var max_fall_speed: float = 60.0
@@ -90,6 +102,9 @@ var _landing_stop: bool = false
 var _airborne: bool = false
 var _turn_velocity: float = 0.0
 var _turn_start_error: float = 0.0
+## Time into the settle swings. Below 0 = no settle.
+var _settle_time: float = -1.0
+var _settle_sign: float = 0.0
 
 
 func _ready() -> void:
@@ -165,12 +180,14 @@ func _update_horizontal(delta: float) -> void:
 	var on_floor := is_on_floor() and velocity.y <= 0.0
 	var speed := get_horizontal_speed()
 
-	if not on_floor and not is_boosting:
+	if not on_floor:
 		if not _airborne:
 			# First air frame (hop or walking off an edge). Jumps start the flight at launch.
 			_start_flight()
-		# Free steering, or momentum only after the free steering is used.
-		var steered := air_steer.steer(Vector3.ZERO if _in_exit_hop else wish, delta)
+		# Free steering or air boost. No key = momentum only.
+		var steer_wish := Vector3.ZERO if _in_exit_hop else wish
+		var boost_speed := get_boost_speed() * air_boost_multiplier if is_boosting else 0.0
+		var steered := air_steer.steer(steer_wish, delta, boost_speed, boost_acceleration * air_boost_multiplier)
 		velocity.x = steered.x
 		velocity.z = steered.z
 		return
@@ -186,7 +203,7 @@ func _update_horizontal(delta: float) -> void:
 		rate = _get_stop_deceleration() if on_floor else deceleration
 	elif is_boosting:
 		target = wish * get_boost_speed()
-		rate = boost_acceleration if on_floor else boost_acceleration * air_boost_multiplier
+		rate = boost_acceleration
 	else:
 		target = wish * _get_walk_speed(wish)
 		rate = _get_exit_deceleration() if is_exiting_boost and on_floor else acceleration
@@ -194,8 +211,6 @@ func _update_horizontal(delta: float) -> void:
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z).move_toward(target, rate * delta)
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
-	if not on_floor:
-		air_steer.rebase()
 
 	if has_input:
 		_stop_deceleration = 0.0
@@ -258,7 +273,10 @@ func _update_vertical(delta: float) -> void:
 			# Launch speed that reaches the charged height.
 			# The half-frame term cancels the extra rise from the physics frame step.
 			velocity.y = sqrt(2.0 * gravity * height) - 0.5 * gravity * delta
-			var sideways := jump_charge.launch_direction * directional_jump_speed
+			# Sideways speed that covers the directional distance in the time of flight.
+			var flight_time := 2.0 * sqrt(2.0 * height / gravity)
+			var distance := directional_jump_full_distance * height / jump_charge.full_height
+			var sideways := jump_charge.launch_direction * (distance / flight_time)
 			velocity.x = sideways.x
 			velocity.z = sideways.z
 			_start_flight()
@@ -272,12 +290,19 @@ func _start_flight() -> void:
 	air_steer.begin_flight()
 
 
-## Turns the body toward the aim with no overshoot. The last part of each turn is slower,
-## so the mech crosshair eases onto the camera crosshair.
+## Turns the body toward the aim. The last part of each turn is slower.
+## At the end of a turn the body settles: it swings past the aim, swings to the other side,
+## then snaps onto the aim and locks in.
 func _turn_body(delta: float) -> void:
 	var error := wrapf(input.aim_yaw - rotation.y, -PI, PI)
 	var gap := absf(error)
-	if gap < deg_to_rad(0.1):
+	if _settle_time >= 0.0:
+		if gap <= deg_to_rad(turn_settle_swing_deg * 2.0 + 1.0):
+			_update_settle(delta)
+			return
+		# The aim moved away: a new turn starts.
+		_settle_time = -1.0
+	if gap < deg_to_rad(0.1) and _turn_velocity == 0.0:
 		_turn_start_error = 0.0
 	_turn_start_error = maxf(_turn_start_error, gap)
 
@@ -285,7 +310,7 @@ func _turn_body(delta: float) -> void:
 	if gap < _turn_start_error * turn_slow_zone:
 		max_speed *= turn_slow_multiplier
 	var accel := deg_to_rad(turn_acceleration_deg)
-	# Brake in time to stop exactly on the aim.
+	# Brake in time to stop on the aim.
 	var desired := signf(error) * minf(max_speed, sqrt(2.0 * accel * gap))
 	_turn_velocity = move_toward(_turn_velocity, desired, accel * delta)
 
@@ -293,8 +318,31 @@ func _turn_body(delta: float) -> void:
 	if signf(step) == signf(error) and absf(step) >= gap:
 		rotation.y = wrapf(rotation.y + error, -PI, PI)
 		_turn_velocity = 0.0
+		if _turn_start_error >= deg_to_rad(turn_settle_min_turn_deg):
+			_settle_time = 0.0
+			_settle_sign = signf(error)
+		_turn_start_error = 0.0
 	else:
 		rotation.y = wrapf(rotation.y + step, -PI, PI)
+
+
+## Plays the settle swings relative to the live aim: past the aim, to the other side, then snap to the aim.
+func _update_settle(delta: float) -> void:
+	_settle_time += delta
+	var swing := deg_to_rad(turn_settle_swing_deg) * _settle_sign
+	var first := turn_settle_first_time
+	var second := first + turn_settle_second_time
+	var end := second + turn_settle_snap_time
+	var offset := 0.0
+	if _settle_time < first:
+		offset = lerpf(0.0, swing, smoothstep(0.0, 1.0, _settle_time / first))
+	elif _settle_time < second:
+		offset = lerpf(swing, -swing, smoothstep(0.0, 1.0, (_settle_time - first) / turn_settle_second_time))
+	elif _settle_time < end:
+		offset = lerpf(-swing, 0.0, (_settle_time - second) / turn_settle_snap_time)
+	else:
+		_settle_time = -1.0
+	rotation.y = wrapf(input.aim_yaw + offset, -PI, PI)
 
 
 func _check_landing(fall_speed: float) -> void:

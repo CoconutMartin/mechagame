@@ -17,6 +17,8 @@ extends Node
 @export var walk_jitter_deg: float = 0.6
 ## Aim shake while boosting = walk jitter x this value.
 @export var boost_jitter_multiplier: float = 2.0
+## Aim shake in the air = boost jitter x this value.
+@export var air_jitter_multiplier: float = 2.0
 ## Small aim shake when standing still, in degrees.
 @export var idle_jitter_deg: float = 0.05
 ## How fast the shake moves.
@@ -56,8 +58,11 @@ func _physics_process(delta: float) -> void:
 
 
 func _get_jitter_deg() -> float:
+	var boost_jitter := walk_jitter_deg * boost_jitter_multiplier
+	if not mech.is_on_floor():
+		return boost_jitter * air_jitter_multiplier
 	if mech.is_boosting:
-		return walk_jitter_deg * boost_jitter_multiplier
+		return boost_jitter
 	var walk_ratio := clampf(mech.get_horizontal_speed() / mech.walk_speed, 0.0, 1.0)
 	return maxf(walk_jitter_deg * walk_ratio, idle_jitter_deg)
 

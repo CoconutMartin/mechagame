@@ -1,8 +1,8 @@
 class_name MechAirSteer
 extends Node
-## Free steering in the air, with no energy cost.
-## A move key can shift the landing point by up to budget meters in any direction.
-## When the budget is used, more steering fires the boosters and uses energy (Mech handles that).
+## Steering in the air.
+## Free steering: a move key can shift the landing point by up to budget meters, with no energy cost.
+## Air boost (Shift + move key): a small extra speed on top of the jump momentum. Mech pays the energy.
 
 @export var mech: Mech
 ## Largest free change of the landing point, in meters.
@@ -28,12 +28,6 @@ func begin_flight() -> void:
 	_launch_y = mech.global_position.y
 
 
-## Call after the boosters change the velocity, so free steering starts from the new velocity.
-func rebase() -> void:
-	_base_velocity = Vector3(mech.velocity.x, 0.0, mech.velocity.z)
-	_drift = Vector3.ZERO
-
-
 func has_budget() -> bool:
 	return _remaining > 0.05
 
@@ -43,14 +37,20 @@ func get_remaining() -> float:
 
 
 ## Returns the new horizontal velocity for this frame.
-func steer(wish: Vector3, delta: float) -> Vector3:
+## For an air boost, pass the boost top speed and acceleration. The boost does not use the free budget.
+func steer(wish: Vector3, delta: float, boost_speed: float = 0.0, boost_acceleration: float = 0.0) -> Vector3:
 	# Spread the budget over the time left, so it lasts until the landing.
 	# The small margin keeps the speed up in the last frames. The mech lands with this speed.
 	var allowed := minf(max_speed, _remaining / (_get_time_to_land() + landing_margin))
-	if wish.length_squared() > 0.001:
-		_drift = _drift.move_toward(wish * allowed, acceleration * delta)
-		_drift = _drift.limit_length(allowed)
-	_remaining = maxf(_remaining - _drift.length() * delta, 0.0)
+	var steering := wish.length_squared() > 0.001
+	if steering and boost_speed > 0.0:
+		var limit := maxf(boost_speed, allowed)
+		_drift = _drift.move_toward(wish * limit, boost_acceleration * delta).limit_length(limit)
+	else:
+		if steering:
+			_drift = _drift.move_toward(wish * allowed, acceleration * delta)
+			_drift = _drift.limit_length(allowed)
+		_remaining = maxf(_remaining - _drift.length() * delta, 0.0)
 	return _base_velocity + _drift
 
 

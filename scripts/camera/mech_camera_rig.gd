@@ -17,7 +17,7 @@ extends Node3D
 
 @export_group("Aim Spring")
 ## Oscillations per second. Lower = slower, heavier aim.
-@export var aim_frequency: float = 2.5
+@export var aim_frequency: float = 1.75
 ## 1.0 = no overshoot. 0.5 gives about 14% overshoot (a fast 30 degree flick passes by about 4 degrees).
 @export_range(0.1, 1.0) var aim_damping: float = 0.5
 ## Largest gap between the camera and the mouse aim, in degrees.
