@@ -76,6 +76,8 @@ signal landed(fall_speed: float)
 ## Air boost acceleration and top speed = ground boost values x this value. 0.25 = 75% less.
 ## The air boost speed adds to the jump momentum.
 @export var air_boost_multiplier: float = 0.25
+## Air boost energy use = ground boost energy use x this value. 4.0 = 300% more (120 per second).
+@export var air_boost_energy_multiplier: float = 4.0
 
 @export_group("Air")
 ## Forward length of a directional jump at full charge, in meters (move key held while charging).
@@ -157,7 +159,8 @@ func _update_boost(delta: float) -> void:
 		# Shift + a move key fires the boosters in the air. A move key alone uses free steering.
 		# The boost exit hop is part of the walk, so no steering there.
 		wants_boost = input.boost_held and has_input and not _in_exit_hop
-	is_boosting = wants_boost and energy.try_drain(boost_energy_per_second * delta)
+	var energy_rate := boost_energy_per_second if is_on_floor() else boost_energy_per_second * air_boost_energy_multiplier
+	is_boosting = wants_boost and energy.try_drain(energy_rate * delta)
 	is_air_boosting = is_boosting and not is_on_floor()
 	_boost_on_ground = is_boosting and is_on_floor()
 	if is_boosting:
