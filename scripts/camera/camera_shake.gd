@@ -32,18 +32,25 @@ extends Camera3D
 @export var air_rising_trauma: float = 0.44
 
 @export_group("Shake")
+## Overall shake strength. 1.0 = all values as set above and below. 0.5 = half.
+@export var intensity: float = 0.5
 ## Largest random offset in meters at full shake.
 @export var max_offset: float = 0.5
 @export var max_roll_deg: float = 1.2
 ## How fast shake fades (per second).
 @export var trauma_decay: float = 2.5
-@export var kick_recovery: float = 12.0
-@export var noise_speed: float = 40.0
+## How fast a kick (footstep or landing drop) comes back. Lower = slower, smoother.
+@export var kick_recovery: float = 7.0
+## How fast the random shake moves. Lower = smoother, slower wobble.
+@export var noise_speed: float = 15.0
+## Smoothing of the final camera offset. Lower = smoother (and a little more lag).
+@export var smoothing: float = 30.0
 
 var _trauma: float = 0.0
 var _kick: float = 0.0
 var _time: float = 0.0
 var _noise := FastNoiseLite.new()
+var _offset := Vector3.ZERO
 
 
 func _ready() -> void:
@@ -67,10 +74,16 @@ func _process(delta: float) -> void:
 		_trauma = maxf(_trauma, air_rising_trauma if mech.velocity.y > 0.0 else air_trauma)
 	_kick = lerpf(_kick, 0.0, 1.0 - exp(-kick_recovery * delta))
 
-	var shake := _trauma * _trauma
-	h_offset = max_offset * shake * _noise.get_noise_2d(0.0, _time)
-	v_offset = max_offset * shake * _noise.get_noise_2d(100.0, _time) - _kick
-	rotation.z = deg_to_rad(max_roll_deg) * shake * _noise.get_noise_2d(200.0, _time)
+	var shake := _trauma * _trauma * intensity
+	var target := Vector3(
+		max_offset * shake * _noise.get_noise_2d(0.0, _time),
+		max_offset * shake * _noise.get_noise_2d(100.0, _time) - _kick * intensity,
+		deg_to_rad(max_roll_deg) * shake * _noise.get_noise_2d(200.0, _time))
+	# Smooth the result so the camera eases instead of jumping.
+	_offset = _offset.lerp(target, 1.0 - exp(-smoothing * delta))
+	h_offset = _offset.x
+	v_offset = _offset.y
+	rotation.z = _offset.z
 
 
 func _on_footstep(strength: float) -> void:

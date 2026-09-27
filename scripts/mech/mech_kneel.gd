@@ -1,6 +1,6 @@
 class_name MechKneel
 extends Node
-## Press Ctrl to kneel: right knee on the ground, left foot forward. Press Ctrl again to stand.
+## Press Ctrl to kneel: right knee on the ground, left foot forward. Press Ctrl again, or W, to stand.
 ## The mech cannot move, boost, or charge a jump while it kneels.
 
 @export var mech: Mech
@@ -25,6 +25,9 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if input.crouch_pressed:
 		_wants = not _wants
+	elif _wants and input.forward_held:
+		# Walk forward also stands the mech up. It walks when fully up.
+		_wants = false
 	if not mech.is_on_floor() or landing_recovery.is_recovering():
 		_wants = false
 	amount = move_toward(amount, 1.0 if _wants else 0.0, kneel_speed * delta)
