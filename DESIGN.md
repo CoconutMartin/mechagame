@@ -232,6 +232,10 @@ scripts/core/       mouse_capture.gd.
 - Physics interpolation is on, so movement is smooth on high refresh rate monitors.
 - Physics engine: Jolt.
 
+## Reminders for the user
+
+- Update the dodge hop animation (requested after Phase 1 revision 40). Bring this up before Phase 1 is closed, and again at the start of Phase 2 if still open.
+
 ## Decisions log
 
 - Phase 1: Space was a jump plus hold-in-air jets. Replaced in revision 5 by charged jump jets.

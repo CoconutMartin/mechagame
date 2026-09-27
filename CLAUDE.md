@@ -4,6 +4,10 @@ Godot 4 mecha game. GDScript only. Read DESIGN.md first and keep it updated.
 The user is a beginner. Build one phase at a time, then stop and explain how to test it.
 Ask before big design changes. Commit after each working phase.
 
+## Reminders
+
+Check "Reminders for the user" in DESIGN.md. Remind the user of each open item when a phase is about to close and when a new phase starts.
+
 ## Code rules
 
 - Small scripts, one job per script. Use `class_name` and typed GDScript.
