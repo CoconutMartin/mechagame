@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://scripts/camera/camera_ads.gd" id="ads"]
 [ext_resource type="Script" path="res://scripts/mech/mech_landing_recovery.gd" id="recovery"]
 [ext_resource type="Script" path="res://scripts/mech/mech_aim.gd" id="aim"]
+[ext_resource type="Script" path="res://scripts/mech/mech_jump_charge.gd" id="jumpcharge"]
 [ext_resource type="Script" path="res://scripts/animation/weapon_pose.gd" id="weaponpose"]
 [ext_resource type="Script" path="res://scripts/camera/camera_shake.gd" id="shake"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/long_rifle.tscn" id="rifle"]
@@ -61,7 +62,7 @@ size = Vector3(0.9, 2.7, 1.0)
 [sub_resource type="BoxMesh" id="mesh_Hand"]
 size = Vector3(0.7, 0.6, 0.8)
 
-[node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery")]
+[node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery", "jump_charge")]
 collision_layer = 2
 collision_mask = 1
 floor_snap_length = 1.0
@@ -70,6 +71,7 @@ input = NodePath("MechInput")
 energy = NodePath("MechEnergy")
 footsteps = NodePath("MechFootsteps")
 landing_recovery = NodePath("MechLandingRecovery")
+jump_charge = NodePath("MechJumpCharge")
 
 [node name="Collision" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
@@ -225,6 +227,13 @@ mech = NodePath("..")
 script = ExtResource("recovery")
 mech = NodePath("..")
 
+[node name="MechJumpCharge" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery")]
+script = ExtResource("jumpcharge")
+mech = NodePath("..")
+input = NodePath("../MechInput")
+energy = NodePath("../MechEnergy")
+landing_recovery = NodePath("../MechLandingRecovery")
+
 [node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin")]
 script = ExtResource("aim")
 mech = NodePath("..")
@@ -246,12 +255,13 @@ script = ExtResource("legtwist")
 mech = NodePath("../..")
 lower_body = NodePath("../../Visual/Upper/Lower")
 
-[node name="LegSwing" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "footsteps", "leg_twist", "landing_recovery", "upper_body", "hip_left", "hip_right", "knee_left", "knee_right")]
+[node name="LegSwing" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "footsteps", "leg_twist", "landing_recovery", "jump_charge", "upper_body", "hip_left", "hip_right", "knee_left", "knee_right")]
 script = ExtResource("legswing")
 mech = NodePath("../..")
 footsteps = NodePath("../../MechFootsteps")
 leg_twist = NodePath("../LegTwist")
 landing_recovery = NodePath("../../MechLandingRecovery")
+jump_charge = NodePath("../../MechJumpCharge")
 upper_body = NodePath("../../Visual/Upper")
 hip_left = NodePath("../../Visual/Upper/Lower/HipL")
 hip_right = NodePath("../../Visual/Upper/Lower/HipR")

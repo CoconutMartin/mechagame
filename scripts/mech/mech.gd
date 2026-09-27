@@ -1,6 +1,8 @@
 class_name Mech
 extends CharacterBody3D
 ## Moves a heavy mech. Reads what to do from a MechInput node.
+## Jumps come from MechJumpCharge. In the air, a move key fires the boosters and uses energy.
+## With no energy the mech cannot steer in the air.
 ## All tuning values are in the Inspector. Units: meters, seconds.
 
 signal jumped
@@ -12,6 +14,7 @@ signal landed(fall_speed: float)
 ## Gives stride length and step events for walk-in, stop, and boost exit steps.
 @export var footsteps: MechFootsteps
 @export var landing_recovery: MechLandingRecovery
+@export var jump_charge: MechJumpCharge
 
 ## Total mech weight in tons. Phase 2 computes this from parts.
 @export var mass_tons: float = 60.0
@@ -31,6 +34,8 @@ signal landed(fall_speed: float)
 @export var boost_stop_steps: int = 4
 ## Slowdown while the mech recovers from a hard landing (m/s per second).
 @export var landing_brake: float = 25.0
+## Slowdown while the mech charges its jump jets (m/s per second). The mech stands still to charge.
+@export var jump_charge_brake: float = 9.0
 
 @export_group("Turning")
 ## Top body turn speed toward the camera direction (degrees per second).
@@ -54,37 +59,21 @@ signal landed(fall_speed: float)
 ## Energy used each second while boosting.
 @export var boost_energy_per_second: float = 30.0
 
-@export_group("Jump Jets")
-## Hold jump in the air to fire jump jets.
-## Energy use per second = boost energy use x this value. Jets cost more than boost.
-@export var jet_energy_multiplier: float = 2.0
-## Upward push of the jets (m/s per second). Gravity x gravity_scale is about 21.6.
-## At 23.7 the jets climb at 2.1 m/s per second.
-@export var jet_thrust: float = 23.7
-## The jets stop pushing above this rise speed (m/s). This sets the top height on a full tank (about 9 m).
-@export var jet_max_rise_speed: float = 1.7
-## Air control while the jets fire (0 to 1).
-@export var jet_air_control: float = 0.8
-## Wait after a jump (seconds) before the jets can fire, so a tap stays a normal jump.
-@export var jet_delay: float = 0.25
-
 @export_group("Air")
-## Upward speed at the start of a jump in m/s.
-@export var jump_velocity: float = 17.0
 ## Multiplier on world gravity. Above 1 makes the mech fall faster and feel heavier.
 @export var gravity_scale: float = 2.2
-## Fraction of ground control you keep in the air (0 to 1).
-@export var air_control: float = 0.35
 @export var max_fall_speed: float = 60.0
 
 var is_boosting: bool = false
-var is_jetting: bool = false
+## True while boosting in the air to steer.
+var is_air_boosting: bool = false
 ## True from the boost exit hop until the mech is back at walk speed or stopped.
 var is_exiting_boost: bool = false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _was_on_floor: bool = true
-var _air_time: float = 0.0
+var _boost_on_ground: bool = false
+var _in_exit_hop: bool = false
 var _walk_steps: int = 0
 var _exit_deceleration: float = 0.0
 var _stop_deceleration: float = 0.0
@@ -98,7 +87,6 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_update_boost(delta)
-	_update_jets(delta)
 	_update_horizontal(delta)
 	_update_vertical(delta)
 	_turn_body(delta)
@@ -129,31 +117,37 @@ func _on_footstep(_strength: float) -> void:
 
 
 func _update_boost(delta: float) -> void:
-	if get_horizontal_speed() < footsteps.min_speed:
+	if get_horizontal_speed() < footsteps.min_speed and is_on_floor():
 		_walk_steps = 0
-	var was_boosting := is_boosting
+	if is_on_floor() and velocity.y <= 0.0:
+		_in_exit_hop = false
+	var was_ground_boosting := is_boosting and _boost_on_ground
 	var has_input := input.move_direction.length_squared() > 0.01
-	var wants_boost := input.boost_held and has_input and is_boost_ready() and not landing_recovery.is_recovering()
+	var wants_boost := false
+	if is_on_floor():
+		wants_boost = input.boost_held and has_input and is_boost_ready() \
+				and not landing_recovery.is_recovering() and not jump_charge.is_charging
+	else:
+		# In the air any move key steers with the boosters. The boost exit hop is part of the walk, so no steering there.
+		wants_boost = has_input and not _in_exit_hop
 	is_boosting = wants_boost and energy.try_drain(boost_energy_per_second * delta)
+	is_air_boosting = is_boosting and not is_on_floor()
+	_boost_on_ground = is_boosting and is_on_floor()
 	if is_boosting:
 		is_exiting_boost = false
-	elif was_boosting and is_on_floor() and get_horizontal_speed() > walk_speed * 1.05:
+	elif was_ground_boosting and is_on_floor() and get_horizontal_speed() > walk_speed * 1.05:
 		is_exiting_boost = true
+		_in_exit_hop = true
 		_exit_deceleration = 0.0
 		_stop_deceleration = 0.0
 		velocity.y = boost_exit_hop_velocity
 		boost_exit_hop.emit()
 
 
-func _update_jets(delta: float) -> void:
-	_air_time = 0.0 if is_on_floor() else _air_time + delta
-	var wants_jets := input.jump_held and not is_on_floor() and _air_time >= jet_delay
-	is_jetting = wants_jets and energy.try_drain(boost_energy_per_second * jet_energy_multiplier * delta)
-
-
 func _update_horizontal(delta: float) -> void:
 	var recovering := landing_recovery.is_recovering()
-	var wish := Vector3.ZERO if recovering else input.move_direction
+	var charging := jump_charge.is_charging
+	var wish := Vector3.ZERO if recovering or charging else input.move_direction
 	var has_input := wish.length_squared() > 0.001
 	# A hop that starts this frame counts as air, so step plans start after landing.
 	var on_floor := is_on_floor() and velocity.y <= 0.0
@@ -161,8 +155,13 @@ func _update_horizontal(delta: float) -> void:
 
 	var target := Vector3.ZERO
 	var rate := deceleration
+	if not on_floor and not is_boosting:
+		# No steering in the air without boost. The mech keeps its momentum.
+		return
 	if recovering:
 		rate = landing_brake
+	elif charging:
+		rate = jump_charge_brake
 	elif not has_input:
 		rate = _get_stop_deceleration() if on_floor else deceleration
 	elif is_boosting:
@@ -171,8 +170,6 @@ func _update_horizontal(delta: float) -> void:
 	else:
 		target = wish * _get_walk_speed(wish)
 		rate = _get_exit_deceleration() if is_exiting_boost and on_floor else acceleration
-	if not on_floor and not is_boosting:
-		rate *= jet_air_control if is_jetting else air_control
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z).move_toward(target, rate * delta)
 	velocity.x = horizontal.x
@@ -229,14 +226,16 @@ func _get_exit_deceleration() -> float:
 
 
 func _update_vertical(delta: float) -> void:
+	var gravity := _gravity * gravity_scale
 	if is_on_floor():
-		if input.consume_jump() and not landing_recovery.is_recovering():
-			velocity.y = jump_velocity
+		var height := jump_charge.take_launch_height()
+		if height > 0.0:
+			# Launch speed that reaches the charged height.
+			# The half-frame term cancels the extra rise from the physics frame step.
+			velocity.y = sqrt(2.0 * gravity * height) - 0.5 * gravity * delta
 			jumped.emit()
 	else:
-		velocity.y = maxf(velocity.y - _gravity * gravity_scale * delta, -max_fall_speed)
-		if is_jetting and velocity.y < jet_max_rise_speed:
-			velocity.y = minf(velocity.y + jet_thrust * delta, jet_max_rise_speed)
+		velocity.y = maxf(velocity.y - gravity * delta, -max_fall_speed)
 
 
 ## Turns the body toward the aim with momentum. A fast turn goes past the aim, stops, and comes back.

@@ -23,10 +23,10 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 |---|---|---|
 | WASD | Move | `move_forward`, `move_back`, `move_left`, `move_right` |
 | Mouse | Aim (camera) | |
-| Space | Jump. Hold in the air for jump jets | `jump` |
+| Space | Hold on the ground to charge the jump jets, release to jump. No plain jump | `jump` |
 | Shift | Boost (hold). Starts after 2 walking steps. Stops when released | `boost` |
-| LMB | Right arm weapon | `fire_right_arm` |
-| RMB | Aim down sight (hold). Spec also lists RMB for the left arm weapon: open question for Phase 3 | `aim`, `fire_left_arm` |
+| RMB | One-hand weapons: use the right arm weapon. Two-hand firearm: aim down sight (hold) | `use_right_arm`, `aim` |
+| LMB | One-hand weapons: use the left arm weapon. Two-hand firearm: shoot | `use_left_arm` |
 | Q / E | Left / right back weapon | `fire_back_left`, `fire_back_right` |
 | Tab | Lock-on | `lock_on` |
 | Esc | Free the mouse (click to capture again) | `ui_cancel` |
@@ -55,10 +55,10 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Boost exit | small hop (6 m/s up), then 2 steps down to walk speed | if all keys are released: hop, then 4 steps to a stop |
 | Boost energy use | 30 per second (50% of jump jets), capacity 100 | about 3.3 s of boost |
 | Energy recharge | 17.5 per second after 2 s delay | empty energy locks boost until 30% |
-| Jump | 17 m/s, gravity x2.2 | about 6.7 m high |
-| Jump jets | hold Space, start 0.25 s after jump | energy use 60 per second (2x boost), net climb 2.1 m/s², rise up to 1.7 m/s, about 9 m high on a full tank |
-| Landing recovery | 1.5 s x (weight / 60 t) x (fall height / 9 m), falls below 1 m ignored | no movement, jump, or boost. Legs crouch |
-| Air control | 35% | boost gives full control in air |
+| Jump jet charge | hold Space on the ground. 1 s = 25%, 2 s = 50%, 3 s = 75%, 4 s = 100% of 9 m | the mech stops and crouches while it charges. Charge uses 25 energy per second (full charge = full tank). Charges below 10% cancel |
+| Gravity | x2.2 (21.6 m/s²) | launch speed is set so the jump reaches the charged height |
+| Air steering | any move key in the air fires the boosters (boost speed, boost energy use) | with no energy the mech cannot steer in the air. No key = momentum only |
+| Landing recovery | falls below 1 m: 0.5 s. Higher: 1.5 s x (weight / 60 t) x (fall height / 9 m), minimum 0.5 s | no movement, jump charge, or boost. Legs crouch. Falls below 0.2 m and the boost exit hop give no delay |
 | Body turn | 84°/s max, 360°/s² acceleration | a full-speed turn goes 10° past the aim, then comes back |
 | Footstep stride | 6 m | one camera shake per stride, none while boosting |
 
@@ -92,6 +92,12 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 | 1 | world | ground, buildings, platforms |
 | 2 | mechs | mech bodies |
 | 3 | props | cars, lampposts, people (mechs pass through them until Phase 4 destruction) |
+
+## Weapon controls (Phase 3)
+
+- One-hand weapons: RMB uses the right arm weapon, LMB uses the left arm weapon.
+- Two-hand firearm: RMB aims down sight, LMB shoots.
+- "Use" means fire for guns and activate for shields and melee weapons.
 
 ## Mech parts (all interchangeable)
 
@@ -176,7 +182,7 @@ scenes/mech/        player_mech.tscn.
 scenes/props/       greybox_block, car, lamppost, person, box_truck (8 m), semi_truck (16.5 m).
 scenes/ui/          debug_hud.tscn.
 scripts/mech/       mech.gd (movement), mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd,
-                    mech_landing_recovery.gd, mech_aim.gd (camera target and real mech aim with jitter).
+                    mech_jump_charge.gd, mech_landing_recovery.gd, mech_aim.gd (camera target and real mech aim with jitter).
 scripts/animation/  mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd (placeholder animation).
 scenes/weapons/     long_rifle.tscn (markers: GripRight, GripLeft, Muzzle).
 scripts/camera/     mech_camera_rig.gd (follow and mouse look), aim_spring.gd (aim overshoot), camera_shake.gd, camera_ads.gd (aim down sight zoom).
@@ -199,14 +205,16 @@ scripts/core/       mouse_capture.gd.
 
 ## Decisions log
 
-- Phase 1: Space is a jump. Holding Space in the air fires jump jets (MechWarrior 5 style). Jets use 2x the boost energy.
+- Phase 1: Space was a jump plus hold-in-air jets. Replaced in revision 5 by charged jump jets.
 - Phase 1: test map ground is 400 x 400 m with invisible walls at the edge. Distance fog hides the edge.
 - Phase 1: the camera follows the mouse on a damped spring, so fast aim moves overshoot a little.
 - Graphics settings menu goes in Phase 5.
 - Phase 1: walk speed 9.1 m/s, boost 1.5x walk, hop and 2 steps when boost stops, 4 s energy recharge delay, body turn overshoot 10°.
 - Phase 1: weapon is a 9 m long rifle held with two hands in high ready. RMB raises it to the shoulder (aim down sight).
 - Phase 1 revision 4: walk accel for 2.25 s to top speed, strafe 90%, turn 84°/s, jets about 9 m, 2 s recharge delay at 17.5 per second, boost only after 2 steps, stop in 2 steps (walk) or 4 steps (boost), landing recovery by height and weight.
-- Open question: spec has RMB = left arm weapon. RMB is now aim down sight. Decide in Phase 3.
+- Phase 1 revision 5: no plain jump. Hold Space to charge the jump jets (4 s = 9 m). Move keys in the air fire the boosters. No energy = no air steering.
+- Landing delay: 0.5 s below 1 m, the height and weight formula above 1 m (minimum 0.5 s so a higher fall is never shorter).
+- Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.
 - Phase 1: mechs pass through cars, lampposts, and people. Phase 4 makes these destructible.

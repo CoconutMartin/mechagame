@@ -8,6 +8,7 @@ extends Node
 @export var footsteps: MechFootsteps
 @export var leg_twist: MechLegTwist
 @export var landing_recovery: MechLandingRecovery
+@export var jump_charge: MechJumpCharge
 ## Moves up and down with the walk. The hips must be inside this node.
 @export var upper_body: Node3D
 @export var hip_left: Node3D
@@ -28,6 +29,8 @@ extends Node
 @export_group("Landing")
 ## Crouch after a hard landing, in degrees of hip bend. Knees bend twice as much.
 @export var landing_crouch_deg: float = 25.0
+## Crouch at full jump charge, in degrees of hip bend.
+@export var charge_crouch_deg: float = 30.0
 ## Hip to foot length, in meters. Used to keep the feet on the ground in a crouch.
 @export var leg_length: float = 5.2
 
@@ -69,7 +72,10 @@ func _physics_process(delta: float) -> void:
 	var knee := deg_to_rad(knee_bend_deg) * _walk_amount
 	var air := deg_to_rad(air_knee_deg) * _air_knee
 	# Deep crouch just after landing, then the mech stands up.
-	var crouch := deg_to_rad(landing_crouch_deg) * sin(landing_recovery.get_fraction() * PI * 0.5)
+	var landing_crouch := deg_to_rad(landing_crouch_deg) * sin(landing_recovery.get_fraction() * PI * 0.5)
+	# The mech crouches deeper as the jump jets charge.
+	var charge_crouch := deg_to_rad(charge_crouch_deg) * jump_charge.charge
+	var crouch := maxf(landing_crouch, charge_crouch)
 
 	hip_left.rotation.x = hip + trail + air * 0.5 + crouch
 	hip_right.rotation.x = -hip + trail + air * 0.5 + crouch

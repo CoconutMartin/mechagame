@@ -76,7 +76,7 @@ grow_vertical = 0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 15
-text = "WASD move   Mouse aim   RMB aim down sight   Space jump (hold for jump jets)
+text = "WASD move   Mouse aim   RMB aim down sight   Space hold to charge jump jets, release to jump (1 s = 25%, 4 s = 100%)
 Shift boost (after 2 walking steps)
 Esc free mouse   Click to capture mouse
 Yellow dot = camera crosshair   Blue ring = mech aim

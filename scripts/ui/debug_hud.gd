@@ -17,8 +17,9 @@ func _process(_delta: float) -> void:
 	var state := "GROUND" if mech.is_on_floor() else "AIR"
 	if mech.is_boosting:
 		state += " + BOOST"
-	if mech.is_jetting:
-		state += " + JETS"
+	var charge := mech.jump_charge
+	if charge.is_charging:
+		state += "\nJump charge: %d%% (%.1f m)" % [roundi(charge.charge * 100.0), charge.charge * charge.full_height]
 	if mech.is_exiting_boost:
 		state += " + BOOST EXIT"
 	var recovery := mech.landing_recovery
