@@ -1,0 +1,177 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/mech/mech.gd" id="mech"]
+[ext_resource type="Script" path="res://scripts/mech/mech_input.gd" id="input"]
+[ext_resource type="Script" path="res://scripts/mech/mech_energy.gd" id="energy"]
+[ext_resource type="Script" path="res://scripts/mech/mech_footsteps.gd" id="footsteps"]
+[ext_resource type="Script" path="res://scripts/camera/mech_camera_rig.gd" id="rig"]
+[ext_resource type="Script" path="res://scripts/camera/camera_shake.gd" id="shake"]
+[ext_resource type="Material" path="res://materials/mech_armor.tres" id="armor"]
+[ext_resource type="Material" path="res://materials/mech_frame.tres" id="frame"]
+[ext_resource type="Material" path="res://materials/mech_visor.tres" id="visor"]
+
+[sub_resource type="CapsuleShape3D" id="body_shape"]
+radius = 2.6
+height = 10.0
+
+[sub_resource type="SphereShape3D" id="arm_shape"]
+radius = 0.6
+
+[sub_resource type="BoxMesh" id="mesh_LegL"]
+size = Vector3(1.4, 5.2, 1.8)
+
+[sub_resource type="BoxMesh" id="mesh_LegR"]
+size = Vector3(1.4, 5.2, 1.8)
+
+[sub_resource type="BoxMesh" id="mesh_FootL"]
+size = Vector3(1.8, 0.6, 3.0)
+
+[sub_resource type="BoxMesh" id="mesh_FootR"]
+size = Vector3(1.8, 0.6, 3.0)
+
+[sub_resource type="BoxMesh" id="mesh_Pelvis"]
+size = Vector3(3.2, 1.0, 2.2)
+
+[sub_resource type="BoxMesh" id="mesh_Core"]
+size = Vector3(4.2, 3.2, 3.2)
+
+[sub_resource type="BoxMesh" id="mesh_Booster"]
+size = Vector3(2.6, 2.2, 1.2)
+
+[sub_resource type="BoxMesh" id="mesh_Head"]
+size = Vector3(1.6, 1.2, 1.8)
+
+[sub_resource type="BoxMesh" id="mesh_Visor"]
+size = Vector3(1.2, 0.3, 0.1)
+
+[sub_resource type="BoxMesh" id="mesh_ShoulderL"]
+size = Vector3(1.6, 1.2, 1.8)
+
+[sub_resource type="BoxMesh" id="mesh_ShoulderR"]
+size = Vector3(1.6, 1.2, 1.8)
+
+[sub_resource type="BoxMesh" id="mesh_ArmL"]
+size = Vector3(1.1, 3.6, 1.2)
+
+[sub_resource type="BoxMesh" id="mesh_ArmR"]
+size = Vector3(1.1, 3.6, 1.2)
+
+[sub_resource type="BoxMesh" id="mesh_RifleR"]
+size = Vector3(0.5, 0.6, 3.5)
+
+[node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy")]
+collision_layer = 2
+collision_mask = 1
+floor_snap_length = 1.0
+script = ExtResource("mech")
+input = NodePath("MechInput")
+energy = NodePath("MechEnergy")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
+shape = SubResource("body_shape")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="LegL" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3, 2.6, 0)
+mesh = SubResource("mesh_LegL")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="LegR" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, 2.6, 0)
+mesh = SubResource("mesh_LegR")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="FootL" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3, 0.3, -0.4)
+mesh = SubResource("mesh_FootL")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="FootR" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, 0.3, -0.4)
+mesh = SubResource("mesh_FootR")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="Pelvis" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.4, 0)
+mesh = SubResource("mesh_Pelvis")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Core" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.4, 0)
+mesh = SubResource("mesh_Core")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="Booster" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.8, 2.0)
+mesh = SubResource("mesh_Booster")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Head" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.5, -0.2)
+mesh = SubResource("mesh_Head")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="Visor" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.6, -1.15)
+mesh = SubResource("mesh_Visor")
+surface_material_override/0 = ExtResource("visor")
+
+[node name="ShoulderL" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9, 8.4, 0)
+mesh = SubResource("mesh_ShoulderL")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ShoulderR" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 8.4, 0)
+mesh = SubResource("mesh_ShoulderR")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ArmL" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9, 6.2, 0)
+mesh = SubResource("mesh_ArmL")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="ArmR" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 6.2, 0)
+mesh = SubResource("mesh_ArmR")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="RifleR" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 5.0, -1.4)
+mesh = SubResource("mesh_RifleR")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="MechInput" type="Node" parent="." node_paths=PackedStringArray("camera_rig")]
+script = ExtResource("input")
+camera_rig = NodePath("../CameraRig")
+
+[node name="MechEnergy" type="Node" parent="."]
+script = ExtResource("energy")
+
+[node name="MechFootsteps" type="Node" parent="." node_paths=PackedStringArray("mech")]
+script = ExtResource("footsteps")
+mech = NodePath("..")
+
+[node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("target")]
+top_level = true
+script = ExtResource("rig")
+target = NodePath("..")
+
+[node name="Pitch" type="Node3D" parent="CameraRig"]
+
+[node name="SpringArm" type="SpringArm3D" parent="CameraRig/Pitch"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0, 0)
+collision_mask = 1
+shape = SubResource("arm_shape")
+spring_length = 17.0
+margin = 0.4
+
+[node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm" node_paths=PackedStringArray("mech", "footsteps")]
+current = true
+fov = 70.0
+far = 2000.0
+script = ExtResource("shake")
+mech = NodePath("../../../..")
+footsteps = NodePath("../../../../MechFootsteps")
