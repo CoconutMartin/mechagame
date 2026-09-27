@@ -70,9 +70,9 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Wall bump | into a wall faster than 3 m/s | restitution (bounce-back speed / impact speed) grows with impact speed: 0.4 at 3 m/s to 0.9 at 13.65 m/s. Then an extra slowdown of up to 30% (less at low speed). Walk 9.1 m/s bounces back at about 5 m/s; boost 13.65 m/s at about 8.6 m/s. Camera shake |
 | Walk sway | body roll 0.9° (walk) to 1.2° (run), side shift 0.09 m toward the planted leg, for a 10 m mech | scales with `Mech.height_m` (taller mechs sway more) |
 | Footstep shake | camera kick 0.117 m, trauma 0.2, for a 10 m mech | scales with `Mech.height_m` |
-| Shake overall | `CameraShake.intensity` 0.75, noise speed 21, kick recovery 9.8, final offset smoothing 42 (40% sharper than revision 19) | |
+| Shake overall | `CameraShake.intensity` 0.75, noise speed 21, kick recovery 9.8, final offset smoothing 65 | |
 | Turning steps | standing still with the legs turning: one step every 20° of leg turn, knee lift 60% of the walk lift, light footstep shake | the feet do not slide |
-| Torso aim turn | 29.4°/s max, 126°/s² acceleration, no overshoot, no settle swings | in the last 25% of each turn the body turns at 50% speed. Turns above 5° end with a settle: 2° past the aim, 2° to the other side, then a snap onto the aim (about 0.55 s) |
+| Torso aim turn | 44.1°/s max, 189°/s² acceleration, no overshoot, no settle swings | in the last 25% of each turn the body turns at 50% speed. Turns above 5° end with a settle: 2° past the aim, 2° to the other side, then a snap onto the aim (about 0.55 s) |
 | Footstep stride | 6 m at walk speed and above, down to 30% (1.8 m) near standstill | one camera shake per stride, none while boosting |
 
 ### Aim

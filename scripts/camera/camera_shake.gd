@@ -44,7 +44,7 @@ extends Camera3D
 ## How fast the random shake moves. Lower = smoother, slower wobble.
 @export var noise_speed: float = 21.0
 ## Smoothing of the final camera offset. Lower = smoother (and a little more lag).
-@export var smoothing: float = 42.0
+@export var smoothing: float = 65.0
 
 var _trauma: float = 0.0
 var _kick: float = 0.0
