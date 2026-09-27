@@ -8,6 +8,8 @@ extends CharacterBody3D
 
 signal jumped
 signal boost_exit_step
+## Sent when the mech bumps into a wall. strength = speed into the wall, in m/s.
+signal bumped(strength: float)
 signal landed(fall_speed: float)
 
 @export var input: MechInput
@@ -39,14 +41,17 @@ signal landed(fall_speed: float)
 @export var jump_charge_brake: float = 9.0
 
 @export_group("Turning")
-## The legs (the mech root) turn toward the camera aim at one steady speed.
-## The torso can twist only a little ahead of the legs (these limits). A / D strafe.
+## The torso and the legs turn separately. The torso turns toward the camera aim (torso turn speed),
+## inside these twist limits. The legs turn toward the aim more slowly. The camera cannot look
+## past the twist limits. A / D strafe.
 ## Largest torso twist to the left of the legs, in degrees.
 @export var torso_twist_left_deg: float = 5.0
 ## Largest torso twist to the right of the legs, in degrees.
 @export var torso_twist_right_deg: float = 5.0
-## Leg turn speed toward the aim, in degrees per second. The same at all times.
+## Leg turn speed toward the aim while moving, in degrees per second. Steady (no speed-up).
 @export var leg_turn_speed_deg: float = 60.0
+## Leg turn speed toward the aim while standing still, in degrees per second.
+@export var leg_turn_speed_standing_deg: float = 30.0
 ## Top torso turn speed toward the camera direction (degrees per second).
 @export var turn_speed_deg: float = 58.8
 ## How fast the body gains turn speed (degrees per second per second).
@@ -78,9 +83,19 @@ signal landed(fall_speed: float)
 @export var run_speed_multiplier: float = 1.25
 ## Speed gain while boosting (m/s per second).
 @export var boost_acceleration: float = 20.0
-## When boost stops on the ground, the mech slows down over these steps (stride length of each, in meters):
-## 1 big step, 2 medium steps, then 2 small steps. Ends at walk speed with W held, or stopped with no key.
-@export var boost_exit_strides: PackedFloat32Array = PackedFloat32Array([9.0, 4.8, 4.8, 3.4, 3.4])
+## When boost stops on the ground, the mech leaps forward and lands on one leg (upward speed, m/s).
+@export var boost_exit_leap_velocity: float = 5.0
+## After the leap, the mech slows down over these steps (stride length of each, in meters):
+## 2 medium steps, then 2 small steps. Ends at walk speed with a move key held, or stopped with no key.
+@export var boost_exit_strides: PackedFloat32Array = PackedFloat32Array([4.8, 4.8, 3.4, 3.4])
+
+@export_group("Wall Bump")
+## Bumps slower than this (m/s into the wall) only slide along the wall.
+@export var bump_min_speed: float = 3.0
+## Part of the speed into the wall that bounces back (0 to 1).
+@export_range(0.0, 1.0) var bump_restitution: float = 0.5
+## Speed after a bump = speed x this value. 0.5 = 50% slower.
+@export_range(0.0, 1.0) var bump_speed_keep: float = 0.5
 ## Energy used each second while boosting.
 @export var boost_energy_per_second: float = 30.0
 ## Air boost acceleration and top speed = ground boost values x this value. 0.25 = 75% less.
@@ -113,6 +128,7 @@ var _exit_deceleration: float = 0.0
 var _stop_deceleration: float = 0.0
 var _landing_stop: bool = false
 var _airborne: bool = false
+var _in_exit_leap: bool = false
 ## World yaw where the torso (and the mech aim) points.
 var _aim_yaw: float = 0.0
 var _turn_velocity: float = 0.0
@@ -135,7 +151,9 @@ func _physics_process(delta: float) -> void:
 	_turn_torso(delta)
 	_clamp_torso_aim()
 	var fall_speed := -velocity.y
+	var velocity_before := velocity
 	move_and_slide()
+	_check_bump(velocity_before)
 	_check_landing(fall_speed)
 
 
@@ -198,11 +216,12 @@ func _update_boost(delta: float) -> void:
 	if is_boosting:
 		is_exiting_boost = false
 	elif was_ground_boosting and is_on_floor() and get_horizontal_speed() > walk_speed * 1.05:
-		# One big step, then medium and small steps to slow down.
+		# One leap forward that lands on one leg, then medium and small steps to slow down.
 		is_exiting_boost = true
-		footsteps.start_stride_plan(boost_exit_strides)
+		_in_exit_leap = true
 		_exit_deceleration = 0.0
 		_stop_deceleration = 0.0
+		velocity.y = boost_exit_leap_velocity
 		boost_exit_step.emit()
 
 
@@ -221,7 +240,8 @@ func _update_horizontal(delta: float) -> void:
 			# First air frame (walking off an edge). Jumps start the flight at launch.
 			_start_flight()
 		# Free steering or air boost. No key = momentum only.
-		var steer_wish := wish
+		# No steering during the boost exit leap.
+		var steer_wish := Vector3.ZERO if _in_exit_leap else wish
 		var boost_speed := get_boost_speed() * air_boost_multiplier if is_boosting else 0.0
 		var steered := air_steer.steer(steer_wish, delta, boost_speed, boost_acceleration * air_boost_multiplier)
 		velocity.x = steered.x
@@ -392,13 +412,14 @@ func _update_settle(delta: float) -> void:
 	_aim_yaw = wrapf(input.aim_yaw + offset, -PI, PI)
 
 
-## Turns the legs (the mech root) toward the camera aim at a steady speed.
+## Turns the legs (the mech root) toward the camera aim at a steady speed, slower when standing still.
 func _turn_legs(delta: float) -> void:
 	if landing_recovery.is_recovering() or kneel.is_kneeling:
 		return
-	# One steady speed at all times: standing, walking, running, or boosting.
+	var moving := get_horizontal_speed() > footsteps.min_speed
+	var speed := leg_turn_speed_deg if moving else leg_turn_speed_standing_deg
 	var error := wrapf(input.aim_yaw - rotation.y, -PI, PI)
-	var step := deg_to_rad(leg_turn_speed_deg) * delta
+	var step := deg_to_rad(speed) * delta
 	rotation.y = wrapf(rotation.y + clampf(error, -step, step), -PI, PI)
 
 
@@ -409,12 +430,41 @@ func _clamp_torso_aim() -> void:
 	_aim_yaw = wrapf(rotation.y + twist, -PI, PI)
 
 
+## Bounces the mech off walls (buildings, platforms, map edge), then slows it down.
+func _check_bump(velocity_before: Vector3) -> void:
+	for i in get_slide_collision_count():
+		var normal := get_slide_collision(i).get_normal()
+		if absf(normal.y) > 0.5:
+			continue  # Floor or ceiling.
+		normal.y = 0.0
+		normal = normal.normalized()
+		var horizontal := Vector3(velocity_before.x, 0.0, velocity_before.z)
+		var into_wall := -horizontal.dot(normal)
+		if into_wall < bump_min_speed:
+			continue
+		var bounced := (horizontal + normal * into_wall * (1.0 + bump_restitution)) * bump_speed_keep
+		velocity.x = bounced.x
+		velocity.z = bounced.z
+		_stop_deceleration = 0.0
+		_exit_deceleration = 0.0
+		if not is_on_floor():
+			air_steer.rebase()
+		bumped.emit(into_wall)
+		return
+
+
 func _check_landing(fall_speed: float) -> void:
 	var on_floor := is_on_floor()
 	if on_floor and not _was_on_floor:
-		# Landing with sideways speed from a jump: walk it out in a set number of steps.
-		_landing_stop = get_horizontal_speed() > footsteps.min_speed
-		is_exiting_boost = false
+		if _in_exit_leap:
+			# Landed the boost exit leap on one leg: 2 medium steps, then 2 small steps.
+			_in_exit_leap = false
+			footsteps.start_stride_plan(boost_exit_strides)
+			_exit_deceleration = 0.0
+		else:
+			# Landing with sideways speed from a jump: walk it out in a set number of steps.
+			_landing_stop = get_horizontal_speed() > footsteps.min_speed
+			is_exiting_boost = false
 		_stop_deceleration = 0.0
 		landed.emit(fall_speed)
 	if on_floor:

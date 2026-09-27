@@ -16,6 +16,10 @@ extends Camera3D
 @export var landing_trauma_per_speed: float = 0.045
 @export var landing_kick_per_speed: float = 0.05
 
+@export_group("Wall Bump")
+## Shake added per m/s of speed into a wall.
+@export var bump_trauma_per_speed: float = 0.05
+
 @export_group("Boost")
 ## Steady shake while boosting (0 to 1).
 @export var boost_trauma: float = 0.4
@@ -44,6 +48,7 @@ func _ready() -> void:
 	_noise.frequency = 0.5
 	footsteps.footstep.connect(_on_footstep)
 	mech.landed.connect(_on_landed)
+	mech.bumped.connect(_on_bumped)
 
 
 func add_shake(trauma: float, kick: float) -> void:
@@ -68,6 +73,10 @@ func _process(delta: float) -> void:
 
 func _on_footstep(strength: float) -> void:
 	add_shake(footstep_trauma * strength, footstep_kick * strength)
+
+
+func _on_bumped(strength: float) -> void:
+	add_shake(strength * bump_trauma_per_speed, 0.0)
 
 
 func _on_landed(fall_speed: float) -> void:

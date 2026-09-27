@@ -28,6 +28,12 @@ func begin_flight() -> void:
 	_launch_y = mech.global_position.y
 
 
+## Starts again from the current velocity, with no drift (for example after a wall bump).
+func rebase() -> void:
+	_base_velocity = Vector3(mech.velocity.x, 0.0, mech.velocity.z)
+	_drift = Vector3.ZERO
+
+
 func has_budget() -> bool:
 	return _remaining > 0.05
 

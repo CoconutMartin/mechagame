@@ -26,8 +26,12 @@ extends Node
 @export var knee_lift_deg: float = 20.4
 ## Body drop at each foot strike, in meters.
 @export var bob_height: float = 0.3
-## Body roll toward the planted leg, in degrees.
-@export var sway_deg: float = 1.5
+## Body roll toward the planted leg while walking, in degrees.
+@export var sway_deg: float = 3.0
+## Body roll while running, in degrees.
+@export var run_sway_deg: float = 4.0
+## Body side shift toward the planted leg, in meters.
+@export var sway_shift: float = 0.3
 
 @export_group("Run")
 ## Hip swing while running (Shift held before boost), in degrees.
@@ -38,6 +42,13 @@ extends Node
 @export var run_knee_lift_deg: float = 20.0
 ## Body drop at each foot strike while running, in meters.
 @export var run_bob_height: float = 0.5
+
+@export_group("Boost Exit Leap")
+## Leap pose: the left leg reaches forward to land, the right leg trails.
+@export var leap_front_hip_deg: float = 35.0
+@export var leap_front_knee_deg: float = 10.0
+@export var leap_back_hip_deg: float = -30.0
+@export var leap_back_knee_deg: float = 70.0
 
 @export_group("Landing")
 ## Crouch after a short landing (near 0 m fall), in degrees of hip bend. Knees bend twice as much.
@@ -77,12 +88,15 @@ var _trail: float = 0.0
 var _boost_crouch: float = 0.0
 var _run: float = 0.0
 var _stride_scale: float = 1.0
+var _leap: float = 0.0
+var _upper_rest_x: float = 0.0
 var _air_knee: float = 0.0
 var _upper_rest_y: float = 0.0
 
 
 func _ready() -> void:
 	_upper_rest_y = upper_body.position.y
+	_upper_rest_x = upper_body.position.x
 
 
 # Runs in physics frames so it stays smooth with physics interpolation.
@@ -96,6 +110,8 @@ func _physics_process(delta: float) -> void:
 	_boost_crouch = lerpf(_boost_crouch, 1.0 if mech.is_boosting and on_floor else 0.0, blend)
 	_air_knee = lerpf(_air_knee, 0.0 if on_floor else 1.0, blend)
 	_run = lerpf(_run, 1.0 if mech.is_running else 0.0, blend)
+	var leaping := mech.is_exiting_boost and not on_floor
+	_leap = lerpf(_leap, 1.0 if leaping else 0.0, 1.0 - exp(-blend_speed * 2.0 * delta))
 	# Longer planned strides (boost exit big step) swing the legs wider.
 	var stride_scale := clampf(footsteps.get_stride(mech.get_horizontal_speed()) / footsteps.stride_length, 0.5, 1.6)
 	_stride_scale = lerpf(_stride_scale, stride_scale if footsteps.has_stride_plan() else 1.0, blend)
@@ -132,6 +148,13 @@ func _physics_process(delta: float) -> void:
 	var crouch_drop := leg_length * (1.0 - cos(crouch))
 	upper_body.position.y = _upper_rest_y - bob - crouch_drop
 
+	# Boost exit leap: left leg forward to land on, right leg trailing.
+	if _leap > 0.001:
+		hip_left.rotation.x = lerpf(hip_left.rotation.x, deg_to_rad(leap_front_hip_deg), _leap)
+		knee_left.rotation.x = lerpf(knee_left.rotation.x, -deg_to_rad(leap_front_knee_deg), _leap)
+		hip_right.rotation.x = lerpf(hip_right.rotation.x, deg_to_rad(leap_back_hip_deg), _leap)
+		knee_right.rotation.x = lerpf(knee_right.rotation.x, -deg_to_rad(leap_back_knee_deg), _leap)
+
 	# Kneel: blend both legs and the body height to the kneel pose.
 	var k := smoothstep(0.0, 1.0, kneel.amount)
 	if k > 0.0:
@@ -141,4 +164,7 @@ func _physics_process(delta: float) -> void:
 		knee_right.rotation.x = lerpf(knee_right.rotation.x, -deg_to_rad(kneel_back_knee_deg), k)
 		upper_body.position.y = lerpf(upper_body.position.y, _upper_rest_y - kneel_drop, k)
 		upper_body.rotation.z = lerpf(upper_body.rotation.z, 0.0, k)
-	upper_body.rotation.z = deg_to_rad(sway_deg) * _walk_amount * cos(phase)
+		upper_body.position.x = lerpf(upper_body.position.x, _upper_rest_x, k)
+	var sway := deg_to_rad(lerpf(sway_deg, run_sway_deg, _run)) * _walk_amount * cos(phase)
+	upper_body.rotation.z = sway
+	upper_body.position.x = _upper_rest_x - sway_shift * _walk_amount * cos(phase)

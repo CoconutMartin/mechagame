@@ -52,7 +52,8 @@ func _physics_process(delta: float) -> void:
 func _on_landed(_fall_speed: float) -> void:
 	var height := _peak_y - mech.global_position.y
 	_peak_y = mech.global_position.y
-	if height < ignore_height:
+	# The boost exit leap is part of the walk. A fall off an edge during the leap still counts.
+	if height < ignore_height or (mech.is_exiting_boost and height < min_height):
 		return
 	fall_height = height
 	if height < min_height:
