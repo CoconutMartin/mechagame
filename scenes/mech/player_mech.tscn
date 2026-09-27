@@ -162,10 +162,10 @@ mesh = SubResource("mesh_Hand")
 surface_material_override/0 = ExtResource("armor")
 
 [node name="Rifle" parent="Visual/Upper/Torso" instance=ExtResource("rifle")]
-transform = Transform3D(0.52992, -0.39813, 0.74878, 0, 0.88295, 0.46947, -0.84805, -0.24878, 0.46789, 2.2, 2.9, -1.9)
+transform = Transform3D(0.57358, -0.25313, 0.77906, 0, 0.95106, 0.30902, -0.81915, -0.17724, 0.5455, 2.3, 1.8, -1.8)
 
 [node name="RiflePoseRest" type="Marker3D" parent="Visual/Upper/Torso"]
-transform = Transform3D(0.52992, -0.39813, 0.74878, 0, 0.88295, 0.46947, -0.84805, -0.24878, 0.46789, 2.2, 2.9, -1.9)
+transform = Transform3D(0.57358, -0.25313, 0.77906, 0, 0.95106, 0.30902, -0.81915, -0.17724, 0.5455, 2.3, 1.8, -1.8)
 
 [node name="AimAnchor" type="Marker3D" parent="Visual/Upper/Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1, 2.8, -1.1)

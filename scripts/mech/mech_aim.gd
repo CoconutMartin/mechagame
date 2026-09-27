@@ -45,9 +45,9 @@ func _physics_process(delta: float) -> void:
 	var origin := aim_origin.global_position
 	camera_target = _cast(camera.global_position, -camera.global_basis.z)
 
-	# The mech aims at the camera target, but only as far as the body has turned.
+	# The mech aims at the camera target, but only as far as the torso has turned.
 	var direction := (camera_target - origin).normalized()
-	var body_error := wrapf(mech.rotation.y - mech.input.aim_yaw, -PI, PI)
+	var body_error := wrapf(mech.get_aim_yaw() - mech.input.aim_yaw, -PI, PI)
 	direction = direction.rotated(Vector3.UP, body_error)
 
 	var jitter := deg_to_rad(_get_jitter_deg())

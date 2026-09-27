@@ -21,9 +21,9 @@ extends Node
 ## Largest hip swing forward and back, in degrees, at full walk speed.
 @export var hip_swing_deg: float = 28.0
 ## Largest knee bend of the leg that swings forward, in degrees.
-@export var knee_bend_deg: float = 45.0
+@export var knee_bend_deg: float = 60.0
 ## Extra hip lift of the leg that swings forward, in degrees. Raises the knee.
-@export var knee_lift_deg: float = 12.0
+@export var knee_lift_deg: float = 20.4
 ## Body drop at each foot strike, in meters.
 @export var bob_height: float = 0.3
 ## Body roll toward the planted leg, in degrees.

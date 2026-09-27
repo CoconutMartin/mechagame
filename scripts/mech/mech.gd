@@ -33,15 +33,27 @@ signal landed(fall_speed: float)
 @export var deceleration: float = 9.0
 ## Steps the mech takes to stop from full walk speed.
 @export var walk_stop_steps: int = 2
-## Steps the mech takes to stop from full boost speed.
-@export var boost_stop_steps: int = 4
+## Steps the mech takes to stop from full boost speed (after the boost exit hop).
+@export var boost_stop_steps: int = 3
 ## Steps the mech takes to stop after landing from a jump with sideways speed.
 @export var landing_stop_steps: int = 3
 ## Slowdown while the mech charges its jump jets (m/s per second). The mech stands still to charge.
 @export var jump_charge_brake: float = 9.0
 
 @export_group("Turning")
-## Top body turn speed toward the camera direction (degrees per second).
+## The torso turns toward the camera aim. The legs (the mech root) only turn to follow movement,
+## or when the aim goes past these torso twist limits.
+## Largest torso twist to the left of the legs, in degrees.
+@export var torso_twist_left_deg: float = 20.0
+## Largest torso twist to the right of the legs, in degrees.
+@export var torso_twist_right_deg: float = 160.0
+## Top leg turn speed, in degrees per second.
+@export var leg_turn_speed_deg: float = 60.0
+## Leg turn acceleration, in degrees per second per second.
+@export var leg_turn_acceleration_deg: float = 180.0
+## A move direction more than this angle away from the aim makes the legs walk backward.
+@export var backpedal_angle_deg: float = 110.0
+## Top torso turn speed toward the camera direction (degrees per second).
 @export var turn_speed_deg: float = 58.8
 ## How fast the body gains turn speed (degrees per second per second).
 @export var turn_acceleration_deg: float = 252.0
@@ -67,15 +79,15 @@ signal landed(fall_speed: float)
 ## Walking steps (with Shift held) before the mech starts to run.
 @export var boost_start_steps: int = 2
 ## Running steps after the walk steps, before boost starts.
-@export var run_steps: int = 2
+@export var run_steps: int = 5
 ## Run top speed = walk speed x this value.
 @export var run_speed_multiplier: float = 1.25
 ## Speed gain while boosting (m/s per second).
 @export var boost_acceleration: float = 20.0
 ## Upward speed of the small hop when boost stops on the ground (m/s).
-@export var boost_exit_hop_velocity: float = 6.0
+@export var boost_exit_hop_velocity: float = 7.5
 ## After the hop, the mech slows to walk speed over this many steps.
-@export var boost_exit_steps: int = 2
+@export var boost_exit_steps: int = 3
 ## Energy used each second while boosting.
 @export var boost_energy_per_second: float = 30.0
 ## Air boost acceleration and top speed = ground boost values x this value. 0.25 = 75% less.
@@ -109,6 +121,9 @@ var _exit_deceleration: float = 0.0
 var _stop_deceleration: float = 0.0
 var _landing_stop: bool = false
 var _airborne: bool = false
+## World yaw where the torso (and the mech aim) points.
+var _aim_yaw: float = 0.0
+var _leg_turn_velocity: float = 0.0
 var _turn_velocity: float = 0.0
 var _turn_start_error: float = 0.0
 ## Time into the settle swings. Below 0 = no settle.
@@ -117,6 +132,7 @@ var _settle_sign: float = 0.0
 
 
 func _ready() -> void:
+	_aim_yaw = rotation.y
 	footsteps.footstep.connect(_on_footstep)
 
 
@@ -124,7 +140,9 @@ func _physics_process(delta: float) -> void:
 	_update_boost(delta)
 	_update_horizontal(delta)
 	_update_vertical(delta)
-	_turn_body(delta)
+	_turn_legs(delta)
+	_turn_torso(delta)
+	_clamp_torso_aim()
 	var fall_speed := -velocity.y
 	move_and_slide()
 	_check_landing(fall_speed)
@@ -132,6 +150,16 @@ func _physics_process(delta: float) -> void:
 
 func get_horizontal_speed() -> float:
 	return Vector2(velocity.x, velocity.z).length()
+
+
+## World yaw where the torso and the mech aim point.
+func get_aim_yaw() -> float:
+	return _aim_yaw
+
+
+## Torso twist from the legs, in radians. Positive = left.
+func get_torso_twist() -> float:
+	return wrapf(_aim_yaw - rotation.y, -PI, PI)
 
 
 func get_boost_speed() -> float:
@@ -313,11 +341,11 @@ func _start_flight() -> void:
 	air_steer.begin_flight()
 
 
-## Turns the body toward the aim. The last part of each turn is slower.
-## At the end of a turn the body settles: it swings past the aim, swings to the other side,
-## then snaps onto the aim and locks in.
-func _turn_body(delta: float) -> void:
-	var error := wrapf(input.aim_yaw - rotation.y, -PI, PI)
+## Turns the torso aim toward the camera aim. The last part of each turn is slower.
+## At the end of a turn the aim settles: it swings past the aim, swings to the other side,
+## then snaps onto the aim and locks in. The torso aim stays inside the torso twist limits.
+func _turn_torso(delta: float) -> void:
+	var error := wrapf(input.aim_yaw - _aim_yaw, -PI, PI)
 	var gap := absf(error)
 	if _settle_time >= 0.0:
 		if gap <= deg_to_rad(turn_settle_swing_deg * 2.0 + 1.0):
@@ -339,14 +367,14 @@ func _turn_body(delta: float) -> void:
 
 	var step := _turn_velocity * delta
 	if signf(step) == signf(error) and absf(step) >= gap:
-		rotation.y = wrapf(rotation.y + error, -PI, PI)
+		_aim_yaw = wrapf(_aim_yaw + error, -PI, PI)
 		_turn_velocity = 0.0
 		if _turn_start_error >= deg_to_rad(turn_settle_min_turn_deg):
 			_settle_time = 0.0
 			_settle_sign = signf(error)
 		_turn_start_error = 0.0
 	else:
-		rotation.y = wrapf(rotation.y + step, -PI, PI)
+		_aim_yaw = wrapf(_aim_yaw + step, -PI, PI)
 
 
 ## Plays the settle swings relative to the live aim: past the aim, to the other side, then snap to the aim.
@@ -365,7 +393,52 @@ func _update_settle(delta: float) -> void:
 		offset = lerpf(-swing, 0.0, (_settle_time - second) / turn_settle_snap_time)
 	else:
 		_settle_time = -1.0
-	rotation.y = wrapf(input.aim_yaw + offset, -PI, PI)
+	_aim_yaw = wrapf(input.aim_yaw + offset, -PI, PI)
+
+
+## Turns the legs (the mech root). The legs face the move direction, or stay put when standing.
+## When the camera aim goes past the torso twist limits, the legs turn to bring it back inside.
+func _turn_legs(delta: float) -> void:
+	var target := rotation.y
+	var moving := is_on_floor() and get_horizontal_speed() > footsteps.min_speed \
+			and not landing_recovery.is_recovering()
+	if moving:
+		var heading := atan2(-velocity.x, -velocity.z)
+		# Moving mostly away from the aim: the legs face forward and walk backward.
+		if absf(wrapf(heading - input.aim_yaw, -PI, PI)) > deg_to_rad(backpedal_angle_deg):
+			heading = wrapf(heading + PI, -PI, PI)
+		target = heading
+	target = _limit_leg_heading(target, input.aim_yaw)
+
+	var error := wrapf(target - rotation.y, -PI, PI)
+	var accel := deg_to_rad(leg_turn_acceleration_deg)
+	var desired := signf(error) * minf(deg_to_rad(leg_turn_speed_deg), sqrt(2.0 * accel * absf(error)))
+	_leg_turn_velocity = move_toward(_leg_turn_velocity, desired, accel * delta)
+	var step := _leg_turn_velocity * delta
+	if signf(step) == signf(error) and absf(step) >= absf(error):
+		rotation.y = wrapf(target, -PI, PI)
+		_leg_turn_velocity = 0.0
+	else:
+		rotation.y = wrapf(rotation.y + step, -PI, PI)
+
+
+## Leg heading moved the least amount that keeps the aim inside the torso twist limits.
+func _limit_leg_heading(heading: float, aim: float) -> float:
+	var twist := wrapf(aim - heading, -PI, PI)
+	var left := deg_to_rad(torso_twist_left_deg)
+	var right := deg_to_rad(torso_twist_right_deg)
+	if twist > left:
+		return wrapf(aim - left, -PI, PI)
+	if twist < -right:
+		return wrapf(aim + right, -PI, PI)
+	return heading
+
+
+## Keeps the torso aim inside the twist limits of the current leg heading.
+func _clamp_torso_aim() -> void:
+	var twist := clampf(wrapf(_aim_yaw - rotation.y, -PI, PI),
+			-deg_to_rad(torso_twist_right_deg), deg_to_rad(torso_twist_left_deg))
+	_aim_yaw = wrapf(rotation.y + twist, -PI, PI)
 
 
 func _check_landing(fall_speed: float) -> void:

@@ -17,6 +17,7 @@ func _process(_delta: float) -> void:
 	var state := "GROUND" if mech.is_on_floor() else "AIR"
 	if mech.is_boosting:
 		state += " + BOOST"
+	state += "\nTorso twist: %d deg (limits 20 left, 160 right)" % roundi(rad_to_deg(mech.get_torso_twist()))
 	var charge := mech.jump_charge
 	if charge.is_charging:
 		state += "\nJump charge: %d%% (%.1f m)" % [roundi(charge.charge * 100.0), charge.charge * charge.full_height]

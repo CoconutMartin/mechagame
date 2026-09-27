@@ -1,8 +1,9 @@
 class_name TorsoPose
 extends Node
 ## Leans and turns the torso (upper body above the waist). The legs do not move with it.
+## Aim: the torso twists toward the mech aim (Mech.get_torso_twist, inside the twist limits).
 ## Boost on the ground: lean forward. Aim down sight: turn right and tilt, so the stock sits
-## on the right shoulder and the left arm reaches the handguard. Kneel: small forward lean.
+## on the right shoulder and the left arm reaches the handguard. Kneel and landing: forward lean.
 
 @export var mech: Mech
 @export var torso: Node3D
@@ -16,6 +17,8 @@ extends Node
 @export var aim_tilt_deg: float = 6.0
 ## Forward lean while running, in degrees.
 @export var run_lean_deg: float = 12.0
+## Forward lean after a landing, in degrees. Fades out with the landing delay.
+@export var landing_lean_deg: float = 30.0
 ## Forward lean while kneeling, in degrees.
 @export var kneel_lean_deg: float = 8.0
 ## How fast the boost lean changes.
@@ -26,7 +29,7 @@ var _run: float = 0.0
 
 
 func _ready() -> void:
-	# Before MechAim and WeaponPose, which use the torso position.
+	# After the Mech turns (priority 0), before MechAim and WeaponPose, which use the torso position.
 	process_physics_priority = 3
 
 
@@ -37,8 +40,12 @@ func _physics_process(delta: float) -> void:
 	_run = lerpf(_run, 1.0 if mech.is_running else 0.0, blend)
 	var aim := smoothstep(0.0, 1.0, weapon_pose.aim_amount)
 	var kneel_amount := smoothstep(0.0, 1.0, kneel.amount)
+	var landing := sin(mech.landing_recovery.get_fraction() * PI * 0.5)
 	# Negative X leans forward. Negative Y turns right. Negative Z tilts the head to the right.
+	var lean := deg_to_rad(boost_lean_deg) * _boost + deg_to_rad(run_lean_deg) * _run
+	lean = maxf(lean, deg_to_rad(kneel_lean_deg) * kneel_amount)
+	lean = maxf(lean, deg_to_rad(landing_lean_deg) * landing)
 	torso.rotation = Vector3(
-		-deg_to_rad(boost_lean_deg) * _boost - deg_to_rad(run_lean_deg) * _run - deg_to_rad(kneel_lean_deg) * kneel_amount,
-		-deg_to_rad(aim_twist_deg) * aim,
+		-lean,
+		mech.get_torso_twist() - deg_to_rad(aim_twist_deg) * aim,
 		-deg_to_rad(aim_tilt_deg) * aim)
