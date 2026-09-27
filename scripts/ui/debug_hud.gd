@@ -22,6 +22,8 @@ func _process(_delta: float) -> void:
 		state += "\nJump charge: %d%% (%.1f m)" % [roundi(charge.charge * 100.0), charge.charge * charge.full_height]
 	if mech.is_exiting_boost:
 		state += " + BOOST EXIT"
+	if mech.kneel.is_kneeling:
+		state += " + KNEEL"
 	var recovery := mech.landing_recovery
 	if recovery.is_recovering():
 		state += "\nLanding recovery: %.1f s" % recovery.time_left

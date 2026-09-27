@@ -13,6 +13,8 @@
 [ext_resource type="Script" path="res://scripts/mech/mech_aim.gd" id="aim"]
 [ext_resource type="Script" path="res://scripts/mech/mech_jump_charge.gd" id="jumpcharge"]
 [ext_resource type="Script" path="res://scripts/mech/mech_air_steer.gd" id="airsteer"]
+[ext_resource type="Script" path="res://scripts/mech/mech_kneel.gd" id="kneel"]
+[ext_resource type="Script" path="res://scripts/animation/torso_pose.gd" id="torsopose"]
 [ext_resource type="Script" path="res://scripts/animation/weapon_pose.gd" id="weaponpose"]
 [ext_resource type="Script" path="res://scripts/camera/camera_shake.gd" id="shake"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/long_rifle.tscn" id="rifle"]
@@ -63,7 +65,7 @@ size = Vector3(0.9, 2.7, 1.0)
 [sub_resource type="BoxMesh" id="mesh_Hand"]
 size = Vector3(0.7, 0.6, 0.8)
 
-[node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery", "jump_charge", "air_steer")]
+[node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery", "jump_charge", "air_steer", "kneel")]
 collision_layer = 2
 collision_mask = 1
 floor_snap_length = 1.0
@@ -74,6 +76,7 @@ footsteps = NodePath("MechFootsteps")
 landing_recovery = NodePath("MechLandingRecovery")
 jump_charge = NodePath("MechJumpCharge")
 air_steer = NodePath("MechAirSteer")
+kneel = NodePath("MechKneel")
 
 [node name="Collision" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
@@ -83,86 +86,89 @@ shape = SubResource("body_shape")
 
 [node name="Upper" type="Node3D" parent="Visual"]
 
-[node name="Core" type="MeshInstance3D" parent="Visual/Upper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.4, 0)
+[node name="Torso" type="Node3D" parent="Visual/Upper"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.4, 0)
+
+[node name="Core" type="MeshInstance3D" parent="Visual/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 mesh = SubResource("mesh_Core")
 surface_material_override/0 = ExtResource("armor")
 
-[node name="Booster" type="MeshInstance3D" parent="Visual/Upper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.8, 2)
+[node name="Booster" type="MeshInstance3D" parent="Visual/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 2)
 mesh = SubResource("mesh_Booster")
 surface_material_override/0 = ExtResource("frame")
 
-[node name="Head" type="MeshInstance3D" parent="Visual/Upper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.5, -0.2)
+[node name="Head" type="MeshInstance3D" parent="Visual/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.1, -0.2)
 mesh = SubResource("mesh_Head")
 surface_material_override/0 = ExtResource("armor")
 
-[node name="Visor" type="MeshInstance3D" parent="Visual/Upper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.6, -1.15)
+[node name="Visor" type="MeshInstance3D" parent="Visual/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.2, -1.15)
 mesh = SubResource("mesh_Visor")
 surface_material_override/0 = ExtResource("visor")
 
-[node name="ShoulderPadL" type="MeshInstance3D" parent="Visual/Upper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9, 8.4, 0)
+[node name="ShoulderPadL" type="MeshInstance3D" parent="Visual/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9, 3, 0)
 mesh = SubResource("mesh_ShoulderPad")
 surface_material_override/0 = ExtResource("armor")
 
-[node name="ShoulderL" type="Node3D" parent="Visual/Upper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9, 8.3, 0)
+[node name="ShoulderL" type="Node3D" parent="Visual/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9, 2.9, 0)
 
-[node name="UpperArmL" type="MeshInstance3D" parent="Visual/Upper/ShoulderL"]
+[node name="UpperArmL" type="MeshInstance3D" parent="Visual/Upper/Torso/ShoulderL"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.35, 0)
 mesh = SubResource("mesh_UpperArm")
 surface_material_override/0 = ExtResource("frame")
 
-[node name="ElbowL" type="Node3D" parent="Visual/Upper/ShoulderL"]
+[node name="ElbowL" type="Node3D" parent="Visual/Upper/Torso/ShoulderL"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.7, 0)
 
-[node name="ForearmL" type="MeshInstance3D" parent="Visual/Upper/ShoulderL/ElbowL"]
+[node name="ForearmL" type="MeshInstance3D" parent="Visual/Upper/Torso/ShoulderL/ElbowL"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.35, 0)
 mesh = SubResource("mesh_Forearm")
 surface_material_override/0 = ExtResource("frame")
 
-[node name="HandL" type="MeshInstance3D" parent="Visual/Upper/ShoulderL/ElbowL"]
+[node name="HandL" type="MeshInstance3D" parent="Visual/Upper/Torso/ShoulderL/ElbowL"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3, 0)
 mesh = SubResource("mesh_Hand")
 surface_material_override/0 = ExtResource("armor")
 
-[node name="ShoulderPadR" type="MeshInstance3D" parent="Visual/Upper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 8.4, 0)
+[node name="ShoulderPadR" type="MeshInstance3D" parent="Visual/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 3, 0)
 mesh = SubResource("mesh_ShoulderPad")
 surface_material_override/0 = ExtResource("armor")
 
-[node name="ShoulderR" type="Node3D" parent="Visual/Upper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 8.3, 0)
+[node name="ShoulderR" type="Node3D" parent="Visual/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 2.9, 0)
 
-[node name="UpperArmR" type="MeshInstance3D" parent="Visual/Upper/ShoulderR"]
+[node name="UpperArmR" type="MeshInstance3D" parent="Visual/Upper/Torso/ShoulderR"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.35, 0)
 mesh = SubResource("mesh_UpperArm")
 surface_material_override/0 = ExtResource("frame")
 
-[node name="ElbowR" type="Node3D" parent="Visual/Upper/ShoulderR"]
+[node name="ElbowR" type="Node3D" parent="Visual/Upper/Torso/ShoulderR"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.7, 0)
 
-[node name="ForearmR" type="MeshInstance3D" parent="Visual/Upper/ShoulderR/ElbowR"]
+[node name="ForearmR" type="MeshInstance3D" parent="Visual/Upper/Torso/ShoulderR/ElbowR"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.35, 0)
 mesh = SubResource("mesh_Forearm")
 surface_material_override/0 = ExtResource("frame")
 
-[node name="HandR" type="MeshInstance3D" parent="Visual/Upper/ShoulderR/ElbowR"]
+[node name="HandR" type="MeshInstance3D" parent="Visual/Upper/Torso/ShoulderR/ElbowR"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3, 0)
 mesh = SubResource("mesh_Hand")
 surface_material_override/0 = ExtResource("armor")
 
-[node name="Rifle" parent="Visual/Upper" instance=ExtResource("rifle")]
-transform = Transform3D(0.43837, 0.63554, 0.63554, 0, 0.70711, -0.70711, -0.89879, 0.30998, 0.30998, 1.8, 5.8, -2.4)
+[node name="Rifle" parent="Visual/Upper/Torso" instance=ExtResource("rifle")]
+transform = Transform3D(0.57358, -0.40958, 0.70941, 0, 0.86603, 0.5, -0.81915, -0.28679, 0.49673, 1.8, 2.8, -2.2)
 
-[node name="RiflePoseHighReady" type="Marker3D" parent="Visual/Upper"]
-transform = Transform3D(0.43837, 0.63554, 0.63554, 0, 0.70711, -0.70711, -0.89879, 0.30998, 0.30998, 1.8, 5.8, -2.4)
+[node name="RiflePoseRest" type="Marker3D" parent="Visual/Upper/Torso"]
+transform = Transform3D(0.57358, -0.40958, 0.70941, 0, 0.86603, 0.5, -0.81915, -0.28679, 0.49673, 1.8, 2.8, -2.2)
 
-[node name="AimAnchor" type="Marker3D" parent="Visual/Upper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 8.1, -1.2)
+[node name="AimAnchor" type="Marker3D" parent="Visual/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1, 2.8, -1.1)
 
 [node name="Lower" type="Node3D" parent="Visual/Upper"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.2, 0)
@@ -229,35 +235,42 @@ mech = NodePath("..")
 script = ExtResource("recovery")
 mech = NodePath("..")
 
-[node name="MechJumpCharge" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery")]
+[node name="MechJumpCharge" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery", "kneel")]
 script = ExtResource("jumpcharge")
 mech = NodePath("..")
 input = NodePath("../MechInput")
 energy = NodePath("../MechEnergy")
 landing_recovery = NodePath("../MechLandingRecovery")
+kneel = NodePath("../MechKneel")
 
 [node name="MechAirSteer" type="Node" parent="." node_paths=PackedStringArray("mech")]
 script = ExtResource("airsteer")
 mech = NodePath("..")
 
+[node name="MechKneel" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "landing_recovery")]
+script = ExtResource("kneel")
+mech = NodePath("..")
+input = NodePath("../MechInput")
+landing_recovery = NodePath("../MechLandingRecovery")
+
 [node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin")]
 script = ExtResource("aim")
 mech = NodePath("..")
 camera = NodePath("../CameraRig/Pitch/SpringArm/Camera")
-aim_origin = NodePath("../Visual/Upper/AimAnchor")
+aim_origin = NodePath("../Visual/Upper/Torso/AimAnchor")
 
 [node name="Animation" type="Node" parent="."]
 
 [node name="WeaponPose" type="Node" parent="Animation" node_paths=PackedStringArray("weapon", "rest_pose", "aim_anchor", "mech_aim", "input", "left_grip_target", "left_grip_rest", "left_grip_aim", "arm_ik_left", "arm_ik_right")]
 script = ExtResource("weaponpose")
-weapon = NodePath("../../Visual/Upper/Rifle")
-rest_pose = NodePath("../../Visual/Upper/RiflePoseHighReady")
-aim_anchor = NodePath("../../Visual/Upper/AimAnchor")
+weapon = NodePath("../../Visual/Upper/Torso/Rifle")
+rest_pose = NodePath("../../Visual/Upper/Torso/RiflePoseRest")
+aim_anchor = NodePath("../../Visual/Upper/Torso/AimAnchor")
 mech_aim = NodePath("../../MechAim")
 input = NodePath("../../MechInput")
-left_grip_target = NodePath("../../Visual/Upper/Rifle/GripLeft")
-left_grip_rest = NodePath("../../Visual/Upper/Rifle/GripLeftRest")
-left_grip_aim = NodePath("../../Visual/Upper/Rifle/GripLeftAim")
+left_grip_target = NodePath("../../Visual/Upper/Torso/Rifle/GripLeft")
+left_grip_rest = NodePath("../../Visual/Upper/Torso/Rifle/GripLeftRest")
+left_grip_aim = NodePath("../../Visual/Upper/Torso/Rifle/GripLeftAim")
 arm_ik_left = NodePath("../ArmIKLeft")
 arm_ik_right = NodePath("../ArmIKRight")
 
@@ -266,33 +279,41 @@ script = ExtResource("legtwist")
 mech = NodePath("../..")
 lower_body = NodePath("../../Visual/Upper/Lower")
 
-[node name="LegSwing" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "footsteps", "leg_twist", "landing_recovery", "jump_charge", "upper_body", "hip_left", "hip_right", "knee_left", "knee_right")]
+[node name="LegSwing" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "footsteps", "leg_twist", "landing_recovery", "jump_charge", "kneel", "upper_body", "hip_left", "hip_right", "knee_left", "knee_right")]
 script = ExtResource("legswing")
 mech = NodePath("../..")
 footsteps = NodePath("../../MechFootsteps")
 leg_twist = NodePath("../LegTwist")
 landing_recovery = NodePath("../../MechLandingRecovery")
 jump_charge = NodePath("../../MechJumpCharge")
+kneel = NodePath("../../MechKneel")
 upper_body = NodePath("../../Visual/Upper")
 hip_left = NodePath("../../Visual/Upper/Lower/HipL")
 hip_right = NodePath("../../Visual/Upper/Lower/HipR")
 knee_left = NodePath("../../Visual/Upper/Lower/HipL/KneeL")
 knee_right = NodePath("../../Visual/Upper/Lower/HipR/KneeR")
 
+[node name="TorsoPose" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "torso", "weapon_pose", "kneel")]
+script = ExtResource("torsopose")
+mech = NodePath("../..")
+torso = NodePath("../../Visual/Upper/Torso")
+weapon_pose = NodePath("../WeaponPose")
+kneel = NodePath("../../MechKneel")
+
 [node name="ArmIKRight" type="Node" parent="Animation" node_paths=PackedStringArray("root_joint", "mid_joint", "target")]
 script = ExtResource("ik")
-root_joint = NodePath("../../Visual/Upper/ShoulderR")
-mid_joint = NodePath("../../Visual/Upper/ShoulderR/ElbowR")
-target = NodePath("../../Visual/Upper/Rifle/GripRight")
+root_joint = NodePath("../../Visual/Upper/Torso/ShoulderR")
+mid_joint = NodePath("../../Visual/Upper/Torso/ShoulderR/ElbowR")
+target = NodePath("../../Visual/Upper/Torso/Rifle/GripRight")
 pole_direction = Vector3(1, -1, 0.6)
 upper_length = 2.7
 lower_length = 3.0
 
 [node name="ArmIKLeft" type="Node" parent="Animation" node_paths=PackedStringArray("root_joint", "mid_joint", "target")]
 script = ExtResource("ik")
-root_joint = NodePath("../../Visual/Upper/ShoulderL")
-mid_joint = NodePath("../../Visual/Upper/ShoulderL/ElbowL")
-target = NodePath("../../Visual/Upper/Rifle/GripLeft")
+root_joint = NodePath("../../Visual/Upper/Torso/ShoulderL")
+mid_joint = NodePath("../../Visual/Upper/Torso/ShoulderL/ElbowL")
+target = NodePath("../../Visual/Upper/Torso/Rifle/GripLeft")
 pole_direction = Vector3(-1, -1, 0.3)
 upper_length = 2.7
 lower_length = 3.0

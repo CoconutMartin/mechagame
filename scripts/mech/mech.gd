@@ -17,6 +17,7 @@ signal landed(fall_speed: float)
 @export var landing_recovery: MechLandingRecovery
 @export var jump_charge: MechJumpCharge
 @export var air_steer: MechAirSteer
+@export var kneel: MechKneel
 
 ## Total mech weight in tons. Phase 2 computes this from parts.
 @export var mass_tons: float = 60.0
@@ -154,7 +155,7 @@ func _update_boost(delta: float) -> void:
 	var wants_boost := false
 	if is_on_floor():
 		wants_boost = input.boost_held and has_input and is_boost_ready() \
-				and not landing_recovery.is_recovering() and not jump_charge.is_charging
+				and not landing_recovery.is_recovering() and not jump_charge.is_charging and not kneel.is_kneeling
 	else:
 		# Shift + a move key fires the boosters in the air. A move key alone uses free steering.
 		# The boost exit hop is part of the walk, so no steering there.
@@ -176,7 +177,8 @@ func _update_boost(delta: float) -> void:
 
 func _update_horizontal(delta: float) -> void:
 	var recovering := landing_recovery.is_recovering()
-	var charging := jump_charge.is_charging
+	# Charging a jump or kneeling: the mech stands still.
+	var charging := jump_charge.is_charging or kneel.is_kneeling
 	var wish := Vector3.ZERO if recovering or charging else input.move_direction
 	var has_input := wish.length_squared() > 0.001
 	# A hop that starts this frame counts as air, so step plans start after landing.

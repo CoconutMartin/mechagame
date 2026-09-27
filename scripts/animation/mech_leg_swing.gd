@@ -9,6 +9,7 @@ extends Node
 @export var leg_twist: MechLegTwist
 @export var landing_recovery: MechLandingRecovery
 @export var jump_charge: MechJumpCharge
+@export var kneel: MechKneel
 ## Moves up and down with the walk. The hips must be inside this node.
 @export var upper_body: Node3D
 @export var hip_left: Node3D
@@ -33,8 +34,19 @@ extends Node
 @export var landing_crouch_max_deg: float = 40.0
 ## Fall height (meters) that gives the deepest landing crouch.
 @export var landing_crouch_full_height: float = 9.0
-## Crouch while boosting on the ground, in degrees of hip bend.
-@export var boost_crouch_deg: float = 18.0
+## Crouch while boosting on the ground, in degrees of hip bend. Knees bend twice as much
+## (20 = knee bent 40 degrees, an inside knee angle of 140 degrees).
+@export var boost_crouch_deg: float = 20.0
+
+@export_group("Kneel")
+## Left (front) leg: thigh forward, shin straight down to the foot.
+@export var kneel_front_hip_deg: float = 70.0
+@export var kneel_front_knee_deg: float = 70.0
+## Right (back) leg: thigh down, shin back along the ground, knee on the ground.
+@export var kneel_back_hip_deg: float = -5.0
+@export var kneel_back_knee_deg: float = 90.0
+## Body drop when fully down, in meters. Puts the right knee on the ground.
+@export var kneel_drop: float = 1.74
 ## Crouch at full jump charge, in degrees of hip bend.
 @export var charge_crouch_deg: float = 30.0
 ## Hip to foot length, in meters. Used to keep the feet on the ground in a crouch.
@@ -99,4 +111,14 @@ func _physics_process(delta: float) -> void:
 	# A crouch shortens the legs. Lower the body by the same amount so the feet stay down.
 	var crouch_drop := leg_length * (1.0 - cos(crouch))
 	upper_body.position.y = _upper_rest_y - bob - crouch_drop
+
+	# Kneel: blend both legs and the body height to the kneel pose.
+	var k := smoothstep(0.0, 1.0, kneel.amount)
+	if k > 0.0:
+		hip_left.rotation.x = lerpf(hip_left.rotation.x, deg_to_rad(kneel_front_hip_deg), k)
+		knee_left.rotation.x = lerpf(knee_left.rotation.x, -deg_to_rad(kneel_front_knee_deg), k)
+		hip_right.rotation.x = lerpf(hip_right.rotation.x, deg_to_rad(kneel_back_hip_deg), k)
+		knee_right.rotation.x = lerpf(knee_right.rotation.x, -deg_to_rad(kneel_back_knee_deg), k)
+		upper_body.position.y = lerpf(upper_body.position.y, _upper_rest_y - kneel_drop, k)
+		upper_body.rotation.z = lerpf(upper_body.rotation.z, 0.0, k)
 	upper_body.rotation.z = deg_to_rad(sway_deg) * _walk_amount * cos(phase)
