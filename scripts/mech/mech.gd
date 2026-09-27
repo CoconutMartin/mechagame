@@ -54,16 +54,16 @@ signal landed(fall_speed: float)
 ## Leg turn speed (A / D) while standing still, in degrees per second.
 @export var leg_turn_speed_standing_deg: float = 30.0
 ## Top torso turn speed toward the camera direction (degrees per second).
-@export var turn_speed_deg: float = 58.8
+@export var turn_speed_deg: float = 29.4
 ## How fast the body gains turn speed (degrees per second per second).
-@export var turn_acceleration_deg: float = 252.0
+@export var turn_acceleration_deg: float = 126.0
 ## Near the end of a turn the body slows down. The slow zone starts when the gap to the aim
 ## is this fraction of the gap at the start of the turn.
 @export_range(0.0, 1.0) var turn_slow_zone: float = 0.25
 ## Turn speed in the slow zone = turn speed x this value.
 @export_range(0.1, 1.0) var turn_slow_multiplier: float = 0.5
-## Size of each settle swing past the aim, in degrees.
-@export var turn_settle_swing_deg: float = 2.0
+## Size of each settle swing past the aim, in degrees. 0 = no settle swings (the torso stops on the aim).
+@export var turn_settle_swing_deg: float = 0.0
 ## Turns smaller than this (degrees) lock in with no settle swings.
 @export var turn_settle_min_turn_deg: float = 5.0
 ## Seconds for the first swing (past the aim).
@@ -407,7 +407,7 @@ func _turn_torso(delta: float) -> void:
 	if signf(step) == signf(error) and absf(step) >= gap:
 		_aim_yaw = wrapf(_aim_yaw + error, -PI, PI)
 		_turn_velocity = 0.0
-		if _turn_start_error >= deg_to_rad(turn_settle_min_turn_deg):
+		if turn_settle_swing_deg > 0.0 and _turn_start_error >= deg_to_rad(turn_settle_min_turn_deg):
 			_settle_time = 0.0
 			_settle_sign = signf(error)
 		_turn_start_error = 0.0

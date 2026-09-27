@@ -12,6 +12,8 @@ extends Node3D
 @export var follow_sharpness: float = 14.0
 ## Radians turned per pixel of mouse movement.
 @export var mouse_sensitivity: float = 0.0025
+## Vertical mouse aim speed = mouse sensitivity x this value. 0.3 = 70% slower than horizontal.
+@export var pitch_sensitivity_scale: float = 0.3
 @export var min_pitch_deg: float = -27.5
 @export var max_pitch_deg: float = 15.0
 
@@ -19,7 +21,7 @@ extends Node3D
 ## Oscillations per second. Lower = slower, heavier aim.
 @export var aim_frequency: float = 1.75
 ## 1.0 = no overshoot. 0.5 gives about 14% overshoot (a fast 30 degree flick passes by about 4 degrees).
-@export_range(0.1, 1.0) var aim_damping: float = 0.5
+@export_range(0.1, 1.0) var aim_damping: float = 1.0
 ## Largest gap between the camera and the mouse aim, in degrees.
 @export var max_aim_lag_deg: float = 25.0
 
@@ -55,7 +57,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		var motion := event as InputEventMouseMotion
 		var sensitivity := mouse_sensitivity * sensitivity_scale
 		_target_yaw -= motion.relative.x * sensitivity
-		_target_pitch -= motion.relative.y * sensitivity
+		_target_pitch -= motion.relative.y * sensitivity * pitch_sensitivity_scale
 		_target_pitch = clampf(_target_pitch, deg_to_rad(min_pitch_deg), deg_to_rad(max_pitch_deg))
 
 

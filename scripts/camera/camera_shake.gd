@@ -33,7 +33,7 @@ extends Camera3D
 
 @export_group("Shake")
 ## Overall shake strength. 1.0 = all values as set above and below. 0.5 = half.
-@export var intensity: float = 0.5
+@export var intensity: float = 0.75
 ## Largest random offset in meters at full shake.
 @export var max_offset: float = 0.5
 @export var max_roll_deg: float = 1.2

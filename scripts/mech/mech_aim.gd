@@ -14,7 +14,7 @@ extends Node
 
 @export_group("Jitter")
 ## Aim shake at full walk speed, in degrees.
-@export var walk_jitter_deg: float = 0.6
+@export var walk_jitter_deg: float = 0.0
 ## Aim shake while boosting = walk jitter x this value.
 @export var boost_jitter_multiplier: float = 2.0
 ## Aim shake in the air = boost jitter x this value.
@@ -22,7 +22,7 @@ extends Node
 ## Aim shake while kneeling = normal aim shake x this value. 0.25 = 75% less.
 @export var kneel_jitter_multiplier: float = 0.25
 ## Small aim shake when standing still, in degrees.
-@export var idle_jitter_deg: float = 0.05
+@export var idle_jitter_deg: float = 0.0
 ## How fast the shake moves.
 @export var jitter_speed: float = 2.0
 

@@ -66,13 +66,13 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Landing steps | a landing with sideways speed: the mech walks out 3 steps to a stop | no control during the landing delay, but the momentum carries on |
 | Landing shake | camera shake 0.045 per m/s of fall speed, camera drop 0.05 m per m/s (a 9 m fall: about 1.2 m drop, then recovers) |
 | Landing recovery | falls below 1 m: 0.5 s. Higher: 1.5 s x (weight / 60 t) x (fall height / 9 m), minimum 0.5 s | no movement, jump charge, or boost. Legs crouch. Falls below 0.2 m and the boost exit hop give no delay |
-| Torso twist limits | 80° each side of the legs | the camera stays behind the torso. The legs turn only with A / D. Lower-leg twist (pelvis down) up to 90° each side |
+| Torso twist limits | 80° each side of the legs | the camera stays behind the torso and turns with it. The legs turn only with A / D. Lower-leg twist (pelvis down) up to 60° each side |
 | Wall bump | into a wall faster than 3 m/s | restitution (bounce-back speed / impact speed) grows with impact speed: 0.4 at 3 m/s to 0.9 at 13.65 m/s. Then an extra slowdown of up to 30% (less at low speed). Walk 9.1 m/s bounces back at about 5 m/s; boost 13.65 m/s at about 8.6 m/s. Camera shake |
 | Walk sway | body roll 0.9° (walk) to 1.2° (run), side shift 0.09 m toward the planted leg, for a 10 m mech | scales with `Mech.height_m` (taller mechs sway more) |
 | Footstep shake | camera kick 0.117 m, trauma 0.2, for a 10 m mech | scales with `Mech.height_m` |
-| Shake overall | `CameraShake.intensity` 0.5, noise speed 21, kick recovery 9.8, final offset smoothing 42 (40% sharper than revision 19) | |
+| Shake overall | `CameraShake.intensity` 0.75, noise speed 21, kick recovery 9.8, final offset smoothing 42 (40% sharper than revision 19) | |
 | Turning steps | standing still with the legs turning: one step every 20° of leg turn, knee lift 60% of the walk lift, light footstep shake | the feet do not slide |
-| Torso aim turn | 58.8°/s max, 252°/s² acceleration | in the last 25% of each turn the body turns at 50% speed. Turns above 5° end with a settle: 2° past the aim, 2° to the other side, then a snap onto the aim (about 0.55 s) |
+| Torso aim turn | 29.4°/s max, 126°/s² acceleration, no overshoot, no settle swings | in the last 25% of each turn the body turns at 50% speed. Turns above 5° end with a settle: 2° past the aim, 2° to the other side, then a snap onto the aim (about 0.55 s) |
 | Footstep stride | 6 m at walk speed and above, down to 30% (1.8 m) near standstill | one camera shake per stride, none while boosting |
 
 ### Aim
@@ -81,7 +81,8 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 |---|---|
 | Camera crosshair | yellow dot at screen center |
 | Mech aim reticle | blue ring. It shows where the weapon really points: body turn lag plus jitter |
-| Aim jitter | 0.6° at full walk speed, 1.2° while boosting (2x), 2.4° in the air (2x boost), 75% less while kneeling |
+| Aim jitter | removed (0°). The code and exports stay in `MechAim` for later use |
+| Vertical aim | mouse pitch speed 30% of horizontal |
 | Aim down sight (RMB) | camera moves to the right side of the head (3 m right, 4 m back, head height 9.6 m), FOV 70° to 35°, mouse sensitivity 50%. Rifle butt on the right shoulder, torso turns 30° right and tilts 6°, left hand under the handguard near the muzzle |
 
 ### Current camera tuning (Phase 1)
@@ -96,7 +97,7 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 | Tilt limits | 27.5° down, 15° up |
 | Boost shake | steady shake while boosting (trauma 0.4) |
 | Air shake | steady shake in the air: rising 0.44, falling 0.28 (50% less than before). Aim jitter moves only the blue ring |
-| Aim spring | 1.75 Hz, damping 0.5: a fast 30° flick overshoots by about 4°, then settles |
+| Aim spring | 1.75 Hz, damping 1.0 (no overshoot) |
 | Max aim lag | 25° |
 
 ### Collision layers
@@ -249,6 +250,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 18: back to MechWarrior controls (A / D turn legs at a steady speed, legs never follow the aim, no leg reset on stop). Speed-based wall bounce. Sway 0.9°. Footstep shake 35% less. Sway and footstep shake scale with mech height.
 - Phase 1 revision 19: torso twist 85° each side. All camera shake 50% less and smoothed. W stands up from a kneel.
 - Phase 1 revision 20: torso twist 80°. Camera stays behind the torso (no free orbit). Lower-leg twist up to 90°. Shake 40% sharper.
+- Phase 1 revision 21: mech aim jitter and overshoot removed. Torso turn 50% slower. Vertical aim 70% slower. Lower-leg twist 60°. Shake intensity 0.75.
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.
