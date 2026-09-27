@@ -22,6 +22,10 @@ extends Node
 @export var skid_recover_frequency: float = 0.9
 ## Sway damping. Lower = more swings. 1.0 = no swing past upright.
 @export_range(0.05, 1.0) var skid_recover_damping: float = 0.3
+## Random side sway when a skid starts: the torso rolls to a random side (left or right)
+## by a random amount between these values (degrees), then sways back to upright on the same spring.
+@export var skid_side_sway_min_deg: float = 3.0
+@export var skid_side_sway_max_deg: float = 7.0
 ## Forward lean while running, in degrees.
 @export var run_lean_deg: float = 12.0
 ## Forward lean after a landing from landing_lean_full_height or higher, in degrees.
@@ -38,6 +42,10 @@ var _boost: float = 0.0
 var _run: float = 0.0
 ## Skid lean in degrees (positive = back), on a spring.
 var _skid_lean := AimSpring.new(0.0)
+## Skid side roll in degrees (positive = head to the left), on a spring.
+var _skid_roll := AimSpring.new(0.0)
+var _skid_roll_target: float = 0.0
+var _was_skidding: bool = false
 
 
 func _ready() -> void:
@@ -52,6 +60,13 @@ func _physics_process(delta: float) -> void:
 	_run = lerpf(_run, 1.0 if mech.is_running else 0.0, blend)
 	var skid_target := skid_lean_back_deg if mech.is_skidding else 0.0
 	_skid_lean.update(skid_target, skid_recover_frequency, skid_recover_damping, 90.0, delta)
+	if mech.is_skidding and not _was_skidding:
+		# New skid: pick a random side and size.
+		var side := 1.0 if randf() < 0.5 else -1.0
+		_skid_roll_target = side * randf_range(skid_side_sway_min_deg, skid_side_sway_max_deg)
+	_was_skidding = mech.is_skidding
+	var roll_target := _skid_roll_target if mech.is_skidding else 0.0
+	_skid_roll.update(roll_target, skid_recover_frequency, skid_recover_damping, 90.0, delta)
 	var aim := smoothstep(0.0, 1.0, weapon_pose.aim_amount)
 	var kneel_amount := smoothstep(0.0, 1.0, kneel.amount)
 	var fall_ratio := clampf(mech.landing_recovery.fall_height / landing_lean_full_height, 0.0, 1.0)
@@ -65,4 +80,4 @@ func _physics_process(delta: float) -> void:
 	torso.rotation = Vector3(
 		-lean,
 		mech.get_torso_twist() - deg_to_rad(aim_twist_deg) * aim,
-		-deg_to_rad(aim_tilt_deg) * aim)
+		-deg_to_rad(aim_tilt_deg) * aim + deg_to_rad(_skid_roll.value))
