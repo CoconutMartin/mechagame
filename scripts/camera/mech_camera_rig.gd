@@ -1,6 +1,8 @@
 class_name MechCameraRig
 extends Node3D
 ## Over-the-shoulder camera. Follows the target and turns with the mouse.
+## The mouse moves an aim target. The camera follows that target on a spring,
+## so fast mouse moves overshoot a little and settle back.
 ## Node layout: MechCameraRig > Pitch > SpringArm3D > Camera3D.
 
 @export var target: Node3D
@@ -10,12 +12,25 @@ extends Node3D
 @export var follow_sharpness: float = 14.0
 ## Radians turned per pixel of mouse movement.
 @export var mouse_sensitivity: float = 0.0025
-@export var min_pitch_deg: float = -55.0
-@export var max_pitch_deg: float = 30.0
+@export var min_pitch_deg: float = -27.5
+@export var max_pitch_deg: float = 15.0
 
-## Current look direction in radians. The mech reads yaw to know where to face.
+@export_group("Aim Spring")
+## Oscillations per second. Lower = slower, heavier aim.
+@export var aim_frequency: float = 2.5
+## 1.0 = no overshoot. 0.5 gives about 14% overshoot (a fast 30 degree flick passes by about 4 degrees).
+@export_range(0.1, 1.0) var aim_damping: float = 0.5
+## Largest gap between the camera and the mouse aim, in degrees.
+@export var max_aim_lag_deg: float = 25.0
+
+## Current look direction in radians, after the spring. The mech reads yaw to know where to face.
 var yaw: float = 0.0
 var pitch: float = 0.0
+
+var _target_yaw: float = 0.0
+var _target_pitch: float = 0.0
+var _yaw_spring := AimSpring.new()
+var _pitch_spring := AimSpring.new()
 
 @onready var _pitch_node: Node3D = $Pitch
 
@@ -24,21 +39,27 @@ func _ready() -> void:
 	top_level = true
 	# This node moves in _process, so it must not use physics interpolation.
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	yaw = target.global_rotation.y
+	_target_yaw = target.global_rotation.y
+	_yaw_spring.value = _target_yaw
 	global_position = _goal_position()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var motion := event as InputEventMouseMotion
-		yaw -= motion.relative.x * mouse_sensitivity
-		pitch -= motion.relative.y * mouse_sensitivity
-		pitch = clampf(pitch, deg_to_rad(min_pitch_deg), deg_to_rad(max_pitch_deg))
+		_target_yaw -= motion.relative.x * mouse_sensitivity
+		_target_pitch -= motion.relative.y * mouse_sensitivity
+		_target_pitch = clampf(_target_pitch, deg_to_rad(min_pitch_deg), deg_to_rad(max_pitch_deg))
 
 
 func _process(delta: float) -> void:
 	var weight := 1.0 - exp(-follow_sharpness * delta)
 	global_position = global_position.lerp(_goal_position(), weight)
+	var max_lag := deg_to_rad(max_aim_lag_deg)
+	_yaw_spring.update(_target_yaw, aim_frequency, aim_damping, max_lag, delta)
+	_pitch_spring.update(_target_pitch, aim_frequency, aim_damping, max_lag, delta)
+	yaw = _yaw_spring.value
+	pitch = _pitch_spring.value
 	rotation = Vector3(0.0, yaw, 0.0)
 	_pitch_node.rotation = Vector3(pitch, 0.0, 0.0)
 

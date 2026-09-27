@@ -12,6 +12,8 @@ var move_direction: Vector3 = Vector3.ZERO
 ## World yaw (radians) the mech body should face.
 var aim_yaw: float = 0.0
 var boost_held: bool = false
+## True while the jump key is held. The Mech uses it for jump jets in the air.
+var jump_held: bool = false
 
 var _jump_buffer_left: float = 0.0
 
@@ -26,6 +28,7 @@ func _physics_process(delta: float) -> void:
 	aim_yaw = camera_rig.yaw
 	move_direction = Vector3(stick.x, 0.0, stick.y).rotated(Vector3.UP, aim_yaw)
 	boost_held = Input.is_action_pressed("boost")
+	jump_held = Input.is_action_pressed("jump")
 
 	_jump_buffer_left = maxf(_jump_buffer_left - delta, 0.0)
 	if Input.is_action_just_pressed("jump"):

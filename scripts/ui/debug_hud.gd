@@ -9,7 +9,11 @@ extends CanvasLayer
 
 func _process(_delta: float) -> void:
 	var speed := mech.get_horizontal_speed()
-	var state := "BOOST" if mech.is_boosting else ("GROUND" if mech.is_on_floor() else "AIR")
+	var state := "GROUND" if mech.is_on_floor() else "AIR"
+	if mech.is_boosting:
+		state += " + BOOST"
+	if mech.is_jetting:
+		state += " + JETS"
 	var energy := mech.energy
 	_info.text = "Speed: %.1f m/s (%d km/h)\nHeight: %.1f m\nState: %s\nEnergy: %d / %d%s\nFPS: %d" % [
 		speed, roundi(speed * 3.6), mech.global_position.y, state,

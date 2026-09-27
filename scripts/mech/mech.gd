@@ -27,6 +27,19 @@ signal landed(fall_speed: float)
 ## Energy used each second while boosting.
 @export var boost_energy_per_second: float = 30.0
 
+@export_group("Jump Jets")
+## Hold jump in the air to fire jump jets.
+## Energy use per second = boost energy use x this value. Jets cost more than boost.
+@export var jet_energy_multiplier: float = 2.0
+## Upward push of the jets (m/s per second). Must be above gravity x gravity_scale (about 21.6) to climb.
+@export var jet_thrust: float = 30.0
+## The jets stop pushing above this rise speed (m/s).
+@export var jet_max_rise_speed: float = 8.0
+## Air control while the jets fire (0 to 1).
+@export var jet_air_control: float = 0.8
+## Wait after a jump (seconds) before the jets can fire, so a tap stays a normal jump.
+@export var jet_delay: float = 0.25
+
 @export_group("Air")
 ## Upward speed at the start of a jump in m/s.
 @export var jump_velocity: float = 17.0
@@ -37,13 +50,16 @@ signal landed(fall_speed: float)
 @export var max_fall_speed: float = 60.0
 
 var is_boosting: bool = false
+var is_jetting: bool = false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _was_on_floor: bool = true
+var _air_time: float = 0.0
 
 
 func _physics_process(delta: float) -> void:
 	_update_boost(delta)
+	_update_jets(delta)
 	_update_horizontal(delta)
 	_update_vertical(delta)
 	_turn_body(delta)
@@ -61,6 +77,12 @@ func _update_boost(delta: float) -> void:
 	is_boosting = wants_boost and energy.try_drain(boost_energy_per_second * delta)
 
 
+func _update_jets(delta: float) -> void:
+	_air_time = 0.0 if is_on_floor() else _air_time + delta
+	var wants_jets := input.jump_held and not is_on_floor() and _air_time >= jet_delay
+	is_jetting = wants_jets and energy.try_drain(boost_energy_per_second * jet_energy_multiplier * delta)
+
+
 func _update_horizontal(delta: float) -> void:
 	var wish := input.move_direction
 	var target_speed := boost_speed if is_boosting else walk_speed
@@ -70,7 +92,7 @@ func _update_horizontal(delta: float) -> void:
 	if wish.length_squared() > 0.001:
 		rate = boost_acceleration if is_boosting else acceleration
 	if not is_on_floor() and not is_boosting:
-		rate *= air_control
+		rate *= jet_air_control if is_jetting else air_control
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z).move_toward(target, rate * delta)
 	velocity.x = horizontal.x
@@ -84,6 +106,8 @@ func _update_vertical(delta: float) -> void:
 			jumped.emit()
 	else:
 		velocity.y = maxf(velocity.y - _gravity * gravity_scale * delta, -max_fall_speed)
+		if is_jetting and velocity.y < jet_max_rise_speed:
+			velocity.y = minf(velocity.y + jet_thrust * delta, jet_max_rise_speed)
 
 
 func _turn_body(delta: float) -> void:

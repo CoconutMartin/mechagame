@@ -59,12 +59,12 @@ anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
 offset_top = -110.0
-offset_right = 420.0
+offset_right = 560.0
 offset_bottom = -16.0
 grow_vertical = 0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 15
-text = "WASD move   Mouse aim   Space jump   Shift boost
+text = "WASD move   Mouse aim   Space jump (hold for jump jets)   Shift boost
 Esc free mouse   Click to capture mouse
 Grid lines: thin = 1 m, thick = 10 m"
