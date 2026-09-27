@@ -30,6 +30,10 @@ var pitch: float = 0.0
 var sensitivity_scale: float = 1.0
 
 var _target_yaw: float = 0.0
+
+@export_group("Mech Limits")
+## Camera drop when the mech kneels fully, in meters.
+@export var kneel_height_drop: float = 1.74
 var _target_pitch: float = 0.0
 var _yaw_spring := AimSpring.new()
 var _pitch_spring := AimSpring.new()
@@ -56,6 +60,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	_clamp_to_torso_limits()
 	var weight := 1.0 - exp(-follow_sharpness * delta)
 	global_position = global_position.lerp(_goal_position(), weight)
 	var max_lag := deg_to_rad(max_aim_lag_deg)
@@ -67,5 +72,20 @@ func _process(delta: float) -> void:
 	_pitch_node.rotation = Vector3(pitch, 0.0, 0.0)
 
 
+## The camera cannot look past the mech torso twist limits (MechWarrior style).
+func _clamp_to_torso_limits() -> void:
+	var mech := target as Mech
+	if mech == null:
+		return
+	var offset := wrapf(_target_yaw - mech.rotation.y, -PI, PI)
+	var limited := clampf(offset, -deg_to_rad(mech.torso_twist_right_deg), deg_to_rad(mech.torso_twist_left_deg))
+	_target_yaw += limited - offset
+
+
 func _goal_position() -> Vector3:
-	return target.get_global_transform_interpolated().origin + Vector3.UP * pivot_height
+	var height := pivot_height
+	var mech := target as Mech
+	if mech != null:
+		# The camera goes down and up with the kneel.
+		height -= kneel_height_drop * smoothstep(0.0, 1.0, mech.kneel.amount)
+	return target.get_global_transform_interpolated().origin + Vector3.UP * height

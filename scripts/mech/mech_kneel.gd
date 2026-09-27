@@ -6,8 +6,8 @@ extends Node
 @export var mech: Mech
 @export var input: MechInput
 @export var landing_recovery: MechLandingRecovery
-## How fast the mech goes down and comes up (1 / seconds). 0.5 = 2 s down, 2 s up.
-@export var kneel_speed: float = 0.5
+## How fast the mech goes down and comes up (1 / seconds). 0.8 = 1.25 s down, 1.25 s up.
+@export var kneel_speed: float = 0.8
 
 ## 0 = standing, 1 = fully down.
 var amount: float = 0.0

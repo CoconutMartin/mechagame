@@ -33,26 +33,22 @@ signal landed(fall_speed: float)
 @export var deceleration: float = 9.0
 ## Steps the mech takes to stop from full walk speed.
 @export var walk_stop_steps: int = 2
-## Steps the mech takes to stop from full boost speed (after the boost exit hop).
-@export var boost_stop_steps: int = 3
 ## Steps the mech takes to stop after landing from a jump with sideways speed.
 @export var landing_stop_steps: int = 3
 ## Slowdown while the mech charges its jump jets (m/s per second). The mech stands still to charge.
 @export var jump_charge_brake: float = 9.0
 
 @export_group("Turning")
-## The torso turns toward the camera aim. The legs (the mech root) only turn to follow movement,
-## or when the aim goes past these torso twist limits.
+## The torso turns toward the camera aim, inside these twist limits. The legs (the mech root)
+## turn only with A / D. The camera cannot look past the twist limits.
 ## Largest torso twist to the left of the legs, in degrees.
 @export var torso_twist_left_deg: float = 20.0
 ## Largest torso twist to the right of the legs, in degrees.
 @export var torso_twist_right_deg: float = 160.0
-## Top leg turn speed, in degrees per second.
+## Top leg turn speed (A / D), in degrees per second.
 @export var leg_turn_speed_deg: float = 60.0
 ## Leg turn acceleration, in degrees per second per second.
 @export var leg_turn_acceleration_deg: float = 180.0
-## A move direction more than this angle away from the aim makes the legs walk backward.
-@export var backpedal_angle_deg: float = 110.0
 ## Top torso turn speed toward the camera direction (degrees per second).
 @export var turn_speed_deg: float = 58.8
 ## How fast the body gains turn speed (degrees per second per second).
@@ -77,17 +73,18 @@ signal landed(fall_speed: float)
 ## Boost top speed = walk speed x this value.
 @export var boost_speed_multiplier: float = 1.5
 ## Walking steps (with Shift held) before the mech starts to run.
-@export var boost_start_steps: int = 2
+@export var boost_start_steps: int = 3
 ## Running steps after the walk steps, before boost starts.
-@export var run_steps: int = 5
+@export var run_steps: int = 4
 ## Run top speed = walk speed x this value.
 @export var run_speed_multiplier: float = 1.25
 ## Speed gain while boosting (m/s per second).
 @export var boost_acceleration: float = 20.0
 ## Upward speed of the small hop when boost stops on the ground (m/s).
 @export var boost_exit_hop_velocity: float = 7.5
-## After the hop, the mech slows to walk speed over this many steps.
-@export var boost_exit_steps: int = 3
+## After the hop, the mech slows down over these steps (stride length of each, in meters):
+## 2 medium steps, then 2 small steps. Ends at walk speed with W held, or stopped with no key.
+@export var boost_exit_strides: PackedFloat32Array = PackedFloat32Array([4.8, 4.8, 3.4, 3.4])
 ## Energy used each second while boosting.
 @export var boost_energy_per_second: float = 30.0
 ## Air boost acceleration and top speed = ground boost values x this value. 0.25 = 75% less.
@@ -290,16 +287,17 @@ func _get_deceleration_for_steps(steps: int, end_speed: float) -> float:
 
 
 ## Slowdown that stops the mech in a set number of steps:
-## 2 from walk, 4 from boost, 3 after landing from a jump with sideways speed.
+## 2 from walk, 3 after landing from a jump with sideways speed, the boost exit strides after a boost.
 ## Slow walks take fewer steps.
 func _get_stop_deceleration() -> float:
 	if _stop_deceleration <= 0.0:
 		var speed := get_horizontal_speed()
+		if footsteps.has_stride_plan():
+			_stop_deceleration = _get_deceleration_for_plan(0.0)
+			return _stop_deceleration
 		var steps := walk_stop_steps
 		if _landing_stop:
 			steps = landing_stop_steps
-		elif is_exiting_boost or speed > walk_speed * 1.05:
-			steps = boost_stop_steps
 		else:
 			steps = mini(roundi(walk_stop_steps * pow(speed / walk_speed, 2.0)), walk_stop_steps)
 		if steps < 1 or speed < footsteps.min_speed:
@@ -309,11 +307,18 @@ func _get_stop_deceleration() -> float:
 	return _stop_deceleration
 
 
-## Slowdown that brings boost speed down to walk speed over the exit steps.
+## Slowdown that brings boost speed down to walk speed over the boost exit strides.
 func _get_exit_deceleration() -> float:
 	if _exit_deceleration <= 0.0:
-		_exit_deceleration = _get_deceleration_for_steps(boost_exit_steps, walk_speed)
+		_exit_deceleration = _get_deceleration_for_plan(walk_speed)
 	return _exit_deceleration
+
+
+## Steady slowdown to end_speed over the planned strides that are left.
+func _get_deceleration_for_plan(end_speed: float) -> float:
+	var speed := get_horizontal_speed()
+	var distance := footsteps.get_stride_plan_distance()
+	return maxf((speed * speed - end_speed * end_speed) / (2.0 * maxf(distance, 0.5)), 0.3)
 
 
 func _update_vertical(delta: float) -> void:
@@ -396,42 +401,12 @@ func _update_settle(delta: float) -> void:
 	_aim_yaw = wrapf(input.aim_yaw + offset, -PI, PI)
 
 
-## Turns the legs (the mech root). The legs face the move direction, or stay put when standing.
-## When the camera aim goes past the torso twist limits, the legs turn to bring it back inside.
+## Turns the legs (the mech root) with A / D only, like MechWarrior. The torso twist never turns the legs.
 func _turn_legs(delta: float) -> void:
-	var target := rotation.y
-	var moving := is_on_floor() and get_horizontal_speed() > footsteps.min_speed \
-			and not landing_recovery.is_recovering()
-	if moving:
-		var heading := atan2(-velocity.x, -velocity.z)
-		# Moving mostly away from the aim: the legs face forward and walk backward.
-		if absf(wrapf(heading - input.aim_yaw, -PI, PI)) > deg_to_rad(backpedal_angle_deg):
-			heading = wrapf(heading + PI, -PI, PI)
-		target = heading
-	target = _limit_leg_heading(target, input.aim_yaw)
-
-	var error := wrapf(target - rotation.y, -PI, PI)
-	var accel := deg_to_rad(leg_turn_acceleration_deg)
-	var desired := signf(error) * minf(deg_to_rad(leg_turn_speed_deg), sqrt(2.0 * accel * absf(error)))
-	_leg_turn_velocity = move_toward(_leg_turn_velocity, desired, accel * delta)
-	var step := _leg_turn_velocity * delta
-	if signf(step) == signf(error) and absf(step) >= absf(error):
-		rotation.y = wrapf(target, -PI, PI)
-		_leg_turn_velocity = 0.0
-	else:
-		rotation.y = wrapf(rotation.y + step, -PI, PI)
-
-
-## Leg heading moved the least amount that keeps the aim inside the torso twist limits.
-func _limit_leg_heading(heading: float, aim: float) -> float:
-	var twist := wrapf(aim - heading, -PI, PI)
-	var left := deg_to_rad(torso_twist_left_deg)
-	var right := deg_to_rad(torso_twist_right_deg)
-	if twist > left:
-		return wrapf(aim - left, -PI, PI)
-	if twist < -right:
-		return wrapf(aim + right, -PI, PI)
-	return heading
+	var can_turn := not landing_recovery.is_recovering() and not kneel.is_kneeling
+	var desired := input.turn_input * deg_to_rad(leg_turn_speed_deg) if can_turn else 0.0
+	_leg_turn_velocity = move_toward(_leg_turn_velocity, desired, deg_to_rad(leg_turn_acceleration_deg) * delta)
+	rotation.y = wrapf(rotation.y + _leg_turn_velocity * delta, -PI, PI)
 
 
 ## Keeps the torso aim inside the twist limits of the current leg heading.
@@ -446,6 +421,10 @@ func _check_landing(fall_speed: float) -> void:
 	if on_floor and not _was_on_floor:
 		# Landing with sideways speed from a jump: walk it out in a set number of steps.
 		_landing_stop = not is_exiting_boost and get_horizontal_speed() > footsteps.min_speed
+		if is_exiting_boost:
+			# After the one-leg hop: 2 medium steps, then 2 small steps.
+			footsteps.start_stride_plan(boost_exit_strides)
+			_exit_deceleration = 0.0
 		_stop_deceleration = 0.0
 		landed.emit(fall_speed)
 	if on_floor:

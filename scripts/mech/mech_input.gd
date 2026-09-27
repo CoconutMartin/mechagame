@@ -1,12 +1,17 @@
 class_name MechInput
 extends Node
-## Turns keyboard and mouse into movement intent for a Mech.
+## Turns keyboard and mouse into movement intent for a Mech (MechWarrior style).
+## W / S walk forward and back along the legs. A / D turn the legs. The mouse twists the torso.
 ## An AI script can replace this node later and fill the same values.
 
 @export var camera_rig: MechCameraRig
+## The mech. Its heading is the leg direction.
+@export var mech: Node3D
 
-## World-space direction the pilot wants to move. Length 0 to 1.
+## World-space direction the pilot wants to move (along the legs). Length 0 to 1.
 var move_direction: Vector3 = Vector3.ZERO
+## Leg turn input: +1 = turn left (A), -1 = turn right (D).
+var turn_input: float = 0.0
 ## World yaw (radians) the mech body should face (camera yaw after the aim spring).
 var aim_yaw: float = 0.0
 var boost_held: bool = false
@@ -24,9 +29,10 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	var stick := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	aim_yaw = camera_rig.yaw
-	move_direction = Vector3(stick.x, 0.0, stick.y).rotated(Vector3.UP, aim_yaw)
+	var throttle := Input.get_axis("move_back", "move_forward")
+	move_direction = Vector3(0.0, 0.0, -throttle).rotated(Vector3.UP, mech.rotation.y)
+	turn_input = Input.get_axis("move_right", "move_left")
 	boost_held = Input.is_action_pressed("boost")
 	jump_held = Input.is_action_pressed("jump")
 	aim_held = Input.is_action_pressed("aim")

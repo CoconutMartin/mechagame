@@ -17,6 +17,8 @@ signal footstep(strength: float)
 ## 0 to 1: how far the current stride is done.
 var _progress: float = 0.0
 var _step_count: int = 0
+## Planned stride lengths for the next steps (for example after the boost exit hop).
+var _stride_plan: Array[float] = []
 
 
 func _physics_process(delta: float) -> void:
@@ -29,11 +31,37 @@ func _physics_process(delta: float) -> void:
 	if _progress >= 1.0:
 		_progress -= 1.0
 		_step_count += 1
+		if not _stride_plan.is_empty():
+			_stride_plan.pop_front()
 		footstep.emit(clampf(speed / mech.walk_speed, 0.4, 1.0))
+
+
+## Uses these stride lengths (meters) for the next steps, in order. The next stride starts now.
+func start_stride_plan(strides: PackedFloat32Array) -> void:
+	_stride_plan.clear()
+	for stride in strides:
+		_stride_plan.append(stride)
+	_progress = 0.0
+
+
+func has_stride_plan() -> bool:
+	return not _stride_plan.is_empty()
+
+
+## Meters left in the stride plan, plus a quarter of the last stride so the last step lands before the stop.
+func get_stride_plan_distance() -> float:
+	if _stride_plan.is_empty():
+		return 0.0
+	var total := _stride_plan[0] * (1.0 - _progress)
+	for i in range(1, _stride_plan.size()):
+		total += _stride_plan[i]
+	return total + 0.25 * _stride_plan[_stride_plan.size() - 1]
 
 
 ## Stride length in meters at a speed.
 func get_stride(speed: float) -> float:
+	if not _stride_plan.is_empty():
+		return _stride_plan[0]
 	return stride_length * lerpf(min_stride_ratio, 1.0, clampf(speed / mech.walk_speed, 0.0, 1.0))
 
 

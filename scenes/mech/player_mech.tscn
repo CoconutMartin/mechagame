@@ -220,9 +220,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.3, -0.4)
 mesh = SubResource("mesh_Foot")
 surface_material_override/0 = ExtResource("armor")
 
-[node name="MechInput" type="Node" parent="." node_paths=PackedStringArray("camera_rig")]
+[node name="MechInput" type="Node" parent="." node_paths=PackedStringArray("camera_rig", "mech")]
 script = ExtResource("input")
 camera_rig = NodePath("../CameraRig")
+mech = NodePath("..")
 
 [node name="MechEnergy" type="Node" parent="."]
 script = ExtResource("energy")

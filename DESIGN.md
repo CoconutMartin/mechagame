@@ -21,11 +21,12 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 
 | Input | Action | Input map name |
 |---|---|---|
-| WASD | Move | `move_forward`, `move_back`, `move_left`, `move_right` |
-| Mouse | Aim (camera) | |
+| W / S | Walk forward / back along the legs (MechWarrior style) | `move_forward`, `move_back` |
+| A / D | Turn the legs | `move_left`, `move_right` |
+| Mouse | Aim: camera and torso twist (20° left, 160° right of the legs). The camera stops at the limits | |
 | Space | Hold on the ground to charge the jump jets, release to jump. No plain jump | `jump` |
-| Ctrl | Kneel (toggle, 2 s down, 2 s up): right knee on the ground, left foot forward. No movement while kneeling | `crouch` |
-| Shift | Boost (hold). Walk 2 steps, run 5 steps, then boost. Stops when released | `boost` |
+| Ctrl | Kneel (toggle, 1.25 s down, 1.25 s up, camera moves down and up with it): right knee on the ground, left foot forward. No movement while kneeling | `crouch` |
+| Shift | Boost (hold with W). Walk 3 steps, run 4 steps, then boost. Stops when released | `boost` |
 | RMB | One-hand weapons: use the right arm weapon. Two-hand firearm: aim down sight (hold) | `use_right_arm`, `aim` |
 | LMB | One-hand weapons: use the left arm weapon. Two-hand firearm: shoot | `use_left_arm` |
 | Q / E | Left / right back weapon | `fire_back_left`, `fire_back_right` |
@@ -37,7 +38,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 - 1 unit = 1 meter. Mech height is about 10 m.
 - Speed, jump, boost, and camera are tuned for this size.
 - Maps: small to medium urban arenas.
-- Test map: about 58 small buildings (6 to 8 m), 8 medium (10 to 16 m), 3 tall (30, 34, 40 m). Platforms: steps 3, 6, 9, 12 m, a 15° ramp to a 13 m deck, a 2.5 m loading dock, a 5 m plaza, a 3 m wall.
+- Test map: 252 x 252 m (40% of the first area). 40 small buildings (6 to 8 m), 5 medium (10 to 16 m), 3 tall (30, 34, 40 m). Platforms: steps 3, 6, 9, 12 m, a 15° ramp to a 13 m deck, a 2.5 m loading dock, a 5 m plaza, a 3 m wall. Main street 64 m wide with lampposts.
 - Greybox all maps with simple shapes. Include human-scale props: cars (4.5 m), doors (2 m), lampposts (6 m), people (1.8 m).
 - Camera: over-the-shoulder, low height, small shake on each heavy footstep.
 - Movement has weight: gradual acceleration and deceleration.
@@ -50,11 +51,11 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Value | Current | Result |
 |---|---|---|
 | Weight | 60 t (`mass_tons`) | fixed until Phase 2 computes it from parts |
-| Walk speed | 9.1 m/s (33 km/h) forward, 90% to the side (8.19 m/s) | top speed in 1.75 s (acceleration 5.2 m/s²) |
+| Walk speed | 9.1 m/s (33 km/h) forward and back (no strafe with MechWarrior controls) | top speed in 1.75 s (acceleration 5.2 m/s²) |
 | Walk stop | 2 steps from full walk speed | slower speeds take fewer steps |
-| Boost start | Shift held: 2 walking steps, then 5 running steps (run speed 1.25x walk = 11.4 m/s, 12° torso lean), then boost | HUD shows "Boost ready in N steps" |
+| Boost start | Shift held: 3 walking steps, then 4 running steps (run speed 1.25x walk = 11.4 m/s, 12° torso lean), then boost | HUD shows "Boost ready in N steps" |
 | Boost speed | 1.5x walk = 13.65 m/s (49 km/h) | boost acceleration 20 m/s². Boost ends when Shift is released |
-| Boost exit | one big hop on one leg (7.5 m/s up, about 9.5 m forward), then 3 smaller steps down to walk speed. With no key: hop, then 3 steps to a stop | if all keys are released: hop, then 4 steps to a stop |
+| Boost exit | one big hop on one leg (7.5 m/s up, about 9.5 m forward), then 2 medium steps (4.8 m) and 2 small steps (3.4 m). Ends at walk speed with W held, or stopped with no key | if all keys are released: hop, then 4 steps to a stop |
 | Boost energy use | 30 per second (50% of jump jets), capacity 100 | about 3.3 s of boost |
 | Energy recharge | 17.5 per second after 2 s delay | empty energy locks boost until 30% |
 | Jump jet charge | hold Space on the ground. 1 s = 33%, 2 s = 63%, 3 s = 100% of 9 m | the mech stops and crouches while it charges. Charge uses 33.3 energy per second (full charge = full tank). Charges below 10% cancel |
@@ -64,7 +65,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Air boost | Shift + a move key in the air: 25% of ground boost acceleration (5 m/s²) and top speed (3.41 m/s), added to the jump momentum. Energy use 84 per second (2.8x ground boost) | with no energy there is no air boost |
 | Landing steps | a landing with sideways speed: the mech walks out 3 steps to a stop | no control during the landing delay, but the momentum carries on |
 | Landing recovery | falls below 1 m: 0.5 s. Higher: 1.5 s x (weight / 60 t) x (fall height / 9 m), minimum 0.5 s | no movement, jump charge, or boost. Legs crouch. Falls below 0.2 m and the boost exit hop give no delay |
-| Torso twist limits | 20° to the left, 160° to the right of the legs | the legs turn (60°/s) only to follow movement or when the aim goes past a limit |
+| Torso twist limits | 20° to the left, 160° to the right of the legs | the legs turn (60°/s) only with A / D. The camera cannot look past the limits |
 | Torso aim turn | 58.8°/s max, 252°/s² acceleration | in the last 25% of each turn the body turns at 50% speed. Turns above 5° end with a settle: 2° past the aim, 2° to the other side, then a snap onto the aim (about 0.55 s) |
 | Footstep stride | 6 m at walk speed and above, down to 30% (1.8 m) near standstill | one camera shake per stride, none while boosting |
 
@@ -141,7 +142,7 @@ All of this logic lives in one function so it is easy to tune.
   - `MechLegTwist`: legs and pelvis turn toward the move direction (up to 75°). Walking backward keeps the legs forward and steps in reverse.
   - `TwoBoneIK`: arms reach grip markers on the weapon. The long rifle rest pose follows stick figure reference 2: weapon low across the front, stock tucked under the right arm, muzzle down 18° toward the front left, right hand on the grip at mid body with the right elbow out, left hand under the front at hip level with the left elbow out.
   - `WeaponPose`: blends the rifle between the rest pose and the aim pose (RMB). It also moves the left grip (GripLeftRest / GripLeftAim) and the elbow directions.
-  - `TorsoPose`: torso (above the waist) twists toward the mech aim inside the twist limits, leans 30° forward after a landing (fades with the landing delay), leans 35° forward while boosting on the ground, turns 30° right and tilts 6° when aiming, leans 8° when kneeling.
+  - `TorsoPose`: torso (above the waist) twists toward the mech aim inside the twist limits, leans forward after a landing in proportion to the fall height (30° at 9 m, fades with the landing delay), leans 35° forward while boosting on the ground, turns 30° right and tilts 6° when aiming, leans 8° when kneeling.
   - Crouch: 20° hip bend and 40° knee bend (inside knee angle 140°) while boosting on the ground. Landing crouch 8° (short fall) to 40° (9 m fall or higher).
   - `MechKneel`: Ctrl toggles the kneel pose (0.13 s down or up), body drops 1.74 m.
   - Walk: forward leg knee bend 60° and hip lift 20.4°. Run: hip swing 40°, knee bend 70°, hip lift 20°.
@@ -235,6 +236,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 12: one-leg boost exit hop, run phase before boost, air boost energy 84 per second, rising air shake 40% less, kneel toggle 3x faster with 75% less jitter, higher knees, stick figure rifle pose. Landing delay also for falls off edges during the boost exit hop. Map: most buildings 35 m, towers 85 m, 90 m and 120 m, step tower 8/16/24/32 m to a 35 m deck next to a 35 m rooftop.
 - Mech height stays 10 m (decided).
 - Phase 1 revision 13: torso twist limits (20° left, 160° right) with legs turning only past the limits or to follow movement. Run 5 steps before boost. Boost exit: big one-leg hop and 3 steps. Kneel 2 s. Landing torso lean 30°. Knee lift +70%. Air shake 50% less. New rifle rest pose. New city: mostly small buildings.
+- Phase 1 revision 14: MechWarrior 5 style controls (W / S walk, A / D turn legs, mouse twists the torso inside the limits). Map area 60% smaller. Kneel 1.25 s with camera height. Walk 3, run 4, then boost. Boost exit: hop, 2 medium steps, 2 small steps. Landing lean by fall height.
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.

@@ -17,8 +17,11 @@ extends Node
 @export var aim_tilt_deg: float = 6.0
 ## Forward lean while running, in degrees.
 @export var run_lean_deg: float = 12.0
-## Forward lean after a landing, in degrees. Fades out with the landing delay.
+## Forward lean after a landing from landing_lean_full_height or higher, in degrees.
+## Lower falls lean less, in proportion. Fades out with the landing delay.
 @export var landing_lean_deg: float = 30.0
+## Fall height (meters) that gives the full landing lean.
+@export var landing_lean_full_height: float = 9.0
 ## Forward lean while kneeling, in degrees.
 @export var kneel_lean_deg: float = 8.0
 ## How fast the boost lean changes.
@@ -40,7 +43,8 @@ func _physics_process(delta: float) -> void:
 	_run = lerpf(_run, 1.0 if mech.is_running else 0.0, blend)
 	var aim := smoothstep(0.0, 1.0, weapon_pose.aim_amount)
 	var kneel_amount := smoothstep(0.0, 1.0, kneel.amount)
-	var landing := sin(mech.landing_recovery.get_fraction() * PI * 0.5)
+	var fall_ratio := clampf(mech.landing_recovery.fall_height / landing_lean_full_height, 0.0, 1.0)
+	var landing := sin(mech.landing_recovery.get_fraction() * PI * 0.5) * fall_ratio
 	# Negative X leans forward. Negative Y turns right. Negative Z tilts the head to the right.
 	var lean := deg_to_rad(boost_lean_deg) * _boost + deg_to_rad(run_lean_deg) * _run
 	lean = maxf(lean, deg_to_rad(kneel_lean_deg) * kneel_amount)

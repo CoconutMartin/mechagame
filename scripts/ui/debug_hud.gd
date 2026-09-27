@@ -31,7 +31,7 @@ func _process(_delta: float) -> void:
 	if recovery.is_recovering():
 		state += "\nLanding recovery: %.1f s" % recovery.time_left
 	elif not mech.is_boost_ready():
-		state += "\nBoost ready in %d steps (walk 2, run 2)" % mech.get_walk_steps_left()
+		state += "\nBoost ready in %d steps (walk 3, run 4)" % mech.get_walk_steps_left()
 	var energy := mech.energy
 	_info.text = "Speed: %.1f m/s (%d km/h)\nHeight: %.1f m\nWeight: %d t\nState: %s\nEnergy: %d / %d%s\nFPS: %d" % [
 		speed, roundi(speed * 3.6), mech.global_position.y, roundi(mech.mass_tons), state,
