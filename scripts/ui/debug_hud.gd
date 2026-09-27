@@ -23,6 +23,8 @@ func _process(_delta: float) -> void:
 		state += "\nJump charge: %d%% (%.1f m)" % [roundi(charge.charge * 100.0), charge.charge * charge.full_height]
 	if mech.is_running:
 		state += " + RUN"
+	if mech.dodge.is_dodging:
+		state += " + DODGE"
 	if mech.is_skidding:
 		state += " + SKID"
 	elif mech.is_exiting_boost:

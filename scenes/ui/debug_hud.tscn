@@ -63,7 +63,7 @@ theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 15
 text = "W / S walk forward / back   A / D turn legs   Mouse aim torso, camera stays behind the torso (80 each side)
 RMB aim down sight   Space hold to charge jump jets, release to jump (hold W or S to jump that way)
-Ctrl kneel (toggle, W also stands up)   Shift + W: walk 3 steps (skipped if already walking), run 4 steps, then boost
+Ctrl kneel (toggle, W also stands up)   Space double tap: dodge roll (A / D side, W forward, S or none back)   Shift + W: walk 3 steps (skipped if already walking), run 4 steps, then boost
 In the air: W / S = free steering (5 m), Shift + W / S = air boost
 Yellow dot = camera crosshair   Blue ring = mech aim
 Grid lines: thin = 1 m, thick = 10 m"

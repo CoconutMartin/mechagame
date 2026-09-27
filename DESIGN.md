@@ -25,6 +25,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | A / D | Turn the legs at a steady speed (60°/s moving, 30°/s standing). The legs turn only with A / D and keep their heading when the mech stops | `move_left`, `move_right` |
 | Mouse | Aim. Sets the torso target (up to 80° each side of the legs). The torso turns at its turn speed and the camera always stays behind the torso | |
 | Space | Hold on the ground to charge the jump jets, release to jump. No plain jump | `jump` |
+| Space x2 | Double tap (within 0.3 s): dodge roll. A / D = side, W = forward, S or no key = back | `jump` |
 | Ctrl | Kneel (toggle, 1.25 s down, 1.25 s up, camera moves down and up with it). W also stands the mech up: right knee on the ground, left foot forward. No movement while kneeling | `crouch` |
 | Shift | Boost (hold with a move key). Walk 3 steps (skipped if already walking), then always 4 run steps, then boost. Stops when released | `boost` |
 | RMB | One-hand weapons: use the right arm weapon. Two-hand firearm: aim down sight (hold) | `use_right_arm`, `aim` |
@@ -73,6 +74,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Footstep shake | camera kick 0.117 m, trauma 0.2, for a 10 m mech | scales with `Mech.height_m` |
 | Shake overall | `CameraShake.intensity` 0.75, noise speed 21, final offset smoothing 100. Kicks return on a spring (2.2 Hz, damping 0.45) with a small bounce | |
 | Movement start kicks | camera drop 0.2 m (0.267 before intensity) at boost start, skid start, takeoff, the top of a jump, and each wall bump | |
+| Dodge roll | double tap Space: 14 m in 0.75 s (fast start, slows to zero), one full body roll around the middle (5 m high) with a 1.5 m lift and tucked legs, 25 energy, 0.25 s recovery, camera kick at start and end. The roll is visual; the collision body slides. Phase 4 idea: less damage during the roll | `MechDodge` |
 | Inertia sway | `InertiaSway`: the torso leans 1.2° per m/s² of speed change (slowing = forward), rolls 1° per m/s² sideways, lags 0.1 s behind leg turns (max 10°). Springs at 1.3 Hz, damping 0.35, so movements end with a sway | |
 | Turning steps | standing still with the legs turning: one step every 20° of leg turn, knee lift 60% of the walk lift, light footstep shake | the feet do not slide |
 | Torso aim turn | 44.1°/s max, 189°/s² acceleration | in the last 25% of each turn the torso turns at 50% speed, then stops exactly on the aim (no overshoot, no settle swings) |
@@ -158,7 +160,7 @@ All of this logic lives in one function so it is easy to tune.
   - Crouch: 20° hip bend and 40° knee bend (inside knee angle 140°) while boosting on the ground. Landing crouch 8° (short fall) to 40° (9 m fall or higher).
   - `MechKneel`: Ctrl toggles the kneel pose (0.13 s down or up), body drops 1.74 m.
   - Walk: forward leg knee bend 60° and hip lift 20.4°. Run: hip swing 40°, knee bend 70°, hip lift 20°.
-- Mech visual tree update: `Visual > Upper > Torso` (pivot at the waist, 5.4 m) holds the core, head, arms, and rifle. `Upper > Lower` holds the pelvis and legs.
+- Mech visual tree: `Visual > Roll > Upper` (Roll turns for the dodge roll). `Visual > Roll > Upper > Torso` (pivot at the waist, 5.4 m) holds the core, head, arms, and rifle. `Upper > Lower` holds the pelvis and legs.
 - Phase 8: complete animation on rigged .glb models. Walk cycles for biped, reverse-joint, tank, and quad legs. Leg IK so feet stay on slopes and steps. Torso twist toward the aim. Weapon recoil. Boost and jump jet poses.
 
 ## Destructible parts
@@ -266,6 +268,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 31: start pitch -10°. Random left or right torso sway when a boost skid starts.
 - Phase 1 revision 32: body turns at an angle during a boost skid and centers in the recovery.
 - Phase 1 revision 33: 0.2 m camera kicks at movement starts and wall bumps. Camera kicks bounce on a spring. Inertia sway on the torso after all movements.
+- Phase 1 revision 34: dodge roll on a double tap of Space.
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.

@@ -10,6 +10,7 @@ extends Node
 @export var landing_recovery: MechLandingRecovery
 @export var jump_charge: MechJumpCharge
 @export var kneel: MechKneel
+@export var dodge: MechDodge
 ## Moves up and down with the walk. The hips must be inside this node.
 @export var upper_body: Node3D
 @export var hip_left: Node3D
@@ -88,6 +89,8 @@ extends Node
 @export var kneel_back_knee_deg: float = 90.0
 ## Body drop when fully down, in meters. Puts the right knee on the ground.
 @export var kneel_drop: float = 1.74
+## Leg tuck at the middle of a dodge roll, in degrees of hip bend.
+@export var dodge_tuck_deg: float = 50.0
 ## Crouch at full jump charge, in degrees of hip bend.
 @export var charge_crouch_deg: float = 30.0
 ## Hip to foot length, in meters. Used to keep the feet on the ground in a crouch.
@@ -161,7 +164,8 @@ func _physics_process(delta: float) -> void:
 	var charge_crouch := deg_to_rad(charge_crouch_deg) * jump_charge.charge
 	# Low stance while boosting on the ground.
 	var boost_crouch := deg_to_rad(boost_crouch_deg) * _boost_crouch
-	var crouch := maxf(maxf(landing_crouch, charge_crouch), boost_crouch)
+	var dodge_tuck := deg_to_rad(dodge_tuck_deg) * dodge.get_tuck()
+	var crouch := maxf(maxf(maxf(landing_crouch, charge_crouch), boost_crouch), dodge_tuck)
 
 	hip_left.rotation.x = hip + knee_lift * maxf(0.0, -lift) + trail + air * 0.5 + crouch
 	hip_right.rotation.x = -hip + knee_lift * maxf(0.0, lift) + trail + air * 0.5 + crouch

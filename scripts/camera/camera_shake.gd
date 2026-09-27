@@ -31,6 +31,11 @@ extends Camera3D
 @export var takeoff_kick: float = 0.267
 ## At the top of a jump, when the fall starts.
 @export var fall_start_kick: float = 0.267
+## At the start and the end of a dodge roll.
+@export var dodge_start_kick: float = 0.267
+@export var dodge_end_kick: float = 0.267
+## Optional: the dodge node, for the dodge kicks.
+@export var dodge: MechDodge
 
 @export_group("Boost")
 ## Steady shake while boosting (0 to 1).
@@ -76,6 +81,9 @@ func _ready() -> void:
 	footsteps.footstep.connect(_on_footstep)
 	mech.landed.connect(_on_landed)
 	mech.bumped.connect(_on_bumped)
+	if dodge != null:
+		dodge.dodge_started.connect(func() -> void: add_shake(0.2, dodge_start_kick))
+		dodge.dodge_ended.connect(func() -> void: add_shake(0.25, dodge_end_kick))
 
 
 func add_shake(trauma: float, kick: float) -> void:

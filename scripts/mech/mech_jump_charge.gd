@@ -11,6 +11,7 @@ extends Node
 @export var energy: MechEnergy
 @export var landing_recovery: MechLandingRecovery
 @export var kneel: MechKneel
+@export var dodge: MechDodge
 ## Charge (fraction of full height) after 1 s, 2 s, 3 s, and so on. The last value is full charge.
 @export var height_at_second: PackedFloat32Array = PackedFloat32Array([0.33, 0.63, 1.0])
 ## Jump height at full charge, in meters.
@@ -46,7 +47,7 @@ func get_full_charge_time() -> float:
 
 
 func _physics_process(delta: float) -> void:
-	if not mech.is_on_floor() or landing_recovery.is_recovering() or kneel.is_kneeling:
+	if not mech.is_on_floor() or landing_recovery.is_recovering() or kneel.is_kneeling or dodge.blocks_jump():
 		_reset()
 		return
 	_remember_direction(delta)

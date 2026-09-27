@@ -20,6 +20,7 @@ signal landed(fall_speed: float)
 @export var jump_charge: MechJumpCharge
 @export var air_steer: MechAirSteer
 @export var kneel: MechKneel
+@export var dodge: MechDodge
 
 ## Total mech weight in tons. Phase 2 computes this from parts.
 @export var mass_tons: float = 60.0
@@ -235,7 +236,8 @@ func _update_boost(delta: float) -> void:
 	var wants_boost := false
 	if is_on_floor():
 		wants_boost = input.boost_held and has_input and is_boost_ready() \
-				and not landing_recovery.is_recovering() and not jump_charge.is_charging and not kneel.is_kneeling
+				and not landing_recovery.is_recovering() and not jump_charge.is_charging and not kneel.is_kneeling \
+				and not dodge.is_busy()
 	else:
 		# Shift + a move key fires the boosters in the air. A move key alone uses free steering.
 		wants_boost = input.boost_held and has_input
@@ -268,9 +270,14 @@ func _update_boost(delta: float) -> void:
 
 
 func _update_horizontal(delta: float) -> void:
+	if dodge.is_dodging:
+		var dodge_velocity := dodge.direction * dodge.get_speed()
+		velocity.x = dodge_velocity.x
+		velocity.z = dodge_velocity.z
+		return
 	var recovering := landing_recovery.is_recovering()
-	# Charging a jump or kneeling: the mech stands still.
-	var charging := jump_charge.is_charging or kneel.is_kneeling
+	# Charging a jump, kneeling, or recovering from a dodge: the mech stands still.
+	var charging := jump_charge.is_charging or kneel.is_kneeling or dodge.is_busy()
 	var wish := Vector3.ZERO if recovering or charging else input.move_direction
 	var has_input := wish.length_squared() > 0.001
 	# A jump that starts this frame counts as air.
@@ -478,7 +485,7 @@ func _update_settle(delta: float) -> void:
 ## Turns the legs (the mech root) with A / D at a steady speed, slower when standing still.
 func _turn_legs(delta: float) -> void:
 	leg_turn_rate = 0.0
-	if landing_recovery.is_recovering() or kneel.is_kneeling:
+	if landing_recovery.is_recovering() or kneel.is_kneeling or dodge.is_busy():
 		return
 	# A / D only, at a steady speed (no speed-up). The legs never follow the aim.
 	var moving := get_horizontal_speed() > footsteps.min_speed

@@ -17,6 +17,8 @@ var aim_yaw: float = 0.0
 var boost_held: bool = false
 ## True while the jump key is held. MechJumpCharge uses it to charge the jump jets.
 var jump_held: bool = false
+## True on the frame the jump key is pressed. MechDodge uses it for the double tap.
+var jump_pressed: bool = false
 ## True while the aim key (RMB) is held.
 var aim_held: bool = false
 ## True while the walk forward key (W) is held. MechKneel stands up on it.
@@ -37,6 +39,7 @@ func _physics_process(_delta: float) -> void:
 	turn_input = Input.get_axis("move_right", "move_left")
 	boost_held = Input.is_action_pressed("boost")
 	jump_held = Input.is_action_pressed("jump")
+	jump_pressed = Input.is_action_just_pressed("jump")
 	aim_held = Input.is_action_pressed("aim")
 	crouch_pressed = Input.is_action_just_pressed("crouch")
 	forward_held = Input.is_action_pressed("move_forward")
