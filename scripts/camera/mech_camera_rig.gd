@@ -1,8 +1,8 @@
 class_name MechCameraRig
 extends Node3D
-## Over-the-shoulder camera. Follows the target and turns with the mouse.
-## The mouse moves an aim target. The camera follows that target on a spring,
-## so fast mouse moves overshoot a little and settle back.
+## Over-the-shoulder camera. Stays behind the mech torso and turns with it.
+## The mouse moves an aim target (yaw). The torso turns toward that target at its own turn speed,
+## and the camera turns with the torso. Pitch follows the mouse on a spring.
 ## Node layout: MechCameraRig > Pitch > SpringArm3D > Camera3D.
 
 @export var target: Node3D
@@ -23,7 +23,7 @@ extends Node3D
 ## Largest gap between the camera and the mouse aim, in degrees.
 @export var max_aim_lag_deg: float = 25.0
 
-## Current look direction in radians, after the spring. The mech reads yaw to know where to face.
+## Mouse aim target in radians, after the spring. The torso turns toward this yaw.
 var yaw: float = 0.0
 var pitch: float = 0.0
 ## Multiplier on mouse sensitivity. CameraAds lowers it while aiming.
@@ -68,7 +68,10 @@ func _process(delta: float) -> void:
 	_pitch_spring.update(_target_pitch, aim_frequency, aim_damping, max_lag, delta)
 	yaw = _yaw_spring.value
 	pitch = _pitch_spring.value
-	rotation = Vector3(0.0, yaw, 0.0)
+	# The camera stays behind the torso.
+	var mech := target as Mech
+	var view_yaw := mech.get_aim_yaw_interpolated() if mech != null else yaw
+	rotation = Vector3(0.0, view_yaw, 0.0)
 	_pitch_node.rotation = Vector3(pitch, 0.0, 0.0)
 
 

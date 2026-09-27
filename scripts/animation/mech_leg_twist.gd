@@ -7,7 +7,7 @@ extends Node
 ## Pelvis and hips. Rotates around Y.
 @export var lower_body: Node3D
 ## Largest leg twist away from the upper body, in degrees.
-@export var max_twist_deg: float = 75.0
+@export var max_twist_deg: float = 90.0
 ## Twist speed in degrees per second.
 @export var twist_speed_deg: float = 240.0
 ## Below this speed (m/s) the legs keep their current twist.

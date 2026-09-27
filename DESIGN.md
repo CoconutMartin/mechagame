@@ -23,7 +23,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 |---|---|---|
 | W / S | Walk forward / back along the legs (MechWarrior style) | `move_forward`, `move_back` |
 | A / D | Turn the legs at a steady speed (60°/s moving, 30°/s standing). The legs turn only with A / D and keep their heading when the mech stops | `move_left`, `move_right` |
-| Mouse | Aim. The camera and torso can twist up to 85° each side of the legs | |
+| Mouse | Aim. Sets the torso target (up to 80° each side of the legs). The torso turns at its turn speed and the camera always stays behind the torso | |
 | Space | Hold on the ground to charge the jump jets, release to jump. No plain jump | `jump` |
 | Ctrl | Kneel (toggle, 1.25 s down, 1.25 s up, camera moves down and up with it). W also stands the mech up: right knee on the ground, left foot forward. No movement while kneeling | `crouch` |
 | Shift | Boost (hold with a move key). Walk 3 steps (skipped if already walking), then always 4 run steps, then boost. Stops when released | `boost` |
@@ -66,11 +66,11 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Landing steps | a landing with sideways speed: the mech walks out 3 steps to a stop | no control during the landing delay, but the momentum carries on |
 | Landing shake | camera shake 0.045 per m/s of fall speed, camera drop 0.05 m per m/s (a 9 m fall: about 1.2 m drop, then recovers) |
 | Landing recovery | falls below 1 m: 0.5 s. Higher: 1.5 s x (weight / 60 t) x (fall height / 9 m), minimum 0.5 s | no movement, jump charge, or boost. Legs crouch. Falls below 0.2 m and the boost exit hop give no delay |
-| Torso twist limits | 85° each side of the legs | the camera cannot look past them. The legs turn only with A / D |
+| Torso twist limits | 80° each side of the legs | the camera stays behind the torso. The legs turn only with A / D. Lower-leg twist (pelvis down) up to 90° each side |
 | Wall bump | into a wall faster than 3 m/s | restitution (bounce-back speed / impact speed) grows with impact speed: 0.4 at 3 m/s to 0.9 at 13.65 m/s. Then an extra slowdown of up to 30% (less at low speed). Walk 9.1 m/s bounces back at about 5 m/s; boost 13.65 m/s at about 8.6 m/s. Camera shake |
 | Walk sway | body roll 0.9° (walk) to 1.2° (run), side shift 0.09 m toward the planted leg, for a 10 m mech | scales with `Mech.height_m` (taller mechs sway more) |
 | Footstep shake | camera kick 0.117 m, trauma 0.2, for a 10 m mech | scales with `Mech.height_m` |
-| Shake overall | `CameraShake.intensity` 0.5 (all shake 50% less), slower noise (15), slower kick recovery (7), final offset smoothing (30) | smooth, eased shake |
+| Shake overall | `CameraShake.intensity` 0.5, noise speed 21, kick recovery 9.8, final offset smoothing 42 (40% sharper than revision 19) | |
 | Turning steps | standing still with the legs turning: one step every 20° of leg turn, knee lift 60% of the walk lift, light footstep shake | the feet do not slide |
 | Torso aim turn | 58.8°/s max, 252°/s² acceleration | in the last 25% of each turn the body turns at 50% speed. Turns above 5° end with a settle: 2° past the aim, 2° to the other side, then a snap onto the aim (about 0.55 s) |
 | Footstep stride | 6 m at walk speed and above, down to 30% (1.8 m) near standstill | one camera shake per stride, none while boosting |
@@ -248,6 +248,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 17: torso twist 180° each side. Sway 85% less (base for 10 m; scale up for taller mechs in Phase 2). Turning steps in place. Boost always takes 4 run steps; the 3 walk steps are skipped if the mech is already walking.
 - Phase 1 revision 18: back to MechWarrior controls (A / D turn legs at a steady speed, legs never follow the aim, no leg reset on stop). Speed-based wall bounce. Sway 0.9°. Footstep shake 35% less. Sway and footstep shake scale with mech height.
 - Phase 1 revision 19: torso twist 85° each side. All camera shake 50% less and smoothed. W stands up from a kneel.
+- Phase 1 revision 20: torso twist 80°. Camera stays behind the torso (no free orbit). Lower-leg twist up to 90°. Shake 40% sharper.
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.

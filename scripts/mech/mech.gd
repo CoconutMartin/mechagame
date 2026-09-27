@@ -46,9 +46,9 @@ signal landed(fall_speed: float)
 ## The torso and the legs turn separately. The torso turns toward the camera aim (torso turn speed),
 ## inside these twist limits. The legs turn only with A / D. The camera cannot look past the limits.
 ## Largest torso twist to the left of the legs, in degrees.
-@export var torso_twist_left_deg: float = 85.0
+@export var torso_twist_left_deg: float = 80.0
 ## Largest torso twist to the right of the legs, in degrees.
-@export var torso_twist_right_deg: float = 85.0
+@export var torso_twist_right_deg: float = 80.0
 ## Leg turn speed (A / D) while moving, in degrees per second. Steady (no speed-up).
 @export var leg_turn_speed_deg: float = 60.0
 ## Leg turn speed (A / D) while standing still, in degrees per second.
@@ -139,6 +139,7 @@ var _airborne: bool = false
 var _in_exit_leap: bool = false
 ## World yaw where the torso (and the mech aim) points.
 var _aim_yaw: float = 0.0
+var _previous_aim_yaw: float = 0.0
 var _turn_velocity: float = 0.0
 var _turn_start_error: float = 0.0
 ## Time into the settle swings. Below 0 = no settle.
@@ -152,6 +153,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_previous_aim_yaw = _aim_yaw
 	_update_boost(delta)
 	_update_horizontal(delta)
 	_update_vertical(delta)
@@ -172,6 +174,12 @@ func get_horizontal_speed() -> float:
 ## World yaw where the torso and the mech aim point.
 func get_aim_yaw() -> float:
 	return _aim_yaw
+
+
+## Torso yaw between physics frames, for smooth camera motion on fast screens.
+func get_aim_yaw_interpolated() -> float:
+	var step := wrapf(_aim_yaw - _previous_aim_yaw, -PI, PI)
+	return _previous_aim_yaw + step * Engine.get_physics_interpolation_fraction()
 
 
 ## Torso twist from the legs, in radians. Positive = left.
