@@ -10,8 +10,8 @@ extends Node
 @export var aim_origin: Node3D
 @export var max_range: float = 1500.0
 ## The crosshair sits this far above the screen center, as a part of the screen height.
-## 0.09 is about 1 inch on a common 24 inch 1080p monitor.
-@export var screen_offset_up: float = 0.09
+## 0.22 matches the reference screenshot (about 200 px above the center of a 900 px view).
+@export var screen_offset_up: float = 0.22
 ## Physics layers the aim rays hit (1 = world, 3 = props).
 @export_flags_3d_physics var collision_mask: int = 5
 

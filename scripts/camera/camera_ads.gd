@@ -1,7 +1,7 @@
 class_name CameraAds
 extends Node
-## Aim down sight: while the aim key is held, the camera moves to the side of the head,
-## zooms in, and the mouse slows down.
+## Aim down sight: while the aim key is held, the camera zooms in and the mouse slows down.
+## The default camera already sits at the side of the head. The aim values below can move it more.
 
 @export var input: MechInput
 @export var camera: Camera3D

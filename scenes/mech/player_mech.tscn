@@ -333,10 +333,10 @@ target = NodePath("..")
 [node name="Pitch" type="Node3D" parent="CameraRig"]
 
 [node name="SpringArm" type="SpringArm3D" parent="CameraRig/Pitch"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
 collision_mask = 1
 shape = SubResource("arm_shape")
-spring_length = 8.5
+spring_length = 3.8
 margin = 0.4
 
 [node name="CameraAds" type="Node" parent="CameraRig" node_paths=PackedStringArray("input", "camera", "spring_arm", "rig")]

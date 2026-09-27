@@ -7,7 +7,7 @@ extends Node3D
 
 @export var target: Node3D
 ## Height of the camera pivot above the mech's feet, in meters.
-@export var pivot_height: float = 7.0
+@export var pivot_height: float = 9.6
 ## Higher value = camera follows more tightly.
 @export var follow_sharpness: float = 14.0
 ## Radians turned per pixel of mouse movement.
