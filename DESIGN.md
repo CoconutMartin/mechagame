@@ -95,6 +95,7 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 | Distance behind the pivot (spring length) | 10.3 m. RMB moves it to 4 m and zooms (FOV 35°) |
 | Shoulder offset | 3 m right (right side of the head) |
 | Pivot height | 11.5 m (above the head). The camera sits on the aim line behind the pivot and tilts down by the crosshair angle (about 10.7° at FOV 70°), so it looks down over the head |
+| Start view | aim pitch starts at -19°; with the crosshair tilt the view is about 30° down over the head. The camera starts about 4.8 m above the head top. `MechCameraRig.start_pitch_deg` |
 | Same target in ADS | the camera stays on the aim line and its tilt follows the FOV, so the crosshair points at the same spot with and without RMB |
 | Tilt limits | 27.5° down, 15° up |
 | Boost shake | steady shake while boosting (trauma 0.4) |
@@ -258,6 +259,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 24: skid recovery 80% shorter, skid 50% longer, shake smoothing 100, crosshair and mech aim about 1 inch above the screen center.
 - Phase 1 revision 25: default camera at the right side of the head (3 m right, 4 m back). Crosshair 22% above the screen center. Torso sways forward and back after a skid before it is upright.
 - Phase 1 revision 29: camera pivot above the head, camera looks down over the head. Crosshair 13.5% above the center. Same crosshair target with and without ADS.
+- Phase 1 revision 30: start view about 30° down over the head (start aim pitch -19°).
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.
