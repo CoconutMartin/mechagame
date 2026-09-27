@@ -8,7 +8,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 
 | Phase | Content | Status |
 |---|---|---|
-| 1 | Mech controller and third-person camera on a test map | Revision 2 built, waiting for test |
+| 1 | Mech controller and third-person camera on a test map | Done |
 | 2 | Part resources, sockets, assembler, stat calculator, weight-to-speed formula, debug HUD | Not started |
 | 3 | Weapons: guns, lock-on missiles, sniper zoom, melee blade, energy use | Not started |
 | 4 | Per-part HP, hitboxes, destruction, target dummies, enemy AI, greybox urban map with destructible props | Not started |
