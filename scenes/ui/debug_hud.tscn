@@ -78,7 +78,7 @@ theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 15
 text = "Mouse aim (legs follow at 60 deg/s)   W / S walk forward / back   A / D strafe
 RMB aim down sight   Space hold to charge jump jets, release to jump (hold a move key to jump that way)
-Ctrl kneel (toggle)   Shift + move key: walk 3 steps, run 4 steps, then boost
+Ctrl kneel (toggle)   Shift + move key: walk 3 steps (skipped if already walking), run 4 steps, then boost
 In the air: move key = free steering (5 m), Shift + move key = air boost
 Yellow dot = camera crosshair   Blue ring = mech aim
 Grid lines: thin = 1 m, thick = 10 m"

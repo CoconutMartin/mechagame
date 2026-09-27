@@ -11,8 +11,12 @@ signal footstep(strength: float)
 @export var stride_length: float = 6.0
 ## Stride near standstill = stride_length x this value.
 @export_range(0.1, 1.0) var min_stride_ratio: float = 0.3
-## Below this speed (m/s) the mech takes no steps.
+## Below this speed (m/s) the mech takes no walking steps.
 @export var min_speed: float = 1.0
+## Turning in place: one step for each this many degrees of leg turn.
+@export var turn_step_angle_deg: float = 20.0
+## Footstep shake strength for turning steps (0 to 1).
+@export var turn_step_strength: float = 0.3
 
 ## 0 to 1: how far the current stride is done.
 var _progress: float = 0.0
@@ -25,15 +29,21 @@ func _physics_process(delta: float) -> void:
 	if not mech.is_on_floor() or mech.is_boosting:
 		return
 	var speed := mech.get_horizontal_speed()
-	if speed < min_speed:
+	var strength := clampf(speed / mech.walk_speed, 0.4, 1.0)
+	if speed >= min_speed:
+		_progress += speed * delta / get_stride(speed)
+	elif absf(mech.leg_turn_rate) > 0.01:
+		# Turning in place: the feet step around instead of sliding.
+		_progress += absf(mech.leg_turn_rate) * delta / deg_to_rad(turn_step_angle_deg)
+		strength = turn_step_strength
+	else:
 		return
-	_progress += speed * delta / get_stride(speed)
 	if _progress >= 1.0:
 		_progress -= 1.0
 		_step_count += 1
 		if not _stride_plan.is_empty():
 			_stride_plan.pop_front()
-		footstep.emit(clampf(speed / mech.walk_speed, 0.4, 1.0))
+		footstep.emit(strength)
 
 
 ## Uses these stride lengths (meters) for the next steps, in order. The next stride starts now.

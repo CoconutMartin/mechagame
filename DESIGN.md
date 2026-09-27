@@ -23,10 +23,10 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 |---|---|---|
 | W / S | Walk forward / back (relative to the aim) | `move_forward`, `move_back` |
 | A / D | Strafe. The lower legs twist toward the strafe direction (MechWarrior 5: Clans arcade style) | `move_left`, `move_right` |
-| Mouse | Aim. The camera turns freely inside the torso twist limits (5° each side of the legs). The torso turns toward the camera; the legs turn separately and slower (60°/s moving, 30°/s standing) | |
+| Mouse | Aim. The camera turns freely; the torso can twist up to 180° each side of the legs. The torso turns toward the camera; the legs turn separately and slower (60°/s moving, 30°/s standing) | |
 | Space | Hold on the ground to charge the jump jets, release to jump. No plain jump | `jump` |
 | Ctrl | Kneel (toggle, 1.25 s down, 1.25 s up, camera moves down and up with it): right knee on the ground, left foot forward. No movement while kneeling | `crouch` |
-| Shift | Boost (hold with a move key). Walk 3 steps, run 4 steps, then boost. Stops when released | `boost` |
+| Shift | Boost (hold with a move key). Walk 3 steps (skipped if already walking), then always 4 run steps, then boost. Stops when released | `boost` |
 | RMB | One-hand weapons: use the right arm weapon. Two-hand firearm: aim down sight (hold) | `use_right_arm`, `aim` |
 | LMB | One-hand weapons: use the left arm weapon. Two-hand firearm: shoot | `use_left_arm` |
 | Q / E | Left / right back weapon | `fire_back_left`, `fire_back_right` |
@@ -53,7 +53,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Weight | 60 t (`mass_tons`) | fixed until Phase 2 computes it from parts |
 | Walk speed | 9.1 m/s (33 km/h) forward and back, 90% to the side (8.19 m/s) | top speed in 1.75 s (acceleration 5.2 m/s²) |
 | Walk stop | 2 steps from full walk speed | slower speeds take fewer steps |
-| Boost start | Shift held: 3 walking steps, then 4 running steps (run speed 1.25x walk = 11.4 m/s, 12° torso lean), then boost | HUD shows "Boost ready in N steps" |
+| Boost start | Shift held: 3 walking steps (skipped if the mech already walked 3 steps), then always 4 running steps (run speed 1.25x walk = 11.4 m/s, 12° torso lean), then boost | HUD shows "Boost ready in N steps" |
 | Boost speed | 1.5x walk = 13.65 m/s (49 km/h) | boost acceleration 20 m/s². Boost ends when Shift is released |
 | Boost exit | one low leap forward (5 m/s up, about 6 m) that lands on one leg, then 2 medium steps (4.8 m) and 2 small steps (3.4 m). Ends at walk speed with a move key held, or stopped with no key. No landing delay for the leap | if all keys are released: hop, then 4 steps to a stop |
 | Boost energy use | 30 per second (50% of jump jets), capacity 100 | about 3.3 s of boost |
@@ -66,9 +66,10 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Landing steps | a landing with sideways speed: the mech walks out 3 steps to a stop | no control during the landing delay, but the momentum carries on |
 | Landing shake | camera shake 0.045 per m/s of fall speed, camera drop 0.05 m per m/s (a 9 m fall: about 1.2 m drop, then recovers) |
 | Landing recovery | falls below 1 m: 0.5 s. Higher: 1.5 s x (weight / 60 t) x (fall height / 9 m), minimum 0.5 s | no movement, jump charge, or boost. Legs crouch. Falls below 0.2 m and the boost exit hop give no delay |
-| Torso twist limits | 5° each side of the legs | the camera cannot look past them. The legs turn toward the aim at a steady 60°/s while moving and 30°/s while standing |
+| Torso twist limits | 180° each side of the legs | the torso can turn fully around. The legs turn toward the aim at a steady 60°/s while moving and 30°/s while standing |
 | Wall bump | into a wall faster than 3 m/s | the mech bounces back (50% of the speed into the wall), then all speed is halved. Camera shake |
-| Walk sway | body roll 3° (walk) to 4° (run), side shift 0.3 m toward the planted leg | |
+| Walk sway | body roll 0.45° (walk) to 0.6° (run), side shift 0.045 m toward the planted leg | base sway for a 10 m mech. Taller mechs sway more (Phase 2: scale with mech height) |
+| Turning steps | standing still with the legs turning: one step every 20° of leg turn, knee lift 60% of the walk lift, light footstep shake | the feet do not slide |
 | Torso aim turn | 58.8°/s max, 252°/s² acceleration | in the last 25% of each turn the body turns at 50% speed. Turns above 5° end with a settle: 2° past the aim, 2° to the other side, then a snap onto the aim (about 0.55 s) |
 | Footstep stride | 6 m at walk speed and above, down to 30% (1.8 m) near standstill | one camera shake per stride, none while boosting |
 
@@ -242,6 +243,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 14: MechWarrior 5 style controls (W / S walk, A / D turn legs, mouse twists the torso inside the limits). Map area 60% smaller. Kneel 1.25 s with camera height. Walk 3, run 4, then boost. Boost exit: hop, 2 medium steps, 2 small steps. Landing lean by fall height.
 - Phase 1 revision 15: arcade controls (mouse aims, legs follow at a steady 60°/s, A / D strafe with leg twist). Torso twist 5° each side. Boost exit with no hop: big step, 2 medium, 2 small. Stronger landing shake. Small buildings 40% fewer.
 - Phase 1 revision 16: camera limited by the torso twist, torso and legs turn separately, legs 30°/s standing. Walk sway. Wall bump bounce. Boost exit leap on one leg. Map area 50% smaller, small buildings 60% fewer.
+- Phase 1 revision 17: torso twist 180° each side. Sway 85% less (base for 10 m; scale up for taller mechs in Phase 2). Turning steps in place. Boost always takes 4 run steps; the 3 walk steps are skipped if the mech is already walking.
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.

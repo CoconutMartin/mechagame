@@ -45,9 +45,9 @@ signal landed(fall_speed: float)
 ## inside these twist limits. The legs turn toward the aim more slowly. The camera cannot look
 ## past the twist limits. A / D strafe.
 ## Largest torso twist to the left of the legs, in degrees.
-@export var torso_twist_left_deg: float = 5.0
+@export var torso_twist_left_deg: float = 180.0
 ## Largest torso twist to the right of the legs, in degrees.
-@export var torso_twist_right_deg: float = 5.0
+@export var torso_twist_right_deg: float = 180.0
 ## Leg turn speed toward the aim while moving, in degrees per second. Steady (no speed-up).
 @export var leg_turn_speed_deg: float = 60.0
 ## Leg turn speed toward the aim while standing still, in degrees per second.
@@ -75,9 +75,9 @@ signal landed(fall_speed: float)
 @export_group("Boost")
 ## Boost top speed = walk speed x this value.
 @export var boost_speed_multiplier: float = 1.5
-## Walking steps (with Shift held) before the mech starts to run.
+## Walking steps before the mech can start to run. Skipped if the mech already walked this many steps.
 @export var boost_start_steps: int = 3
-## Running steps after the walk steps, before boost starts.
+## Running steps before boost starts. Always taken, every time.
 @export var run_steps: int = 4
 ## Run top speed = walk speed x this value.
 @export var run_speed_multiplier: float = 1.25
@@ -124,6 +124,9 @@ var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _was_on_floor: bool = true
 var _boost_on_ground: bool = false
 var _walk_steps: int = 0
+var _run_steps_done: int = 0
+## Leg turn speed this frame, in radians per second (positive = left).
+var leg_turn_rate: float = 0.0
 var _exit_deceleration: float = 0.0
 var _stop_deceleration: float = 0.0
 var _landing_stop: bool = false
@@ -175,14 +178,15 @@ func get_boost_speed() -> float:
 	return walk_speed * boost_speed_multiplier
 
 
-## True after the walk steps and the run steps, so boost can start.
+## True after the run steps, so boost can start.
 func is_boost_ready() -> bool:
-	return _walk_steps >= boost_start_steps + run_steps
+	return _run_steps_done >= run_steps
 
 
-## Steps left before boost can start (walk steps plus run steps).
+## Steps left before boost can start (walk steps if needed, plus run steps).
 func get_walk_steps_left() -> int:
-	return maxi(boost_start_steps + run_steps - _walk_steps, 0)
+	var walk_left := maxi(boost_start_steps - _walk_steps, 0)
+	return walk_left + maxi(run_steps - _run_steps_done, 0)
 
 
 func get_run_speed() -> float:
@@ -191,6 +195,8 @@ func get_run_speed() -> float:
 
 func _on_footstep(_strength: float) -> void:
 	_walk_steps += 1
+	if is_running:
+		_run_steps_done += 1
 
 
 func _update_boost(delta: float) -> void:
@@ -211,6 +217,9 @@ func _update_boost(delta: float) -> void:
 	is_running = is_on_floor() and not is_boosting and input.boost_held and has_input \
 			and _walk_steps >= boost_start_steps and not landing_recovery.is_recovering() \
 			and not jump_charge.is_charging and not kneel.is_kneeling
+	if not is_running and not is_boosting:
+		# The run steps start again from zero before the next boost.
+		_run_steps_done = 0
 	is_air_boosting = is_boosting and not is_on_floor()
 	_boost_on_ground = is_boosting and is_on_floor()
 	if is_boosting:
@@ -414,13 +423,16 @@ func _update_settle(delta: float) -> void:
 
 ## Turns the legs (the mech root) toward the camera aim at a steady speed, slower when standing still.
 func _turn_legs(delta: float) -> void:
+	leg_turn_rate = 0.0
 	if landing_recovery.is_recovering() or kneel.is_kneeling:
 		return
 	var moving := get_horizontal_speed() > footsteps.min_speed
 	var speed := leg_turn_speed_deg if moving else leg_turn_speed_standing_deg
 	var error := wrapf(input.aim_yaw - rotation.y, -PI, PI)
 	var step := deg_to_rad(speed) * delta
-	rotation.y = wrapf(rotation.y + clampf(error, -step, step), -PI, PI)
+	var turn := clampf(error, -step, step)
+	rotation.y = wrapf(rotation.y + turn, -PI, PI)
+	leg_turn_rate = turn / delta
 
 
 ## Keeps the torso aim inside the twist limits of the current leg heading.

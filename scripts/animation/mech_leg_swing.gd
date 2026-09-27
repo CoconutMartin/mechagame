@@ -27,11 +27,18 @@ extends Node
 ## Body drop at each foot strike, in meters.
 @export var bob_height: float = 0.3
 ## Body roll toward the planted leg while walking, in degrees.
-@export var sway_deg: float = 3.0
+## Base sway for a 10 m mech. Taller mechs will sway more (Phase 2).
+@export var sway_deg: float = 0.45
 ## Body roll while running, in degrees.
-@export var run_sway_deg: float = 4.0
+@export var run_sway_deg: float = 0.6
 ## Body side shift toward the planted leg, in meters.
-@export var sway_shift: float = 0.3
+@export var sway_shift: float = 0.045
+
+@export_group("Turn Steps")
+## Knee lift for steps while turning in place, as a part of the walking knee lift (0 to 1).
+@export var turn_step_amount: float = 0.6
+## Leg turn speed (degrees per second) that gives full turning steps.
+@export var turn_step_full_rate_deg: float = 30.0
 
 @export_group("Run")
 ## Hip swing while running (Shift held before boost), in degrees.
@@ -87,6 +94,7 @@ var _walk_amount: float = 0.0
 var _trail: float = 0.0
 var _boost_crouch: float = 0.0
 var _run: float = 0.0
+var _turn_step: float = 0.0
 var _stride_scale: float = 1.0
 var _leap: float = 0.0
 var _upper_rest_x: float = 0.0
@@ -106,6 +114,11 @@ func _physics_process(delta: float) -> void:
 	var speed_ratio := clampf(mech.get_horizontal_speed() / mech.walk_speed, 0.0, 1.0)
 	var blend := 1.0 - exp(-blend_speed * delta)
 	_walk_amount = lerpf(_walk_amount, speed_ratio if walking else 0.0, blend)
+	# Steps in place while the legs turn and the mech stands still.
+	var standing := on_floor and mech.get_horizontal_speed() < footsteps.min_speed
+	var turn_ratio := clampf(absf(rad_to_deg(mech.leg_turn_rate)) / turn_step_full_rate_deg, 0.0, 1.0)
+	_turn_step = lerpf(_turn_step, turn_ratio * turn_step_amount if standing else 0.0, blend)
+	var lift_amount := maxf(_walk_amount, _turn_step)
 	_trail = lerpf(_trail, 1.0 if mech.is_boosting else 0.0, blend)
 	_boost_crouch = lerpf(_boost_crouch, 1.0 if mech.is_boosting and on_floor else 0.0, blend)
 	_air_knee = lerpf(_air_knee, 0.0 if on_floor else 1.0, blend)
@@ -121,11 +134,11 @@ func _physics_process(delta: float) -> void:
 	var lift := sin(phase) * (-1.0 if leg_twist.moving_backward else 1.0)
 	var hip := deg_to_rad(lerpf(hip_swing_deg, run_hip_swing_deg, _run)) * _stride_scale * _walk_amount * cos(phase)
 	# The forward-swinging leg also lifts at the hip, so the knee comes up.
-	var knee_lift := deg_to_rad(lerpf(knee_lift_deg, run_knee_lift_deg, _run)) * _walk_amount
+	var knee_lift := deg_to_rad(lerpf(knee_lift_deg, run_knee_lift_deg, _run)) * lift_amount
 	# Legs trail behind the move direction. Backward, the legs face forward, so the trail flips.
 	var trail := -deg_to_rad(boost_trail_deg) * _trail * (-1.0 if leg_twist.moving_backward else 1.0)
 	# The leg that moves forward lifts its foot by bending the knee.
-	var knee := deg_to_rad(lerpf(knee_bend_deg, run_knee_bend_deg, _run)) * _walk_amount
+	var knee := deg_to_rad(lerpf(knee_bend_deg, run_knee_bend_deg, _run)) * lift_amount
 	var air := deg_to_rad(air_knee_deg) * _air_knee
 	# Crouch just after landing, deeper for higher falls, then the mech stands up.
 	var fall_ratio := clampf(landing_recovery.fall_height / landing_crouch_full_height, 0.0, 1.0)
