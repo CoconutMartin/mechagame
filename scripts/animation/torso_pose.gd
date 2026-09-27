@@ -61,9 +61,8 @@ func _physics_process(delta: float) -> void:
 	var skid_target := skid_lean_back_deg if mech.is_skidding else 0.0
 	_skid_lean.update(skid_target, skid_recover_frequency, skid_recover_damping, 90.0, delta)
 	if mech.is_skidding and not _was_skidding:
-		# New skid: pick a random side and size.
-		var side := 1.0 if randf() < 0.5 else -1.0
-		_skid_roll_target = side * randf_range(skid_side_sway_min_deg, skid_side_sway_max_deg)
+		# New skid: roll to the skid side by a random amount.
+		_skid_roll_target = mech.skid_side * randf_range(skid_side_sway_min_deg, skid_side_sway_max_deg)
 	_was_skidding = mech.is_skidding
 	var roll_target := _skid_roll_target if mech.is_skidding else 0.0
 	_skid_roll.update(roll_target, skid_recover_frequency, skid_recover_damping, 90.0, delta)

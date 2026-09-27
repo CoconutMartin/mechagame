@@ -137,6 +137,8 @@ var is_air_boosting: bool = false
 var is_exiting_boost: bool = false
 ## True while the feet slide in a boost skid stop.
 var is_skidding: bool = false
+## Random side of the current skid: +1 = left, -1 = right. Set when a skid starts.
+var skid_side: float = 1.0
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _was_on_floor: bool = true
@@ -255,8 +257,9 @@ func _update_boost(delta: float) -> void:
 		_exit_deceleration = 0.0
 		_stop_deceleration = 0.0
 		if boost_exit_style == BoostExit.SKID:
-			# Feet plant and slide, then heavy steps.
+			# Feet plant and slide, then heavy steps. The body turns and rolls to a random side.
 			is_skidding = true
+			skid_side = 1.0 if randf() < 0.5 else -1.0
 		else:
 			# One leap forward that lands on one leg, then medium and small steps to slow down.
 			_in_exit_leap = true
