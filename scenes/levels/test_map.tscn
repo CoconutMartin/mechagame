@@ -295,5 +295,6 @@ transform = Transform3D(-0.939693, 0, -0.34202, 0, 1, 0, 0.34202, 0, -0.939693, 
 
 [node name="PlayerMech" parent="." instance=ExtResource("mech")]
 
-[node name="DebugHud" parent="." node_paths=PackedStringArray("mech") instance=ExtResource("hud")]
+[node name="DebugHud" parent="." node_paths=PackedStringArray("mech", "mech_aim") instance=ExtResource("hud")]
 mech = NodePath("../PlayerMech")
+mech_aim = NodePath("../PlayerMech/MechAim")

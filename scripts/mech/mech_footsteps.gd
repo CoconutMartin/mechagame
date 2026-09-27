@@ -32,3 +32,8 @@ func _physics_process(delta: float) -> void:
 ## A foot touches the ground at each multiple of PI.
 func get_cycle_phase() -> float:
 	return (float(_step_count % 2) + _distance / stride_length) * PI
+
+
+## Meters left until the next footstep.
+func get_distance_to_next_step() -> float:
+	return stride_length - _distance

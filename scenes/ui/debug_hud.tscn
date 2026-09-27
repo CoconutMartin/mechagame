@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/debug_hud.gd" id="hud"]
+[ext_resource type="Script" path="res://scripts/ui/aim_reticle.gd" id="reticle"]
 
 [node name="DebugHud" type="CanvasLayer"]
 script = ExtResource("hud")
@@ -9,7 +10,7 @@ script = ExtResource("hud")
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 360.0
-offset_bottom = 140.0
+offset_bottom = 200.0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 18
@@ -53,18 +54,30 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(1, 0.9, 0.3, 0.9)
 
+[node name="AimReticle" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("reticle")
+
 [node name="Controls" type="Label" parent="."]
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
-offset_top = -110.0
-offset_right = 560.0
+offset_top = -150.0
+offset_right = 640.0
 offset_bottom = -16.0
 grow_vertical = 0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 15
-text = "WASD move   Mouse aim   Space jump (hold for jump jets)   Shift boost
+text = "WASD move   Mouse aim   RMB aim down sight   Space jump (hold for jump jets)
+Shift boost (after 2 walking steps)
 Esc free mouse   Click to capture mouse
+Yellow dot = camera crosshair   Blue ring = mech aim
 Grid lines: thin = 1 m, thick = 10 m"

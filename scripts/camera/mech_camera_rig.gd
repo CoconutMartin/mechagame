@@ -26,6 +26,8 @@ extends Node3D
 ## Current look direction in radians, after the spring. The mech reads yaw to know where to face.
 var yaw: float = 0.0
 var pitch: float = 0.0
+## Multiplier on mouse sensitivity. CameraAds lowers it while aiming.
+var sensitivity_scale: float = 1.0
 
 var _target_yaw: float = 0.0
 var _target_pitch: float = 0.0
@@ -47,8 +49,9 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var motion := event as InputEventMouseMotion
-		_target_yaw -= motion.relative.x * mouse_sensitivity
-		_target_pitch -= motion.relative.y * mouse_sensitivity
+		var sensitivity := mouse_sensitivity * sensitivity_scale
+		_target_yaw -= motion.relative.x * sensitivity
+		_target_pitch -= motion.relative.y * sensitivity
 		_target_pitch = clampf(_target_pitch, deg_to_rad(min_pitch_deg), deg_to_rad(max_pitch_deg))
 
 

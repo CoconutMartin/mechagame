@@ -7,6 +7,7 @@ extends Node
 @export var mech: Mech
 @export var footsteps: MechFootsteps
 @export var leg_twist: MechLegTwist
+@export var landing_recovery: MechLandingRecovery
 ## Moves up and down with the walk. The hips must be inside this node.
 @export var upper_body: Node3D
 @export var hip_left: Node3D
@@ -23,6 +24,12 @@ extends Node
 @export var bob_height: float = 0.3
 ## Body roll toward the planted leg, in degrees.
 @export var sway_deg: float = 1.5
+
+@export_group("Landing")
+## Crouch after a hard landing, in degrees of hip bend. Knees bend twice as much.
+@export var landing_crouch_deg: float = 25.0
+## Hip to foot length, in meters. Used to keep the feet on the ground in a crouch.
+@export var leg_length: float = 5.2
 
 @export_group("Boost and Air")
 ## Legs trail back this much while boosting, in degrees.
@@ -61,12 +68,17 @@ func _physics_process(delta: float) -> void:
 	# The leg that moves forward lifts its foot by bending the knee.
 	var knee := deg_to_rad(knee_bend_deg) * _walk_amount
 	var air := deg_to_rad(air_knee_deg) * _air_knee
+	# Deep crouch just after landing, then the mech stands up.
+	var crouch := deg_to_rad(landing_crouch_deg) * sin(landing_recovery.get_fraction() * PI * 0.5)
 
-	hip_left.rotation.x = hip + trail + air * 0.5
-	hip_right.rotation.x = -hip + trail + air * 0.5
-	knee_left.rotation.x = -knee * maxf(0.0, -lift) - air
-	knee_right.rotation.x = -knee * maxf(0.0, lift) - air
+	hip_left.rotation.x = hip + trail + air * 0.5 + crouch
+	hip_right.rotation.x = -hip + trail + air * 0.5 + crouch
+	knee_left.rotation.x = -knee * maxf(0.0, -lift) - air - crouch * 2.0
+	knee_right.rotation.x = -knee * maxf(0.0, lift) - air - crouch * 2.0
 
 	# Lowest at foot strike (phase = 0, PI), highest between steps.
-	upper_body.position.y = _upper_rest_y - bob_height * _walk_amount * (cos(2.0 * phase) + 1.0) * 0.5
+	var bob := bob_height * _walk_amount * (cos(2.0 * phase) + 1.0) * 0.5
+	# A crouch shortens the legs. Lower the body by the same amount so the feet stay down.
+	var crouch_drop := leg_length * (1.0 - cos(crouch))
+	upper_body.position.y = _upper_rest_y - bob - crouch_drop
 	upper_body.rotation.z = deg_to_rad(sway_deg) * _walk_amount * cos(phase)

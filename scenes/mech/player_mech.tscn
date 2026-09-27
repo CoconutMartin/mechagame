@@ -8,6 +8,10 @@
 [ext_resource type="Script" path="res://scripts/animation/mech_leg_twist.gd" id="legtwist"]
 [ext_resource type="Script" path="res://scripts/animation/two_bone_ik.gd" id="ik"]
 [ext_resource type="Script" path="res://scripts/camera/mech_camera_rig.gd" id="rig"]
+[ext_resource type="Script" path="res://scripts/camera/camera_ads.gd" id="ads"]
+[ext_resource type="Script" path="res://scripts/mech/mech_landing_recovery.gd" id="recovery"]
+[ext_resource type="Script" path="res://scripts/mech/mech_aim.gd" id="aim"]
+[ext_resource type="Script" path="res://scripts/animation/weapon_pose.gd" id="weaponpose"]
 [ext_resource type="Script" path="res://scripts/camera/camera_shake.gd" id="shake"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/long_rifle.tscn" id="rifle"]
 [ext_resource type="Material" path="res://materials/mech_armor.tres" id="armor"]
@@ -57,7 +61,7 @@ size = Vector3(0.9, 2.7, 1.0)
 [sub_resource type="BoxMesh" id="mesh_Hand"]
 size = Vector3(0.7, 0.6, 0.8)
 
-[node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy", "footsteps")]
+[node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery")]
 collision_layer = 2
 collision_mask = 1
 floor_snap_length = 1.0
@@ -65,6 +69,7 @@ script = ExtResource("mech")
 input = NodePath("MechInput")
 energy = NodePath("MechEnergy")
 footsteps = NodePath("MechFootsteps")
+landing_recovery = NodePath("MechLandingRecovery")
 
 [node name="Collision" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
@@ -147,7 +152,13 @@ mesh = SubResource("mesh_Hand")
 surface_material_override/0 = ExtResource("armor")
 
 [node name="Rifle" parent="Visual/Upper" instance=ExtResource("rifle")]
-transform = Transform3D(0.81915, -0.36869, 0.43939, 0, 0.76604, 0.64279, -0.57358, -0.52654, 0.62751, 0.6, 7.6, -2)
+transform = Transform3D(0.93969, 0.24184, 0.24184, 0, 0.70711, -0.70711, -0.34202, 0.66446, 0.66446, 0.9, 6.8, -2)
+
+[node name="RiflePoseHighReady" type="Marker3D" parent="Visual/Upper"]
+transform = Transform3D(0.93969, 0.24184, 0.24184, 0, 0.70711, -0.70711, -0.34202, 0.66446, 0.66446, 0.9, 6.8, -2)
+
+[node name="AimAnchor" type="Marker3D" parent="Visual/Upper"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 8.1, -1.2)
 
 [node name="Lower" type="Node3D" parent="Visual/Upper"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.2, 0)
@@ -210,18 +221,37 @@ script = ExtResource("energy")
 script = ExtResource("footsteps")
 mech = NodePath("..")
 
+[node name="MechLandingRecovery" type="Node" parent="." node_paths=PackedStringArray("mech")]
+script = ExtResource("recovery")
+mech = NodePath("..")
+
+[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin")]
+script = ExtResource("aim")
+mech = NodePath("..")
+camera = NodePath("../CameraRig/Pitch/SpringArm/Camera")
+aim_origin = NodePath("../Visual/Upper/AimAnchor")
+
 [node name="Animation" type="Node" parent="."]
+
+[node name="WeaponPose" type="Node" parent="Animation" node_paths=PackedStringArray("weapon", "rest_pose", "aim_anchor", "mech_aim", "input")]
+script = ExtResource("weaponpose")
+weapon = NodePath("../../Visual/Upper/Rifle")
+rest_pose = NodePath("../../Visual/Upper/RiflePoseHighReady")
+aim_anchor = NodePath("../../Visual/Upper/AimAnchor")
+mech_aim = NodePath("../../MechAim")
+input = NodePath("../../MechInput")
 
 [node name="LegTwist" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "lower_body")]
 script = ExtResource("legtwist")
 mech = NodePath("../..")
 lower_body = NodePath("../../Visual/Upper/Lower")
 
-[node name="LegSwing" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "footsteps", "leg_twist", "upper_body", "hip_left", "hip_right", "knee_left", "knee_right")]
+[node name="LegSwing" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "footsteps", "leg_twist", "landing_recovery", "upper_body", "hip_left", "hip_right", "knee_left", "knee_right")]
 script = ExtResource("legswing")
 mech = NodePath("../..")
 footsteps = NodePath("../../MechFootsteps")
 leg_twist = NodePath("../LegTwist")
+landing_recovery = NodePath("../../MechLandingRecovery")
 upper_body = NodePath("../../Visual/Upper")
 hip_left = NodePath("../../Visual/Upper/Lower/HipL")
 hip_right = NodePath("../../Visual/Upper/Lower/HipR")
@@ -259,6 +289,13 @@ collision_mask = 1
 shape = SubResource("arm_shape")
 spring_length = 8.5
 margin = 0.4
+
+[node name="CameraAds" type="Node" parent="CameraRig" node_paths=PackedStringArray("input", "camera", "spring_arm", "rig")]
+script = ExtResource("ads")
+input = NodePath("../../MechInput")
+camera = NodePath("../Pitch/SpringArm/Camera")
+spring_arm = NodePath("../Pitch/SpringArm")
+rig = NodePath("..")
 
 [node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm" node_paths=PackedStringArray("mech", "footsteps")]
 current = true

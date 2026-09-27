@@ -7,9 +7,9 @@ signal recovered
 
 @export var capacity: float = 100.0
 ## Energy regained each second.
-@export var recharge_rate: float = 35.0
+@export var recharge_rate: float = 17.5
 ## Wait time (seconds) after last use before recharge starts.
-@export var recharge_delay: float = 4.0
+@export var recharge_delay: float = 2.0
 ## After running empty, energy must refill to this fraction before you can use it again.
 @export_range(0.0, 1.0) var restart_fraction: float = 0.3
 

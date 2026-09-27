@@ -16,6 +16,10 @@ extends Camera3D
 @export var landing_trauma_per_speed: float = 0.03
 @export var landing_kick_per_speed: float = 0.03
 
+@export_group("Boost")
+## Steady shake while boosting (0 to 1).
+@export var boost_trauma: float = 0.4
+
 @export_group("Shake")
 ## Largest random offset in meters at full shake.
 @export var max_offset: float = 0.5
@@ -45,6 +49,8 @@ func add_shake(trauma: float, kick: float) -> void:
 func _process(delta: float) -> void:
 	_time += delta * noise_speed
 	_trauma = maxf(_trauma - trauma_decay * delta, 0.0)
+	if mech.is_boosting:
+		_trauma = maxf(_trauma, boost_trauma)
 	_kick = lerpf(_kick, 0.0, 1.0 - exp(-kick_recovery * delta))
 
 	var shake := _trauma * _trauma
