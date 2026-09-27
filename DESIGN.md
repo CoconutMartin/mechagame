@@ -48,19 +48,21 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Value | Current | Result |
 |---|---|---|
 | Weight | 60 t (`mass_tons`) | fixed until Phase 2 computes it from parts |
-| Walk speed | 9.1 m/s (33 km/h) forward, 90% to the side (8.19 m/s) | top speed in 2.25 s (acceleration 4.04 m/s²) |
+| Walk speed | 9.1 m/s (33 km/h) forward, 90% to the side (8.19 m/s) | top speed in 1.75 s (acceleration 5.2 m/s²) |
 | Walk stop | 2 steps from full walk speed | slower speeds take fewer steps |
 | Boost start | only after 2 walking steps | HUD shows "Boost ready in N steps" |
 | Boost speed | 1.5x walk = 13.65 m/s (49 km/h) | boost acceleration 20 m/s². Boost ends when Shift is released |
 | Boost exit | small hop (6 m/s up), then 2 steps down to walk speed | if all keys are released: hop, then 4 steps to a stop |
 | Boost energy use | 30 per second (50% of jump jets), capacity 100 | about 3.3 s of boost |
 | Energy recharge | 17.5 per second after 2 s delay | empty energy locks boost until 30% |
-| Jump jet charge | hold Space on the ground. 1 s = 25%, 2 s = 50%, 3 s = 75%, 4 s = 100% of 9 m | the mech stops and crouches while it charges. Charge uses 25 energy per second (full charge = full tank). Charges below 10% cancel |
+| Jump jet charge | hold Space on the ground. 1 s = 33%, 2 s = 63%, 3 s = 100% of 9 m | the mech stops and crouches while it charges. Charge uses 33.3 energy per second (full charge = full tank). Charges below 10% cancel |
 | Gravity | x2.2 (21.6 m/s²) | launch speed is set so the jump reaches the charged height |
-| Air steering | any move key in the air fires the boosters (boost speed, boost energy use) | with no energy the mech cannot steer in the air. No key = momentum only |
+| Free air steering | a move key in the air moves the landing point up to 5 m, no energy | the steering speed is spread over the flight time. No key = momentum only |
+| Air boost | Shift + a move key in the air (boost speed, boost energy use) | with no energy there is no air boost |
+| Landing steps | a landing with sideways speed: the mech walks out 3 steps to a stop | no control during the landing delay, but the momentum carries on |
 | Landing recovery | falls below 1 m: 0.5 s. Higher: 1.5 s x (weight / 60 t) x (fall height / 9 m), minimum 0.5 s | no movement, jump charge, or boost. Legs crouch. Falls below 0.2 m and the boost exit hop give no delay |
-| Body turn | 84°/s max, 360°/s² acceleration | a full-speed turn goes 10° past the aim, then comes back |
-| Footstep stride | 6 m | one camera shake per stride, none while boosting |
+| Body turn | 84°/s max, 360°/s² acceleration | a full-speed turn goes up to 3° past the aim and stays there. The player centers the mech crosshair with the mouse |
+| Footstep stride | 6 m at walk speed and above, down to 30% (1.8 m) near standstill | one camera shake per stride, none while boosting |
 
 ### Aim
 
@@ -182,7 +184,7 @@ scenes/mech/        player_mech.tscn.
 scenes/props/       greybox_block, car, lamppost, person, box_truck (8 m), semi_truck (16.5 m).
 scenes/ui/          debug_hud.tscn.
 scripts/mech/       mech.gd (movement), mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd,
-                    mech_jump_charge.gd, mech_landing_recovery.gd, mech_aim.gd (camera target and real mech aim with jitter).
+                    mech_jump_charge.gd, mech_air_steer.gd, mech_landing_recovery.gd, mech_aim.gd (camera target and real mech aim with jitter).
 scripts/animation/  mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd (placeholder animation).
 scenes/weapons/     long_rifle.tscn (markers: GripRight, GripLeft, Muzzle).
 scripts/camera/     mech_camera_rig.gd (follow and mouse look), aim_spring.gd (aim overshoot), camera_shake.gd, camera_ads.gd (aim down sight zoom).
@@ -214,6 +216,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 4: walk accel for 2.25 s to top speed, strafe 90%, turn 84°/s, jets about 9 m, 2 s recharge delay at 17.5 per second, boost only after 2 steps, stop in 2 steps (walk) or 4 steps (boost), landing recovery by height and weight.
 - Phase 1 revision 5: no plain jump. Hold Space to charge the jump jets (4 s = 9 m). Move keys in the air fire the boosters. No energy = no air steering.
 - Landing delay: 0.5 s below 1 m, the height and weight formula above 1 m (minimum 0.5 s so a higher fall is never shorter).
+- Phase 1 revision 6: walk top speed in 1.75 s. Jump charge 1 s = 33%, 2 s = 63%, 3 s = 100%. Free air steering 5 m, Shift + move key for air boost. 3 steps after a directional landing. Turn overshoot 3° with no return. Strides shorter at low speed.
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.

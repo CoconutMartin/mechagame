@@ -7,8 +7,10 @@ extends Node
 
 ## World-space direction the pilot wants to move. Length 0 to 1.
 var move_direction: Vector3 = Vector3.ZERO
-## World yaw (radians) the mech body should face.
+## World yaw (radians) the mech body should face (camera yaw after the aim spring).
 var aim_yaw: float = 0.0
+## World yaw (radians) set by the mouse, before the aim spring. Changes only when the mouse moves.
+var mouse_yaw: float = 0.0
 var boost_held: bool = false
 ## True while the jump key is held. MechJumpCharge uses it to charge the jump jets.
 var jump_held: bool = false
@@ -24,6 +26,7 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	var stick := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	aim_yaw = camera_rig.yaw
+	mouse_yaw = camera_rig.get_mouse_yaw()
 	move_direction = Vector3(stick.x, 0.0, stick.y).rotated(Vector3.UP, aim_yaw)
 	boost_held = Input.is_action_pressed("boost")
 	jump_held = Input.is_action_pressed("jump")
