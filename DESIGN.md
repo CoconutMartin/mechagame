@@ -92,7 +92,7 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 
 | Value | Current |
 |---|---|
-| Distance behind mech (spring length) | 5.8 m (6 m behind the head). RMB moves it to 4 m and zooms |
+| Distance behind mech (spring length) | 10.3 m (10.5 m behind the head). RMB moves it to 4 m and zooms |
 | Shoulder offset | 3 m right (right side of the head) |
 | Pivot height | 9.6 m (head height) |
 | Tilt limits | 27.5° down, 15° up |
