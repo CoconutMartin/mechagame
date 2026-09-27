@@ -80,11 +80,11 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 
 | Value | Current |
 |---|---|
-| Camera crosshair | yellow dot 22% of the screen height above the center (matches the reference screenshot). `MechAim.screen_offset_up` |
+| Camera crosshair | yellow dot 13.5% of the screen height above the center (matches the reference screenshot). `MechAim.screen_offset_up` |
 | Mech aim reticle | blue ring, placed from the torso angle (no shake, no jitter). The camera follows the torso, so it sits on the yellow dot |
 | Aim jitter | removed (0°). The code and exports stay in `MechAim` for later use |
 | Vertical aim | mouse pitch speed 30% of horizontal |
-| Aim down sight (RMB) | the default camera is already at the right side of the head; RMB zooms FOV 70° to 35°, mouse sensitivity 50%. Rifle butt on the right shoulder, torso turns 30° right and tilts 6°, left hand under the handguard near the muzzle |
+| Aim down sight (RMB) | camera moves in along the aim line (10.3 m to 4 m) and zooms FOV 70° to 35°, same target, mouse sensitivity 50%. Rifle butt on the right shoulder, torso turns 30° right and tilts 6°, left hand under the handguard near the muzzle |
 
 ### Current camera tuning (Phase 1)
 
@@ -92,9 +92,10 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 
 | Value | Current |
 |---|---|
-| Distance behind mech (spring length) | 10.3 m (10.5 m behind the head). RMB moves it to 4 m and zooms |
+| Distance behind the pivot (spring length) | 10.3 m. RMB moves it to 4 m and zooms (FOV 35°) |
 | Shoulder offset | 3 m right (right side of the head) |
-| Pivot height | 9.6 m (head height) |
+| Pivot height | 11.5 m (above the head). The camera sits on the aim line behind the pivot and tilts down by the crosshair angle (about 10.7° at FOV 70°), so it looks down over the head |
+| Same target in ADS | the camera stays on the aim line and its tilt follows the FOV, so the crosshair points at the same spot with and without RMB |
 | Tilt limits | 27.5° down, 15° up |
 | Boost shake | steady shake while boosting (trauma 0.4) |
 | Air shake | steady shake in the air: rising 0.44, falling 0.28 (50% less than before). Aim jitter moves only the blue ring |
@@ -256,6 +257,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 23: boost stop is a skid stop. "revert 1" = set `boost_exit_style` to LEAP (the version at commit f51bd42).
 - Phase 1 revision 24: skid recovery 80% shorter, skid 50% longer, shake smoothing 100, crosshair and mech aim about 1 inch above the screen center.
 - Phase 1 revision 25: default camera at the right side of the head (3 m right, 4 m back). Crosshair 22% above the screen center. Torso sways forward and back after a skid before it is upright.
+- Phase 1 revision 29: camera pivot above the head, camera looks down over the head. Crosshair 13.5% above the center. Same crosshair target with and without ADS.
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.

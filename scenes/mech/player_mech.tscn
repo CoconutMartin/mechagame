@@ -339,12 +339,13 @@ shape = SubResource("arm_shape")
 spring_length = 10.3
 margin = 0.4
 
-[node name="CameraAds" type="Node" parent="CameraRig" node_paths=PackedStringArray("input", "camera", "spring_arm", "rig")]
+[node name="CameraAds" type="Node" parent="CameraRig" node_paths=PackedStringArray("input", "camera", "spring_arm", "rig", "mech_aim")]
 script = ExtResource("ads")
 input = NodePath("../../MechInput")
 camera = NodePath("../Pitch/SpringArm/Camera")
 spring_arm = NodePath("../Pitch/SpringArm")
 rig = NodePath("..")
+mech_aim = NodePath("../../MechAim")
 
 [node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm" node_paths=PackedStringArray("mech", "footsteps")]
 current = true
