@@ -19,9 +19,9 @@ signal dodge_ended
 ## Two Space presses closer than this (seconds) start a dodge.
 @export var double_tap_window: float = 0.3
 ## Dodge length, in meters.
-@export var distance: float = 14.0
+@export var distance: float = 23.8
 ## Dodge time, in seconds. The speed starts high and ends at zero.
-@export var duration: float = 0.75
+@export var duration: float = 2.55
 @export var energy_cost: float = 25.0
 ## After the dodge the mech cannot move for this long, in seconds.
 @export var recovery_time: float = 0.25

@@ -39,7 +39,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 - 1 unit = 1 meter. Mech height is about 10 m.
 - Speed, jump, boost, and camera are tuned for this size.
 - Maps: small to medium urban arenas.
-- Test map: 178 x 178 m. 10 small buildings (6 to 8 m), 5 medium (10 to 16 m), 3 tall (30, 34, 40 m). Platforms: steps 3, 6, 9, 12 m, a 15° ramp to a 13 m deck, a 2.5 m loading dock, a 5 m plaza, a 3 m wall. Main street 60 m wide with lampposts.
+- Test map: 178 x 178 m. 5 small buildings (6 to 8 m), 5 medium (10 to 16 m), 3 tall (30, 34, 40 m). Platforms: steps 3, 6, 9, 12 m, a 15° ramp to a 13 m deck, a 2.5 m loading dock, a 5 m plaza, a 3 m wall. Main street 60 m wide with lampposts.
 - Greybox all maps with simple shapes. Include human-scale props: cars (4.5 m), doors (2 m), lampposts (6 m), people (1.8 m).
 - Camera: over-the-shoulder, low height, small shake on each heavy footstep.
 - Movement has weight: gradual acceleration and deceleration.
@@ -74,7 +74,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Footstep shake | camera kick 0.117 m, trauma 0.2, for a 10 m mech | scales with `Mech.height_m` |
 | Shake overall | `CameraShake.intensity` 0.75, noise speed 21, final offset smoothing 100. Kicks return on a spring (2.2 Hz, damping 0.45) with a small bounce | |
 | Movement start kicks | camera drop 0.2 m (0.267 before intensity) at boost start, skid start, takeoff, the top of a jump, and each wall bump | |
-| Dodge roll | double tap Space: 14 m in 0.75 s (fast start, slows to zero). Shoulder roll like Gundam Battle Operation 2: the mech dives toward the dodge direction (60° lean), lands on the leading shoulder (right shoulder for a right dodge, left for left), rolls the whole body one full turn over a diagonal axis (shoulder to opposite hip), then rises onto its feet (dive 30%, roll 50%, rise 30%). A contact solver keeps the lowest body point on the ground. 25 energy, 0.25 s recovery, camera kick at start and end. Visual only; the collision body slides | `MechDodge` |
+| Dodge roll | double tap Space: 23.8 m in 2.55 s (average speed 9.3 m/s, 50% slower than before; fast start, slows to zero). Shoulder roll like Gundam Battle Operation 2: the mech dives toward the dodge direction (60° lean), lands on the leading shoulder (right shoulder for a right dodge, left for left), rolls the whole body one full turn over a diagonal axis (shoulder to opposite hip), then rises onto its feet (dive 30%, roll 50%, rise 30%). A contact solver keeps the lowest body point on the ground. 25 energy, 0.25 s recovery, camera kick at start and end. Visual only; the collision body slides | `MechDodge` |
 | Inertia sway | `InertiaSway`: the torso leans 1.2° per m/s² of speed change (slowing = forward), rolls 1° per m/s² sideways, lags 0.1 s behind leg turns (max 10°). Springs at 1.3 Hz, damping 0.35, so movements end with a sway | |
 | Turning steps | standing still with the legs turning: one step every 20° of leg turn, knee lift 60% of the walk lift, light footstep shake | the feet do not slide |
 | Torso aim turn | 44.1°/s max, 189°/s² acceleration | in the last 25% of each turn the torso turns at 50% speed, then stops exactly on the aim (no overshoot, no settle swings) |
@@ -271,6 +271,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 34: dodge roll on a double tap of Space.
 - Phase 1 revision 35: dodge animation is a dive and barrel roll (no somersault).
 - Phase 1 revision 36: dodge is a dive and shoulder roll (Gundam Battle Operation 2 style), with a ground contact solver.
+- Phase 1 revision 37: dodge distance +70% (23.8 m), speed -50% (2.55 s). Small buildings 5.
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.
