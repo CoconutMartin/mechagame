@@ -21,8 +21,11 @@ signal dodge_ended
 ## Dodge length, in meters.
 @export var distance: float = 23.8
 ## Dodge time, in seconds. The speed starts high and ends at zero.
-@export var duration: float = 2.55
+@export var duration: float = 1.7
 @export var energy_cost: float = 25.0
+## When the mech gets up, it springs forward in the dodge direction at this speed (m/s).
+## Then it slows down in steps. The torso leans with the push (InertiaSway).
+@export var spring_out_speed: float = 7.0
 ## After the dodge the mech cannot move for this long, in seconds.
 @export var recovery_time: float = 0.25
 ## Height of the body center above the feet, in meters.
@@ -70,10 +73,12 @@ func blocks_jump() -> bool:
 	return is_busy() or _suppress_jump
 
 
-## Dodge speed now, in m/s. Starts at 2x the average speed and falls to zero.
+## Dodge speed now, in m/s. Starts high and falls steadily to spring_out_speed at the end,
+## so the spring forward continues the motion with no gap.
 func get_speed() -> float:
 	var progress := clampf(_time / duration, 0.0, 1.0)
-	return distance / duration * 2.0 * (1.0 - progress)
+	var start_speed := 2.0 * distance / duration - spring_out_speed
+	return lerpf(start_speed, spring_out_speed, progress)
 
 
 ## 0 to 1: how much the legs tuck in (most at the middle of the roll).
@@ -98,6 +103,10 @@ func _physics_process(delta: float) -> void:
 		if _time >= duration:
 			is_dodging = false
 			roll.transform = Transform3D.IDENTITY
+			# Spring forward out of the roll.
+			var push := direction * spring_out_speed
+			mech.velocity.x = push.x
+			mech.velocity.z = push.z
 			_recover_left = recovery_time
 			dodge_ended.emit()
 
