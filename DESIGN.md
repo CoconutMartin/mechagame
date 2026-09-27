@@ -55,7 +55,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Walk stop | 2 steps from full walk speed | slower speeds take fewer steps |
 | Boost start | Shift held: 3 walking steps (skipped if the mech already walked 3 steps), then always 4 running steps (run speed 1.25x walk = 11.4 m/s, 12° torso lean), then boost | HUD shows "Boost ready in N steps" |
 | Boost speed | 1.5x walk = 13.65 m/s (49 km/h) | boost acceleration 20 m/s². Boost ends when Shift is released |
-| Boost exit (SKID, current) | feet plant and slide (14 m/s² slowdown, about 6 m in 0.7 s, down to 4 m/s), knees bent, torso leans 15° back, dust from the feet, camera shake. Then 2 heavy steps (3.0 m, 2.4 m) to a stop, or walking again with W held | `Mech.boost_exit_style` = SKID |
+| Boost exit (SKID, current) | feet plant and slide (9.4 m/s² slowdown, about 8.8 m in 1 s, down to 4 m/s), knees bent, torso leans 15° back, dust from the feet, camera shake. Then 2 short heavy steps (0.45 m, 0.35 m, about 0.4 s) to a stop, or walking again with W held | `Mech.boost_exit_style` = SKID |
 | Boost exit (LEAP, "revert 1") | one low leap forward (5 m/s up, about 6 m) that lands on one leg, then 2 medium steps (4.8 m) and 2 small steps (3.4 m) | `Mech.boost_exit_style` = LEAP. Also saved as commit f51bd42 | if all keys are released: hop, then 4 steps to a stop |
 | Boost energy use | 30 per second (50% of jump jets), capacity 100 | about 3.3 s of boost |
 | Energy recharge | 17.5 per second after 2 s delay | empty energy locks boost until 30% |
@@ -71,7 +71,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Wall bump | into a wall faster than 3 m/s | restitution (bounce-back speed / impact speed) grows with impact speed: 0.4 at 3 m/s to 0.9 at 13.65 m/s. Then an extra slowdown of up to 30% (less at low speed). Walk 9.1 m/s bounces back at about 5 m/s; boost 13.65 m/s at about 8.6 m/s. Camera shake |
 | Walk sway | body roll 0.9° (walk) to 1.2° (run), side shift 0.09 m toward the planted leg, for a 10 m mech | scales with `Mech.height_m` (taller mechs sway more) |
 | Footstep shake | camera kick 0.117 m, trauma 0.2, for a 10 m mech | scales with `Mech.height_m` |
-| Shake overall | `CameraShake.intensity` 0.75, noise speed 21, kick recovery 9.8, final offset smoothing 65 | |
+| Shake overall | `CameraShake.intensity` 0.75, noise speed 21, kick recovery 9.8, final offset smoothing 100 | |
 | Turning steps | standing still with the legs turning: one step every 20° of leg turn, knee lift 60% of the walk lift, light footstep shake | the feet do not slide |
 | Torso aim turn | 44.1°/s max, 189°/s² acceleration | in the last 25% of each turn the torso turns at 50% speed, then stops exactly on the aim (no overshoot, no settle swings) |
 | Footstep stride | 6 m at walk speed and above, down to 30% (1.8 m) near standstill | one camera shake per stride, none while boosting |
@@ -80,7 +80,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 
 | Value | Current |
 |---|---|
-| Camera crosshair | yellow dot at screen center |
+| Camera crosshair | yellow dot 9% of the screen height above the center (about 1 inch on a 24 inch 1080p monitor). `MechAim.screen_offset_up` |
 | Mech aim reticle | blue ring. It shows where the weapon really points: body turn lag plus jitter |
 | Aim jitter | removed (0°). The code and exports stay in `MechAim` for later use |
 | Vertical aim | mouse pitch speed 30% of horizontal |
@@ -254,6 +254,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 20: torso twist 80°. Camera stays behind the torso (no free orbit). Lower-leg twist up to 90°. Shake 40% sharper.
 - Phase 1 revision 21: mech aim jitter and overshoot removed. Torso turn 50% slower. Vertical aim 70% slower. Lower-leg twist 60°. Shake intensity 0.75.
 - Phase 1 revision 23: boost stop is a skid stop. "revert 1" = set `boost_exit_style` to LEAP (the version at commit f51bd42).
+- Phase 1 revision 24: skid recovery 80% shorter, skid 50% longer, shake smoothing 100, crosshair and mech aim about 1 inch above the screen center.
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.

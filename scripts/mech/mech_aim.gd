@@ -1,7 +1,7 @@
 class_name MechAim
 extends Node
 ## Finds two points in the world:
-## camera_target: where the camera crosshair (screen center) points.
+## camera_target: where the camera crosshair points (a little above the screen center).
 ## aim_point: where the mech really aims. It follows the body turn, and shakes while the mech walks or boosts.
 
 @export var mech: Mech
@@ -9,6 +9,9 @@ extends Node
 ## Start point of the mech's aim (the weapon stock at the shoulder).
 @export var aim_origin: Node3D
 @export var max_range: float = 1500.0
+## The crosshair sits this far above the screen center, as a part of the screen height.
+## 0.09 is about 1 inch on a common 24 inch 1080p monitor.
+@export var screen_offset_up: float = 0.09
 ## Physics layers the aim rays hit (1 = world, 3 = props).
 @export_flags_3d_physics var collision_mask: int = 5
 
@@ -43,7 +46,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_time += delta * jitter_speed
 	var origin := aim_origin.global_position
-	camera_target = _cast(camera.global_position, -camera.global_basis.z)
+	var screen_point := get_crosshair_screen_point()
+	camera_target = _cast(camera.project_ray_origin(screen_point), camera.project_ray_normal(screen_point))
 
 	# The mech aims at the camera target, corrected for any gap between the torso and the camera.
 	var direction := (camera_target - origin).normalized()
@@ -59,6 +63,12 @@ func _physics_process(delta: float) -> void:
 
 	aim_direction = direction
 	aim_point = _cast(origin, direction)
+
+
+## Screen position of the camera crosshair, in pixels.
+func get_crosshair_screen_point() -> Vector2:
+	var size := camera.get_viewport().get_visible_rect().size
+	return Vector2(size.x * 0.5, size.y * (0.5 - screen_offset_up))
 
 
 func _get_jitter_deg() -> float:

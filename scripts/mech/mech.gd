@@ -90,11 +90,11 @@ enum BoostExit { SKID, LEAP }
 ## LEAP ("revert 1"): a leap that lands on one leg, then 2 medium and 2 small steps.
 @export var boost_exit_style: BoostExit = BoostExit.SKID
 ## SKID: slowdown while the feet slide (m/s per second).
-@export var skid_deceleration: float = 14.0
+@export var skid_deceleration: float = 9.4
 ## SKID: the slide ends at this speed (m/s). Then the heavy steps start, or the walk with a move key.
 @export var skid_end_speed: float = 4.0
 ## SKID: stride lengths (meters) of the heavy steps to a stop after the slide, when no move key is held.
-@export var skid_stop_strides: PackedFloat32Array = PackedFloat32Array([3.0, 2.4])
+@export var skid_stop_strides: PackedFloat32Array = PackedFloat32Array([0.45, 0.35])
 ## LEAP: upward speed of the leap (m/s).
 @export var boost_exit_leap_velocity: float = 5.0
 ## After the leap, the mech slows down over these steps (stride length of each, in meters):
