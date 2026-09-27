@@ -71,7 +71,9 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Wall bump | into a wall faster than 3 m/s | restitution (bounce-back speed / impact speed) grows with impact speed: 0.4 at 3 m/s to 0.9 at 13.65 m/s. Then an extra slowdown of up to 30% (less at low speed). Walk 9.1 m/s bounces back at about 5 m/s; boost 13.65 m/s at about 8.6 m/s. Camera shake |
 | Walk sway | body roll 0.9° (walk) to 1.2° (run), side shift 0.09 m toward the planted leg, for a 10 m mech | scales with `Mech.height_m` (taller mechs sway more) |
 | Footstep shake | camera kick 0.117 m, trauma 0.2, for a 10 m mech | scales with `Mech.height_m` |
-| Shake overall | `CameraShake.intensity` 0.75, noise speed 21, kick recovery 9.8, final offset smoothing 100 | |
+| Shake overall | `CameraShake.intensity` 0.75, noise speed 21, final offset smoothing 100. Kicks return on a spring (2.2 Hz, damping 0.45) with a small bounce | |
+| Movement start kicks | camera drop 0.2 m (0.267 before intensity) at boost start, skid start, takeoff, the top of a jump, and each wall bump | |
+| Inertia sway | `InertiaSway`: the torso leans 1.2° per m/s² of speed change (slowing = forward), rolls 1° per m/s² sideways, lags 0.1 s behind leg turns (max 10°). Springs at 1.3 Hz, damping 0.35, so movements end with a sway | |
 | Turning steps | standing still with the legs turning: one step every 20° of leg turn, knee lift 60% of the walk lift, light footstep shake | the feet do not slide |
 | Torso aim turn | 44.1°/s max, 189°/s² acceleration | in the last 25% of each turn the torso turns at 50% speed, then stops exactly on the aim (no overshoot, no settle swings) |
 | Footstep stride | 6 m at walk speed and above, down to 30% (1.8 m) near standstill | one camera shake per stride, none while boosting |
@@ -206,7 +208,8 @@ scenes/props/       greybox_block, car, lamppost, person, box_truck (8 m), semi_
 scenes/ui/          debug_hud.tscn.
 scripts/mech/       mech.gd (movement), mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd,
                     mech_jump_charge.gd, mech_air_steer.gd, mech_landing_recovery.gd, mech_aim.gd (camera target and real mech aim with jitter).
-scripts/animation/  mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd (placeholder animation).
+scripts/animation/  mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd, torso_pose.gd,
+                    inertia_sway.gd, skid_body_turn.gd (placeholder animation).
 scenes/weapons/     long_rifle.tscn (markers: GripRight, GripLeft, Muzzle).
 scripts/camera/     mech_camera_rig.gd (follow and mouse look), aim_spring.gd (aim overshoot), camera_shake.gd, camera_ads.gd (aim down sight zoom).
 scripts/world/      greybox_block.gd (box with collision, set size in Inspector).
@@ -262,6 +265,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 30: start view about 30° down over the head (start aim pitch -19°).
 - Phase 1 revision 31: start pitch -10°. Random left or right torso sway when a boost skid starts.
 - Phase 1 revision 32: body turns at an angle during a boost skid and centers in the recovery.
+- Phase 1 revision 33: 0.2 m camera kicks at movement starts and wall bumps. Camera kicks bounce on a spring. Inertia sway on the torso after all movements.
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.
