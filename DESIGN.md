@@ -15,7 +15,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | 5 | Garage screen: swap parts, add plates, live stat preview. Graphics settings menu (low, medium, high) | Not started |
 | 6 | Pilot creation and skill tree | Not started |
 | 7 | Save/load builds (JSON) and 4 preset archetype loadouts | Not started |
-| 8 | Realistic graphics pass | Not started |
+| 8 | Realistic graphics pass and complete mech animation | Not started |
 
 ## Controls
 
@@ -107,6 +107,11 @@ if load_ratio >  1.0: speed = legs.base_speed * 0.7 / (load_ratio * load_ratio)
 Boost power and turn speed also drop with weight.
 All of this logic lives in one function so it is easy to tune.
 
+## Animation
+
+- Now (Phase 1): placeholder leg swing on box parts (`MechLegSwing`).
+- Phase 8: complete animation on rigged .glb models. Walk cycles for biped, reverse-joint, tank, and quad legs. Leg IK so feet stay on slopes and steps. Torso twist toward the aim. Weapon recoil. Boost and jump jet poses.
+
 ## Destructible parts
 
 Each part has its own HP and its own hitbox. Damage goes to the part that is hit.
@@ -152,7 +157,7 @@ scenes/levels/      test_map.tscn (main scene).
 scenes/mech/        player_mech.tscn.
 scenes/props/       greybox_block, car, lamppost, person, box_truck (8 m), semi_truck (16.5 m).
 scenes/ui/          debug_hud.tscn.
-scripts/mech/       mech.gd (movement), mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd.
+scripts/mech/       mech.gd (movement), mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd, mech_leg_swing.gd (placeholder walk animation).
 scripts/camera/     mech_camera_rig.gd (follow and mouse look), aim_spring.gd (aim overshoot), camera_shake.gd.
 scripts/world/      greybox_block.gd (box with collision, set size in Inspector).
 scripts/ui/         debug_hud.gd.
@@ -164,6 +169,7 @@ scripts/core/       mouse_capture.gd.
 - `Mech` (CharacterBody3D) does physics movement only. It reads intent from `MechInput`.
 - `MechInput` reads keyboard and mouse. An AI input node can replace it in Phase 4.
 - `MechEnergy` stores energy. Boost uses it now. Weapons use it in Phase 3.
+- `MechLegSwing` is placeholder walk animation: hip swing, knee bend, body bob, and sway. Legs trail back while boosting and bend in the air. It reads the walk cycle from `MechFootsteps`, so each foot strike matches a footstep shake.
 - `MechFootsteps` emits a `footstep` signal per stride. `CameraShake` listens to it and to `Mech.landed`.
 - `MechCameraRig` is `top_level`, so it does not rotate with the mech. The mech body turns toward the camera yaw.
 - Physics interpolation is on, so movement is smooth on high refresh rate monitors.
@@ -175,4 +181,5 @@ scripts/core/       mouse_capture.gd.
 - Phase 1: test map ground is 400 x 400 m with invisible walls at the edge. Distance fog hides the edge.
 - Phase 1: the camera follows the mouse on a damped spring, so fast aim moves overshoot a little.
 - Graphics settings menu goes in Phase 5.
+- Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.
 - Phase 1: mechs pass through cars, lampposts, and people. Phase 4 makes these destructible.

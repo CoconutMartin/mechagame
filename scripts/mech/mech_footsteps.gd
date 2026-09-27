@@ -12,6 +12,7 @@ signal footstep(strength: float)
 @export var min_speed: float = 1.0
 
 var _distance: float = 0.0
+var _step_count: int = 0
 
 
 func _physics_process(delta: float) -> void:
@@ -23,4 +24,11 @@ func _physics_process(delta: float) -> void:
 	_distance += speed * delta
 	if _distance >= stride_length:
 		_distance -= stride_length
+		_step_count += 1
 		footstep.emit(clampf(speed / mech.walk_speed, 0.4, 1.0))
+
+
+## Walk cycle position in radians. One full cycle (TAU) is two steps.
+## A foot touches the ground at each multiple of PI.
+func get_cycle_phase() -> float:
+	return (float(_step_count % 2) + _distance / stride_length) * PI
