@@ -64,8 +64,12 @@ signal landed(fall_speed: float)
 @export_group("Boost")
 ## Boost top speed = walk speed x this value.
 @export var boost_speed_multiplier: float = 1.5
-## Walking steps needed before boost can start.
+## Walking steps (with Shift held) before the mech starts to run.
 @export var boost_start_steps: int = 2
+## Running steps after the walk steps, before boost starts.
+@export var run_steps: int = 2
+## Run top speed = walk speed x this value.
+@export var run_speed_multiplier: float = 1.25
 ## Speed gain while boosting (m/s per second).
 @export var boost_acceleration: float = 20.0
 ## Upward speed of the small hop when boost stops on the ground (m/s).
@@ -77,8 +81,8 @@ signal landed(fall_speed: float)
 ## Air boost acceleration and top speed = ground boost values x this value. 0.25 = 75% less.
 ## The air boost speed adds to the jump momentum.
 @export var air_boost_multiplier: float = 0.25
-## Air boost energy use = ground boost energy use x this value. 4.0 = 300% more (120 per second).
-@export var air_boost_energy_multiplier: float = 4.0
+## Air boost energy use = ground boost energy use x this value. 2.8 = 84 per second.
+@export var air_boost_energy_multiplier: float = 2.8
 
 @export_group("Air")
 ## Forward length of a directional jump at full charge, in meters (move key held while charging).
@@ -89,6 +93,8 @@ signal landed(fall_speed: float)
 @export var max_fall_speed: float = 60.0
 
 var is_boosting: bool = false
+## True while the mech runs between the walk steps and the boost (Shift held).
+var is_running: bool = false
 ## True while boosting in the air to steer.
 var is_air_boosting: bool = false
 ## True from the boost exit hop until the mech is back at walk speed or stopped.
@@ -132,13 +138,18 @@ func get_boost_speed() -> float:
 	return walk_speed * boost_speed_multiplier
 
 
-## True after the walk-in steps, so boost can start.
+## True after the walk steps and the run steps, so boost can start.
 func is_boost_ready() -> bool:
-	return _walk_steps >= boost_start_steps
+	return _walk_steps >= boost_start_steps + run_steps
 
 
+## Steps left before boost can start (walk steps plus run steps).
 func get_walk_steps_left() -> int:
-	return maxi(boost_start_steps - _walk_steps, 0)
+	return maxi(boost_start_steps + run_steps - _walk_steps, 0)
+
+
+func get_run_speed() -> float:
+	return walk_speed * run_speed_multiplier
 
 
 func _on_footstep(_strength: float) -> void:
@@ -162,6 +173,10 @@ func _update_boost(delta: float) -> void:
 		wants_boost = input.boost_held and has_input and not _in_exit_hop
 	var energy_rate := boost_energy_per_second if is_on_floor() else boost_energy_per_second * air_boost_energy_multiplier
 	is_boosting = wants_boost and energy.try_drain(energy_rate * delta)
+	# Shift held after the walk steps: run until boost is ready.
+	is_running = is_on_floor() and not is_boosting and input.boost_held and has_input \
+			and _walk_steps >= boost_start_steps and not landing_recovery.is_recovering() \
+			and not jump_charge.is_charging and not kneel.is_kneeling
 	is_air_boosting = is_boosting and not is_on_floor()
 	_boost_on_ground = is_boosting and is_on_floor()
 	if is_boosting:
@@ -209,6 +224,9 @@ func _update_horizontal(delta: float) -> void:
 	elif is_boosting:
 		target = wish * get_boost_speed()
 		rate = boost_acceleration
+	elif is_running:
+		target = wish * get_run_speed()
+		rate = acceleration
 	else:
 		target = wish * _get_walk_speed(wish)
 		rate = _get_exit_deceleration() if is_exiting_boost and on_floor else acceleration
@@ -356,6 +374,7 @@ func _check_landing(fall_speed: float) -> void:
 		# Landing with sideways speed from a jump: walk it out in a set number of steps.
 		_landing_stop = not is_exiting_boost and get_horizontal_speed() > footsteps.min_speed
 		_stop_deceleration = 0.0
-		_airborne = false
 		landed.emit(fall_speed)
+	if on_floor:
+		_airborne = false
 	_was_on_floor = on_floor

@@ -14,8 +14,8 @@ var boost_held: bool = false
 var jump_held: bool = false
 ## True while the aim key (RMB) is held.
 var aim_held: bool = false
-## True while the crouch key (Ctrl) is held.
-var crouch_held: bool = false
+## True on the frame the crouch key (Ctrl) is pressed. MechKneel toggles on it.
+var crouch_pressed: bool = false
 
 
 func _ready() -> void:
@@ -30,5 +30,5 @@ func _physics_process(_delta: float) -> void:
 	boost_held = Input.is_action_pressed("boost")
 	jump_held = Input.is_action_pressed("jump")
 	aim_held = Input.is_action_pressed("aim")
-	crouch_held = Input.is_action_pressed("crouch")
+	crouch_pressed = Input.is_action_just_pressed("crouch")
 

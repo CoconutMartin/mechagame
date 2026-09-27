@@ -4,7 +4,7 @@ extends Node
 ## Falls below min_height: short_fall_delay.
 ## Higher falls: reference_delay x (mass / reference_mass) x (fall height / reference_height),
 ## but never less than short_fall_delay.
-## The boost exit hop is part of the walk and gives no delay.
+## The boost exit hop is part of the walk and gives no delay, unless it drops off an edge.
 
 @export var mech: Mech
 ## Delay in seconds for the reference mass falling the reference height.
@@ -53,7 +53,8 @@ func _physics_process(delta: float) -> void:
 func _on_landed(_fall_speed: float) -> void:
 	var height := _peak_y - mech.global_position.y
 	_peak_y = mech.global_position.y
-	if height < ignore_height or mech.is_exiting_boost:
+	# The boost exit hop is part of the walk. A fall off an edge during the hop still counts.
+	if height < ignore_height or (mech.is_exiting_boost and height < min_height):
 		return
 	fall_height = height
 	if height < min_height:

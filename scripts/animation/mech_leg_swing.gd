@@ -21,11 +21,29 @@ extends Node
 ## Largest hip swing forward and back, in degrees, at full walk speed.
 @export var hip_swing_deg: float = 28.0
 ## Largest knee bend of the leg that swings forward, in degrees.
-@export var knee_bend_deg: float = 30.0
+@export var knee_bend_deg: float = 45.0
+## Extra hip lift of the leg that swings forward, in degrees. Raises the knee.
+@export var knee_lift_deg: float = 12.0
 ## Body drop at each foot strike, in meters.
 @export var bob_height: float = 0.3
 ## Body roll toward the planted leg, in degrees.
 @export var sway_deg: float = 1.5
+
+@export_group("Run")
+## Hip swing while running (Shift held before boost), in degrees.
+@export var run_hip_swing_deg: float = 40.0
+## Knee bend of the forward leg while running, in degrees.
+@export var run_knee_bend_deg: float = 70.0
+## Extra hip lift of the forward leg while running, in degrees.
+@export var run_knee_lift_deg: float = 20.0
+## Body drop at each foot strike while running, in meters.
+@export var run_bob_height: float = 0.5
+
+@export_group("Boost Exit Hop")
+## One-leg hop: the left leg lifts, the right leg stays straight.
+@export var hop_lift_hip_deg: float = 45.0
+@export var hop_lift_knee_deg: float = 90.0
+@export var hop_stand_hip_deg: float = -5.0
 
 @export_group("Landing")
 ## Crouch after a short landing (near 0 m fall), in degrees of hip bend. Knees bend twice as much.
@@ -63,6 +81,8 @@ extends Node
 var _walk_amount: float = 0.0
 var _trail: float = 0.0
 var _boost_crouch: float = 0.0
+var _run: float = 0.0
+var _hop: float = 0.0
 var _air_knee: float = 0.0
 var _upper_rest_y: float = 0.0
 
@@ -81,15 +101,20 @@ func _physics_process(delta: float) -> void:
 	_trail = lerpf(_trail, 1.0 if mech.is_boosting else 0.0, blend)
 	_boost_crouch = lerpf(_boost_crouch, 1.0 if mech.is_boosting and on_floor else 0.0, blend)
 	_air_knee = lerpf(_air_knee, 0.0 if on_floor else 1.0, blend)
+	_run = lerpf(_run, 1.0 if mech.is_running else 0.0, blend)
+	var hopping := mech.is_exiting_boost and not on_floor
+	_hop = lerpf(_hop, 1.0 if hopping else 0.0, 1.0 - exp(-blend_speed * 2.0 * delta))
 
 	var phase := footsteps.get_cycle_phase()
 	# Walking backward: the lifted leg moves back, so the knee bend flips.
 	var lift := sin(phase) * (-1.0 if leg_twist.moving_backward else 1.0)
-	var hip := deg_to_rad(hip_swing_deg) * _walk_amount * cos(phase)
+	var hip := deg_to_rad(lerpf(hip_swing_deg, run_hip_swing_deg, _run)) * _walk_amount * cos(phase)
+	# The forward-swinging leg also lifts at the hip, so the knee comes up.
+	var knee_lift := deg_to_rad(lerpf(knee_lift_deg, run_knee_lift_deg, _run)) * _walk_amount
 	# Legs trail behind the move direction. Backward, the legs face forward, so the trail flips.
 	var trail := -deg_to_rad(boost_trail_deg) * _trail * (-1.0 if leg_twist.moving_backward else 1.0)
 	# The leg that moves forward lifts its foot by bending the knee.
-	var knee := deg_to_rad(knee_bend_deg) * _walk_amount
+	var knee := deg_to_rad(lerpf(knee_bend_deg, run_knee_bend_deg, _run)) * _walk_amount
 	var air := deg_to_rad(air_knee_deg) * _air_knee
 	# Crouch just after landing, deeper for higher falls, then the mech stands up.
 	var fall_ratio := clampf(landing_recovery.fall_height / landing_crouch_full_height, 0.0, 1.0)
@@ -101,16 +126,23 @@ func _physics_process(delta: float) -> void:
 	var boost_crouch := deg_to_rad(boost_crouch_deg) * _boost_crouch
 	var crouch := maxf(maxf(landing_crouch, charge_crouch), boost_crouch)
 
-	hip_left.rotation.x = hip + trail + air * 0.5 + crouch
-	hip_right.rotation.x = -hip + trail + air * 0.5 + crouch
+	hip_left.rotation.x = hip + knee_lift * maxf(0.0, -lift) + trail + air * 0.5 + crouch
+	hip_right.rotation.x = -hip + knee_lift * maxf(0.0, lift) + trail + air * 0.5 + crouch
 	knee_left.rotation.x = -knee * maxf(0.0, -lift) - air - crouch * 2.0
 	knee_right.rotation.x = -knee * maxf(0.0, lift) - air - crouch * 2.0
 
 	# Lowest at foot strike (phase = 0, PI), highest between steps.
-	var bob := bob_height * _walk_amount * (cos(2.0 * phase) + 1.0) * 0.5
+	var bob := lerpf(bob_height, run_bob_height, _run) * _walk_amount * (cos(2.0 * phase) + 1.0) * 0.5
 	# A crouch shortens the legs. Lower the body by the same amount so the feet stay down.
 	var crouch_drop := leg_length * (1.0 - cos(crouch))
 	upper_body.position.y = _upper_rest_y - bob - crouch_drop
+
+	# Boost exit hop on one leg: left leg lifted, right leg straight.
+	if _hop > 0.001:
+		hip_left.rotation.x = lerpf(hip_left.rotation.x, deg_to_rad(hop_lift_hip_deg), _hop)
+		knee_left.rotation.x = lerpf(knee_left.rotation.x, -deg_to_rad(hop_lift_knee_deg), _hop)
+		hip_right.rotation.x = lerpf(hip_right.rotation.x, deg_to_rad(hop_stand_hip_deg), _hop)
+		knee_right.rotation.x = lerpf(knee_right.rotation.x, 0.0, _hop)
 
 	# Kneel: blend both legs and the body height to the kneel pose.
 	var k := smoothstep(0.0, 1.0, kneel.amount)

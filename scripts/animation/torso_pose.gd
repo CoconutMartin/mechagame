@@ -14,12 +14,15 @@ extends Node
 @export var aim_twist_deg: float = 30.0
 ## Sideways tilt toward the rifle while aiming, in degrees.
 @export var aim_tilt_deg: float = 6.0
+## Forward lean while running, in degrees.
+@export var run_lean_deg: float = 12.0
 ## Forward lean while kneeling, in degrees.
 @export var kneel_lean_deg: float = 8.0
 ## How fast the boost lean changes.
 @export var blend_speed: float = 5.0
 
 var _boost: float = 0.0
+var _run: float = 0.0
 
 
 func _ready() -> void:
@@ -29,11 +32,13 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	var boosting_on_ground := mech.is_boosting and mech.is_on_floor()
-	_boost = lerpf(_boost, 1.0 if boosting_on_ground else 0.0, 1.0 - exp(-blend_speed * delta))
+	var blend := 1.0 - exp(-blend_speed * delta)
+	_boost = lerpf(_boost, 1.0 if boosting_on_ground else 0.0, blend)
+	_run = lerpf(_run, 1.0 if mech.is_running else 0.0, blend)
 	var aim := smoothstep(0.0, 1.0, weapon_pose.aim_amount)
 	var kneel_amount := smoothstep(0.0, 1.0, kneel.amount)
 	# Negative X leans forward. Negative Y turns right. Negative Z tilts the head to the right.
 	torso.rotation = Vector3(
-		-deg_to_rad(boost_lean_deg) * _boost - deg_to_rad(kneel_lean_deg) * kneel_amount,
+		-deg_to_rad(boost_lean_deg) * _boost - deg_to_rad(run_lean_deg) * _run - deg_to_rad(kneel_lean_deg) * kneel_amount,
 		-deg_to_rad(aim_twist_deg) * aim,
 		-deg_to_rad(aim_tilt_deg) * aim)

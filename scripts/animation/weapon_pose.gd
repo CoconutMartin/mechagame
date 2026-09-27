@@ -1,8 +1,9 @@
 class_name WeaponPose
 extends Node
 ## Moves the weapon between the rest pose and the aim pose.
-## Rest pose: held across the body, stock high at the right chest, muzzle down to the left,
-## right hand on the grip, left hand on the handguard near the muzzle.
+## Rest pose (stick figure reference): stock at the front of the right shoulder, muzzle down about 28 degrees
+## to the left, right hand on the grip with the right elbow out and high, left hand under the middle
+## of the handguard with the left elbow down.
 ## Aim pose: stock on the right shoulder, weapon points at MechAim.aim_point, left hand under the handguard.
 ## The arms follow the weapon grips with TwoBoneIK. This script also moves the left grip and the elbow directions.
 
@@ -27,9 +28,9 @@ extends Node
 @export var left_grip_aim: Node3D
 @export var arm_ik_left: TwoBoneIK
 @export var arm_ik_right: TwoBoneIK
-## Elbow directions in the rest pose: right elbow out to the side, left elbow down.
-@export var left_pole_rest: Vector3 = Vector3(-0.5, -1.0, 0.2)
-@export var right_pole_rest: Vector3 = Vector3(1.0, -0.3, 0.3)
+## Elbow directions in the rest pose: right elbow out and high, left elbow down near the body.
+@export var left_pole_rest: Vector3 = Vector3(-0.3, -1.0, 0.2)
+@export var right_pole_rest: Vector3 = Vector3(1.0, 0.6, 0.3)
 ## Elbow directions in the aim pose: right elbow out and down, left elbow under the rifle.
 @export var left_pole_aim: Vector3 = Vector3(-0.3, -1.0, 0.0)
 @export var right_pole_aim: Vector3 = Vector3(1.0, -0.6, 0.3)

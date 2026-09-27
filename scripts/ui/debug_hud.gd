@@ -20,6 +20,8 @@ func _process(_delta: float) -> void:
 	var charge := mech.jump_charge
 	if charge.is_charging:
 		state += "\nJump charge: %d%% (%.1f m)" % [roundi(charge.charge * 100.0), charge.charge * charge.full_height]
+	if mech.is_running:
+		state += " + RUN"
 	if mech.is_exiting_boost:
 		state += " + BOOST EXIT"
 	if mech.kneel.is_kneeling:
@@ -28,7 +30,7 @@ func _process(_delta: float) -> void:
 	if recovery.is_recovering():
 		state += "\nLanding recovery: %.1f s" % recovery.time_left
 	elif not mech.is_boost_ready():
-		state += "\nBoost ready in %d steps" % mech.get_walk_steps_left()
+		state += "\nBoost ready in %d steps (walk 2, run 2)" % mech.get_walk_steps_left()
 	var energy := mech.energy
 	_info.text = "Speed: %.1f m/s (%d km/h)\nHeight: %.1f m\nWeight: %d t\nState: %s\nEnergy: %d / %d%s\nFPS: %d" % [
 		speed, roundi(speed * 3.6), mech.global_position.y, roundi(mech.mass_tons), state,

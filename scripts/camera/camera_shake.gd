@@ -22,8 +22,8 @@ extends Camera3D
 ## Steady shake while in the air and falling (0 to 1).
 @export var air_trauma: float = 0.4
 ## Steady shake while rising after a jump (0 to 1). Shake grows with trauma squared,
-## so 0.8 gives 4x (300% more) shake than 0.4.
-@export var air_rising_trauma: float = 0.8
+## so 0.62 gives about 2.4x the shake of 0.4.
+@export var air_rising_trauma: float = 0.62
 
 @export_group("Shake")
 ## Largest random offset in meters at full shake.

@@ -19,6 +19,8 @@ extends Node
 @export var boost_jitter_multiplier: float = 2.0
 ## Aim shake in the air = boost jitter x this value.
 @export var air_jitter_multiplier: float = 2.0
+## Aim shake while kneeling = normal aim shake x this value. 0.25 = 75% less.
+@export var kneel_jitter_multiplier: float = 0.25
 ## Small aim shake when standing still, in degrees.
 @export var idle_jitter_deg: float = 0.05
 ## How fast the shake moves.
@@ -58,6 +60,10 @@ func _physics_process(delta: float) -> void:
 
 
 func _get_jitter_deg() -> float:
+	return _get_base_jitter_deg() * lerpf(1.0, kneel_jitter_multiplier, mech.kneel.amount)
+
+
+func _get_base_jitter_deg() -> float:
 	var boost_jitter := walk_jitter_deg * boost_jitter_multiplier
 	if not mech.is_on_floor():
 		return boost_jitter * air_jitter_multiplier
