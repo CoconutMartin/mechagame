@@ -55,6 +55,9 @@ func _on_landed(_fall_speed: float) -> void:
 	# The boost exit leap is part of the walk. A fall off an edge during the leap still counts.
 	if height < ignore_height or (mech.is_exiting_boost and height < min_height):
 		return
+	# A dodge hop has its own short recovery. A fall off an edge during the hop still counts.
+	if mech.dodge.is_dodging and height < min_height * 2.0:
+		return
 	fall_height = height
 	if height < min_height:
 		duration = short_fall_delay

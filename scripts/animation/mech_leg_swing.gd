@@ -89,7 +89,7 @@ extends Node
 @export var kneel_back_knee_deg: float = 90.0
 ## Body drop when fully down, in meters. Puts the right knee on the ground.
 @export var kneel_drop: float = 1.74
-## Leg tuck at the middle of a dodge roll, in degrees of hip bend.
+## Leg tuck at the top of a dodge hop, in degrees of hip bend (x the dodge tuck amount).
 @export var dodge_tuck_deg: float = 50.0
 ## Crouch at full jump charge, in degrees of hip bend.
 @export var charge_crouch_deg: float = 30.0
@@ -177,8 +177,8 @@ func _physics_process(delta: float) -> void:
 	# Lowest at foot strike (phase = 0, PI), highest between steps.
 	var bob := lerpf(bob_height, run_bob_height, _run) * _walk_amount * (cos(2.0 * phase) + 1.0) * 0.5
 	# A crouch shortens the legs. Lower the body by the same amount so the feet stay down.
-	# During a dodge the Roll node places the body, so the tuck does not lower it.
-	var drop_angle := crouch if not dodge.is_dodging else maxf(maxf(landing_crouch, charge_crouch), boost_crouch)
+	# In the air the tuck does not lower the body (the feet are off the ground).
+	var drop_angle := crouch if mech.is_on_floor() else maxf(maxf(landing_crouch, charge_crouch), boost_crouch)
 	var crouch_drop := leg_length * (1.0 - cos(drop_angle))
 	upper_body.position.y = _upper_rest_y - bob - crouch_drop
 

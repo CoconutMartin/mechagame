@@ -262,14 +262,13 @@ mech = NodePath("..")
 input = NodePath("../MechInput")
 landing_recovery = NodePath("../MechLandingRecovery")
 
-[node name="MechDodge" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery", "kneel", "roll")]
+[node name="MechDodge" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery", "kneel")]
 script = ExtResource("dodge")
 mech = NodePath("..")
 input = NodePath("../MechInput")
 energy = NodePath("../MechEnergy")
 landing_recovery = NodePath("../MechLandingRecovery")
 kneel = NodePath("../MechKneel")
-roll = NodePath("../Visual/Roll")
 
 [node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin")]
 script = ExtResource("aim")

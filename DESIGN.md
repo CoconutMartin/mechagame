@@ -25,7 +25,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | A / D | Turn the legs at a steady speed (60°/s moving, 30°/s standing). The legs turn only with A / D and keep their heading when the mech stops | `move_left`, `move_right` |
 | Mouse | Aim. Sets the torso target (up to 80° each side of the legs). The torso turns at its turn speed and the camera always stays behind the torso | |
 | Space | Hold on the ground to charge the jump jets, release to jump. No plain jump | `jump` |
-| Space x2 | Double tap (within 0.3 s): dodge roll. A / D = side, W = forward, S or no key = back | `jump` |
+| Space x2 | Double tap (within 0.3 s): dodge hop. A / D = side, W = forward, S or no key = back | `jump` |
 | Ctrl | Kneel (toggle, 1.25 s down, 1.25 s up, camera moves down and up with it). W also stands the mech up: right knee on the ground, left foot forward. No movement while kneeling | `crouch` |
 | Shift | Boost (hold with a move key). Walk 3 steps (skipped if already walking), then always 4 run steps, then boost. Stops when released | `boost` |
 | RMB | One-hand weapons: use the right arm weapon. Two-hand firearm: aim down sight (hold) | `use_right_arm`, `aim` |
@@ -74,7 +74,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Footstep shake | camera kick 0.117 m, trauma 0.2, for a 10 m mech | scales with `Mech.height_m` |
 | Shake overall | `CameraShake.intensity` 0.75, noise speed 21, final offset smoothing 100. Kicks return on a spring (2.2 Hz, damping 0.45) with a small bounce | |
 | Movement start kicks | camera drop 0.2 m (0.267 before intensity) at boost start, skid start, takeoff, the top of a jump, and each wall bump | |
-| Dodge roll | double tap Space: 23.8 m in 1.7 s (average 14 m/s; speed falls from 21 m/s to 7 m/s). At the end the mech springs forward out of the roll at 7 m/s in the dodge direction (about 3 m more, 1 step), then stops. Shoulder roll like Gundam Battle Operation 2: the mech dives toward the dodge direction (60° lean), lands on the leading shoulder (right shoulder for a right dodge, left for left), rolls the whole body one full turn over a diagonal axis (shoulder to opposite hip), then rises onto its feet (dive 30%, roll 50%, rise 30%). Body height: a smooth plan made at the dodge start (highest contact height in a window, then averaged, blended to exact contact near the ends), plus a live check that only lifts the body if a part would go into the ground. Recovery: the rise ends in a crouch with the torso leaned 15° toward the dodge direction, then one damped spring (1.1 Hz, damping 0.35) brings it upright. The inertia sway pauses during the dodge and its recovery, then fades back in over 0.5 s. 25 energy, 0.25 s recovery, camera kick at start and end. Visual only; the collision body slides | `MechDodge` |
+| Dodge hop | double tap Space (within 0.3 s): a low hop (1.5 m high) of 11.9 m (50% of the old dodge roll) in about 0.77 s. A / D = side, W = forward, S or no key = back. The mech leans into the hop (up to 10° toward the hop direction) and tucks its legs a little. It lands with 4 m/s left, in a small crouch, springs upright (1.2 Hz, damping 0.45), and stops in about 0.45 s. No landing delay (unless it falls off an edge). 25 energy, 0.2 s recovery, camera kicks at start and landing. The inertia sway pauses during the hop and its recovery | `MechDodge` |
 | Inertia sway | `InertiaSway`: the torso leans 1.2° per m/s² of speed change (slowing = forward), rolls 1° per m/s² sideways, lags 0.1 s behind leg turns (max 10°). Springs at 1.3 Hz, damping 0.35, so movements end with a sway | |
 | Turning steps | standing still with the legs turning: one step every 20° of leg turn, knee lift 60% of the walk lift, light footstep shake | the feet do not slide |
 | Torso aim turn | 44.1°/s max, 189°/s² acceleration | in the last 25% of each turn the torso turns at 50% speed, then stops exactly on the aim (no overshoot, no settle swings) |
@@ -160,7 +160,7 @@ All of this logic lives in one function so it is easy to tune.
   - Crouch: 20° hip bend and 40° knee bend (inside knee angle 140°) while boosting on the ground. Landing crouch 8° (short fall) to 40° (9 m fall or higher).
   - `MechKneel`: Ctrl toggles the kneel pose (0.13 s down or up), body drops 1.74 m.
   - Walk: forward leg knee bend 60° and hip lift 20.4°. Run: hip swing 40°, knee bend 70°, hip lift 20°.
-- Mech visual tree: `Visual > Roll > Upper` (Roll turns for the dodge roll). `Visual > Roll > Upper > Torso` (pivot at the waist, 5.4 m) holds the core, head, arms, and rifle. `Upper > Lower` holds the pelvis and legs.
+- Mech visual tree: `Visual > Roll > Upper` (Roll is free for future whole-body moves; the dodge roll was removed). `Visual > Roll > Upper > Torso` (pivot at the waist, 5.4 m) holds the core, head, arms, and rifle. `Upper > Lower` holds the pelvis and legs.
 - Phase 8: complete animation on rigged .glb models. Walk cycles for biped, reverse-joint, tank, and quad legs. Leg IK so feet stay on slopes and steps. Torso twist toward the aim. Weapon recoil. Boost and jump jet poses.
 
 ## Destructible parts
@@ -274,6 +274,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 37: dodge distance +70% (23.8 m), speed -50% (2.55 s). Small buildings 5.
 - Phase 1 revision 38: dodge 50% faster (1.7 s). Spring forward out of the roll.
 - Phase 1 revision 39: dodge recovery fix: smooth height plan (no pop and drop), inertia sway paused during the dodge, recovery crouch and lean with one spring back to upright.
+- Phase 1 revision 40: dodge roll replaced by a directional dodge hop (11.9 m, 50% of the roll).
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.

@@ -187,6 +187,12 @@ func get_horizontal_speed() -> float:
 	return Vector2(velocity.x, velocity.z).length()
 
 
+## Uses the short normal stop instead of the 3 landing steps (for example after a dodge hop).
+func cancel_landing_steps() -> void:
+	_landing_stop = false
+	_stop_deceleration = 0.0
+
+
 ## World yaw where the torso and the mech aim point.
 func get_aim_yaw() -> float:
 	return _aim_yaw
@@ -270,11 +276,6 @@ func _update_boost(delta: float) -> void:
 
 
 func _update_horizontal(delta: float) -> void:
-	if dodge.is_dodging:
-		var dodge_velocity := dodge.direction * dodge.get_speed()
-		velocity.x = dodge_velocity.x
-		velocity.z = dodge_velocity.z
-		return
 	var recovering := landing_recovery.is_recovering()
 	# Charging a jump, kneeling, or recovering from a dodge: the mech stands still.
 	var charging := jump_charge.is_charging or kneel.is_kneeling or dodge.is_busy()
@@ -289,8 +290,8 @@ func _update_horizontal(delta: float) -> void:
 			# First air frame (walking off an edge). Jumps start the flight at launch.
 			_start_flight()
 		# Free steering or air boost. No key = momentum only.
-		# No steering during the boost exit leap.
-		var steer_wish := Vector3.ZERO if _in_exit_leap else wish
+		# No steering during the boost exit leap or a dodge hop.
+		var steer_wish := Vector3.ZERO if _in_exit_leap or dodge.is_dodging else wish
 		var boost_speed := get_boost_speed() * air_boost_multiplier if is_boosting else 0.0
 		var steered := air_steer.steer(steer_wish, delta, boost_speed, boost_acceleration * air_boost_multiplier)
 		velocity.x = steered.x
