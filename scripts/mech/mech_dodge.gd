@@ -1,7 +1,8 @@
 class_name MechDodge
 extends Node
-## Double tap Space for a dodge roll: the mech dives head-first toward the chosen direction, spins one
-## full turn around its own length (a barrel roll), then comes back up onto its feet.
+## Double tap Space for a dodge roll (like Gundam Battle Operation 2): the mech dives toward the chosen
+## direction, lands on one shoulder, rolls the whole body over that shoulder one full turn (a diagonal
+## shoulder roll), then comes back up onto its feet.
 ## Directions: A / D = side, W = forward, S or no key = back. Costs energy.
 ## The dive and roll are visual (the Roll node). The collision body only slides along the ground.
 
@@ -26,14 +27,16 @@ signal dodge_ended
 @export var recovery_time: float = 0.25
 ## Height of the body center above the feet, in meters.
 @export var body_center_height: float = 5.0
-## Body center height while diving and rolling, in meters. About half the shoulder width,
-## so the shoulders do not cut into the ground while the body spins.
-@export var roll_center_height: float = 4.2
-## How far the body leans into the dive, in degrees (90 = flat).
-@export var dive_angle_deg: float = 80.0
+## Gap between the lowest body point and the ground while rolling, in meters.
+@export var ground_clearance: float = 0.05
+## How far the body leans into the dive, in degrees.
+@export var dive_angle_deg: float = 60.0
+## How much the roll axis turns toward the dodge direction (0 = straight forward roll,
+## higher = more over the shoulder). The roll goes over the right shoulder for this value > 0.
+@export var shoulder_amount: float = 0.7
 ## Parts of the dodge time: the dive ends at dive_end, the roll ends at roll_end, then the body rises.
-@export_range(0.0, 1.0) var dive_end: float = 0.25
-@export_range(0.0, 1.0) var roll_end: float = 0.75
+@export_range(0.0, 1.0) var dive_end: float = 0.3
+@export_range(0.0, 1.0) var roll_end: float = 0.8
 
 var is_dodging: bool = false
 ## World direction of the current dodge.
@@ -45,6 +48,10 @@ var _time: float = 0.0
 var _recover_left: float = 0.0
 ## Axis the body leans around for the dive (the top turns toward the dodge direction).
 var _dive_axis: Vector3 = Vector3.FORWARD
+## Diagonal axis of the shoulder roll.
+var _roll_axis: Vector3 = Vector3.FORWARD
+## Body box corners in the Roll node space, measured at the dodge start (weapon left out).
+var _body_points: Array[Vector3] = []
 var _suppress_jump: bool = false
 
 
@@ -113,6 +120,9 @@ func _start() -> void:
 	direction = (mech.global_basis * local).normalized()
 	# Dive axis: the top of the body leans toward the move direction.
 	_dive_axis = Vector3.UP.cross(local).normalized()
+	# Shoulder roll axis: the dive axis turned toward the dodge direction, so one shoulder leads.
+	_roll_axis = (_dive_axis + local * shoulder_amount).normalized()
+	_collect_body_points()
 	is_dodging = true
 	_time = 0.0
 	_last_press = -10.0
@@ -128,9 +138,50 @@ func _update_roll() -> void:
 		dive = smoothstep(0.0, dive_end, progress)
 	elif progress > roll_end:
 		dive = 1.0 - smoothstep(roll_end, 1.0, progress)
-	# Barrel roll: one full turn around the body's own length, during the middle part.
+	# Shoulder roll: one full turn over the diagonal axis, during the middle part.
 	var spin := TAU * smoothstep(dive_end, roll_end, progress)
-	var turn := Basis(_dive_axis, deg_to_rad(dive_angle_deg) * dive) * Basis(Vector3.UP, spin)
-	# Keep the body center on a path that drops a little while diving, then rises again.
-	var center := Vector3(0.0, lerpf(body_center_height, roll_center_height, dive), 0.0)
-	roll.transform = Transform3D(turn, center - turn * Vector3(0.0, body_center_height, 0.0))
+	var turn := Basis(_roll_axis, spin) * Basis(_dive_axis, deg_to_rad(dive_angle_deg) * dive)
+	# Lift the body so its lowest point just touches the ground: it rolls on the ground,
+	# first on the leading shoulder, then over the back and the hip.
+	var pivot := Vector3(0.0, body_center_height, 0.0)
+	var lowest := 0.0
+	for point in _body_points:
+		lowest = minf(lowest, (turn * (point - pivot)).y)
+	var center := Vector3(0.0, -lowest + ground_clearance * dive, 0.0)
+	roll.transform = Transform3D(turn, center - turn * pivot)
+
+
+## Returns the name of the body part that touches the ground now (for tests and effects).
+func get_contact_part() -> String:
+	var lowest := INF
+	var part := ""
+	for mesh in roll.find_children("*", "MeshInstance3D", true, false):
+		if _is_weapon(mesh):
+			continue
+		var box: AABB = (mesh as MeshInstance3D).get_aabb()
+		for i in 8:
+			var y := ((mesh as MeshInstance3D).global_transform * box.get_endpoint(i)).y
+			if y < lowest:
+				lowest = y
+				part = mesh.name
+	return part
+
+
+func _collect_body_points() -> void:
+	_body_points.clear()
+	var to_roll := roll.global_transform.affine_inverse()
+	for mesh in roll.find_children("*", "MeshInstance3D", true, false):
+		if _is_weapon(mesh):
+			continue
+		var box: AABB = (mesh as MeshInstance3D).get_aabb()
+		for i in 8:
+			_body_points.append(to_roll * ((mesh as MeshInstance3D).global_transform * box.get_endpoint(i)))
+
+
+func _is_weapon(node: Node) -> bool:
+	var parent := node.get_parent()
+	while parent != null and parent != roll:
+		if parent.name == "Rifle":
+			return true
+		parent = parent.get_parent()
+	return false
