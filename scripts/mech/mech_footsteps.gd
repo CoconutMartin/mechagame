@@ -17,7 +17,7 @@ signal footstep(strength: float)
 ## 0 to 1: how far the current stride is done.
 var _progress: float = 0.0
 var _step_count: int = 0
-## Planned stride lengths for the next steps (for example after the boost exit hop).
+## Planned stride lengths for the next steps (for example the boost exit steps).
 var _stride_plan: Array[float] = []
 
 

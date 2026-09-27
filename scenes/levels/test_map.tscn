@@ -101,12 +101,6 @@ size = Vector3(18, 10, 16)
 tint = Color(0.58, 0.57, 0.55, 1)
 add_door = true
 
-[node name="Small1" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -96, 0, 55)
-size = Vector3(13, 6, 10)
-tint = Color(0.62, 0.6, 0.57, 1)
-add_door = true
-
 [node name="Small2" parent="Buildings" instance=ExtResource("block")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, -0, 0, -1, -8, 0, 114)
 size = Vector3(17, 7, 12)
@@ -125,34 +119,10 @@ size = Vector3(12, 7, 16)
 tint = Color(0.62, 0.6, 0.57, 1)
 add_door = true
 
-[node name="Small5" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -74, 0, -11)
-size = Vector3(16, 7, 13)
-tint = Color(0.62, 0.6, 0.57, 1)
-add_door = true
-
 [node name="Small6" parent="Buildings" instance=ExtResource("block")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, -0, 0, 1, -30, 0, -112)
 size = Vector3(14, 8, 14)
 tint = Color(0.62, 0.6, 0.57, 1)
-add_door = true
-
-[node name="Small7" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -116, 0, -11)
-size = Vector3(13, 6, 16)
-tint = Color(0.6, 0.55, 0.5, 1)
-add_door = true
-
-[node name="Small8" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 74, 0, -11)
-size = Vector3(11, 6, 12)
-tint = Color(0.62, 0.6, 0.57, 1)
-add_door = true
-
-[node name="Small9" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 52, 0, -55)
-size = Vector3(17, 7, 10)
-tint = Color(0.6, 0.55, 0.5, 1)
 add_door = true
 
 [node name="Small10" parent="Buildings" instance=ExtResource("block")]
@@ -191,22 +161,10 @@ size = Vector3(12, 7, 13)
 tint = Color(0.6, 0.55, 0.5, 1)
 add_door = true
 
-[node name="Small16" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -96, 0, 33)
-size = Vector3(13, 6, 12)
-tint = Color(0.6, 0.55, 0.5, 1)
-add_door = true
-
 [node name="Small17" parent="Buildings" instance=ExtResource("block")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -74, 0, -55)
 size = Vector3(13, 7, 17)
 tint = Color(0.6, 0.55, 0.5, 1)
-add_door = true
-
-[node name="Small18" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -74, 0, 55)
-size = Vector3(11, 7, 10)
-tint = Color(0.62, 0.6, 0.57, 1)
 add_door = true
 
 [node name="Small19" parent="Buildings" instance=ExtResource("block")]
@@ -230,18 +188,6 @@ add_door = true
 [node name="Small22" parent="Buildings" instance=ExtResource("block")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -96, 0, -55)
 size = Vector3(11, 6, 13)
-tint = Color(0.55, 0.56, 0.58, 1)
-add_door = true
-
-[node name="Small23" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 74, 0, -33)
-size = Vector3(11, 7, 13)
-tint = Color(0.62, 0.6, 0.57, 1)
-add_door = true
-
-[node name="Small24" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 52, 0, -77)
-size = Vector3(10, 6, 14)
 tint = Color(0.55, 0.56, 0.58, 1)
 add_door = true
 
@@ -275,18 +221,6 @@ size = Vector3(10, 6, 17)
 tint = Color(0.55, 0.56, 0.58, 1)
 add_door = true
 
-[node name="Small30" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -96, 0, -33)
-size = Vector3(14, 6, 10)
-tint = Color(0.6, 0.55, 0.5, 1)
-add_door = true
-
-[node name="Small31" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -116, 0, -77)
-size = Vector3(11, 7, 11)
-tint = Color(0.6, 0.55, 0.5, 1)
-add_door = true
-
 [node name="Small32" parent="Buildings" instance=ExtResource("block")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -52, 0, 33)
 size = Vector3(14, 7, 12)
@@ -305,40 +239,10 @@ size = Vector3(10, 6, 15)
 tint = Color(0.55, 0.56, 0.58, 1)
 add_door = true
 
-[node name="Small35" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 96, 0, -99)
-size = Vector3(11, 7, 11)
-tint = Color(0.55, 0.56, 0.58, 1)
-add_door = true
-
 [node name="Small36" parent="Buildings" instance=ExtResource("block")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -52, 0, -11)
 size = Vector3(10, 7, 10)
 tint = Color(0.6, 0.55, 0.5, 1)
-add_door = true
-
-[node name="Small37" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -52, 0, -33)
-size = Vector3(16, 7, 10)
-tint = Color(0.6, 0.55, 0.5, 1)
-add_door = true
-
-[node name="Small38" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 52, 0, 11)
-size = Vector3(11, 6, 11)
-tint = Color(0.6, 0.55, 0.5, 1)
-add_door = true
-
-[node name="Small39" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -52, 0, 55)
-size = Vector3(11, 7, 16)
-tint = Color(0.6, 0.55, 0.5, 1)
-add_door = true
-
-[node name="Small40" parent="Buildings" instance=ExtResource("block")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 96, 0, 33)
-size = Vector3(15, 7, 17)
-tint = Color(0.55, 0.56, 0.58, 1)
 add_door = true
 
 [node name="Tall1" parent="Buildings" instance=ExtResource("block")]

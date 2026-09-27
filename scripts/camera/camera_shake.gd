@@ -13,8 +13,8 @@ extends Camera3D
 
 @export_group("Landing")
 ## Shake added per m/s of fall speed at landing.
-@export var landing_trauma_per_speed: float = 0.03
-@export var landing_kick_per_speed: float = 0.03
+@export var landing_trauma_per_speed: float = 0.045
+@export var landing_kick_per_speed: float = 0.05
 
 @export_group("Boost")
 ## Steady shake while boosting (0 to 1).

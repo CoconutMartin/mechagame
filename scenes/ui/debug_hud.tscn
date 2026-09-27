@@ -76,9 +76,9 @@ grow_vertical = 0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 15
-text = "W / S walk forward / back   A / D turn legs   Mouse twist torso (20 left, 160 right)
-RMB aim down sight   Space hold to charge jump jets, release to jump (hold W or S to jump that way)
-Ctrl kneel (toggle)   Shift + W: walk 3 steps, run 4 steps, then boost
-In the air: W / S = free steering (5 m), Shift + W / S = air boost
+text = "Mouse aim (legs follow at 60 deg/s)   W / S walk forward / back   A / D strafe
+RMB aim down sight   Space hold to charge jump jets, release to jump (hold a move key to jump that way)
+Ctrl kneel (toggle)   Shift + move key: walk 3 steps, run 4 steps, then boost
+In the air: move key = free steering (5 m), Shift + move key = air boost
 Yellow dot = camera crosshair   Blue ring = mech aim
 Grid lines: thin = 1 m, thick = 10 m"

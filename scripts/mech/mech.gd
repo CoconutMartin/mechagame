@@ -7,7 +7,7 @@ extends CharacterBody3D
 ## All tuning values are in the Inspector. Units: meters, seconds.
 
 signal jumped
-signal boost_exit_hop
+signal boost_exit_step
 signal landed(fall_speed: float)
 
 @export var input: MechInput
@@ -39,16 +39,14 @@ signal landed(fall_speed: float)
 @export var jump_charge_brake: float = 9.0
 
 @export_group("Turning")
-## The torso turns toward the camera aim, inside these twist limits. The legs (the mech root)
-## turn only with A / D. The camera cannot look past the twist limits.
+## The legs (the mech root) turn toward the camera aim at one steady speed.
+## The torso can twist only a little ahead of the legs (these limits). A / D strafe.
 ## Largest torso twist to the left of the legs, in degrees.
-@export var torso_twist_left_deg: float = 20.0
+@export var torso_twist_left_deg: float = 5.0
 ## Largest torso twist to the right of the legs, in degrees.
-@export var torso_twist_right_deg: float = 160.0
-## Top leg turn speed (A / D), in degrees per second.
+@export var torso_twist_right_deg: float = 5.0
+## Leg turn speed toward the aim, in degrees per second. The same at all times.
 @export var leg_turn_speed_deg: float = 60.0
-## Leg turn acceleration, in degrees per second per second.
-@export var leg_turn_acceleration_deg: float = 180.0
 ## Top torso turn speed toward the camera direction (degrees per second).
 @export var turn_speed_deg: float = 58.8
 ## How fast the body gains turn speed (degrees per second per second).
@@ -80,11 +78,9 @@ signal landed(fall_speed: float)
 @export var run_speed_multiplier: float = 1.25
 ## Speed gain while boosting (m/s per second).
 @export var boost_acceleration: float = 20.0
-## Upward speed of the small hop when boost stops on the ground (m/s).
-@export var boost_exit_hop_velocity: float = 7.5
-## After the hop, the mech slows down over these steps (stride length of each, in meters):
-## 2 medium steps, then 2 small steps. Ends at walk speed with W held, or stopped with no key.
-@export var boost_exit_strides: PackedFloat32Array = PackedFloat32Array([4.8, 4.8, 3.4, 3.4])
+## When boost stops on the ground, the mech slows down over these steps (stride length of each, in meters):
+## 1 big step, 2 medium steps, then 2 small steps. Ends at walk speed with W held, or stopped with no key.
+@export var boost_exit_strides: PackedFloat32Array = PackedFloat32Array([9.0, 4.8, 4.8, 3.4, 3.4])
 ## Energy used each second while boosting.
 @export var boost_energy_per_second: float = 30.0
 ## Air boost acceleration and top speed = ground boost values x this value. 0.25 = 75% less.
@@ -106,13 +102,12 @@ var is_boosting: bool = false
 var is_running: bool = false
 ## True while boosting in the air to steer.
 var is_air_boosting: bool = false
-## True from the boost exit hop until the mech is back at walk speed or stopped.
+## True from the end of a ground boost until the mech is back at walk speed or stopped.
 var is_exiting_boost: bool = false
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _was_on_floor: bool = true
 var _boost_on_ground: bool = false
-var _in_exit_hop: bool = false
 var _walk_steps: int = 0
 var _exit_deceleration: float = 0.0
 var _stop_deceleration: float = 0.0
@@ -120,7 +115,6 @@ var _landing_stop: bool = false
 var _airborne: bool = false
 ## World yaw where the torso (and the mech aim) points.
 var _aim_yaw: float = 0.0
-var _leg_turn_velocity: float = 0.0
 var _turn_velocity: float = 0.0
 var _turn_start_error: float = 0.0
 ## Time into the settle swings. Below 0 = no settle.
@@ -184,8 +178,6 @@ func _on_footstep(_strength: float) -> void:
 func _update_boost(delta: float) -> void:
 	if get_horizontal_speed() < footsteps.min_speed and is_on_floor():
 		_walk_steps = 0
-	if is_on_floor() and velocity.y <= 0.0:
-		_in_exit_hop = false
 	var was_ground_boosting := is_boosting and _boost_on_ground
 	var has_input := input.move_direction.length_squared() > 0.01
 	var wants_boost := false
@@ -194,8 +186,7 @@ func _update_boost(delta: float) -> void:
 				and not landing_recovery.is_recovering() and not jump_charge.is_charging and not kneel.is_kneeling
 	else:
 		# Shift + a move key fires the boosters in the air. A move key alone uses free steering.
-		# The boost exit hop is part of the walk, so no steering there.
-		wants_boost = input.boost_held and has_input and not _in_exit_hop
+		wants_boost = input.boost_held and has_input
 	var energy_rate := boost_energy_per_second if is_on_floor() else boost_energy_per_second * air_boost_energy_multiplier
 	is_boosting = wants_boost and energy.try_drain(energy_rate * delta)
 	# Shift held after the walk steps: run until boost is ready.
@@ -207,12 +198,12 @@ func _update_boost(delta: float) -> void:
 	if is_boosting:
 		is_exiting_boost = false
 	elif was_ground_boosting and is_on_floor() and get_horizontal_speed() > walk_speed * 1.05:
+		# One big step, then medium and small steps to slow down.
 		is_exiting_boost = true
-		_in_exit_hop = true
+		footsteps.start_stride_plan(boost_exit_strides)
 		_exit_deceleration = 0.0
 		_stop_deceleration = 0.0
-		velocity.y = boost_exit_hop_velocity
-		boost_exit_hop.emit()
+		boost_exit_step.emit()
 
 
 func _update_horizontal(delta: float) -> void:
@@ -221,16 +212,16 @@ func _update_horizontal(delta: float) -> void:
 	var charging := jump_charge.is_charging or kneel.is_kneeling
 	var wish := Vector3.ZERO if recovering or charging else input.move_direction
 	var has_input := wish.length_squared() > 0.001
-	# A hop that starts this frame counts as air, so step plans start after landing.
+	# A jump that starts this frame counts as air.
 	var on_floor := is_on_floor() and velocity.y <= 0.0
 	var speed := get_horizontal_speed()
 
 	if not on_floor:
 		if not _airborne:
-			# First air frame (hop or walking off an edge). Jumps start the flight at launch.
+			# First air frame (walking off an edge). Jumps start the flight at launch.
 			_start_flight()
 		# Free steering or air boost. No key = momentum only.
-		var steer_wish := Vector3.ZERO if _in_exit_hop else wish
+		var steer_wish := wish
 		var boost_speed := get_boost_speed() * air_boost_multiplier if is_boosting else 0.0
 		var steered := air_steer.steer(steer_wish, delta, boost_speed, boost_acceleration * air_boost_multiplier)
 		velocity.x = steered.x
@@ -401,12 +392,14 @@ func _update_settle(delta: float) -> void:
 	_aim_yaw = wrapf(input.aim_yaw + offset, -PI, PI)
 
 
-## Turns the legs (the mech root) with A / D only, like MechWarrior. The torso twist never turns the legs.
+## Turns the legs (the mech root) toward the camera aim at a steady speed.
 func _turn_legs(delta: float) -> void:
-	var can_turn := not landing_recovery.is_recovering() and not kneel.is_kneeling
-	var desired := input.turn_input * deg_to_rad(leg_turn_speed_deg) if can_turn else 0.0
-	_leg_turn_velocity = move_toward(_leg_turn_velocity, desired, deg_to_rad(leg_turn_acceleration_deg) * delta)
-	rotation.y = wrapf(rotation.y + _leg_turn_velocity * delta, -PI, PI)
+	if landing_recovery.is_recovering() or kneel.is_kneeling:
+		return
+	# One steady speed at all times: standing, walking, running, or boosting.
+	var error := wrapf(input.aim_yaw - rotation.y, -PI, PI)
+	var step := deg_to_rad(leg_turn_speed_deg) * delta
+	rotation.y = wrapf(rotation.y + clampf(error, -step, step), -PI, PI)
 
 
 ## Keeps the torso aim inside the twist limits of the current leg heading.
@@ -420,11 +413,8 @@ func _check_landing(fall_speed: float) -> void:
 	var on_floor := is_on_floor()
 	if on_floor and not _was_on_floor:
 		# Landing with sideways speed from a jump: walk it out in a set number of steps.
-		_landing_stop = not is_exiting_boost and get_horizontal_speed() > footsteps.min_speed
-		if is_exiting_boost:
-			# After the one-leg hop: 2 medium steps, then 2 small steps.
-			footsteps.start_stride_plan(boost_exit_strides)
-			_exit_deceleration = 0.0
+		_landing_stop = get_horizontal_speed() > footsteps.min_speed
+		is_exiting_boost = false
 		_stop_deceleration = 0.0
 		landed.emit(fall_speed)
 	if on_floor:
