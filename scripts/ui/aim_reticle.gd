@@ -1,7 +1,9 @@
 class_name AimReticle
 extends Control
-## Draws the camera crosshair (yellow dot) and a ring where the mech really aims (MechAim.aim_point).
-## Both sit a little above the screen center (MechAim.screen_offset_up).
+## Draws the camera crosshair (yellow dot) and a ring where the mech torso aims (blue ring).
+## Both sit above the screen center (MechAim.screen_offset_up).
+## The ring is placed from the torso angle, not from a 3D hit point, so camera shake,
+## body bob, and the physics frame rate do not make it jitter.
 
 @export var mech_aim: MechAim
 @export var radius: float = 14.0
@@ -18,9 +20,15 @@ var _crosshair_position: Vector2 = Vector2.ZERO
 func _process(_delta: float) -> void:
 	_crosshair_position = mech_aim.get_crosshair_screen_point()
 	var camera := get_viewport().get_camera_3d()
-	_visible_on_screen = camera != null and not camera.is_position_behind(mech_aim.aim_point)
+	_visible_on_screen = camera != null
 	if _visible_on_screen:
-		_screen_position = camera.unproject_position(mech_aim.aim_point)
+		# Horizontal gap between the torso aim and the camera view, turned into pixels.
+		var forward := -camera.get_parent_node_3d().global_basis.z
+		var camera_yaw := atan2(-forward.x, -forward.z)
+		var gap := wrapf(mech_aim.mech.get_aim_yaw_interpolated() - camera_yaw, -PI, PI)
+		var focal := get_viewport_rect().size.y * 0.5 / tan(deg_to_rad(camera.fov) * 0.5)
+		_visible_on_screen = absf(gap) < deg_to_rad(80.0)
+		_screen_position = _crosshair_position + Vector2(-tan(gap) * focal, 0.0)
 	queue_redraw()
 
 

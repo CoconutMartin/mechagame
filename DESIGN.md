@@ -81,7 +81,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Value | Current |
 |---|---|
 | Camera crosshair | yellow dot 22% of the screen height above the center (matches the reference screenshot). `MechAim.screen_offset_up` |
-| Mech aim reticle | blue ring. It shows where the weapon really points: body turn lag plus jitter |
+| Mech aim reticle | blue ring, placed from the torso angle (no shake, no jitter). The camera follows the torso, so it sits on the yellow dot |
 | Aim jitter | removed (0°). The code and exports stay in `MechAim` for later use |
 | Vertical aim | mouse pitch speed 30% of horizontal |
 | Aim down sight (RMB) | the default camera is already at the right side of the head; RMB zooms FOV 70° to 35°, mouse sensitivity 50%. Rifle butt on the right shoulder, torso turns 30° right and tilts 6°, left hand under the handguard near the muzzle |
