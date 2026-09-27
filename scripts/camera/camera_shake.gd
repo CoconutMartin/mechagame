@@ -21,6 +21,16 @@ extends Camera3D
 @export_group("Wall Bump")
 ## Shake added per m/s of speed into a wall.
 @export var bump_trauma_per_speed: float = 0.05
+## Camera drop per wall bump, in meters (before intensity: 0.267 x 0.75 = 0.2 m).
+@export var bump_kick: float = 0.267
+
+@export_group("Movement Start Kicks")
+## One camera drop at the start of each movement, in meters (before intensity: 0.267 x 0.75 = 0.2 m).
+@export var boost_start_kick: float = 0.267
+@export var skid_start_kick: float = 0.267
+@export var takeoff_kick: float = 0.267
+## At the top of a jump, when the fall starts.
+@export var fall_start_kick: float = 0.267
 
 @export_group("Boost")
 ## Steady shake while boosting (0 to 1).
@@ -41,15 +51,21 @@ extends Camera3D
 @export var max_roll_deg: float = 1.2
 ## How fast shake fades (per second).
 @export var trauma_decay: float = 2.5
-## How fast a kick (footstep or landing drop) comes back. Lower = slower, smoother.
-@export var kick_recovery: float = 9.8
+## A kick (camera drop) comes back on a spring with a small bounce.
+## Spring speed (bounces per second). Lower = slower return.
+@export var kick_frequency: float = 2.2
+## Spring damping. Lower = more bounce. 1.0 = no bounce.
+@export_range(0.05, 1.0) var kick_damping: float = 0.45
 ## How fast the random shake moves. Lower = smoother, slower wobble.
 @export var noise_speed: float = 21.0
 ## Smoothing of the final camera offset. Lower = smoother (and a little more lag).
 @export var smoothing: float = 100.0
 
 var _trauma: float = 0.0
-var _kick: float = 0.0
+var _kick := AimSpring.new(0.0)
+var _was_boosting: bool = false
+var _was_skidding: bool = false
+var _was_rising: bool = false
 var _time: float = 0.0
 var _noise := FastNoiseLite.new()
 var _offset := Vector3.ZERO
@@ -64,7 +80,24 @@ func _ready() -> void:
 
 func add_shake(trauma: float, kick: float) -> void:
 	_trauma = minf(_trauma + trauma, 1.0)
-	_kick = minf(_kick + kick, 1.5)
+	_kick.value = minf(_kick.value + kick, 1.5)
+
+
+# One kick at the start of each steady movement.
+func _physics_process(_delta: float) -> void:
+	var airborne := not mech.is_on_floor()
+	var rising := airborne and mech.velocity.y > 0.0
+	if mech.is_boosting and not _was_boosting:
+		add_shake(0.0, boost_start_kick)
+	if mech.is_skidding and not _was_skidding:
+		add_shake(0.0, skid_start_kick)
+	if rising and not _was_rising:
+		add_shake(0.0, takeoff_kick)
+	if airborne and _was_rising and not rising:
+		add_shake(0.0, fall_start_kick)
+	_was_boosting = mech.is_boosting
+	_was_skidding = mech.is_skidding
+	_was_rising = rising
 
 
 func _process(delta: float) -> void:
@@ -76,12 +109,12 @@ func _process(delta: float) -> void:
 		_trauma = maxf(_trauma, skid_trauma)
 	if not mech.is_on_floor():
 		_trauma = maxf(_trauma, air_rising_trauma if mech.velocity.y > 0.0 else air_trauma)
-	_kick = lerpf(_kick, 0.0, 1.0 - exp(-kick_recovery * delta))
+	_kick.update(0.0, kick_frequency, kick_damping, 10.0, delta)
 
 	var shake := _trauma * _trauma * intensity
 	var target := Vector3(
 		max_offset * shake * _noise.get_noise_2d(0.0, _time),
-		max_offset * shake * _noise.get_noise_2d(100.0, _time) - _kick * intensity,
+		max_offset * shake * _noise.get_noise_2d(100.0, _time) - _kick.value * intensity,
 		deg_to_rad(max_roll_deg) * shake * _noise.get_noise_2d(200.0, _time))
 	# Smooth the result so the camera eases instead of jumping.
 	_offset = _offset.lerp(target, 1.0 - exp(-smoothing * delta))
@@ -96,7 +129,7 @@ func _on_footstep(strength: float) -> void:
 
 
 func _on_bumped(strength: float) -> void:
-	add_shake(strength * bump_trauma_per_speed, 0.0)
+	add_shake(strength * bump_trauma_per_speed, bump_kick)
 
 
 func _on_landed(fall_speed: float) -> void:
