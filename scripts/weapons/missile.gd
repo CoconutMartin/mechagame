@@ -18,26 +18,29 @@ const EXPLOSION := preload("res://scenes/effects/explosion.tscn")
 ## up to terminal_turn_multiplier times, so near targets are hit too.
 @export var terminal_distance: float = 45.0
 @export var terminal_turn_multiplier: float = 4.0
-## Layers the missile hits: 1 world, 2 mechs, 3 props.
-@export_flags_3d_physics var collision_mask: int = 7
+## Layers the missile hits: 1 world, 3 props, 4 hitboxes.
+@export_flags_3d_physics var collision_mask: int = 13
+## Blast radius in meters (Blast: full damage at the center, 30% at the edge).
+@export var blast_radius: float = 8.0
 
 var velocity: Vector3 = Vector3.ZERO
 var target: Node3D = null
 var aim_point: Vector3 = Vector3.ZERO
 var top_speed: float = 90.0
 var turn_rate: float = 110.0
+var damage: float = 150.0
 
 var _age: float = 0.0
 var _exclude: Array[RID] = []
 
 
-func launch(start_velocity: Vector3, homing_target: Node3D, point: Vector3, speed: float, turn_deg: float, shooter: RID) -> void:
+func launch(start_velocity: Vector3, homing_target: Node3D, point: Vector3, speed: float, turn_deg: float, shooter: Array[RID]) -> void:
 	velocity = start_velocity
 	target = homing_target
 	aim_point = point
 	top_speed = speed
 	turn_rate = turn_deg
-	_exclude = [shooter]
+	_exclude = shooter
 
 
 func _physics_process(delta: float) -> void:
@@ -82,6 +85,5 @@ func _explode(point: Vector3) -> void:
 	var effect := EXPLOSION.instantiate() as Node3D
 	get_parent().add_child(effect)
 	effect.global_position = point
-	if is_instance_valid(target) and target.global_position.distance_to(point) < 12.0 and target.has_method(&"on_hit"):
-		target.on_hit(100.0)
+	Blast.apply(get_world_3d(), point, blast_radius, damage, _exclude)
 	queue_free()

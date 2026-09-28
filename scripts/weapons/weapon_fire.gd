@@ -54,7 +54,7 @@ func _fire() -> void:
 	var bullet := bullet_scene.instantiate() as Bullet
 	bullet.velocity = direction * bullet_speed
 	if shooter != null:
-		bullet.exclude = [shooter.get_rid()]
+		bullet.exclude = shooter.get_hit_exclude() if shooter is Mech else [shooter.get_rid()]
 	var world := get_tree().current_scene if get_tree().current_scene != null else get_tree().root
 	world.add_child(bullet)
 	bullet.global_position = origin

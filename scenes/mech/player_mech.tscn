@@ -34,6 +34,8 @@
 [ext_resource type="Script" path="res://scripts/camera/free_aim.gd" id="freeaim"]
 [ext_resource type="Script" path="res://scripts/mech/mech_assembler.gd" id="assembler"]
 [ext_resource type="Script" path="res://scripts/weapons/weapon_controller.gd" id="weaponctl"]
+[ext_resource type="Script" path="res://scripts/combat/mech_health.gd" id="health"]
+[ext_resource type="Script" path="res://scripts/combat/part_breaker.gd" id="breaker"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/heavy_rifle.tscn" id="rifle"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/bullet.tscn" id="bullet"]
 [ext_resource type="Resource" path="res://data/loadouts/warden.tres" id="loadout"]
@@ -366,3 +368,20 @@ shield_pose = NodePath("../Animation/ShieldPose")
 shield_mount = NodePath("../Animation/ShieldMount")
 torso = NodePath("../Visual/Roll/Upper/Torso")
 left_hand = NodePath("../Visual/Roll/Upper/Torso/LeftHand")
+
+[node name="MechHealth" type="Node" parent="." node_paths=PackedStringArray("mech", "assembler", "weapons")]
+script = ExtResource("health")
+mech = NodePath("..")
+assembler = NodePath("../MechAssembler")
+weapons = NodePath("../WeaponController")
+
+[node name="PartBreaker" type="Node" parent="." node_paths=PackedStringArray("mech", "health", "assembler", "weapons", "mech_aim", "jump_charge", "camera_shake", "frame")]
+script = ExtResource("breaker")
+mech = NodePath("..")
+health = NodePath("../MechHealth")
+assembler = NodePath("../MechAssembler")
+weapons = NodePath("../WeaponController")
+mech_aim = NodePath("../MechAim")
+jump_charge = NodePath("../MechJumpCharge")
+camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
+frame = NodePath("../Visual")

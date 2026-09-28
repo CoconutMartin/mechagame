@@ -114,7 +114,8 @@ func _update_launches(delta: float) -> void:
 	missile.global_transform = tube.global_transform
 	var aim_point := controller.mech_aim.aim_point
 	missile.launch(-tube.global_basis.z * 30.0 + Vector3.UP * 10.0, target if is_instance_valid(target) else null,
-			aim_point, data.projectile_speed, data.missile_turn_deg, controller.mech.get_rid())
+			aim_point, data.projectile_speed, data.missile_turn_deg, controller.mech.get_hit_exclude())
+	missile.damage = data.damage
 
 
 func _find_candidate() -> Node3D:

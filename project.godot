@@ -126,6 +126,7 @@ lock_on={
 3d_physics/layer_1="world"
 3d_physics/layer_2="mechs"
 3d_physics/layer_3="props"
+3d_physics/layer_4="hitboxes"
 
 [physics]
 

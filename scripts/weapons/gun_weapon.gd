@@ -26,7 +26,8 @@ func _fire() -> void:
 	var direction := MechWeapon.spread_direction(aim, data.spread_deg)
 	var bullet := BULLET.instantiate() as Bullet
 	bullet.velocity = direction * data.projectile_speed
-	bullet.exclude = [controller.mech.get_rid()]
+	bullet.exclude = controller.mech.get_hit_exclude()
+	bullet.damage = data.damage
 	controller.get_world().add_child(bullet)
 	bullet.global_position = origin
 	bullet.look_at(origin + direction, Vector3.UP if absf(direction.y) < 0.99 else Vector3.FORWARD)

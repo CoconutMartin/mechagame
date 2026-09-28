@@ -30,7 +30,8 @@ SCRIPTS = [("mech/mech","mech"),("mech/mech_input","input"),("mech/mech_energy",
  ("weapons/weapon_recoil","recoil"),("effects/booster_flames","flames"),("animation/shield_pose","shieldpose"),
  ("mech/mech_shield","shield"),("effects/brake_thrusters","brakes"),("animation/shield_mount","shieldmount"),
  ("animation/dodge_slide_pose","dodgeslide"),("animation/pauldron_follow","pauldron"),
- ("camera/free_aim","freeaim"),("mech/mech_assembler","assembler"),("weapons/weapon_controller","weaponctl")]
+ ("camera/free_aim","freeaim"),("mech/mech_assembler","assembler"),("weapons/weapon_controller","weaponctl"),
+ ("combat/mech_health","health"),("combat/part_breaker","breaker")]
 
 
 # Frame nodes that part groups attach to, with their paths in the mech scene.
@@ -394,5 +395,22 @@ shield_pose = NodePath("../Animation/ShieldPose")
 shield_mount = NodePath("../Animation/ShieldMount")
 torso = NodePath("../{TO}")
 left_hand = NodePath("../{TO}/LeftHand")
+
+[node name="MechHealth" type="Node" parent="." node_paths=PackedStringArray("mech", "assembler", "weapons")]
+script = ExtResource("health")
+mech = NodePath("..")
+assembler = NodePath("../MechAssembler")
+weapons = NodePath("../WeaponController")
+
+[node name="PartBreaker" type="Node" parent="." node_paths=PackedStringArray("mech", "health", "assembler", "weapons", "mech_aim", "jump_charge", "camera_shake", "frame")]
+script = ExtResource("breaker")
+mech = NodePath("..")
+health = NodePath("../MechHealth")
+assembler = NodePath("../MechAssembler")
+weapons = NodePath("../WeaponController")
+mech_aim = NodePath("../MechAim")
+jump_charge = NodePath("../MechJumpCharge")
+camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
+frame = NodePath("../Visual")
 '''
     return text

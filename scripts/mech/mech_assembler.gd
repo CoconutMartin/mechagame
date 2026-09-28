@@ -14,21 +14,30 @@ extends Node
 ## Optional. Mounts the loadout weapons.
 @export var weapon_controller: WeaponController
 
+## Nodes each part added to the frame, by hit key (see Loadout.get_part_slots). MechHealth builds
+## the hitboxes from them and PartBreaker drops them when the part is destroyed.
+var part_nodes: Dictionary = {}
+
 
 func _ready() -> void:
 	if loadout == null:
 		return
-	for part in loadout.get_parts():
-		if part.scene != null and not part is WeaponData:
-			attach(part.scene)
+	for pair in loadout.get_part_slots():
+		var key: String = pair[0]
+		var part: PartData = pair[1]
+		if part.scene != null:
+			var nodes: Array[Node3D] = part_nodes.get(key, [] as Array[Node3D])
+			nodes.append_array(attach(part.scene))
+			part_nodes[key] = nodes
 	if weapon_controller != null:
 		weapon_controller.mount(loadout, self)
 	var stats := StatCalculator.compute(loadout)
 	MechStatApplier.apply(stats, mech)
 
 
-## Adds one part model to the frame.
-func attach(scene: PackedScene) -> void:
+## Adds one part model to the frame. Returns the nodes it added.
+func attach(scene: PackedScene) -> Array[Node3D]:
+	var added: Array[Node3D] = []
 	var model := scene.instantiate()
 	for group in model.get_children():
 		var socket := frame.find_child(group.name, true, false) as Node3D
@@ -39,7 +48,10 @@ func attach(scene: PackedScene) -> void:
 			group.remove_child(child)
 			_clear_owner(child)
 			socket.add_child(child)
+			if child is Node3D:
+				added.append(child)
 	model.free()
+	return added
 
 
 ## The moved nodes leave the part scene, so they must not keep it as their owner.

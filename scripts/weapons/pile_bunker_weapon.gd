@@ -57,8 +57,8 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export var contact_back: float = 3.0
 ## The mech is pushed back this fast when the stake fires (m/s).
 @export var push_back_speed: float = 7.0
-## Layers the contact check hits: 1 world, 2 mechs, 3 props.
-@export_flags_3d_physics var collision_mask: int = 7
+## Layers the contact check hits: 1 world, 3 props, 4 hitboxes.
+@export_flags_3d_physics var collision_mask: int = 13
 
 @export_group("Charge")
 ## Stop this far in front of the target (target center), in meters.
@@ -201,7 +201,7 @@ func _check_contact() -> void:
 	var forward := -_nose.global_basis.z.normalized()
 	var start := global_position - forward * contact_back
 	var query := PhysicsRayQueryParameters3D.create(start, _nose.global_position + forward * contact_reach,
-			collision_mask, [controller.mech.get_rid()])
+			collision_mask, controller.mech.get_hit_exclude())
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if hit.is_empty():
 		return

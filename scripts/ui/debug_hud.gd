@@ -82,8 +82,17 @@ func _build_text() -> String:
 	text += "Walk %.1f m/s   Boost %.1f m/s   Boost accel %.1f\n" % [stats.walk_speed, stats.walk_speed * stats.boost_speed_multiplier, stats.boost_acceleration]
 	text += "Torso turn %d deg/s   Legs turn %d deg/s   Jump %.1f m\n" % [roundi(stats.torso_turn_speed_deg), roundi(stats.leg_turn_speed_deg), stats.jump_height]
 	text += "PART HP"
-	for part_name in stats.part_hp:
-		text += "\n  %s: %d" % [part_name, roundi(stats.part_hp[part_name])]
+	var health := mech.health
+	if health == null:
+		for part_name in stats.part_hp:
+			text += "\n  %s: %d" % [part_name, roundi(stats.part_hp[part_name])]
+		return text
+	for key: String in health.max_hp:
+		var now: float = health.hp[key]
+		var state := "  DESTROYED" if now <= 0.0 else ""
+		text += "\n  %s: %d / %d%s" % [key, roundi(now), roundi(health.max_hp[key]), state]
+	if health.is_destroyed:
+		text += "\nMECH DESTROYED"
 	return text
 
 

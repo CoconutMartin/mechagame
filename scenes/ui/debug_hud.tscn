@@ -93,4 +93,5 @@ Space double tap: dodge hop (A / D side, W forward, S or none back; forward whil
 Shift + W: walk 2 steps, run 2 steps, then boost   Ctrl kneel
 Mouse moves the blue ring inside a small box; past the edge the camera turns
 Yellow dot = camera crosshair   Blue ring = mech aim
-Grid lines: thin = 1 m, thick = 10 m"
+Grid lines: thin = 1 m, thick = 10 m
+F1-F7 damage own head, core, arm L, arm R, legs, shield, back (test)   F8 destroy core"

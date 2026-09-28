@@ -34,6 +34,8 @@ var right_data: WeaponData
 var left_data: WeaponData
 ## The weapon in use now (null = none).
 var active: MechWeapon = null
+## Shield model nodes on the frame (PartBreaker drops them when the shield breaks).
+var shield_nodes: Array[Node3D] = []
 
 
 func _ready() -> void:
@@ -49,7 +51,7 @@ func mount(loadout: Loadout, assembler: MechAssembler) -> void:
 		_wire_right(right_data)
 	var has_shield := left_data != null and left_data.kind == WeaponData.Kind.SHIELD
 	if has_shield:
-		assembler.attach(left_data.scene)
+		shield_nodes = assembler.attach(left_data.scene)
 		_wire_shield(left_data)
 	_set_shield_enabled(has_shield)
 	if not has_shield and not _two_handed():
@@ -103,6 +105,63 @@ func _wire_shield(data: WeaponData) -> void:
 	arm_ik_left.target = left_hand
 
 
+## The right arm is gone: its weapon stops and the right arm pose and IK stop.
+func lose_right_weapon() -> void:
+	if right_weapon == null:
+		return
+	if active == right_weapon:
+		active = null
+	right_weapon.set_trigger(false)
+	right_weapon.process_mode = Node.PROCESS_MODE_DISABLED
+	if two_handed_left_grip():
+		arm_ik_left.target = left_hand
+	right_weapon = null
+	right_data = null
+	weapon_pose.aim_amount = 0.0
+	weapon_pose.wants_raise = false
+	for node: Node in [weapon_pose, weapon_recoil, arm_ik_right]:
+		node.process_mode = Node.PROCESS_MODE_DISABLED
+	torso_pose.aim_twist_deg = 0.0
+	torso_pose.aim_tilt_deg = 0.0
+	torso_pose.action_twist_deg = 0.0
+	camera_ads.enabled = false
+
+
+## True when the left hand holds the right weapon (two-hand weapon).
+func two_handed_left_grip() -> bool:
+	return right_data != null and right_data.two_handed
+
+
+## The shield is gone (broken, or the left arm is gone).
+func lose_shield() -> void:
+	if left_data == null:
+		return
+	left_data = null
+	shield_nodes = []
+	_set_shield_enabled(false)
+	mech_shield.force_up = false
+
+
+## The left arm is gone: no shield, and the left arm IK stops.
+func lose_left_arm() -> void:
+	lose_shield()
+	arm_ik_left.process_mode = Node.PROCESS_MODE_DISABLED
+
+
+## A back unit is gone.
+func lose_back_weapon(weapon: MechWeapon) -> void:
+	if weapon == null:
+		return
+	if active == weapon:
+		active = null
+	weapon.set_trigger(false)
+	weapon.process_mode = Node.PROCESS_MODE_DISABLED
+	if weapon == back_left:
+		back_left = null
+	if weapon == back_right:
+		back_right = null
+
+
 func _set_shield_enabled(enabled: bool) -> void:
 	mech_shield.enabled = enabled
 	var mode := Node.PROCESS_MODE_INHERIT if enabled else Node.PROCESS_MODE_DISABLED
@@ -115,6 +174,8 @@ func _two_handed() -> bool:
 
 
 func _physics_process(_delta: float) -> void:
+	if mech.is_wrecked:
+		return
 	var wants := {}
 	if right_weapon != null:
 		wants[right_weapon] = input.left_fire_held if _two_handed() else input.fire_held

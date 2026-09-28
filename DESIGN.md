@@ -11,7 +11,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | 1 | Mech controller and third-person camera on a test map | Done |
 | 2 | Part resources, sockets, assembler, stat calculator, weight-to-speed formula, debug HUD | Done |
 | 3 | Weapons: guns, lock-on missiles, sniper zoom, melee blade, energy use | Done |
-| 4 | Per-part HP, hitboxes, destruction, target dummies, enemy AI, greybox urban map with destructible props | Not started |
+| 4 | Per-part HP, hitboxes, destruction, target dummies, enemy AI, greybox urban map with destructible props | In progress: 4a done (part HP, hitboxes, part breaks, respawn). Next 4b enemy AI, then 4c destructible city |
 | 5 | Garage screen: swap parts, add plates, live stat preview. Graphics settings menu (low, medium, high) | Not started |
 | 6 | Pilot creation and skill tree | Not started |
 | 7 | Save/load builds (JSON) and 4 preset archetype loadouts | Not started |
@@ -119,6 +119,7 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 | 1 | world | ground, buildings, platforms |
 | 2 | mechs | mech bodies |
 | 3 | props | cars, lampposts, people (mechs pass through them until Phase 4 destruction) |
+| 4 | hitboxes | mech part hitboxes (`PartHitbox`) and target dummies. Weapons, the aim ray and blasts hit layers 1, 3 and 4 (mask 13), not the mech bodies on layer 2 |
 
 ## Weapon controls (Phase 3)
 
@@ -221,6 +222,16 @@ Each part has its own HP and its own hitbox. Damage goes to the part that is hit
 - Back unit destroyed: that weapon is lost
 - Core destroyed: mech is destroyed
 
+Phase 4a (user choices: parts fall off, respawn):
+- `MechHealth` (logic node): HP by key: Head, Core, Arm L, Arm R, Legs (from MechStats.part_hp, plates and mods included), Shield (shield data HP 1200), Back L, Back R (pod HP 250). Booster, generator and FCS sit in the core (hits damage the core). Hits on the held weapon damage the arm that holds it.
+- Hitboxes: MechHealth builds box `PartHitbox` bodies (layer 4) from the part models: one box per container node (pauldron pivot, shield, weapon, pod, pile bunker mount) and one per socket for loose meshes. They move with the parts. `MechAssembler.part_nodes` records the nodes of each part.
+- `PartBreaker`: below 50% HP a part smokes (`DamageSmoke`). Destroyed: head, arms (with their weapon or shield), shield and back units fall off as `Debris` rigid bodies (tumble, smoke, gone after 20 s). Head: lock range and lock speed x0.5, +0.6° aim shake. Legs: stay on with heavy smoke at the hips, speed x0.4, no jump. Core: 3 explosions, head and arms fly off, the mech becomes a smoking wreck (`Mech.is_wrecked`, no control).
+- Weapon damage: rifle bullet = weapon damage (120), beam = ticks, pile bunker 900, missiles = `Blast` (radius 8 m, full damage at the center to 30% at the edge, by distance to the nearest box; each body once). A mech's own weapons and aim skip its own hitboxes (`Mech.get_hit_exclude()`).
+- Player death: `PlayerRespawner` rebuilds the mech 3 s after the core is destroyed, at the start point with full HP and the same loadout (`LoadoutSwitcher.rebuild()`).
+- Target dummies: 3000 HP with a label above them, explode at 0 HP and come back after 6 s.
+- Test keys (`DebugDamage`, until enemies shoot back): F1 head, F2 core, F3 left arm, F4 right arm, F5 legs, F6 shield, F7 back units (30% of max HP each press), F8 destroys the core.
+- Debug HUD: current / max HP of each part, DESTROYED, MECH DESTROYED.
+
 ## Archetypes (preset loadouts; player can mix any parts)
 
 - Melee: light, fast, blade arms, strong boost
@@ -295,7 +306,8 @@ scripts/camera/     mech_camera_rig.gd (follow and mouse look), free_aim.gd (fre
 scripts/world/      greybox_block.gd (box with collision, set size in Inspector).
 scripts/ui/         debug_hud.gd, aim_reticle.gd.
 scripts/effects/    skid_dust.gd (dust while skidding), brake_thrusters.gd, booster_flames.gd, muzzle_flash.gd, impact_spark.gd.
-scripts/core/       mouse_capture.gd, group_nodes.gd.
+scripts/core/       mouse_capture.gd, group_nodes.gd, loadout_switcher.gd, player_respawner.gd, debug_damage.gd.
+scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, blast.gd (Phase 4).
 ```
 
 ### Phase 1 structure
@@ -366,6 +378,7 @@ scripts/core/       mouse_capture.gd, group_nodes.gd.
 - Phase 3 revision 64: pile bunker charge as 2 big leaps (boosters on). Beam sniper release shake 50% less, barrel coils and lens light up with the charge.
 - Phase 3 revision 65: pile bunker charge is a simple boosted glide (leaps removed, legs hold the boost stance). Beam sniper release shake 85% less.
 - Phase 3 revision 66: pile bunker charge copies the boost pose (torso lean too). Beam sniper torso shake while firing 40% less.
+- Phase 4a: per-part HP and hitboxes, damage from all weapons, parts fall off (debris, smoke), legs slow, core destroyed = wreck, respawn after 3 s. Dummies with HP. Test keys F1 to F8.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).

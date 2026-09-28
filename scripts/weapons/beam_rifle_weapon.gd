@@ -10,8 +10,8 @@ const BEAM := preload("res://scenes/effects/beam_shot.tscn")
 const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 
-## Layers the beam hits: 1 world, 2 mechs, 3 props.
-@export_flags_3d_physics var collision_mask: int = 7
+## Layers the beam hits: 1 world, 3 props, 4 hitboxes.
+@export_flags_3d_physics var collision_mask: int = 13
 ## Seconds of holding LMB for a full charge.
 @export var charge_time: float = 3.0
 ## Damage and beam width of a shot with no charge, as a part of a full shot.
@@ -98,7 +98,7 @@ func _update_discharge(delta: float) -> void:
 	var origin := _muzzle.global_position
 	var direction := (controller.mech_aim.aim_point - origin).normalized()
 	var end := origin + direction * data.range_m
-	var query := PhysicsRayQueryParameters3D.create(origin, end, collision_mask, [controller.mech.get_rid()])
+	var query := PhysicsRayQueryParameters3D.create(origin, end, collision_mask, controller.mech.get_hit_exclude())
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
 		end = hit.position

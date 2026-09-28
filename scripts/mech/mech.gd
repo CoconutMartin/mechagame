@@ -133,6 +133,10 @@ enum BoostExit { SKID, LEAP }
 
 ## Final stats from the loadout (set by MechAssembler). Null when the mech has no loadout.
 var stats: MechStats
+## Part HP and hitboxes (Phase 4). MechHealth sets it.
+var health: MechHealth
+## True after the core is destroyed: no control, the wreck slows down and falls.
+var is_wrecked: bool = false
 var is_boosting: bool = false
 ## True while the mech runs between the walk steps and the boost (Shift held).
 var is_running: bool = false
@@ -188,6 +192,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if is_wrecked:
+		_update_wreck(delta)
+		return
 	_previous_aim_yaw = _aim_yaw
 	_brace_left = maxf(_brace_left - delta, 0.0)
 	is_bracing = _brace_left > 0.0
@@ -202,6 +209,23 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_check_bump(velocity_before)
 	_check_landing(fall_speed)
+
+
+## Bodies this mech's own weapons and aim must not hit: its body and its hitboxes.
+func get_hit_exclude() -> Array[RID]:
+	var rids: Array[RID] = [get_rid()]
+	if health != null:
+		rids.append_array(health.get_hitbox_rids())
+	return rids
+
+
+func _update_wreck(delta: float) -> void:
+	is_boosting = false
+	is_lunging = false
+	velocity.x = move_toward(velocity.x, 0.0, 12.0 * delta)
+	velocity.z = move_toward(velocity.z, 0.0, 12.0 * delta)
+	velocity.y = maxf(velocity.y - _gravity * gravity_scale * delta, -max_fall_speed)
+	move_and_slide()
 
 
 func get_horizontal_speed() -> float:

@@ -27,7 +27,8 @@ func _physics_process(_delta: float) -> void:
 		_find_pivots()
 	for shoulder: Node3D in _pivots:
 		var pivot: Node3D = _pivots[shoulder]
-		if is_instance_valid(pivot):
+		# A pauldron that fell off with its arm is no longer on this mech.
+		if is_instance_valid(pivot) and mech.is_ancestor_of(pivot):
 			pivot.basis = _get_turn(shoulder, pivot.get_parent_node_3d())
 
 

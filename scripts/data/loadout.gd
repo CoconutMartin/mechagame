@@ -27,3 +27,15 @@ func get_parts() -> Array[PartData]:
 		if part != null:
 			parts.append(part)
 	return parts
+
+
+
+## Frame parts (not weapons) with their hit keys, as [key, part] pairs. Booster, generator and FCS
+## sit in the core, so hits on them damage the core.
+func get_part_slots() -> Array:
+	var slots := []
+	for pair in [["Head", head], ["Core", core], ["Arm L", arm_left], ["Arm R", arm_right], ["Legs", legs],
+			["Core", booster], ["Core", generator], ["Core", fcs]]:
+		if pair[1] != null:
+			slots.append(pair)
+	return slots

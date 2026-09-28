@@ -19,9 +19,8 @@ extends Node
 ## The camera tilts down by the matching angle (CameraAds), so a higher crosshair shows more ground
 ## below the mech. 0.3 (revision 59) = the view about 12 degrees lower than 0.135, as the user drew.
 @export var screen_offset_up: float = 0.3
-## Physics layers the aim rays hit (1 = world, 2 = mechs and dummies, 3 = props).
-## Layer 2 (mechs and target dummies) counts too, so the aim stops on them. The own mech is skipped.
-@export_flags_3d_physics var collision_mask: int = 7
+## Layers the aim ray hits: 1 world, 3 props, 4 hitboxes (mech parts and dummies). The own mech is skipped.
+@export_flags_3d_physics var collision_mask: int = 13
 
 @export_group("Jitter")
 ## Aim shake at full walk speed, in degrees.
@@ -121,6 +120,6 @@ func _get_base_jitter_deg() -> float:
 
 func _cast(from: Vector3, direction: Vector3) -> Vector3:
 	var to := from + direction * max_range
-	var query := PhysicsRayQueryParameters3D.create(from, to, collision_mask, [mech.get_rid()])
+	var query := PhysicsRayQueryParameters3D.create(from, to, collision_mask, mech.get_hit_exclude())
 	var hit := mech.get_world_3d().direct_space_state.intersect_ray(query)
 	return hit.position if hit else to
