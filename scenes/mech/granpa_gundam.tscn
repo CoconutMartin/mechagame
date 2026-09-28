@@ -1009,9 +1009,10 @@ energy = NodePath("../MechEnergy")
 landing_recovery = NodePath("../MechLandingRecovery")
 kneel = NodePath("../MechKneel")
 
-[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin", "camera_rig")]
-camera_rig = NodePath("../CameraRig")
+[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin", "input", "camera_rig")]
 script = ExtResource("aim")
+camera_rig = NodePath("../CameraRig")
+input = NodePath("../MechInput")
 mech = NodePath("..")
 camera = NodePath("../CameraRig/Pitch/SpringArm/Camera")
 aim_origin = NodePath("../Visual/Roll/Upper/Torso/AimAnchor")

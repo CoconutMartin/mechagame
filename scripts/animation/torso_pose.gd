@@ -30,9 +30,9 @@ extends Node
 ## by a random amount between these values (degrees), then sways back to upright on the same spring.
 @export var skid_side_sway_min_deg: float = 3.0
 @export var skid_side_sway_max_deg: float = 7.0
-## At the end of the short dodge skid the torso sways forward by about this much (degrees),
+## At the end of the dodge skid the torso sways forward by this much (degrees),
 ## then back to upright on the skid spring.
-@export var dodge_exit_forward_sway_deg: float = 24.0
+@export var dodge_exit_forward_sway_deg: float = 8.0
 ## Forward lean while running, in degrees.
 @export var run_lean_deg: float = 12.0
 ## Forward lean after a landing from landing_lean_full_height or higher, in degrees.
@@ -72,10 +72,8 @@ func _physics_process(delta: float) -> void:
 		# New skid: roll to the skid side by a random amount.
 		_skid_roll_target = mech.skid_side * randf_range(skid_side_sway_min_deg, skid_side_sway_max_deg)
 	if _was_brake_skidding and not mech.is_skidding:
-		# Dodge skid ended: momentum throws the torso forward. For damping 0.3 the peak is about
-		# 0.67 x speed / omega, so this start speed gives a peak near dodge_exit_forward_sway_deg.
-		var omega := TAU * skid_recover_frequency
-		_skid_lean.velocity -= dodge_exit_forward_sway_deg * omega / 0.67
+		# Dodge skid ended: momentum throws the torso forward, to dodge_exit_forward_sway_deg.
+		_skid_lean.velocity = _find_forward_sway_speed(-dodge_exit_forward_sway_deg)
 	_was_skidding = mech.is_skidding
 	_was_brake_skidding = mech.is_brake_skidding
 	var roll_target := _skid_roll_target if mech.is_skidding else 0.0
@@ -97,3 +95,28 @@ func _physics_process(delta: float) -> void:
 		-lean,
 		mech.get_torso_twist() - deg_to_rad(aim_twist_deg) * aim + deg_to_rad(inertia.yaw_deg),
 		-deg_to_rad(aim_tilt_deg) * aim + deg_to_rad(_skid_roll.value) + deg_to_rad(inertia.roll_deg) + deg_to_rad(recovery.y))
+
+
+## Start speed for the skid lean spring that makes its lowest point (forward sway) reach peak_deg.
+## Tries speeds and keeps the one that fits (the spring starts from its current lean).
+func _find_forward_sway_speed(peak_deg: float) -> float:
+	var low := -600.0
+	var high := 0.0
+	for i in 24:
+		var middle := (low + high) * 0.5
+		if _lowest_lean(middle) < peak_deg:
+			low = middle
+		else:
+			high = middle
+	return (low + high) * 0.5
+
+
+## Lowest lean (degrees) the skid spring reaches from its current lean with this start speed.
+func _lowest_lean(start_speed: float) -> float:
+	var spring := AimSpring.new(_skid_lean.value)
+	spring.velocity = start_speed
+	var lowest := spring.value
+	for i in 180:
+		spring.update(0.0, skid_recover_frequency, skid_recover_damping, 90.0, 1.0 / 60.0)
+		lowest = minf(lowest, spring.value)
+	return lowest

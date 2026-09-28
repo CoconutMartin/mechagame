@@ -149,8 +149,8 @@ shape = SubResource("body_shape")
     logic = logic.replace('arm_ik_left = NodePath("../ArmIKLeft")\narm_ik_right = NodePath("../ArmIKRight")',
                           'arm_ik_left = NodePath("../ArmIKLeft")\narm_ik_right = NodePath("../ArmIKRight")\nrecoil = NodePath("../WeaponRecoil")')
     logic = logic.replace('"arm_ik_left", "arm_ik_right")]', '"arm_ik_left", "arm_ik_right", "recoil")]')
-    logic = logic.replace('[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin")]',
-                          '[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin", "camera_rig")]\ncamera_rig = NodePath("../CameraRig")')
+    logic = logic.replace('[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin", "input")]\nscript = ExtResource("aim")\n',
+                          '[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin", "input", "camera_rig")]\nscript = ExtResource("aim")\ncamera_rig = NodePath("../CameraRig")\n')
     logic = logic.replace("upper_length = 2.7\nlower_length = 3.0", f"upper_length = {round(2.7 * k, 4)}\nlower_length = {round(3.0 * k, 4)}")
     extra = []
     if one_hand:

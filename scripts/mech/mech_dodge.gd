@@ -26,9 +26,12 @@ signal dodge_ended
 @export var energy_cost: float = 25.0
 ## Speed kept in the hop direction at the landing (m/s). The skid slows the mech down from it.
 @export var landing_speed: float = 10.0
-## Skid slowdown in m/s per second. The brake thrusters make it stronger than the boost skid (9.4):
-## 23.5 gives a skid 60% shorter (about 1.8 m from 10 m/s down to 4 m/s).
-@export var skid_slowdown: float = 23.5
+## Landing speed for a dodge that starts while boosting (m/s). It keeps the hop speed.
+@export var boost_landing_speed: float = 16.0
+## Skid length after the landing, in meters (until the steps start). The brake thrusters fire.
+@export var skid_distance: float = 5.3
+## Skid length for a dodge that starts while boosting, in meters (500% more).
+@export var boost_skid_distance: float = 32.0
 ## Stride lengths (meters) of the two steps after the skid.
 @export var stop_strides: PackedFloat32Array = PackedFloat32Array([1.5, 1.5])
 ## After the landing the mech cannot move for this long, in seconds.
@@ -62,6 +65,7 @@ var _recover := AimSpring.new(0.0)
 var _recovering: bool = false
 ## Time left in the double tap window after a Space press during a boost.
 var _boost_tap_left: float = 0.0
+var _from_boost: bool = false
 
 
 func _ready() -> void:
@@ -141,6 +145,7 @@ func _start() -> void:
 	energy.try_drain(energy_cost)
 	# Direction in the leg frame: -Z forward, +X right.
 	var local := Vector3(0.0, 0.0, 1.0)  # No key: back.
+	_from_boost = mech.is_boosting
 	if mech.is_boosting:
 		local = Vector3(0.0, 0.0, -1.0)  # Boosting: forward.
 	elif input.turn_input > 0.5:
@@ -171,11 +176,16 @@ func _on_landed(_fall_speed: float) -> void:
 		return
 	is_dodging = false
 	# Keep some speed in the hop direction. The braked skid slows it down, then two steps to a stop.
-	var keep := direction * landing_speed
+	var speed := boost_landing_speed if _from_boost else landing_speed
+	var keep := direction * speed
 	mech.velocity.x = keep.x
 	mech.velocity.z = keep.z
+	# Slowdown that ends the skid (at the Mech skid end speed) after the skid distance.
+	var end_speed := mech.skid_end_speed
+	var distance := boost_skid_distance if _from_boost else skid_distance
+	var slowdown := maxf((speed * speed - end_speed * end_speed) / (2.0 * distance), 0.5)
 	mech.cancel_landing_steps()
-	mech.start_skid(stop_strides, skid_slowdown, true)
+	mech.start_skid(stop_strides, slowdown, true)
 	_recover_left = recovery_time
 	# Start the recovery spring from the full landing pose.
 	_recover.value = 1.0
