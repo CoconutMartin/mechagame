@@ -25,13 +25,13 @@ extends Node
 @export var drop: float = 1.5
 @export_group("Akira")
 ## Lead leg out to the side at the end of the slide, in degrees.
-@export var lead_out_deg: float = 22.0
+@export var lead_out_deg: float = 12.0
 ## Lead leg hip and knee bend at the end (braced, nearly straight).
 @export var lead_hip_deg: float = 15.0
 @export var lead_knee_deg: float = 20.0
 ## Trail leg hip and knee bend at the end (folded low).
-@export var trail_hip_deg: float = 35.0
-@export var trail_knee_deg: float = 105.0
+@export var trail_hip_deg: float = 28.0
+@export var trail_knee_deg: float = 80.0
 @export_group("")
 ## How fast the pose comes in (1 / seconds).
 @export var blend_in_speed: float = 8.0

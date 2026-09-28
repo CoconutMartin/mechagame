@@ -27,10 +27,12 @@ extends Node
 ## The swing starts at this part of the dodge slide (0 = start, 1 = end) and is full at akira_end.
 @export_range(0.0, 1.0) var akira_start: float = 0.5
 @export_range(0.0, 1.0) var akira_end: float = 0.9
-## Legs sideways to the slide = 90 degrees. Largest body turn, in degrees.
+## Angle between the legs and the slide at the end of the swing, in degrees (90 = fully sideways).
+@export var akira_slide_angle_deg: float = 55.0
+## Largest body turn, in degrees.
 @export var akira_max_turn_deg: float = 160.0
 ## Body lean back against the slide at the end, in degrees.
-@export var akira_lean_deg: float = 14.0
+@export var akira_lean_deg: float = 8.0
 ## Spring speed for the Akira swing (faster than the drift turn).
 @export var akira_frequency: float = 2.2
 ## The Akira pose stays this long after the slide ends (seconds), then the body turns back.
@@ -84,11 +86,11 @@ func _physics_process(delta: float) -> void:
 	_update_lean(delta)
 
 
-## Body turn (degrees) that puts the legs sideways to the slide, turned toward the skid side.
+## Body turn (degrees) that puts the legs at akira_slide_angle_deg to the slide, toward the swing side.
 func _get_sideways_turn_deg() -> float:
 	var slide_yaw := atan2(-_slide_direction.x, -_slide_direction.z)
 	var legs_twist := lower_body.rotation.y if lower_body != null else 0.0
-	var facing := slide_yaw + akira_side * PI * 0.5
+	var facing := slide_yaw + akira_side * deg_to_rad(akira_slide_angle_deg)
 	var turn := rad_to_deg(wrapf(facing - mech.rotation.y - legs_twist, -PI, PI))
 	return clampf(turn, -akira_max_turn_deg, akira_max_turn_deg)
 
