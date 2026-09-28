@@ -28,11 +28,11 @@ extends Node
 @export_range(0.0, 1.0) var akira_start: float = 0.5
 @export_range(0.0, 1.0) var akira_end: float = 0.9
 ## Angle between the legs and the slide at the end of the swing, in degrees (90 = fully sideways).
-@export var akira_slide_angle_deg: float = 55.0
+@export var akira_slide_angle_deg: float = 19.0
 ## Largest body turn, in degrees.
 @export var akira_max_turn_deg: float = 160.0
 ## Body lean back against the slide at the end, in degrees.
-@export var akira_lean_deg: float = 8.0
+@export var akira_lean_deg: float = 2.8
 ## Spring speed for the Akira swing (faster than the drift turn).
 @export var akira_frequency: float = 2.2
 ## The Akira pose stays this long after the slide ends (seconds), then the body turns back.

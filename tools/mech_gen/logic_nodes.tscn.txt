@@ -145,8 +145,9 @@ script = ExtResource("rig")
 target = NodePath("..")
 free_aim = NodePath("FreeAim")
 
-[node name="FreeAim" type="Node" parent="CameraRig"]
+[node name="FreeAim" type="Node" parent="CameraRig" node_paths=PackedStringArray("kneel")]
 script = ExtResource("freeaim")
+kneel = NodePath("../../MechKneel")
 
 [node name="Pitch" type="Node3D" parent="CameraRig"]
 

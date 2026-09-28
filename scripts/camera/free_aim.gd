@@ -12,6 +12,11 @@ extends Node
 ## Half height of the box (above and below the crosshair), in degrees.
 @export var box_half_pitch_deg: float = 3.0
 
+## Optional. Kneeling steadies the aim.
+@export var kneel: MechKneel
+## Optional. A lifted shield makes the aim less steady.
+@export var shield: MechShield
+
 @export_group("Recoil")
 ## Muzzle climb per shot, in degrees.
 @export var recoil_up_deg: float = 2.0
@@ -27,6 +32,10 @@ extends Node
 @export var jitter_fade: float = 1.0
 ## How fast the jitter moves (waves per second).
 @export var jitter_speed: float = 3.0
+## Recoil and jitter while kneeling = normal x this value. 0.3 = 70% less.
+@export var kneel_multiplier: float = 0.3
+## Recoil and jitter with the shield up = normal x this value. 1.6 = 60% more.
+@export var shield_multiplier: float = 1.6
 @export_group("")
 
 ## How fast the ring follows the mouse and the kicks (1 / seconds). Lower = smoother, slower.
@@ -75,8 +84,19 @@ func take_motion(motion: Vector2) -> Vector2:
 
 ## Recoil kick after a shot: up, plus a random side kick, and some jitter.
 func kick() -> void:
-	_pending_kick += Vector2(randf_range(-recoil_side_deg, recoil_side_deg), recoil_up_deg)
-	_jitter = minf(_jitter + jitter_per_shot_deg, max_jitter_deg)
+	var scale := get_recoil_scale()
+	_pending_kick += Vector2(randf_range(-recoil_side_deg, recoil_side_deg), recoil_up_deg) * scale
+	_jitter = minf(_jitter + jitter_per_shot_deg * scale, max_jitter_deg * scale)
+
+
+## Recoil and jitter multiplier from the stance: less while kneeling, more with the shield up.
+func get_recoil_scale() -> float:
+	var scale := 1.0
+	if kneel != null:
+		scale *= lerpf(1.0, kneel_multiplier, kneel.amount)
+	if shield != null:
+		scale *= lerpf(1.0, shield_multiplier, shield.amount)
+	return scale
 
 
 func _clamp_to_box(value: Vector2) -> Vector2:

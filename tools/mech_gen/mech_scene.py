@@ -170,6 +170,8 @@ shape = SubResource("body_shape")
                               f'arm_ik_right = NodePath("../ArmIKRight")\nright_pole_rest = {v(one_hand["right_pole_rest"])}\nright_pole_aim = {v(one_hand["right_pole_aim"])}\n')
         logic = logic.replace('script = ExtResource("ads")\n', 'script = ExtResource("ads")\nenabled = false\n')
         logic = logic.replace('script = ExtResource("torsopose")\n', 'script = ExtResource("torsopose")\naim_twist_deg = 0.0\naim_tilt_deg = 0.0\n')
+        logic = logic.replace('[node name="FreeAim" type="Node" parent="CameraRig" node_paths=PackedStringArray("kneel")]\nscript = ExtResource("freeaim")\n',
+                              '[node name="FreeAim" type="Node" parent="CameraRig" node_paths=PackedStringArray("kneel", "shield")]\nscript = ExtResource("freeaim")\nshield = NodePath("../../MechShield")\n')
         extra.append(f'''[node name="MechShield" type="Node" parent="." node_paths=PackedStringArray("input")]
 script = ExtResource("shield")
 input = NodePath("../MechInput")
