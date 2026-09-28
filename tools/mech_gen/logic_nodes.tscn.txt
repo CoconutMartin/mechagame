@@ -1,0 +1,156 @@
+[node name="MechInput" type="Node" parent="." node_paths=PackedStringArray("camera_rig", "mech")]
+script = ExtResource("input")
+camera_rig = NodePath("../CameraRig")
+mech = NodePath("..")
+
+[node name="MechEnergy" type="Node" parent="."]
+script = ExtResource("energy")
+
+[node name="MechFootsteps" type="Node" parent="." node_paths=PackedStringArray("mech")]
+script = ExtResource("footsteps")
+mech = NodePath("..")
+
+[node name="MechLandingRecovery" type="Node" parent="." node_paths=PackedStringArray("mech")]
+script = ExtResource("recovery")
+mech = NodePath("..")
+
+[node name="MechJumpCharge" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery", "kneel", "dodge")]
+script = ExtResource("jumpcharge")
+mech = NodePath("..")
+input = NodePath("../MechInput")
+energy = NodePath("../MechEnergy")
+landing_recovery = NodePath("../MechLandingRecovery")
+kneel = NodePath("../MechKneel")
+dodge = NodePath("../MechDodge")
+
+[node name="MechAirSteer" type="Node" parent="." node_paths=PackedStringArray("mech")]
+script = ExtResource("airsteer")
+mech = NodePath("..")
+
+[node name="MechKneel" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "landing_recovery")]
+script = ExtResource("kneel")
+mech = NodePath("..")
+input = NodePath("../MechInput")
+landing_recovery = NodePath("../MechLandingRecovery")
+
+[node name="MechDodge" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery", "kneel")]
+script = ExtResource("dodge")
+mech = NodePath("..")
+input = NodePath("../MechInput")
+energy = NodePath("../MechEnergy")
+landing_recovery = NodePath("../MechLandingRecovery")
+kneel = NodePath("../MechKneel")
+
+[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin")]
+script = ExtResource("aim")
+mech = NodePath("..")
+camera = NodePath("../CameraRig/Pitch/SpringArm/Camera")
+aim_origin = NodePath("../Visual/Roll/Upper/Torso/AimAnchor")
+
+[node name="Animation" type="Node" parent="."]
+
+[node name="WeaponPose" type="Node" parent="Animation" node_paths=PackedStringArray("weapon", "rest_pose", "aim_anchor", "mech_aim", "input", "left_grip_target", "left_grip_rest", "left_grip_aim", "arm_ik_left", "arm_ik_right")]
+script = ExtResource("weaponpose")
+weapon = NodePath("../../Visual/Roll/Upper/Torso/Rifle")
+rest_pose = NodePath("../../Visual/Roll/Upper/Torso/RiflePoseRest")
+aim_anchor = NodePath("../../Visual/Roll/Upper/Torso/AimAnchor")
+mech_aim = NodePath("../../MechAim")
+input = NodePath("../../MechInput")
+left_grip_target = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripLeft")
+left_grip_rest = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripLeftRest")
+left_grip_aim = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripLeftAim")
+arm_ik_left = NodePath("../ArmIKLeft")
+arm_ik_right = NodePath("../ArmIKRight")
+
+[node name="LegTwist" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "lower_body")]
+script = ExtResource("legtwist")
+mech = NodePath("../..")
+lower_body = NodePath("../../Visual/Roll/Upper/Lower")
+
+[node name="LegSwing" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "footsteps", "leg_twist", "landing_recovery", "jump_charge", "kneel", "dodge", "upper_body", "hip_left", "hip_right", "knee_left", "knee_right")]
+script = ExtResource("legswing")
+mech = NodePath("../..")
+footsteps = NodePath("../../MechFootsteps")
+leg_twist = NodePath("../LegTwist")
+landing_recovery = NodePath("../../MechLandingRecovery")
+jump_charge = NodePath("../../MechJumpCharge")
+kneel = NodePath("../../MechKneel")
+dodge = NodePath("../../MechDodge")
+upper_body = NodePath("../../Visual/Roll/Upper")
+hip_left = NodePath("../../Visual/Roll/Upper/Lower/HipL")
+hip_right = NodePath("../../Visual/Roll/Upper/Lower/HipR")
+knee_left = NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL")
+knee_right = NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR")
+
+[node name="InertiaSway" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "dodge")]
+script = ExtResource("inertia")
+mech = NodePath("../..")
+dodge = NodePath("../../MechDodge")
+
+[node name="TorsoPose" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "torso", "weapon_pose", "kneel", "inertia", "dodge")]
+script = ExtResource("torsopose")
+mech = NodePath("../..")
+torso = NodePath("../../Visual/Roll/Upper/Torso")
+weapon_pose = NodePath("../WeaponPose")
+kneel = NodePath("../../MechKneel")
+inertia = NodePath("../InertiaSway")
+dodge = NodePath("../../MechDodge")
+
+[node name="SkidBodyTurn" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "body")]
+script = ExtResource("skidturn")
+mech = NodePath("../..")
+body = NodePath("../../Visual")
+
+[node name="SkidDust" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "feet")]
+script = ExtResource("skiddust")
+mech = NodePath("../..")
+feet = [NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL/FootL"), NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR/FootR")]
+
+[node name="ArmIKRight" type="Node" parent="Animation" node_paths=PackedStringArray("root_joint", "mid_joint", "target")]
+script = ExtResource("ik")
+root_joint = NodePath("../../Visual/Roll/Upper/Torso/ShoulderR")
+mid_joint = NodePath("../../Visual/Roll/Upper/Torso/ShoulderR/ElbowR")
+target = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripRight")
+pole_direction = Vector3(1, -1, 0.6)
+upper_length = 2.7
+lower_length = 3.0
+
+[node name="ArmIKLeft" type="Node" parent="Animation" node_paths=PackedStringArray("root_joint", "mid_joint", "target")]
+script = ExtResource("ik")
+root_joint = NodePath("../../Visual/Roll/Upper/Torso/ShoulderL")
+mid_joint = NodePath("../../Visual/Roll/Upper/Torso/ShoulderL/ElbowL")
+target = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripLeft")
+pole_direction = Vector3(-1, -1, 0.3)
+upper_length = 2.7
+lower_length = 3.0
+
+[node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("target")]
+top_level = true
+script = ExtResource("rig")
+target = NodePath("..")
+
+[node name="Pitch" type="Node3D" parent="CameraRig"]
+
+[node name="SpringArm" type="SpringArm3D" parent="CameraRig/Pitch"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
+collision_mask = 1
+shape = SubResource("arm_shape")
+spring_length = 10.3
+margin = 0.4
+
+[node name="CameraAds" type="Node" parent="CameraRig" node_paths=PackedStringArray("input", "camera", "spring_arm", "rig", "mech_aim")]
+script = ExtResource("ads")
+input = NodePath("../../MechInput")
+camera = NodePath("../Pitch/SpringArm/Camera")
+spring_arm = NodePath("../Pitch/SpringArm")
+rig = NodePath("..")
+mech_aim = NodePath("../../MechAim")
+
+[node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm" node_paths=PackedStringArray("mech", "footsteps", "dodge")]
+current = true
+fov = 70.0
+far = 2000.0
+script = ExtResource("shake")
+mech = NodePath("../../../..")
+footsteps = NodePath("../../../../MechFootsteps")
+dodge = NodePath("../../../../MechDodge")

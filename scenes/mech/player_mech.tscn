@@ -22,14 +22,14 @@
 [ext_resource type="Script" path="res://scripts/animation/weapon_pose.gd" id="weaponpose"]
 [ext_resource type="Script" path="res://scripts/camera/camera_shake.gd" id="shake"]
 [ext_resource type="Script" path="res://scripts/animation/skirt_follow.gd" id="skirt"]
-[ext_resource type="PackedScene" path="res://scenes/weapons/beam_rifle.tscn" id="rifle"]
-[ext_resource type="Material" path="res://materials/rx78/white.tres" id="white"]
-[ext_resource type="Material" path="res://materials/rx78/blue.tres" id="blue"]
-[ext_resource type="Material" path="res://materials/rx78/red.tres" id="red"]
-[ext_resource type="Material" path="res://materials/rx78/yellow.tres" id="yellow"]
-[ext_resource type="Material" path="res://materials/rx78/frame.tres" id="frame"]
-[ext_resource type="Material" path="res://materials/rx78/dark.tres" id="dark"]
-[ext_resource type="Material" path="res://materials/rx78/eye.tres" id="eye"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/heavy_rifle.tscn" id="rifle"]
+[ext_resource type="Material" path="res://materials/warden/armor.tres" id="armor"]
+[ext_resource type="Material" path="res://materials/warden/armor_dark.tres" id="armor_dark"]
+[ext_resource type="Material" path="res://materials/warden/frame.tres" id="frame"]
+[ext_resource type="Material" path="res://materials/warden/joint.tres" id="joint"]
+[ext_resource type="Material" path="res://materials/warden/mark.tres" id="mark"]
+[ext_resource type="Material" path="res://materials/warden/emblem.tres" id="emblem"]
+[ext_resource type="Material" path="res://materials/warden/eye.tres" id="eye"]
 
 [sub_resource type="CapsuleShape3D" id="body_shape"]
 radius = 2.6
@@ -39,259 +39,273 @@ height = 10.0
 radius = 0.6
 
 [sub_resource type="BoxMesh" id="m0"]
-size = Vector3(2.3, 1.3, 2)
+size = Vector3(2, 1.1, 1.8)
 
-[sub_resource type="BoxMesh" id="m1"]
-size = Vector3(2, 0.6, 1.8)
+[sub_resource type="CylinderMesh" id="m1"]
+top_radius = 1.05
+bottom_radius = 1.05
+height = 0.35
+radial_segments = 16
+rings = 1
 
 [sub_resource type="BoxMesh" id="m2"]
-size = Vector3(3.9, 2.2, 2.7)
+size = Vector3(3, 2.6, 2.3)
 
 [sub_resource type="BoxMesh" id="m3"]
-size = Vector3(3.3, 1.5, 0.4)
+size = Vector3(1.5, 2.5, 0.6)
 
 [sub_resource type="BoxMesh" id="m4"]
-size = Vector3(3, 0.5, 2.3)
+size = Vector3(1, 1.4, 0.2)
 
-[sub_resource type="BoxMesh" id="m5"]
-size = Vector3(1, 0.8, 0.14)
-
-[sub_resource type="BoxMesh" id="m6"]
-size = Vector3(0.85, 0.07, 0.06)
-
-[sub_resource type="BoxMesh" id="m7"]
-size = Vector3(0.7, 0.9, 0.12)
-
-[sub_resource type="BoxMesh" id="m8"]
-size = Vector3(1.9, 0.45, 0.7)
-
-[sub_resource type="BoxMesh" id="m9"]
-size = Vector3(2.6, 0.4, 1.6)
-
-[sub_resource type="CylinderMesh" id="m10"]
-top_radius = 0.35
-bottom_radius = 0.4
-height = 0.6
+[sub_resource type="CylinderMesh" id="m5"]
+top_radius = 0.32
+bottom_radius = 0.32
+height = 0.14
 radial_segments = 16
 rings = 1
 
-[sub_resource type="BoxMesh" id="m11"]
-size = Vector3(2.6, 2.3, 1)
-
-[sub_resource type="BoxMesh" id="m12"]
-size = Vector3(2.2, 0.4, 0.8)
-
-[sub_resource type="CylinderMesh" id="m13"]
-top_radius = 0.17
-bottom_radius = 0.17
-height = 1.3
-radial_segments = 16
-rings = 1
-
-[sub_resource type="CylinderMesh" id="m14"]
+[sub_resource type="CylinderMesh" id="m6"]
 top_radius = 0.2
 bottom_radius = 0.2
-height = 0.15
+height = 0.16
 radial_segments = 16
 rings = 1
 
-[sub_resource type="CylinderMesh" id="m15"]
+[sub_resource type="BoxMesh" id="m7"]
+size = Vector3(1.4, 0.5, 0.8)
+
+[sub_resource type="BoxMesh" id="m8"]
+size = Vector3(1.5, 1.3, 1.9)
+
+[sub_resource type="BoxMesh" id="m9"]
+size = Vector3(1.6, 0.35, 0.7)
+
+[sub_resource type="BoxMesh" id="m10"]
+size = Vector3(0.35, 0.9, 0.9)
+
+[sub_resource type="BoxMesh" id="m11"]
+size = Vector3(0.9, 0.7, 0.2)
+
+[sub_resource type="PrismMesh" id="m12"]
+size = Vector3(0.75, 0.55, 0.12)
+left_to_right = 0.5
+
+[sub_resource type="PrismMesh" id="m13"]
+size = Vector3(1.6, 1.5, 0.22)
+left_to_right = 0.25
+
+[sub_resource type="BoxMesh" id="m14"]
+size = Vector3(0.5, 0.4, 1.4)
+
+[sub_resource type="BoxMesh" id="m15"]
+size = Vector3(1.4, 2.4, 2.3)
+
+[sub_resource type="BoxMesh" id="m16"]
+size = Vector3(1.2, 1.4, 0.25)
+
+[sub_resource type="BoxMesh" id="m17"]
+size = Vector3(0.6, 0.6, 0.05)
+
+[sub_resource type="BoxMesh" id="m18"]
+size = Vector3(1.2, 0.8, 0.3)
+
+[sub_resource type="BoxMesh" id="m19"]
+size = Vector3(1.25, 1.7, 0.2)
+
+[sub_resource type="CylinderMesh" id="m20"]
+top_radius = 0.12
+bottom_radius = 0.12
+height = 0.08
+radial_segments = 16
+rings = 1
+
+[sub_resource type="BoxMesh" id="m21"]
+size = Vector3(1.1, 0.06, 0.1)
+
+[sub_resource type="BoxMesh" id="m22"]
+size = Vector3(4, 0.7, 2.3)
+
+[sub_resource type="BoxMesh" id="m23"]
+size = Vector3(3, 2.8, 1.3)
+
+[sub_resource type="BoxMesh" id="m24"]
+size = Vector3(2.4, 2.2, 0.3)
+
+[sub_resource type="CylinderMesh" id="m25"]
 top_radius = 0.3
 bottom_radius = 0.45
 height = 0.7
 radial_segments = 16
 rings = 1
 
-[sub_resource type="BoxMesh" id="m16"]
-size = Vector3(1.1, 0.9, 1.25)
-
-[sub_resource type="BoxMesh" id="m17"]
-size = Vector3(0.7, 0.2, 1)
-
-[sub_resource type="BoxMesh" id="m18"]
-size = Vector3(0.72, 0.55, 0.2)
-
-[sub_resource type="BoxMesh" id="m19"]
-size = Vector3(0.66, 0.2, 0.06)
-
-[sub_resource type="BoxMesh" id="m20"]
-size = Vector3(0.22, 0.09, 0.04)
-
-[sub_resource type="CylinderMesh" id="m21"]
-top_radius = 0.28
-bottom_radius = 0.28
-height = 0.2
-radial_segments = 16
-rings = 1
-
-[sub_resource type="BoxMesh" id="m22"]
-size = Vector3(0.3, 0.2, 0.05)
-
-[sub_resource type="BoxMesh" id="m23"]
-size = Vector3(0.3, 0.18, 0.24)
-
-[sub_resource type="BoxMesh" id="m24"]
-size = Vector3(0.28, 0.24, 0.22)
-
-[sub_resource type="BoxMesh" id="m25"]
-size = Vector3(0.12, 0.95, 0.08)
-
 [sub_resource type="CylinderMesh" id="m26"]
-top_radius = 0.07
-bottom_radius = 0.07
-height = 0.25
+top_radius = 0.75
+bottom_radius = 0.75
+height = 0.8
 radial_segments = 16
 rings = 1
 
-[sub_resource type="BoxMesh" id="m27"]
-size = Vector3(0.3, 0.2, 0.3)
+[sub_resource type="CylinderMesh" id="m27"]
+top_radius = 0.55
+bottom_radius = 0.55
+height = 0.9
+radial_segments = 16
+rings = 1
 
 [sub_resource type="BoxMesh" id="m28"]
-size = Vector3(1.5, 1.4, 1.85)
+size = Vector3(1.8, 1.4, 2.3)
 
 [sub_resource type="BoxMesh" id="m29"]
-size = Vector3(1.2, 0.3, 1.5)
+size = Vector3(1.4, 0.35, 1.9)
 
 [sub_resource type="BoxMesh" id="m30"]
-size = Vector3(1.7, 0.3, 2)
+size = Vector3(1.6, 1, 0.3)
 
 [sub_resource type="BoxMesh" id="m31"]
-size = Vector3(0.9, 0.9, 1.2)
+size = Vector3(0.3, 1.5, 2.1)
 
-[sub_resource type="CylinderMesh" id="m32"]
-top_radius = 0.42
-bottom_radius = 0.42
-height = 1.6
+[sub_resource type="PrismMesh" id="m32"]
+size = Vector3(0.9, 3.2, 0.25)
+left_to_right = 0.8
+
+[sub_resource type="BoxMesh" id="m33"]
+size = Vector3(0.5, 0.6, 0.9)
+
+[sub_resource type="CylinderMesh" id="m34"]
+top_radius = 0.45
+bottom_radius = 0.45
+height = 2
 radial_segments = 16
 rings = 1
 
-[sub_resource type="BoxMesh" id="m33"]
-size = Vector3(0.95, 1.2, 1)
-
-[sub_resource type="SphereMesh" id="m34"]
-radius = 0.46
-height = 0.92
-radial_segments = 16
-rings = 8
-
 [sub_resource type="BoxMesh" id="m35"]
-size = Vector3(1.05, 2.1, 1.12)
+size = Vector3(1.1, 1.4, 1.2)
 
-[sub_resource type="BoxMesh" id="m36"]
-size = Vector3(1.2, 0.35, 1.26)
+[sub_resource type="CylinderMesh" id="m36"]
+top_radius = 0.5
+bottom_radius = 0.5
+height = 1
+radial_segments = 16
+rings = 1
 
 [sub_resource type="BoxMesh" id="m37"]
-size = Vector3(0.65, 0.72, 0.78)
+size = Vector3(1.2, 2, 1.3)
 
 [sub_resource type="BoxMesh" id="m38"]
-size = Vector3(0.6, 0.35, 0.5)
+size = Vector3(1, 1.4, 0.25)
 
 [sub_resource type="BoxMesh" id="m39"]
-size = Vector3(2.1, 4.9, 0.2)
+size = Vector3(0.8, 0.4, 0.9)
 
 [sub_resource type="BoxMesh" id="m40"]
-size = Vector3(1.75, 4.2, 0.2)
+size = Vector3(0.7, 0.7, 0.85)
 
 [sub_resource type="BoxMesh" id="m41"]
-size = Vector3(1.75, 0.5, 0.26)
+size = Vector3(0.6, 0.45, 0.18)
 
 [sub_resource type="BoxMesh" id="m42"]
-size = Vector3(0.3, 0.18, 0.1)
+size = Vector3(2.1, 3.8, 0.25)
 
-[sub_resource type="BoxMesh" id="m43"]
-size = Vector3(0.16, 2.4, 0.08)
-
-[sub_resource type="PrismMesh" id="m44"]
-size = Vector3(0.9, 0.3, 0.08)
+[sub_resource type="PrismMesh" id="m43"]
+size = Vector3(2.1, 0.7, 0.25)
 left_to_right = 0.5
 
-[sub_resource type="PrismMesh" id="m45"]
-size = Vector3(0.3, 0.45, 0.08)
-left_to_right = 0.5
+[sub_resource type="BoxMesh" id="m44"]
+size = Vector3(0.7, 2.4, 0.4)
 
-[sub_resource type="BoxMesh" id="m46"]
-size = Vector3(0.6, 1.4, 0.5)
+[sub_resource type="BoxMesh" id="m45"]
+size = Vector3(0.16, 0.95, 0.06)
+
+[sub_resource type="CylinderMesh" id="m46"]
+top_radius = 0.08
+bottom_radius = 0.08
+height = 0.06
+radial_segments = 16
+rings = 1
 
 [sub_resource type="BoxMesh" id="m47"]
-size = Vector3(2.6, 1, 2)
+size = Vector3(2.4, 1, 1.8)
 
 [sub_resource type="BoxMesh" id="m48"]
-size = Vector3(3.1, 0.55, 2.3)
+size = Vector3(0.9, 1.3, 0.45)
 
 [sub_resource type="BoxMesh" id="m49"]
-size = Vector3(0.8, 1.1, 0.5)
+size = Vector3(0.4, 0.08, 0.05)
 
-[sub_resource type="PrismMesh" id="m50"]
-size = Vector3(0.55, 0.35, 0.08)
+[sub_resource type="BoxMesh" id="m50"]
+size = Vector3(0.08, 0.4, 0.05)
+
+[sub_resource type="PrismMesh" id="m51"]
+size = Vector3(0.9, 0.35, 0.45)
 left_to_right = 0.5
 
-[sub_resource type="BoxMesh" id="m51"]
-size = Vector3(0.8, 0.9, 0.5)
-
 [sub_resource type="BoxMesh" id="m52"]
-size = Vector3(1.2, 1.5, 0.25)
+size = Vector3(1.6, 1, 0.4)
 
-[sub_resource type="BoxMesh" id="m53"]
-size = Vector3(0.55, 0.5, 0.08)
+[sub_resource type="CylinderMesh" id="m53"]
+top_radius = 0.6
+bottom_radius = 0.6
+height = 0.5
+radial_segments = 16
+rings = 1
 
 [sub_resource type="BoxMesh" id="m54"]
-size = Vector3(0.25, 1.4, 1.6)
+size = Vector3(1.7, 1.7, 1.7)
 
 [sub_resource type="BoxMesh" id="m55"]
-size = Vector3(2.4, 1.3, 0.25)
+size = Vector3(1.3, 1.3, 0.1)
 
-[sub_resource type="SphereMesh" id="m56"]
-radius = 0.55
-height = 1.1
-radial_segments = 16
-rings = 8
-
-[sub_resource type="CylinderMesh" id="m57"]
+[sub_resource type="CylinderMesh" id="m56"]
 top_radius = 0.5
 bottom_radius = 0.5
 height = 1.2
 radial_segments = 16
 rings = 1
 
-[sub_resource type="BoxMesh" id="m58"]
-size = Vector3(1.25, 1.7, 1.45)
+[sub_resource type="BoxMesh" id="m57"]
+size = Vector3(1.3, 1.1, 1.4)
 
-[sub_resource type="SphereMesh" id="m59"]
-radius = 0.5
-height = 1
-radial_segments = 16
-rings = 8
-
-[sub_resource type="BoxMesh" id="m60"]
-size = Vector3(1.05, 0.85, 0.45)
-
-[sub_resource type="BoxMesh" id="m61"]
-size = Vector3(1.3, 1.6, 1.55)
-
-[sub_resource type="BoxMesh" id="m62"]
-size = Vector3(1.55, 0.75, 1.85)
-
-[sub_resource type="CylinderMesh" id="m63"]
-top_radius = 0.28
-bottom_radius = 0.28
-height = 0.12
+[sub_resource type="CylinderMesh" id="m58"]
+top_radius = 0.6
+bottom_radius = 0.6
+height = 1.3
 radial_segments = 16
 rings = 1
 
-[sub_resource type="SphereMesh" id="m64"]
-radius = 0.45
-height = 0.9
+[sub_resource type="BoxMesh" id="m59"]
+size = Vector3(1.1, 1.2, 0.5)
+
+[sub_resource type="BoxMesh" id="m60"]
+size = Vector3(1.45, 1.8, 1.6)
+
+[sub_resource type="BoxMesh" id="m61"]
+size = Vector3(1.15, 1.7, 0.3)
+
+[sub_resource type="BoxMesh" id="m62"]
+size = Vector3(0.2, 1.2, 1.2)
+
+[sub_resource type="CylinderMesh" id="m63"]
+top_radius = 0.4
+bottom_radius = 0.4
+height = 1.2
 radial_segments = 16
-rings = 8
+rings = 1
+
+[sub_resource type="BoxMesh" id="m64"]
+size = Vector3(1.4, 0.55, 1.5)
 
 [sub_resource type="BoxMesh" id="m65"]
-size = Vector3(1.35, 0.5, 2.2)
+size = Vector3(0.42, 0.4, 1.2)
 
-[sub_resource type="BoxMesh" id="m66"]
-size = Vector3(1.8, 0.36, 3.2)
+[sub_resource type="PrismMesh" id="m66"]
+size = Vector3(0.42, 0.3, 0.4)
+left_to_right = 0.5
 
 [sub_resource type="BoxMesh" id="m67"]
-size = Vector3(1.6, 0.35, 0.6)
+size = Vector3(0.42, 0.4, 1.4)
+
+[sub_resource type="BoxMesh" id="m68"]
+size = Vector3(0.5, 0.4, 0.9)
 
 [node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery", "jump_charge", "air_steer", "kneel", "dodge")]
 collision_layer = 2
@@ -323,375 +337,32 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 [node name="Torso" type="Node3D" parent="Visual/Roll/Upper"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.4, 0)
 
-[node name="Abdomen" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, -0.05)
-mesh = SubResource("m0")
-surface_material_override/0 = ExtResource("red")
-
-[node name="AbdomenFrame" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
-mesh = SubResource("m1")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="Chest" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.45, 0)
-mesh = SubResource("m2")
-surface_material_override/0 = ExtResource("blue")
-
-[node name="ChestFront" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.99027, -0.13917, 0, 0.13917, 0.99027, 0, 2.35, -1.4)
-mesh = SubResource("m3")
-surface_material_override/0 = ExtResource("blue")
-
-[node name="ChestLower" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, -0.05)
-mesh = SubResource("m4")
-surface_material_override/0 = ExtResource("blue")
-
-[node name="VentL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.99027, -0.13917, 0, 0.13917, 0.99027, -0.85, 2.25, -1.62)
-mesh = SubResource("m5")
-surface_material_override/0 = ExtResource("yellow")
-
-[node name="VentLSlat0" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.99027, -0.13917, 0, 0.13917, 0.99027, -0.85, 2.43, -1.71)
-mesh = SubResource("m6")
-surface_material_override/0 = ExtResource("dark")
-
-[node name="VentLSlat1" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.99027, -0.13917, 0, 0.13917, 0.99027, -0.85, 2.23, -1.71)
-mesh = SubResource("m6")
-surface_material_override/0 = ExtResource("dark")
-
-[node name="VentLSlat2" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.99027, -0.13917, 0, 0.13917, 0.99027, -0.85, 2.03, -1.71)
-mesh = SubResource("m6")
-surface_material_override/0 = ExtResource("dark")
-
-[node name="VentR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.99027, -0.13917, 0, 0.13917, 0.99027, 0.85, 2.25, -1.62)
-mesh = SubResource("m5")
-surface_material_override/0 = ExtResource("yellow")
-
-[node name="VentRSlat0" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.99027, -0.13917, 0, 0.13917, 0.99027, 0.85, 2.43, -1.71)
-mesh = SubResource("m6")
-surface_material_override/0 = ExtResource("dark")
-
-[node name="VentRSlat1" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.99027, -0.13917, 0, 0.13917, 0.99027, 0.85, 2.23, -1.71)
-mesh = SubResource("m6")
-surface_material_override/0 = ExtResource("dark")
-
-[node name="VentRSlat2" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.99027, -0.13917, 0, 0.13917, 0.99027, 0.85, 2.03, -1.71)
-mesh = SubResource("m6")
-surface_material_override/0 = ExtResource("dark")
-
-[node name="CockpitHatch" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.99027, -0.13917, 0, 0.13917, 0.99027, 0, 2.15, -1.64)
-mesh = SubResource("m7")
-surface_material_override/0 = ExtResource("blue")
-
-[node name="Collar" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.96593, 0.25882, 0, -0.25882, 0.96593, 0, 3.55, -0.85)
-mesh = SubResource("m8")
-surface_material_override/0 = ExtResource("yellow")
-
-[node name="CollarBack" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, 0.35)
-mesh = SubResource("m9")
-surface_material_override/0 = ExtResource("blue")
-
-[node name="Neck" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.8, -0.1)
-mesh = SubResource("m10")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="Backpack" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 1.8)
-mesh = SubResource("m11")
-surface_material_override/0 = ExtResource("white")
-
-[node name="BackpackTop" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.7, 1.7)
-mesh = SubResource("m12")
-surface_material_override/0 = ExtResource("white")
-
-[node name="SaberL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.95106, 0.30902, 0, -0.30902, 0.95106, -0.75, 4.1, 1.95)
-mesh = SubResource("m13")
-surface_material_override/0 = ExtResource("white")
-
-[node name="SaberCapL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.95106, 0.30902, 0, -0.30902, 0.95106, -0.75, 4.72, 2.15)
-mesh = SubResource("m14")
-surface_material_override/0 = ExtResource("red")
-
-[node name="ThrusterL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.675, 1.1, 2)
-mesh = SubResource("m15")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="SaberR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.95106, 0.30902, 0, -0.30902, 0.95106, 0.75, 4.1, 1.95)
-mesh = SubResource("m13")
-surface_material_override/0 = ExtResource("white")
-
-[node name="SaberCapR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0.95106, 0.30902, 0, -0.30902, 0.95106, 0.75, 4.72, 2.15)
-mesh = SubResource("m14")
-surface_material_override/0 = ExtResource("red")
-
-[node name="ThrusterR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.675, 1.1, 2)
-mesh = SubResource("m15")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="Helmet" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.35, -0.1)
-mesh = SubResource("m16")
-surface_material_override/0 = ExtResource("white")
-
-[node name="HelmetTop" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.85, -0.05)
-mesh = SubResource("m17")
-surface_material_override/0 = ExtResource("white")
-
-[node name="Face" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.22, -0.78)
-mesh = SubResource("m18")
-surface_material_override/0 = ExtResource("white")
-
-[node name="EyeBand" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.38, -0.87)
-mesh = SubResource("m19")
-surface_material_override/0 = ExtResource("dark")
-
-[node name="EyeL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(0.99027, 0.13917, 0, -0.13917, 0.99027, 0, 0, 0, 1, -0.17, 4.38, -0.9)
-mesh = SubResource("m20")
-surface_material_override/0 = ExtResource("eye")
-
-[node name="EarL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -0.612, 4.32, -0.05)
-mesh = SubResource("m21")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="EyeR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(0.99027, -0.13917, 0, 0.13917, 0.99027, 0, 0, 0, 1, 0.17, 4.38, -0.9)
-mesh = SubResource("m20")
-surface_material_override/0 = ExtResource("eye")
-
-[node name="EarR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.612, 4.32, -0.05)
-mesh = SubResource("m21")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="MouthVent" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.1, -0.89)
-mesh = SubResource("m22")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="Chin" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.88, -0.78)
-mesh = SubResource("m23")
-surface_material_override/0 = ExtResource("red")
-
-[node name="Crest" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.68, -0.75)
-mesh = SubResource("m24")
-surface_material_override/0 = ExtResource("red")
-
-[node name="VFinL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(0.57358, -0.81915, 0, 0.81915, 0.57358, 0, 0, 0, 1, -0.33, 4.93, -0.75)
-mesh = SubResource("m25")
-surface_material_override/0 = ExtResource("yellow")
-
-[node name="VulcanL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.4, 4.65, -0.62)
-mesh = SubResource("m26")
-surface_material_override/0 = ExtResource("yellow")
-
-[node name="VFinR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(0.57358, 0.81915, 0, -0.81915, 0.57358, 0, 0, 0, 1, 0.33, 4.93, -0.75)
-mesh = SubResource("m25")
-surface_material_override/0 = ExtResource("yellow")
-
-[node name="VulcanR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.4, 4.65, -0.62)
-mesh = SubResource("m26")
-surface_material_override/0 = ExtResource("yellow")
-
-[node name="Camera" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.8, 0.4)
-mesh = SubResource("m27")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="ShoulderPadL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.1, 0)
-mesh = SubResource("m28")
-surface_material_override/0 = ExtResource("white")
-
-[node name="ShoulderTopL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 3.9, 0)
-mesh = SubResource("m29")
-surface_material_override/0 = ExtResource("white")
-
-[node name="ShoulderRimL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.85, 2.45, 0)
-mesh = SubResource("m30")
-surface_material_override/0 = ExtResource("white")
-
-[node name="ShoulderBlockL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 3, 0)
-mesh = SubResource("m31")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="ShoulderPadR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.1, 0)
-mesh = SubResource("m28")
-surface_material_override/0 = ExtResource("white")
-
-[node name="ShoulderTopR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 3.9, 0)
-mesh = SubResource("m29")
-surface_material_override/0 = ExtResource("white")
-
-[node name="ShoulderRimR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 2.45, 0)
-mesh = SubResource("m30")
-surface_material_override/0 = ExtResource("white")
-
-[node name="ShoulderBlockR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 3, 0)
-mesh = SubResource("m31")
-surface_material_override/0 = ExtResource("frame")
+[node name="Lower" type="Node3D" parent="Visual/Roll/Upper"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.2, 0)
 
 [node name="ShoulderL" type="Node3D" parent="Visual/Roll/Upper/Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9, 2.9, 0)
 
-[node name="UpperArmFrameL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.9, 0)
-mesh = SubResource("m32")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="UpperArmL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.9, 0)
-mesh = SubResource("m33")
-surface_material_override/0 = ExtResource("white")
-
 [node name="ElbowL" type="Node3D" parent="Visual/Roll/Upper/Torso/ShoulderL"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.7, 0)
 
-[node name="ElbowJointL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-mesh = SubResource("m34")
-surface_material_override/0 = ExtResource("frame")
+[node name="HipL" type="Node3D" parent="Visual/Roll/Upper/Lower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 0)
 
-[node name="ForearmL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.3, 0)
-mesh = SubResource("m35")
-surface_material_override/0 = ExtResource("white")
-
-[node name="CuffL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.45, 0)
-mesh = SubResource("m36")
-surface_material_override/0 = ExtResource("white")
-
-[node name="HandL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3, 0)
-mesh = SubResource("m37")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="FingersL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.35, 0.05)
-mesh = SubResource("m38")
-surface_material_override/0 = ExtResource("dark")
+[node name="KneeL" type="Node3D" parent="Visual/Roll/Upper/Lower/HipL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.6, 0)
 
 [node name="ShoulderR" type="Node3D" parent="Visual/Roll/Upper/Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 2.9, 0)
 
-[node name="UpperArmFrameR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.9, 0)
-mesh = SubResource("m32")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="UpperArmR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.9, 0)
-mesh = SubResource("m33")
-surface_material_override/0 = ExtResource("white")
-
 [node name="ElbowR" type="Node3D" parent="Visual/Roll/Upper/Torso/ShoulderR"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.7, 0)
 
-[node name="ElbowJointR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-mesh = SubResource("m34")
-surface_material_override/0 = ExtResource("frame")
+[node name="HipR" type="Node3D" parent="Visual/Roll/Upper/Lower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 0)
 
-[node name="ForearmR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.3, 0)
-mesh = SubResource("m35")
-surface_material_override/0 = ExtResource("white")
-
-[node name="CuffR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.45, 0)
-mesh = SubResource("m36")
-surface_material_override/0 = ExtResource("white")
-
-[node name="HandR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3, 0)
-mesh = SubResource("m37")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="FingersR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.35, 0.05)
-mesh = SubResource("m38")
-surface_material_override/0 = ExtResource("dark")
-
-[node name="Shield" type="Node3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.7, -0.95)
-
-[node name="ShieldRim" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.05)
-mesh = SubResource("m39")
-surface_material_override/0 = ExtResource("white")
-
-[node name="ShieldFace" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, -0.05)
-mesh = SubResource("m40")
-surface_material_override/0 = ExtResource("red")
-
-[node name="ShieldTop" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.1, -0.02)
-mesh = SubResource("m41")
-surface_material_override/0 = ExtResource("white")
-
-[node name="ShieldWindow" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.45, 2.1, -0.18)
-mesh = SubResource("m42")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="ShieldCrossV" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, -0.18)
-mesh = SubResource("m43")
-surface_material_override/0 = ExtResource("yellow")
-
-[node name="ShieldCrossH" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, -0.18)
-mesh = SubResource("m44")
-surface_material_override/0 = ExtResource("yellow")
-
-[node name="ShieldTip" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(-1, -0, 0, 0, -1, 0, 0, 0, 1, 0, -1.15, -0.18)
-mesh = SubResource("m45")
-surface_material_override/0 = ExtResource("yellow")
-
-[node name="ShieldMount" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.35)
-mesh = SubResource("m46")
-surface_material_override/0 = ExtResource("frame")
+[node name="KneeR" type="Node3D" parent="Visual/Roll/Upper/Lower/HipR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.6, 0)
 
 [node name="Rifle" parent="Visual/Roll/Upper/Torso" instance=ExtResource("rifle")]
 transform = Transform3D(0.57358, -0.25313, 0.77906, 0, 0.95106, 0.30902, -0.81915, -0.17724, 0.5455, 2.3, 1.8, -1.8)
@@ -702,209 +373,718 @@ transform = Transform3D(0.57358, -0.25313, 0.77906, 0, 0.95106, 0.30902, -0.8191
 [node name="AimAnchor" type="Marker3D" parent="Visual/Roll/Upper/Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1, 2.8, -1.1)
 
-[node name="Lower" type="Node3D" parent="Visual/Roll/Upper"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.2, 0)
+[node name="Waist" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("m0")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="WaistRing" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("m1")
+surface_material_override/0 = ExtResource("joint")
+
+[node name="Core" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0.1)
+mesh = SubResource("m2")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="CenterColumn" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, -1.2)
+mesh = SubResource("m3")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="PortPlate" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, -1.55)
+mesh = SubResource("m4")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="PortRing0" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 2.25, -1.65)
+mesh = SubResource("m5")
+surface_material_override/0 = ExtResource("joint")
+
+[node name="PortLens0" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 2.25, -1.68)
+mesh = SubResource("m6")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="PortRing1" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 1.55, -1.65)
+mesh = SubResource("m5")
+surface_material_override/0 = ExtResource("joint")
+
+[node name="PortLens1" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 1.55, -1.68)
+mesh = SubResource("m6")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="ChinGuard" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0.96593, 0.25882, 0, -0.25882, 0.96593, 0, 1.1, -1.05)
+mesh = SubResource("m7")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="Head" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.7, -0.55)
+mesh = SubResource("m8")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="HeadBrow" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0.97815, -0.20791, 0, 0.20791, 0.97815, 0, 4.15, -1.35)
+mesh = SubResource("m9")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="HeadCheekL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.65, 3.35, -1.3)
+mesh = SubResource("m10")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="HeadCheekR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.65, 3.35, -1.3)
+mesh = SubResource("m10")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="EyeHousing" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.45, -1.6)
+mesh = SubResource("m11")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Eye" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(-1, -0, 0, 0, -1, 0, 0, 0, 1, 0, 3.45, -1.68)
+mesh = SubResource("m12")
+surface_material_override/0 = ExtResource("eye")
+
+[node name="Fin" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 5, -0.3)
+mesh = SubResource("m13")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="FinBase" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.45, -0.4)
+mesh = SubResource("m14")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="TorsoR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2.7, -0.05)
+mesh = SubResource("m15")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="TorsoRFront" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 3, -1.25)
+mesh = SubResource("m16")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="Emblem" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(0.70711, -0.70711, 0, 0.70711, 0.70711, 0, 0, 0, 1, 1.45, 3.05, -1.39)
+mesh = SubResource("m17")
+surface_material_override/0 = ExtResource("emblem")
+
+[node name="TorsoRLower" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 1.8, -1.2)
+mesh = SubResource("m18")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="TorsoL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2.7, -0.05)
+mesh = SubResource("m15")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="RackFace" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2.75, -1.25)
+mesh = SubResource("m19")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="Tube00" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.9, 3.43, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube01" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.9, 3.09, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube02" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.9, 2.75, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube03" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.9, 2.41, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube04" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.9, 2.07, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube10" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.6, 3.43, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube11" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.6, 3.09, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube12" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.6, 2.75, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube13" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.6, 2.41, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube14" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.6, 2.07, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube20" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.3, 3.43, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube21" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.3, 3.09, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube22" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.3, 2.75, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube23" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.3, 2.41, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube24" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.3, 2.07, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube30" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1, 3.43, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube31" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1, 3.09, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube32" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1, 2.75, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube33" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1, 2.41, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Tube34" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1, 2.07, -1.36)
+mesh = SubResource("m20")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="RackVent0" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 1.7, -1.28)
+mesh = SubResource("m21")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="RackVent1" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 1.57, -1.28)
+mesh = SubResource("m21")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="RackVent2" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 1.44, -1.28)
+mesh = SubResource("m21")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="RackVent3" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 1.31, -1.28)
+mesh = SubResource("m21")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Yoke" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.05, 0.35)
+mesh = SubResource("m22")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="Back" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 1.8)
+mesh = SubResource("m23")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="BackPlate" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 2.5)
+mesh = SubResource("m24")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="BackThrusterL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7, 1, 2)
+mesh = SubResource("m25")
+surface_material_override/0 = ExtResource("joint")
+
+[node name="BackThrusterR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 1, 2)
+mesh = SubResource("m25")
+surface_material_override/0 = ExtResource("joint")
+
+[node name="ShoulderJointL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -2.35, 2.9, 0)
+mesh = SubResource("m26")
+surface_material_override/0 = ExtResource("joint")
+
+[node name="ShoulderGearL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -2.35, 2.9, 0)
+mesh = SubResource("m27")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="PauldronL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9, 3.6, 0)
+mesh = SubResource("m28")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="PauldronTopL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9, 4.45, 0)
+mesh = SubResource("m29")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="PauldronFrontL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0.98481, -0.17365, 0, 0.17365, 0.98481, -2.9, 3.4, -1.2)
+mesh = SubResource("m30")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="PauldronSideL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(0.99027, -0.13917, 0, 0.13917, 0.99027, 0, 0, 0, 1, -3.85, 3.2, 0)
+mesh = SubResource("m31")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ShoulderJointR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 2.35, 2.9, 0)
+mesh = SubResource("m26")
+surface_material_override/0 = ExtResource("joint")
+
+[node name="ShoulderGearR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 2.35, 2.9, 0)
+mesh = SubResource("m27")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="PauldronR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 3.6, 0)
+mesh = SubResource("m28")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="PauldronTopR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 4.45, 0)
+mesh = SubResource("m29")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="PauldronFrontR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 0.98481, -0.17365, 0, 0.17365, 0.98481, 2.9, 3.4, -1.2)
+mesh = SubResource("m30")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="PauldronSideR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(0.99027, 0.13917, 0, -0.13917, 0.99027, 0, 0, 0, 1, 3.85, 3.2, 0)
+mesh = SubResource("m31")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="Antenna" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(0.40712, -0.16962, 0.89749, 0.10351, 0.98484, 0.13917, -0.90749, 0.03624, 0.41851, -3.1, 5.7, 0.5)
+mesh = SubResource("m32")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="AntennaBase" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.1, 4.55, 0.4)
+mesh = SubResource("m33")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="UpperArmFrameL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.1, 0)
+mesh = SubResource("m34")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="UpperArmL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.5, 0)
+mesh = SubResource("m35")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ElbowJointL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("m36")
+surface_material_override/0 = ExtResource("joint")
+
+[node name="ForearmL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.25, 0)
+mesh = SubResource("m37")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ForearmPlateL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.2, 0.72)
+mesh = SubResource("m38")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="WristL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.45, 0)
+mesh = SubResource("m39")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="HandL" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.95, 0)
+mesh = SubResource("m40")
+surface_material_override/0 = ExtResource("joint")
+
+[node name="FingerL0" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.45, -0.28)
+mesh = SubResource("m41")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="FingerL1" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.45, -0.05)
+mesh = SubResource("m41")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="FingerL2" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.45, 0.18)
+mesh = SubResource("m41")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="UpperArmFrameR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.1, 0)
+mesh = SubResource("m34")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="UpperArmR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.5, 0)
+mesh = SubResource("m35")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ElbowJointR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("m36")
+surface_material_override/0 = ExtResource("joint")
+
+[node name="ForearmR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.25, 0)
+mesh = SubResource("m37")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ForearmPlateR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.2, 0.72)
+mesh = SubResource("m38")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="WristR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.45, 0)
+mesh = SubResource("m39")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="HandR" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.95, 0)
+mesh = SubResource("m40")
+surface_material_override/0 = ExtResource("joint")
+
+[node name="FingerR0" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.45, -0.28)
+mesh = SubResource("m41")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="FingerR1" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.45, -0.05)
+mesh = SubResource("m41")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="FingerR2" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderR/ElbowR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.45, 0.18)
+mesh = SubResource("m41")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Shield" type="Node3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.5, -1)
+
+[node name="ShieldBody" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("m42")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ShieldTop" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.25, 0)
+mesh = SubResource("m43")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ShieldBottom" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
+transform = Transform3D(-1, -0, 0, 0, -1, 0, 0, 0, 1, 0, -2.25, 0)
+mesh = SubResource("m43")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ShieldFrame" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0.3)
+mesh = SubResource("m44")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Chevron0" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
+transform = Transform3D(0.70711, 0.70711, 0, -0.70711, 0.70711, 0, 0, 0, 1, -0.3, -1.25, -0.14)
+mesh = SubResource("m45")
+surface_material_override/0 = ExtResource("mark")
+
+[node name="Chevron1" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
+transform = Transform3D(0.70711, -0.70711, 0, 0.70711, 0.70711, 0, 0, 0, 1, 0.3, -1.25, -0.14)
+mesh = SubResource("m45")
+surface_material_override/0 = ExtResource("mark")
+
+[node name="Bolt0" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.75, 1.7, -0.14)
+mesh = SubResource("m46")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Bolt1" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.75, 1.7, -0.14)
+mesh = SubResource("m46")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Bolt2" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.75, -1.7, -0.14)
+mesh = SubResource("m46")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Bolt3" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.75, -1.7, -0.14)
+mesh = SubResource("m46")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Bolt4" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 2.25, -0.14)
+mesh = SubResource("m46")
+surface_material_override/0 = ExtResource("frame")
 
 [node name="Pelvis" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
 mesh = SubResource("m47")
 surface_material_override/0 = ExtResource("frame")
 
-[node name="Waist" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
-mesh = SubResource("m48")
-surface_material_override/0 = ExtResource("white")
-
 [node name="Crotch" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.15, -1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, -0.95)
+mesh = SubResource("m48")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="CrotchMarkTop" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -1.19)
 mesh = SubResource("m49")
-surface_material_override/0 = ExtResource("red")
+surface_material_override/0 = ExtResource("mark")
 
-[node name="CrotchV" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
-transform = Transform3D(-1, -0, 0, 0, -1, 0, 0, 0, 1, 0, 0.05, -1.27)
+[node name="CrotchMarkStem" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, -1.19)
 mesh = SubResource("m50")
-surface_material_override/0 = ExtResource("yellow")
+surface_material_override/0 = ExtResource("mark")
 
-[node name="CrotchBack" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0.95)
+[node name="CrotchTip" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
+transform = Transform3D(-1, -0, 0, 0, -1, 0, 0, 0, 1, 0, -1.03, -0.95)
 mesh = SubResource("m51")
-surface_material_override/0 = ExtResource("white")
+surface_material_override/0 = ExtResource("armor_dark")
 
-[node name="SkirtFrontL" type="Node3D" parent="Visual/Roll/Upper/Lower"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.02, 0.45, -1.1)
-
-[node name="SkirtFrontPlateL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/SkirtFrontL"]
-transform = Transform3D(1, 0, 0, 0, 0.98481, 0.17365, 0, -0.17365, 0.98481, 0, -0.7, -0.05)
+[node name="PelvisBack" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0.95)
 mesh = SubResource("m52")
-surface_material_override/0 = ExtResource("white")
+surface_material_override/0 = ExtResource("armor")
 
-[node name="SkirtFrontMarkL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/SkirtFrontL"]
-transform = Transform3D(1, 0, 0, 0, 0.98481, 0.17365, 0, -0.17365, 0.98481, 0, -0.62, -0.23)
+[node name="HipGearL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -0.75, 0, 0)
 mesh = SubResource("m53")
-surface_material_override/0 = ExtResource("yellow")
+surface_material_override/0 = ExtResource("joint")
 
-[node name="SkirtSideL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
-transform = Transform3D(0.99027, 0.13917, 0, -0.13917, 0.99027, 0, 0, 0, 1, -2.05, -0.15, 0)
-mesh = SubResource("m54")
-surface_material_override/0 = ExtResource("white")
-
-[node name="SkirtFrontR" type="Node3D" parent="Visual/Roll/Upper/Lower"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.02, 0.45, -1.1)
-
-[node name="SkirtFrontPlateR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/SkirtFrontR"]
-transform = Transform3D(1, 0, 0, 0, 0.98481, 0.17365, 0, -0.17365, 0.98481, 0, -0.7, -0.05)
-mesh = SubResource("m52")
-surface_material_override/0 = ExtResource("white")
-
-[node name="SkirtFrontMarkR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/SkirtFrontR"]
-transform = Transform3D(1, 0, 0, 0, 0.98481, 0.17365, 0, -0.17365, 0.98481, 0, -0.62, -0.23)
+[node name="HipGearR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.75, 0, 0)
 mesh = SubResource("m53")
-surface_material_override/0 = ExtResource("yellow")
+surface_material_override/0 = ExtResource("joint")
 
-[node name="SkirtSideR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower"]
-transform = Transform3D(0.99027, -0.13917, 0, 0.13917, 0.99027, 0, 0, 0, 1, 2.05, -0.15, 0)
+[node name="ThighPlateL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, -0.55, 0)
 mesh = SubResource("m54")
-surface_material_override/0 = ExtResource("white")
+surface_material_override/0 = ExtResource("armor")
 
-[node name="SkirtRear" type="Node3D" parent="Visual/Roll/Upper/Lower"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 1.1)
-
-[node name="SkirtRearPlate" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/SkirtRear"]
-transform = Transform3D(1, 0, 0, 0, 0.98481, -0.17365, 0, 0.17365, 0.98481, 0, -0.6, 0.05)
+[node name="ThighPlateFaceL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, -0.55, -0.88)
 mesh = SubResource("m55")
-surface_material_override/0 = ExtResource("white")
-
-[node name="HipL" type="Node3D" parent="Visual/Roll/Upper/Lower"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3, 0, 0)
-
-[node name="HipJointL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-mesh = SubResource("m56")
-surface_material_override/0 = ExtResource("frame")
+surface_material_override/0 = ExtResource("armor_dark")
 
 [node name="ThighFrameL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6, 0)
-mesh = SubResource("m57")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.6, 0)
+mesh = SubResource("m56")
 surface_material_override/0 = ExtResource("frame")
 
 [node name="ThighL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.55, 0)
-mesh = SubResource("m58")
-surface_material_override/0 = ExtResource("white")
-
-[node name="KneeL" type="Node3D" parent="Visual/Roll/Upper/Lower/HipL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.95, 0)
+mesh = SubResource("m57")
+surface_material_override/0 = ExtResource("armor")
 
 [node name="KneeJointL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-mesh = SubResource("m59")
-surface_material_override/0 = ExtResource("frame")
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("m58")
+surface_material_override/0 = ExtResource("joint")
 
-[node name="KneePadL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
-transform = Transform3D(1, 0, 0, 0, 0.97815, 0.20791, 0, -0.20791, 0.97815, 0, -0.25, -0.75)
-mesh = SubResource("m60")
-surface_material_override/0 = ExtResource("white")
+[node name="KneeCapL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
+transform = Transform3D(1, 0, 0, 0, 0.98481, 0.17365, 0, -0.17365, 0.98481, 0, -0.2, -0.75)
+mesh = SubResource("m59")
+surface_material_override/0 = ExtResource("armor")
 
 [node name="ShinL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.95, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.15, 0.05)
+mesh = SubResource("m60")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ShinFrontL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
+transform = Transform3D(1, 0, 0, 0, 0.99452, 0.10453, 0, -0.10453, 0.99452, 0, -1.1, -0.85)
 mesh = SubResource("m61")
-surface_material_override/0 = ExtResource("white")
+surface_material_override/0 = ExtResource("armor")
 
-[node name="ShinFlareL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.75, 0.05)
+[node name="ShinSideL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, -1.2, 0.05)
 mesh = SubResource("m62")
-surface_material_override/0 = ExtResource("white")
-
-[node name="ShinVentL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
-transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -0.82, -1.75, 0.2)
-mesh = SubResource("m63")
-surface_material_override/0 = ExtResource("frame")
+surface_material_override/0 = ExtResource("armor_dark")
 
 [node name="AnkleL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.1, 0)
-mesh = SubResource("m64")
-surface_material_override/0 = ExtResource("frame")
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, -2.05, 0)
+mesh = SubResource("m63")
+surface_material_override/0 = ExtResource("joint")
 
 [node name="FootL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.12, -0.55)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.3, -0.15)
+mesh = SubResource("m64")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ToeL0" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
+transform = Transform3D(0.95106, 0, 0.30902, 0, 1, 0, -0.30902, 0, 0.95106, -0.6, -2.4, -1.44)
 mesh = SubResource("m65")
-surface_material_override/0 = ExtResource("white")
+surface_material_override/0 = ExtResource("armor")
 
-[node name="FootSoleL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.42, -0.45)
+[node name="ToeTipL0" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
+transform = Transform3D(0.95106, -0.30902, 0, 0, 0, 1, -0.30902, -0.95106, 0, -0.83176, -2.45, -2.15329)
 mesh = SubResource("m66")
-surface_material_override/0 = ExtResource("red")
+surface_material_override/0 = ExtResource("armor_dark")
 
-[node name="FootToeL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
-transform = Transform3D(1, 0, 0, 0, 0.93969, 0.34202, 0, -0.34202, 0.93969, 0, -2.15, -1.8)
+[node name="ToeL1" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.4, -1.53)
 mesh = SubResource("m67")
-surface_material_override/0 = ExtResource("red")
+surface_material_override/0 = ExtResource("armor")
 
-[node name="HipR" type="Node3D" parent="Visual/Roll/Upper/Lower"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, 0, 0)
+[node name="ToeTipL1" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -2.45, -2.38)
+mesh = SubResource("m66")
+surface_material_override/0 = ExtResource("armor_dark")
 
-[node name="HipJointR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="ToeL2" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
+transform = Transform3D(0.95106, 0, -0.30902, 0, 1, 0, 0.30902, 0, 0.95106, 0.6, -2.4, -1.44)
+mesh = SubResource("m65")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ToeTipL2" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
+transform = Transform3D(0.95106, 0.30902, -0, 0, 0, 1, 0.30902, -0.95106, 0, 0.83176, -2.45, -2.15329)
+mesh = SubResource("m66")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="HeelL" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipL/KneeL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.4, 0.95)
+mesh = SubResource("m68")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ThighPlateR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, -0.55, 0)
+mesh = SubResource("m54")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ThighPlateFaceR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, -0.55, -0.88)
+mesh = SubResource("m55")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="ThighFrameR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.6, 0)
 mesh = SubResource("m56")
 surface_material_override/0 = ExtResource("frame")
 
-[node name="ThighFrameR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6, 0)
-mesh = SubResource("m57")
-surface_material_override/0 = ExtResource("frame")
-
 [node name="ThighR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.55, 0)
-mesh = SubResource("m58")
-surface_material_override/0 = ExtResource("white")
-
-[node name="KneeR" type="Node3D" parent="Visual/Roll/Upper/Lower/HipR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.95, 0)
+mesh = SubResource("m57")
+surface_material_override/0 = ExtResource("armor")
 
 [node name="KneeJointR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-mesh = SubResource("m59")
-surface_material_override/0 = ExtResource("frame")
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("m58")
+surface_material_override/0 = ExtResource("joint")
 
-[node name="KneePadR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
-transform = Transform3D(1, 0, 0, 0, 0.97815, 0.20791, 0, -0.20791, 0.97815, 0, -0.25, -0.75)
-mesh = SubResource("m60")
-surface_material_override/0 = ExtResource("white")
+[node name="KneeCapR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
+transform = Transform3D(1, 0, 0, 0, 0.98481, 0.17365, 0, -0.17365, 0.98481, 0, -0.2, -0.75)
+mesh = SubResource("m59")
+surface_material_override/0 = ExtResource("armor")
 
 [node name="ShinR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.95, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.15, 0.05)
+mesh = SubResource("m60")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ShinFrontR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
+transform = Transform3D(1, 0, 0, 0, 0.99452, 0.10453, 0, -0.10453, 0.99452, 0, -1.1, -0.85)
 mesh = SubResource("m61")
-surface_material_override/0 = ExtResource("white")
+surface_material_override/0 = ExtResource("armor")
 
-[node name="ShinFlareR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.75, 0.05)
+[node name="ShinSideR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, -1.2, 0.05)
 mesh = SubResource("m62")
-surface_material_override/0 = ExtResource("white")
-
-[node name="ShinVentR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
-transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.82, -1.75, 0.2)
-mesh = SubResource("m63")
-surface_material_override/0 = ExtResource("frame")
+surface_material_override/0 = ExtResource("armor_dark")
 
 [node name="AnkleR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.1, 0)
-mesh = SubResource("m64")
-surface_material_override/0 = ExtResource("frame")
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, -2.05, 0)
+mesh = SubResource("m63")
+surface_material_override/0 = ExtResource("joint")
 
 [node name="FootR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.12, -0.55)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.3, -0.15)
+mesh = SubResource("m64")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ToeR0" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
+transform = Transform3D(0.95106, 0, 0.30902, 0, 1, 0, -0.30902, 0, 0.95106, -0.6, -2.4, -1.44)
 mesh = SubResource("m65")
-surface_material_override/0 = ExtResource("white")
+surface_material_override/0 = ExtResource("armor")
 
-[node name="FootSoleR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.42, -0.45)
+[node name="ToeTipR0" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
+transform = Transform3D(0.95106, -0.30902, 0, 0, 0, 1, -0.30902, -0.95106, 0, -0.83176, -2.45, -2.15329)
 mesh = SubResource("m66")
-surface_material_override/0 = ExtResource("red")
+surface_material_override/0 = ExtResource("armor_dark")
 
-[node name="FootToeR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
-transform = Transform3D(1, 0, 0, 0, 0.93969, 0.34202, 0, -0.34202, 0.93969, 0, -2.15, -1.8)
+[node name="ToeR1" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.4, -1.53)
 mesh = SubResource("m67")
-surface_material_override/0 = ExtResource("red")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ToeTipR1" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -2.45, -2.38)
+mesh = SubResource("m66")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="ToeR2" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
+transform = Transform3D(0.95106, 0, -0.30902, 0, 1, 0, 0.30902, 0, 0.95106, 0.6, -2.4, -1.44)
+mesh = SubResource("m65")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ToeTipR2" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
+transform = Transform3D(0.95106, 0.30902, -0, 0, 0, 1, 0.30902, -0.95106, 0, 0.83176, -2.45, -2.15329)
+mesh = SubResource("m66")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="HeelR" type="MeshInstance3D" parent="Visual/Roll/Upper/Lower/HipR/KneeR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.4, 0.95)
+mesh = SubResource("m68")
+surface_material_override/0 = ExtResource("armor")
 
 [node name="MechInput" type="Node" parent="." node_paths=PackedStringArray("camera_rig", "mech")]
 script = ExtResource("input")
@@ -1012,7 +1192,7 @@ body = NodePath("../../Visual")
 [node name="SkidDust" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "feet")]
 script = ExtResource("skiddust")
 mech = NodePath("../..")
-feet = [NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL/FootSoleL"), NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR/FootSoleR")]
+feet = [NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL/FootL"), NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR/FootR")]
 
 [node name="ArmIKRight" type="Node" parent="Animation" node_paths=PackedStringArray("root_joint", "mid_joint", "target")]
 script = ExtResource("ik")
@@ -1062,21 +1242,3 @@ script = ExtResource("shake")
 mech = NodePath("../../../..")
 footsteps = NodePath("../../../../MechFootsteps")
 dodge = NodePath("../../../../MechDodge")
-
-[node name="SkirtFollowL" type="Node" parent="Animation" node_paths=PackedStringArray("skirt", "hips")]
-script = ExtResource("skirt")
-skirt = NodePath("../../Visual/Roll/Upper/Lower/SkirtFrontL")
-hips = [NodePath("../../Visual/Roll/Upper/Lower/HipL")]
-placement = 0
-
-[node name="SkirtFollowR" type="Node" parent="Animation" node_paths=PackedStringArray("skirt", "hips")]
-script = ExtResource("skirt")
-skirt = NodePath("../../Visual/Roll/Upper/Lower/SkirtFrontR")
-hips = [NodePath("../../Visual/Roll/Upper/Lower/HipR")]
-placement = 0
-
-[node name="SkirtFollowRear" type="Node" parent="Animation" node_paths=PackedStringArray("skirt", "hips")]
-script = ExtResource("skirt")
-skirt = NodePath("../../Visual/Roll/Upper/Lower/SkirtRear")
-hips = [NodePath("../../Visual/Roll/Upper/Lower/HipL"), NodePath("../../Visual/Roll/Upper/Lower/HipR")]
-placement = 1
