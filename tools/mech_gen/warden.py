@@ -3,11 +3,14 @@ Weathered grey plates, head built into the center torso with a red eye, hex shie
 forearm, claw feet, two backpack thrusters with flames.
 Revision 43: missile rack removed, shield 20% larger, rifle held in the right hand only
 (one-hand high ready, like reference image 10).
+Revision 45: upper body (torso, head, arms) 15% smaller. Rifle and shield keep their size.
 Revision 44: blade antenna removed, legs 20% thicker, RMB hip fire (no zoom), LMB lifts the shield.
 Mech faces -Z. Right is +X. Heights are in mech space (feet at 0)."""
 import math, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mech_scene import write_scene, one_hand_rest, TT, TO, L
+
+UPPER_BODY_SCALE = 0.85
 
 MATS = {m: f"res://materials/warden/{m}.tres" for m in
         ["armor", "armor_dark", "frame", "joint", "mark", "emblem", "eye"]}
@@ -15,7 +18,8 @@ MATS["flame"] = "res://materials/effects/booster_flame.tres"
 MATS["flame_core"] = "res://materials/effects/booster_core.tres"
 SHIELD_SCALE = 1.2
 # One-hand high ready: grip in the right hand in front of the right shoulder, muzzle up.
-RIFLE_REST = one_hand_rest(hand=(2.7, 7.3, -2.15), muzzle_dir=(0.12, 1.0, -0.12), up_hint=(0.25, 0.0, 1.0))
+RIFLE_REST = one_hand_rest(hand=(2.7, 7.3, -2.15), muzzle_dir=(0.12, 1.0, -0.12), up_hint=(0.25, 0.0, 1.0),
+                           torso_scale=UPPER_BODY_SCALE)
 ONE_HAND = {
     "rest": (-3.3, 3.8, -0.8),         # Left hand hangs at the side, shield on the outside.
     "raised": (-1.9, 8.6, -2.7),       # LMB: forearm up in front of the left chest, shield faces forward.
@@ -100,7 +104,7 @@ def build(m):
     # Hex shield on the outer side of the left forearm (local -Z).
     SL = f"{TO}/ShoulderL/ElbowL"
     k = SHIELD_SCALE
-    m.nodes.append(f'[node name="Shield" type="Node3D" parent="{SL}"]\ntransform = Transform3D({k}, 0, 0, 0, {k}, 0, 0, 0, {k}, 0, -1.5, -1.05)\n')
+    m.nodes.append(f'[node name="Shield" type="Node3D" parent="{SL}"]\ntransform = Transform3D({k}, 0, 0, 0, {k}, 0, 0, 0, {k}, 0, {-1.5 * UPPER_BODY_SCALE}, {-1.05 * UPPER_BODY_SCALE})\n')
     SHD = f"{SL}/Shield"
     m.part("ShieldBody", SHD, "armor", "box", (2.1, 3.8, 0.25), (0, 0, 0))
     m.part("ShieldTop", SHD, "armor", "prism", (2.1, 0.7, 0.25, 0.5), (0, 2.25, 0))
@@ -166,4 +170,4 @@ def build(m):
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "scenes/mech/player_mech.tscn"
     write_scene(out, "res://scenes/weapons/heavy_rifle.tscn", MATS, build, hip_x=HIP_X,
-                rest_xf=RIFLE_REST, one_hand=ONE_HAND, muzzle_flash=True)
+                rest_xf=RIFLE_REST, one_hand=ONE_HAND, muzzle_flash=True, torso_scale=UPPER_BODY_SCALE)

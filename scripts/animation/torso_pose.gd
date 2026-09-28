@@ -14,7 +14,7 @@ extends Node
 ## Dodge recovery pose (torso lean toward the dodge direction).
 @export var dodge: MechDodge
 ## Forward lean while boosting on the ground, in degrees.
-@export var boost_lean_deg: float = 35.0
+@export var boost_lean_deg: float = 21.0
 ## Torso turn to the right while aiming, in degrees. Brings the left shoulder forward.
 @export var aim_twist_deg: float = 30.0
 ## Sideways tilt toward the rifle while aiming, in degrees.

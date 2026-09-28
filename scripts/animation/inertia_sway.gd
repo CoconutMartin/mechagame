@@ -24,6 +24,8 @@ extends Node
 @export_range(0.05, 1.0) var damping: float = 0.35
 ## Smoothing of the measured speed change (higher = follows faster).
 @export var accel_smoothing: float = 8.0
+## Sway while boosting = normal sway x this value. 0.6 = 40% less.
+@export_range(0.0, 1.0) var boost_multiplier: float = 0.6
 
 ## Inertia angles in degrees. Lean: positive = forward. Roll: positive = head to the left.
 ## Yaw: positive = torso turned left.
@@ -37,6 +39,7 @@ var _yaw := AimSpring.new(0.0)
 var _last_velocity: Vector3 = Vector3.ZERO
 var _accel: Vector3 = Vector3.ZERO
 var _fade: float = 1.0
+var _boost_scale: float = 1.0
 
 
 func _ready() -> void:
@@ -55,12 +58,14 @@ func _physics_process(delta: float) -> void:
 	else:
 		_fade = move_toward(_fade, 1.0, delta / fade_in_time)
 	_accel = _accel.lerp(raw_accel, 1.0 - exp(-accel_smoothing * delta))
+	_boost_scale = move_toward(_boost_scale, boost_multiplier if mech.is_boosting else 1.0, 2.0 * delta)
 	# Speed change in the leg frame: -Z forward, +X right.
 	var local := mech.global_basis.inverse() * _accel
 	var limit := max_angle_deg
-	var lean_target := clampf(local.z * lean_per_accel_deg, -limit, limit) * _fade
-	var roll_target := clampf(local.x * roll_per_accel_deg, -limit, limit) * _fade
-	var yaw_target := clampf(-rad_to_deg(mech.leg_turn_rate) * turn_lag_seconds, -limit, limit) * _fade
+	var scale := _fade * _boost_scale
+	var lean_target := clampf(local.z * lean_per_accel_deg, -limit, limit) * scale
+	var roll_target := clampf(local.x * roll_per_accel_deg, -limit, limit) * scale
+	var yaw_target := clampf(-rad_to_deg(mech.leg_turn_rate) * turn_lag_seconds, -limit, limit) * scale
 	_lean.update(lean_target, frequency, damping, 90.0, delta)
 	_roll.update(roll_target, frequency, damping, 90.0, delta)
 	_yaw.update(yaw_target, frequency, damping, 90.0, delta)

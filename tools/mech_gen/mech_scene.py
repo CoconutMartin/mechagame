@@ -38,6 +38,15 @@ class Model:
         self.skirts = []
         self.foot = "Foot"   # Mesh name prefix used by SkidDust (FootL, FootR).
         self.flames = []     # Booster flame node names on the torso.
+        self.torso_scale = 1.0  # Set by write_scene. Scales build() parts on the torso and arms.
+
+    def _scaled(self, parent, kind, params, pos):
+        k = self.torso_scale
+        if k == 1.0 or not parent.startswith(TO) or "/Shield" in parent:
+            return params, pos
+        n = {"box": 3, "cyl": 3, "prism": 3, "sphere": 1}[kind] if kind else 0
+        params = tuple(v * k for v in params[:n]) + tuple(params[n:])
+        return params, tuple(v * k for v in pos)
 
     def flame(self, name, pos, rot=(0, 0, 0), length=3.0, radius=0.45):
         """Booster flame on the torso. Points down its -Y axis. Uses materials "flame" and "flame_core"."""
@@ -49,9 +58,11 @@ class Model:
         self.flames.append(name)
 
     def node(self, name, parent, typ="Node3D", pos=(0, 0, 0), rot=(0, 0, 0)):
+        _, pos = self._scaled(parent, None, (), pos)
         self.nodes.append(f'[node name="{name}" type="{typ}" parent="{parent}"]\ntransform = {xf(pos, rot)}\n')
 
     def part(self, name, parent, mat, kind, params, pos=(0, 0, 0), rot=(0, 0, 0)):
+        params, pos = self._scaled(parent, kind, params, pos)
         self.b.nodes = []
         self.b.part(name, parent, mat, kind, params, pos, rot)
         self.nodes.extend(self.b.nodes)
@@ -61,8 +72,14 @@ class Model:
         self.skirts.append((name, pivot, hips, placement))
 
 
-def one_hand_rest(hand, muzzle_dir, up_hint, grip=(0, -0.33, -0.99)):
+def torso_point(p, k):
+    """Mech-space point moved toward the torso pivot by the torso scale k."""
+    return (p[0] * k, WAIST + (p[1] - WAIST) * k, p[2] * k)
+
+
+def one_hand_rest(hand, muzzle_dir, up_hint, grip=(0, -0.33, -0.99), torso_scale=1.0):
     """Rest transform text that puts the weapon grip at hand, muzzle along muzzle_dir (mech space)."""
+    hand = torso_point(hand, torso_scale)
     rows = xf_aim(muzzle_dir, up_hint, hand)
     g = apply_rows(rows, grip)
     origin = TT(*(h - o for h, o in zip(hand, g)))
@@ -70,11 +87,12 @@ def one_hand_rest(hand, muzzle_dir, up_hint, grip=(0, -0.33, -0.99)):
 
 
 def write_scene(out_path, rifle_scene, materials, build, shoulder_x=2.9, shoulder_y=8.3, hip_x=1.3, thigh=2.6,
-                rest_xf=None, one_hand=None, muzzle_flash=False):
+                rest_xf=None, one_hand=None, muzzle_flash=False, torso_scale=1.0):
     """rest_xf: weapon rest transform text in torso space (default: two-hand low ready).
     one_hand: dict for a one-hand weapon with a shield on the left arm. Keys (mech space):
     rest / raised (left hand markers), pole_rest / pole_raised (left elbow), right_pole_rest /
-    right_pole_aim (right elbow), aim_anchor (stock place for hip fire). RMB fires from the hip
+    right_pole_aim (right elbow), aim_anchor (stock place for hip fire).
+    torso_scale: size of the upper body (torso, head, arms). Weapon and shield keep their size. RMB fires from the hip
     with no zoom. LMB lifts the shield (ShieldPose)."""
     m = Model()
     m.nodes.append('''[node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery", "jump_charge", "air_steer", "kneel", "dodge")]
@@ -100,19 +118,21 @@ shape = SubResource("body_shape")
     m.node("Upper", "Visual/Roll")
     m.node("Torso", U, pos=(0, WAIST, 0))
     m.node("Lower", U, pos=(0, LOWER_Y, 0))
+    k = torso_scale
     for s, sign in (("L", -1), ("R", 1)):
-        m.node(f"Shoulder{s}", TO, pos=TT(sign * shoulder_x, shoulder_y, 0))
-        m.node(f"Elbow{s}", f"{TO}/Shoulder{s}", pos=(0, -UPPER_ARM, 0))
+        m.node(f"Shoulder{s}", TO, pos=tuple(v * k for v in TT(sign * shoulder_x, shoulder_y, 0)))
+        m.node(f"Elbow{s}", f"{TO}/Shoulder{s}", pos=(0, -UPPER_ARM * k, 0))
         m.node(f"Hip{s}", L, pos=(sign * hip_x, 0, 0))
         m.node(f"Knee{s}", f"{L}/Hip{s}", pos=(0, -thigh, 0))
     rest = rest_xf or xf(TT(*RIFLE_POS), RIFLE_ROT)
     m.nodes.append(f'[node name="Rifle" parent="{TO}" instance=ExtResource("rifle")]\ntransform = {rest}\n')
     m.nodes.append(f'[node name="RiflePoseRest" type="Marker3D" parent="{TO}"]\ntransform = {rest}\n')
     if one_hand:
-        m.node("LeftHand", TO, "Marker3D", TT(*one_hand["rest"]))
-        m.node("LeftHandRest", TO, "Marker3D", TT(*one_hand["rest"]))
-        m.node("LeftHandRaised", TO, "Marker3D", TT(*one_hand["raised"]))
-    m.node("AimAnchor", TO, "Marker3D", TT(*(one_hand["aim_anchor"] if one_hand else AIM_ANCHOR)))
+        m.node("LeftHand", TO, "Marker3D", TT(*torso_point(one_hand["rest"], k)))
+        m.node("LeftHandRest", TO, "Marker3D", TT(*torso_point(one_hand["rest"], k)))
+        m.node("LeftHandRaised", TO, "Marker3D", TT(*torso_point(one_hand["raised"], k)))
+    m.node("AimAnchor", TO, "Marker3D", TT(*torso_point(one_hand["aim_anchor"] if one_hand else AIM_ANCHOR, k)))
+    m.torso_scale = k
     build(m)
 
     here = os.path.dirname(os.path.abspath(__file__))
@@ -121,8 +141,11 @@ shape = SubResource("body_shape")
     logic = logic.replace('arm_ik_left = NodePath("../ArmIKLeft")\narm_ik_right = NodePath("../ArmIKRight")',
                           'arm_ik_left = NodePath("../ArmIKLeft")\narm_ik_right = NodePath("../ArmIKRight")\nrecoil = NodePath("../WeaponRecoil")')
     logic = logic.replace('"arm_ik_left", "arm_ik_right")]', '"arm_ik_left", "arm_ik_right", "recoil")]')
+    logic = logic.replace("upper_length = 2.7\nlower_length = 3.0", f"upper_length = {round(2.7 * k, 4)}\nlower_length = {round(3.0 * k, 4)}")
     extra = []
     if one_hand:
+        m.nodes[0] = m.nodes[0].replace('"kneel", "dodge")]', '"kneel", "dodge", "shield")]').replace(
+            'dodge = NodePath("MechDodge")\n', 'dodge = NodePath("MechDodge")\nshield = NodePath("Animation/ShieldPose")\n', 1)
         v = lambda t: f"Vector3({t[0]}, {t[1]}, {t[2]})"
         for line in ('left_grip_target = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripLeft")\n',
                      'left_grip_rest = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripLeftRest")\n',

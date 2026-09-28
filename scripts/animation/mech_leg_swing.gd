@@ -29,11 +29,11 @@ extends Node
 @export var bob_height: float = 0.3
 ## Body roll toward the planted leg while walking, in degrees, for a 10 m mech.
 ## Sway scales with Mech.height_m (a 20 m mech sways twice as much).
-@export var sway_deg: float = 0.9
+@export var sway_deg: float = 0.63
 ## Body roll while running, in degrees, for a 10 m mech.
-@export var run_sway_deg: float = 1.2
+@export var run_sway_deg: float = 0.84
 ## Body side shift toward the planted leg, in meters, for a 10 m mech.
-@export var sway_shift: float = 0.09
+@export var sway_shift: float = 0.063
 ## Mech height (meters) for the sway values above.
 @export var sway_reference_height: float = 10.0
 
