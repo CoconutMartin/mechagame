@@ -35,9 +35,10 @@ extends Node
 
 @export_group("Shot Kick")
 ## Each shot moves the mech aim this far off the camera crosshair, in a random direction (degrees).
-@export var shot_kick_deg: float = 3.0
-## Spring speed back to the crosshair (swings per second). Lower = slower return.
-@export var shot_recover_frequency: float = 0.6
+## The aim stays there until the next shot.
+@export var shot_kick_deg: float = 1.5
+## Spring speed back to the crosshair (swings per second). 0 = no return (the aim stays off).
+@export var shot_recover_frequency: float = 0.0
 ## Spring damping. 1 = no swing past the crosshair.
 @export_range(0.1, 1.0) var shot_recover_damping: float = 1.0
 @export_group("")

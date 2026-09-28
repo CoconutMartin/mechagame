@@ -30,6 +30,9 @@ extends Node
 ## by a random amount between these values (degrees), then sways back to upright on the same spring.
 @export var skid_side_sway_min_deg: float = 3.0
 @export var skid_side_sway_max_deg: float = 7.0
+## At the end of the short dodge skid the torso sways forward by about this much (degrees),
+## then back to upright on the skid spring.
+@export var dodge_exit_forward_sway_deg: float = 24.0
 ## Forward lean while running, in degrees.
 @export var run_lean_deg: float = 12.0
 ## Forward lean after a landing from landing_lean_full_height or higher, in degrees.
@@ -50,6 +53,7 @@ var _skid_lean := AimSpring.new(0.0)
 var _skid_roll := AimSpring.new(0.0)
 var _skid_roll_target: float = 0.0
 var _was_skidding: bool = false
+var _was_brake_skidding: bool = false
 
 
 func _ready() -> void:
@@ -67,7 +71,13 @@ func _physics_process(delta: float) -> void:
 	if mech.is_skidding and not _was_skidding:
 		# New skid: roll to the skid side by a random amount.
 		_skid_roll_target = mech.skid_side * randf_range(skid_side_sway_min_deg, skid_side_sway_max_deg)
+	if _was_brake_skidding and not mech.is_skidding:
+		# Dodge skid ended: momentum throws the torso forward. For damping 0.3 the peak is about
+		# 0.67 x speed / omega, so this start speed gives a peak near dodge_exit_forward_sway_deg.
+		var omega := TAU * skid_recover_frequency
+		_skid_lean.velocity -= dodge_exit_forward_sway_deg * omega / 0.67
 	_was_skidding = mech.is_skidding
+	_was_brake_skidding = mech.is_brake_skidding
 	var roll_target := _skid_roll_target if mech.is_skidding else 0.0
 	_skid_roll.update(roll_target, skid_recover_frequency, skid_recover_damping, 90.0, delta)
 	var aim := smoothstep(0.0, 1.0, weapon_pose.aim_amount)

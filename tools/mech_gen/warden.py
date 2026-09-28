@@ -3,6 +3,7 @@ Weathered grey plates, head built into the center torso with a red eye, hex shie
 forearm, claw feet, two backpack thrusters with flames.
 Revision 43: missile rack removed, shield 20% larger, rifle held in the right hand only
 (one-hand high ready, like reference image 10).
+Revision 48: shield 20% narrower.
 Revision 47: rifle rest = ready to fire (level at the right hip). Left arm rest like drawing 11:
 upper arm down, forearm forward, shield on the outside along the forearm. Shield up: diagonal
 across the front of the torso (ShieldMount).
@@ -35,8 +36,12 @@ ONE_HAND = {
     "right_pole_rest": (0.4, -1.0, 0.5),
     "right_pole_aim": (0.4, -1.0, 0.5),     # Hip fire: elbow down and back.
     "aim_anchor": (2.8, 6.5, -1.0),         # Hip fire: stock at the right hip.
-}# Shield front area: body 2.1 x 3.8 plus two end triangles 2.1 x 0.7, times the scale squared.
-ONE_HAND["shield_area"] = (2.1 * 3.8 + 2 * 0.5 * 2.1 * 0.7) * SHIELD_SCALE ** 2
+}
+# Shield width multiplier (revision 48: 20% narrower). Length stays the same.
+SHIELD_WIDTH = 0.8
+SW = 2.1 * SHIELD_WIDTH
+# Shield front area: body SW x 3.8 plus two end triangles SW x 0.7, times the scale squared.
+ONE_HAND["shield_area"] = (SW * 3.8 + 2 * 0.5 * SW * 0.7) * SHIELD_SCALE ** 2
 ONE_HAND["shield_scale"] = SHIELD_SCALE
 # Shield up: center in front of the torso, face forward, top toward the right shoulder (40 degrees).
 SHIELD_COVER_POS = (-0.2, 7.2, -2.35)
@@ -126,14 +131,14 @@ def build(m):
     cover = torso_point(SHIELD_COVER_POS, UPPER_BODY_SCALE)
     m.nodes.append(f'[node name="ShieldCover" type="Marker3D" parent="{TO}"]\ntransform = {xf(TT(*cover), (0, 0, SHIELD_COVER_ROLL))}\n')
     SHD = f"{SL}/Shield"
-    m.part("ShieldBody", SHD, "armor", "box", (2.1, 3.8, 0.25), (0, 0, 0))
-    m.part("ShieldTop", SHD, "armor", "prism", (2.1, 0.7, 0.25, 0.5), (0, 2.25, 0))
-    m.part("ShieldBottom", SHD, "armor", "prism", (2.1, 0.7, 0.25, 0.5), (0, -2.25, 0), (0, 0, 180))
+    m.part("ShieldBody", SHD, "armor", "box", (SW, 3.8, 0.25), (0, 0, 0))
+    m.part("ShieldTop", SHD, "armor", "prism", (SW, 0.7, 0.25, 0.5), (0, 2.25, 0))
+    m.part("ShieldBottom", SHD, "armor", "prism", (SW, 0.7, 0.25, 0.5), (0, -2.25, 0), (0, 0, 180))
     m.part("ShieldFrame", SHD, "frame", "box", (0.7, 2.4, 0.4), (0, 0.2, 0.3))
     for i, sign in enumerate((-1, 1)):
-        m.part(f"Chevron{i}", SHD, "mark", "box", (0.16, 0.95, 0.06), (sign * 0.3, -1.25, -0.14), (0, 0, sign * 45))
+        m.part(f"Chevron{i}", SHD, "mark", "box", (0.16, 0.95, 0.06), (sign * 0.3 * SHIELD_WIDTH, -1.25, -0.14), (0, 0, sign * 45))
     for i, (x, y) in enumerate(((-0.75, 1.7), (0.75, 1.7), (-0.75, -1.7), (0.75, -1.7), (0, 2.25))):
-        m.part(f"Bolt{i}", SHD, "frame", "cyl", (0.08, 0.08, 0.06), (x, y, -0.14), (90, 0, 0))
+        m.part(f"Bolt{i}", SHD, "frame", "cyl", (0.08, 0.08, 0.06), (x * SHIELD_WIDTH, y, -0.14), (90, 0, 0))
 
     # ---- Lower body ----
     m.part("Pelvis", L, "frame", "box", (2.4, 1.0, 1.8), (0, 0.2, 0))
