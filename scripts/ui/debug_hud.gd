@@ -17,7 +17,7 @@ func _process(_delta: float) -> void:
 	var state := "GROUND" if mech.is_on_floor() else "AIR"
 	if mech.is_boosting:
 		state += " + BOOST"
-	state += "\nTorso twist: %d deg (limit 80 each side)" % roundi(rad_to_deg(mech.get_torso_twist()))
+	state += "\nTorso twist: %d deg (limit %d left, %d right)" % [roundi(rad_to_deg(mech.get_torso_twist())), roundi(mech.torso_twist_left_deg), roundi(mech.torso_twist_right_deg)]
 	var charge := mech.jump_charge
 	if charge.is_charging:
 		state += "\nJump charge: %d%% (%.1f m)" % [roundi(charge.charge * 100.0), charge.charge * charge.full_height]
@@ -35,7 +35,7 @@ func _process(_delta: float) -> void:
 	if recovery.is_recovering():
 		state += "\nLanding recovery: %.1f s" % recovery.time_left
 	elif not mech.is_boost_ready():
-		state += "\nBoost ready in %d steps (walk 3, run 4)" % mech.get_walk_steps_left()
+		state += "\nBoost ready in %d steps (walk %d, run %d)" % [mech.get_walk_steps_left(), mech.boost_start_steps, mech.run_steps]
 	var energy := mech.energy
 	_info.text = "Speed: %.1f m/s (%d km/h)\nHeight: %.1f m\nWeight: %d t\nState: %s\nEnergy: %d / %d%s\nFPS: %d" % [
 		speed, roundi(speed * 3.6), mech.global_position.y, roundi(mech.mass_tons), state,

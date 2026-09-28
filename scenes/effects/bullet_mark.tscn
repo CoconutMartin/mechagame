@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/effects/bullet_mark.gd" id="mark"]
+
+[sub_resource type="Gradient" id="mark_gradient"]
+offsets = PackedFloat32Array(0, 0.35, 0.7, 1)
+colors = PackedColorArray(0.03, 0.03, 0.03, 1, 0.08, 0.07, 0.06, 0.9, 0.15, 0.13, 0.11, 0.45, 0.2, 0.18, 0.15, 0)
+
+[sub_resource type="GradientTexture2D" id="mark_texture"]
+gradient = SubResource("mark_gradient")
+width = 128
+height = 128
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[node name="BulletMark" type="Decal"]
+size = Vector3(1.4, 1.0, 1.4)
+texture_albedo = SubResource("mark_texture")
+cull_mask = 1
+script = ExtResource("mark")

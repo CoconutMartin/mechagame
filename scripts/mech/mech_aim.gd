@@ -36,10 +36,10 @@ extends Node
 @export_group("Shot Kick")
 ## Each shot moves the mech aim this far off the camera crosshair, in a random direction (degrees).
 ## The aim stays there until the player re-aligns it. There is no automatic return.
-@export var shot_kick_deg: float = 2.0
+@export var shot_kick_deg: float = 3.0
 ## Re-align: move the mouse (the view) in the opposite direction of the kick. The gap closes by
-## this part of the view movement (0.5 = half). Moves in other directions move both together.
-@export_range(0.0, 1.0) var realign_rate: float = 0.5
+## this part of the view movement (0.1 = a tenth). Moves in other directions move both together.
+@export_range(0.0, 1.0) var realign_rate: float = 0.1
 @export_group("")
 
 var camera_target: Vector3 = Vector3.ZERO

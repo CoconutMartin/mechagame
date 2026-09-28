@@ -1214,9 +1214,10 @@ kneel = NodePath("../../MechKneel")
 inertia = NodePath("../InertiaSway")
 dodge = NodePath("../../MechDodge")
 
-[node name="SkidBodyTurn" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "body", "lean_node", "lower_body")]
+[node name="SkidBodyTurn" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "input", "body", "lean_node", "lower_body")]
 script = ExtResource("skidturn")
 mech = NodePath("../..")
+input = NodePath("../../MechInput")
 body = NodePath("../../Visual")
 lean_node = NodePath("../../Visual/Roll")
 lower_body = NodePath("../../Visual/Roll/Upper/Lower")
@@ -1265,7 +1266,7 @@ target = NodePath("..")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
 collision_mask = 1
 shape = SubResource("arm_shape")
-spring_length = 10.3
+spring_length = 7.7
 margin = 0.4
 
 [node name="CameraAds" type="Node" parent="CameraRig" node_paths=PackedStringArray("input", "camera", "spring_arm", "rig", "mech_aim")]
@@ -1279,7 +1280,7 @@ mech_aim = NodePath("../../MechAim")
 
 [node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm" node_paths=PackedStringArray("mech", "footsteps", "dodge")]
 current = true
-fov = 70.0
+fov = 74.0
 far = 2000.0
 script = ExtResource("shake")
 mech = NodePath("../../../..")

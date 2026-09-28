@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/weapons/bullet.gd" id="bullet"]
 [ext_resource type="PackedScene" path="res://scenes/effects/impact_spark.tscn" id="impact"]
 [ext_resource type="Material" path="res://materials/effects/tracer.tres" id="tracer"]
+[ext_resource type="PackedScene" path="res://scenes/effects/bullet_mark.tscn" id="mark"]
 
 [sub_resource type="BoxMesh" id="tracer_mesh"]
 size = Vector3(0.245, 0.245, 10.5)
@@ -10,6 +11,7 @@ size = Vector3(0.245, 0.245, 10.5)
 [node name="Bullet" type="Node3D"]
 script = ExtResource("bullet")
 impact_scene = ExtResource("impact")
+mark_scene = ExtResource("mark")
 
 [node name="Tracer" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5.25)

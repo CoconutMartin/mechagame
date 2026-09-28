@@ -17,17 +17,10 @@ theme_override_font_sizes/font_size = 18
 text = "Speed"
 
 [node name="EnergyBar" type="ProgressBar" parent="."]
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -200.0
-offset_top = -60.0
-offset_right = 200.0
-offset_bottom = -40.0
-grow_horizontal = 2
-grow_vertical = 0
+offset_left = 16.0
+offset_top = 290.0
+offset_right = 316.0
+offset_bottom = 310.0
 value = 100.0
 show_percentage = false
 
@@ -50,20 +43,24 @@ mouse_filter = 2
 script = ExtResource("reticle")
 
 [node name="Controls" type="Label" parent="."]
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = -170.0
-offset_right = 640.0
-offset_bottom = -16.0
-grow_vertical = 0
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -560.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 260.0
+grow_horizontal = 0
+horizontal_alignment = 2
+autowrap_mode = 3
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 15
-text = "W / S walk forward / back   A / D turn legs   Mouse aim torso, camera stays behind the torso (80 each side)
-RMB aim down sight   Space hold to charge jump jets, release to jump (hold W or S to jump that way)
-Ctrl kneel (toggle, W also stands up)   Space double tap: dodge hop (A / D side, W forward, S or none back)   Shift + W: walk 3 steps (skipped if already walking), run 4 steps, then boost
-In the air: W / S = free steering (5 m), Shift + W / S = air boost
+theme_override_font_sizes/font_size = 14
+text = "W / S walk   A / D turn legs   Mouse: aim (camera stays behind the torso)
+RMB fire (hip)   LMB lift shield   V front view
+Space hold: charge jump jets, release to jump (W or S held: jump that way)
+Space double tap: dodge hop (A / D side, W forward, S or none back; forward while boosting)
+Shift + W: walk 2 steps, run 2 steps, then boost   Ctrl kneel
+Re-align the blue ring: move the mouse opposite to the kick
 Yellow dot = camera crosshair   Blue ring = mech aim
 Grid lines: thin = 1 m, thick = 10 m"

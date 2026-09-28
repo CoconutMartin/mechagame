@@ -1,17 +1,21 @@
 class_name ImpactSpark
 extends Node3D
-## Sparks and a short flash where a bullet hits. Frees itself when done.
+## Sparks, a dust puff and a short flash where a bullet hits. Frees itself when done.
 
 @export var sparks: CPUParticles3D
+## Optional dust puff.
+@export var dust: CPUParticles3D
 @export var light: OmniLight3D
 ## Seconds before this node is removed.
-@export var life: float = 0.8
+@export var life: float = 1.4
 
 var _age: float = 0.0
 
 
 func _ready() -> void:
 	sparks.emitting = true
+	if dust != null:
+		dust.emitting = true
 
 
 func _process(delta: float) -> void:

@@ -1,9 +1,12 @@
 class_name Bullet
 extends Node3D
 ## A fast bullet with a glowing tracer. Moves in straight steps and checks each step with a ray,
-## so it cannot pass through thin walls. Makes an impact effect where it hits. No damage yet (Phase 4).
+## so it cannot pass through thin walls. Makes an impact effect (sparks, dust) and a bullet mark
+## where it hits. No damage yet (Phase 4).
 
 @export var impact_scene: PackedScene
+## Mark left on the surface (a decal). Not on mechs.
+@export var mark_scene: PackedScene
 ## Seconds before the bullet disappears when it hits nothing.
 @export var lifetime: float = 2.0
 ## Layers the bullet hits: 1 world, 2 mechs, 3 props.
@@ -29,13 +32,13 @@ func _physics_process(delta: float) -> void:
 	var query := PhysicsRayQueryParameters3D.create(from, to, collision_mask, exclude)
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
-		_impact(hit.position, hit.normal)
+		_impact(hit.position, hit.normal, hit.collider)
 		return
 	global_position = to
 	look_at(to + velocity, Vector3.UP if absf(velocity.normalized().y) < 0.99 else Vector3.FORWARD)
 
 
-func _impact(point: Vector3, normal: Vector3) -> void:
+func _impact(point: Vector3, normal: Vector3, hit_body: Object = null) -> void:
 	if impact_scene != null:
 		var effect := impact_scene.instantiate() as Node3D
 		get_parent().add_child(effect)
@@ -44,4 +47,10 @@ func _impact(point: Vector3, normal: Vector3) -> void:
 			effect.look_at(point + normal, Vector3.UP)
 		else:
 			effect.look_at(point + normal, Vector3.FORWARD)
+	if mark_scene != null and not (hit_body is Mech):
+		var mark := mark_scene.instantiate() as Node3D
+		get_parent().add_child(mark)
+		# The decal projects down its -Y axis: point +Y along the surface normal.
+		var side := normal.cross(Vector3.FORWARD if absf(normal.dot(Vector3.FORWARD)) < 0.99 else Vector3.RIGHT).normalized()
+		mark.global_transform = Transform3D(Basis(side, normal, side.cross(normal)), point)
 	queue_free()

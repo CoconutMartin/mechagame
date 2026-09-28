@@ -2,10 +2,13 @@ class_name SkidBodyTurn
 extends Node
 ## During a boost skid the whole body turns at an angle to the skid side (like a drift),
 ## then turns back to center during the recovery. Visual only: the aim and the camera do not turn.
-## Dodge slide ("Akira slide"): near the end of the braked slide the body swings until the legs are
-## sideways to the slide, and leans back against the motion. Then it turns back during the steps.
+## Akira slide: near the end of every slide (dodge and boost stop) the body swings until the legs
+## are sideways to the slide, and leans back against the motion. Then it turns back during the steps.
+## The swing side follows A / D when one is held (A = left, D = right), otherwise it is random.
 
 @export var mech: Mech
+## Gives A / D for the swing side.
+@export var input: MechInput
 ## The whole mech visual (legs and torso).
 @export var body: Node3D
 ## Optional. Tilts the whole body for the Akira slide lean. A child of body.
@@ -32,10 +35,14 @@ extends Node
 @export var akira_frequency: float = 2.2
 ## The Akira pose stays this long after the slide ends (seconds), then the body turns back.
 @export var akira_hold_time: float = 0.4
+## How fast the body turns back after the hold (1 / seconds). 1.2 = 40% slower than 2.
+@export var akira_recover_speed: float = 1.2
 @export_group("")
 
 ## 0 to 1: how far the Akira swing is. DodgeSlidePose reads it.
 var akira_amount: float = 0.0
+## Swing side: +1 = body turns left, -1 = right. DodgeSlidePose reads it.
+var akira_side: float = 1.0
 
 var _turn := AimSpring.new(0.0)
 var _lean := AimSpring.new(0.0)
@@ -53,6 +60,10 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if mech.is_skidding and not _was_skidding:
 		_target = mech.skid_side * randf_range(turn_min_deg, turn_max_deg)
+		akira_side = 1.0 if randf() < 0.5 else -1.0
+	# A held direction key sets the swing side (A = left, D = right) until the swing is full.
+	if mech.is_skidding and input != null and absf(input.turn_input) > 0.5 and akira_amount < 0.99:
+		akira_side = signf(input.turn_input)
 	_was_skidding = mech.is_skidding
 	var velocity := Vector3(mech.velocity.x, 0.0, mech.velocity.z)
 	if velocity.length() > 0.5:
@@ -60,11 +71,11 @@ func _physics_process(delta: float) -> void:
 	var target := _target if mech.is_skidding else 0.0
 	var frequency_now := frequency
 	_hold_left = maxf(_hold_left - delta, 0.0)
-	if mech.is_brake_skidding:
+	if mech.is_skidding:
 		akira_amount = smoothstep(akira_start, akira_end, mech.get_skid_progress())
 		_hold_left = akira_hold_time if akira_amount > 0.0 else 0.0
 	elif _hold_left <= 0.0:
-		akira_amount = move_toward(akira_amount, 0.0, delta * 2.0)
+		akira_amount = move_toward(akira_amount, 0.0, delta * akira_recover_speed)
 	if akira_amount > 0.0:
 		target = lerpf(target, _get_sideways_turn_deg(), akira_amount)
 		frequency_now = lerpf(frequency, akira_frequency, akira_amount)
@@ -77,7 +88,7 @@ func _physics_process(delta: float) -> void:
 func _get_sideways_turn_deg() -> float:
 	var slide_yaw := atan2(-_slide_direction.x, -_slide_direction.z)
 	var legs_twist := lower_body.rotation.y if lower_body != null else 0.0
-	var facing := slide_yaw + mech.skid_side * PI * 0.5
+	var facing := slide_yaw + akira_side * PI * 0.5
 	var turn := rad_to_deg(wrapf(facing - mech.rotation.y - legs_twist, -PI, PI))
 	return clampf(turn, -akira_max_turn_deg, akira_max_turn_deg)
 
