@@ -5,6 +5,7 @@ extends Node
 ## Only the mouse movement that pushes past the box edge turns the camera.
 ## Each shot kicks the mech aim up and a little to the side (muzzle climb) and makes it shake a
 ## little (jitter). The kick rises over a short time and the ring follows smoothly, so nothing snaps.
+## The aim also shakes while the boosters fire.
 ## The camera does not move. The player pulls the aim back onto the target. No automatic return.
 
 ## Half width of the box (left and right of the crosshair), in degrees.
@@ -16,6 +17,10 @@ extends Node
 @export var kneel: MechKneel
 ## Optional. A lifted shield makes the aim less steady.
 @export var shield: MechShield
+## Optional. The aim shakes while the boosters fire (boost, air boost, jump jets, dodge hop).
+@export var boosters: BoosterFlames
+## Aim shake at full booster thrust, in degrees.
+@export var booster_jitter_deg: float = 0.7
 
 @export_group("Recoil")
 ## Muzzle climb per shot, in degrees.
@@ -69,7 +74,8 @@ func _physics_process(delta: float) -> void:
 	_jitter = maxf(_jitter - jitter_fade * delta, 0.0)
 	# Noise values are mostly within +/- 0.5, so x2 gives about the full jitter size. The noise is
 	# smooth by itself, so it goes on top of the smoothed ring.
-	var shake := Vector2(_noise.get_noise_2d(_time, 0.0), _noise.get_noise_2d(_time, 50.0)) * 2.0 * _jitter
+	var amount := _jitter + _get_booster_jitter()
+	var shake := Vector2(_noise.get_noise_2d(_time, 0.0), _noise.get_noise_2d(_time, 50.0)) * 2.0 * amount
 	_smoothed = _smoothed.lerp(offset, 1.0 - exp(-follow_speed * delta))
 	aim_offset = _smoothed + shake
 
@@ -87,6 +93,13 @@ func kick() -> void:
 	var scale := get_recoil_scale()
 	_pending_kick += Vector2(randf_range(-recoil_side_deg, recoil_side_deg), recoil_up_deg) * scale
 	_jitter = minf(_jitter + jitter_per_shot_deg * scale, max_jitter_deg * scale)
+
+
+## Steady aim shake from the boosters, in degrees (with the stance multiplier).
+func _get_booster_jitter() -> float:
+	if boosters == null:
+		return 0.0
+	return booster_jitter_deg * minf(boosters.thrust, 1.0) * get_recoil_scale()
 
 
 ## Recoil and jitter multiplier from the stance: less while kneeling, more with the shield up.

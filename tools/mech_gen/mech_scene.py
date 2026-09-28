@@ -218,6 +218,9 @@ mech = NodePath("../..")
 flames = [{bf}]
 ''')
     if m.flames:
+        logic = logic.replace('[node name="FreeAim" type="Node" parent="CameraRig" node_paths=PackedStringArray("kneel"',
+                              '[node name="FreeAim" type="Node" parent="CameraRig" node_paths=PackedStringArray("boosters", "kneel"')
+        logic = logic.replace('script = ExtResource("freeaim")\n', 'script = ExtResource("freeaim")\nboosters = NodePath("../../Animation/BoosterFlames")\n')
         fl = ", ".join(f'NodePath("../../{TO}/{f}")' for f in m.flames)
         extra.append(f'''[node name="BoosterFlames" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "dodge", "flames", "light")]
 script = ExtResource("flames")
