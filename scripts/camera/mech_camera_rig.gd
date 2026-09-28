@@ -21,8 +21,8 @@ extends Node3D
 @export var pitch_sensitivity_scale: float = 0.3
 @export var min_pitch_deg: float = -27.5
 ## Aim pitch at the start, in degrees. Negative = down. The camera also tilts down by the crosshair
-## angle (about 23 degrees), so +6 gives a view about 17 degrees down over the head.
-@export var start_pitch_deg: float = 6.0
+## angle (about 21 degrees at FOV 65), so -3.6 gives a camera pitch of -24.5 degrees.
+@export var start_pitch_deg: float = -3.6
 @export var max_pitch_deg: float = 15.0
 
 @export_group("Aim Spring")

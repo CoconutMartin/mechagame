@@ -127,7 +127,7 @@ if __name__ == "__main__":
     rest_rows = xf_aim((-0.5, -0.35, -1.0), (0.0, 1.0, 0.0), stock_rest)
     sniper_anchor = TT(*torso_point((1.0, 8.0, -1.3), K))
     res("data/weapons/beam_sniper.tres", {"display_name": '"Beam Sniper"', "weight_t": 4.0, "hp": 300.0,
-        "kind": 1, "two_handed": "true", "fire_rate": 1.25, "damage": 300.0, "spread_deg": 0.05, "range_m": 1500.0,
+        "kind": 1, "two_handed": "true", "fire_rate": 0.4, "damage": 300.0, "spread_deg": 0.05, "range_m": 1500.0,
         "recoil_up_deg": 3.5, "recoil_side_deg": 0.5, "model_kick_back": 0.5, "model_kick_up_deg": 6.0,
         "shake_trauma": 0.1, "shake_kick": 0.15, "heat_per_use": 34.0, "heat_cooling": 10.0, "overheat_cooling": 25.0,
         "rest_transform": xf_rows(rest_rows, stock_rest), "aim_anchor": v3(sniper_anchor),

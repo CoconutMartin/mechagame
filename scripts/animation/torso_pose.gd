@@ -44,10 +44,17 @@ extends Node
 @export var kneel_lean_deg: float = 8.0
 ## How fast the boost lean changes.
 @export var blend_speed: float = 5.0
+## Torso and shoulder shake at action_shake 1 (the charged beam), in degrees.
+@export var action_shake_deg: float = 1.2
+## Shake speed, in shakes per second.
+@export var action_shake_frequency: float = 11.0
 
 ## Extra torso turn from an action (the blade slash), in degrees. Positive = turn left.
 ## Set every frame by the action.
 var action_twist_deg: float = 0.0
+## 0 to 1: shakes the torso and shoulders (the charged beam). Set every frame by the action.
+var action_shake: float = 0.0
+var _shake_time: float = 0.0
 var _boost: float = 0.0
 var _run: float = 0.0
 ## Skid lean in degrees (positive = back), on a spring.
@@ -94,10 +101,21 @@ func _physics_process(delta: float) -> void:
 	lean += deg_to_rad(inertia.lean_deg)
 	var recovery := dodge.get_recovery_lean()
 	lean += deg_to_rad(recovery.x)
+	var shake := _get_action_shake(delta)
 	torso.rotation = Vector3(
-		-lean,
-		mech.get_torso_twist() - deg_to_rad(aim_twist_deg) * aim + deg_to_rad(inertia.yaw_deg) + deg_to_rad(action_twist_deg),
-		-deg_to_rad(aim_tilt_deg) * aim + deg_to_rad(_skid_roll.value) + deg_to_rad(inertia.roll_deg) + deg_to_rad(recovery.y))
+		-lean + shake.x,
+		mech.get_torso_twist() - deg_to_rad(aim_twist_deg) * aim + deg_to_rad(inertia.yaw_deg) + deg_to_rad(action_twist_deg) + shake.y,
+		-deg_to_rad(aim_tilt_deg) * aim + deg_to_rad(_skid_roll.value) + deg_to_rad(inertia.roll_deg) + deg_to_rad(recovery.y) + shake.z)
+
+
+## Fast shake (radians on X, Y, Z) from action_shake. Sine waves at unrelated speeds look random.
+func _get_action_shake(delta: float) -> Vector3:
+	if action_shake <= 0.0:
+		return Vector3.ZERO
+	_shake_time += delta * action_shake_frequency * TAU
+	var t := _shake_time
+	var size := deg_to_rad(action_shake_deg) * action_shake
+	return Vector3(sin(t) + 0.5 * sin(t * 2.3 + 1.0), 0.6 * sin(t * 1.7 + 2.0), sin(t * 1.3 + 4.0) + 0.4 * sin(t * 3.1)) * size * 0.7
 
 
 ## Start speed for the skid lean spring that makes its lowest point (forward sway) reach peak_deg.

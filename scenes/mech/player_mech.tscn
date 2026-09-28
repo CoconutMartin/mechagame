@@ -30,6 +30,7 @@
 [ext_resource type="Script" path="res://scripts/effects/brake_thrusters.gd" id="brakes"]
 [ext_resource type="Script" path="res://scripts/animation/shield_mount.gd" id="shieldmount"]
 [ext_resource type="Script" path="res://scripts/animation/dodge_slide_pose.gd" id="dodgeslide"]
+[ext_resource type="Script" path="res://scripts/animation/pauldron_follow.gd" id="pauldron"]
 [ext_resource type="Script" path="res://scripts/camera/free_aim.gd" id="freeaim"]
 [ext_resource type="Script" path="res://scripts/mech/mech_assembler.gd" id="assembler"]
 [ext_resource type="Script" path="res://scripts/weapons/weapon_controller.gd" id="weaponctl"]
@@ -271,6 +272,12 @@ pole_direction = Vector3(-1, -1, 0.3)
 upper_length = 2.295
 lower_length = 2.55
 
+[node name="PauldronFollow" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "shoulder_left", "shoulder_right")]
+script = ExtResource("pauldron")
+mech = NodePath("../..")
+shoulder_left = NodePath("../../Visual/Roll/Upper/Torso/ShoulderL")
+shoulder_right = NodePath("../../Visual/Roll/Upper/Torso/ShoulderR")
+
 [node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("target", "free_aim")]
 top_level = true
 script = ExtResource("rig")
@@ -303,7 +310,7 @@ mech_aim = NodePath("../../MechAim")
 
 [node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm" node_paths=PackedStringArray("mech", "footsteps", "dodge")]
 current = true
-fov = 70.0
+fov = 65.0
 far = 2000.0
 script = ExtResource("shake")
 mech = NodePath("../../../..")

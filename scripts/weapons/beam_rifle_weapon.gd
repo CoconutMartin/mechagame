@@ -82,6 +82,8 @@ func _update_discharge(delta: float) -> void:
 		end = hit.position
 	if is_instance_valid(_beam):
 		_beam.show_beam(origin, end)
+	# The shoulders and torso shake while the beam fires (more with more charge).
+	controller.torso_pose.action_shake = _power
 	_tick -= delta
 	if _tick <= 0.0:
 		_tick += tick_time
@@ -96,6 +98,7 @@ func _update_discharge(delta: float) -> void:
 			controller.camera_shake.add_shake(0.03 * kick, 0.02 * kick)
 	if discharge_left <= 0.0:
 		discharge_left = 0.0
+		controller.torso_pose.action_shake = 0.0
 		if is_instance_valid(_beam):
 			_beam.release()
 		_beam = null

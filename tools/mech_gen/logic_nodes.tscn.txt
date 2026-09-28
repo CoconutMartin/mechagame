@@ -139,6 +139,12 @@ pole_direction = Vector3(-1, -1, 0.3)
 upper_length = 2.7
 lower_length = 3.0
 
+[node name="PauldronFollow" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "shoulder_left", "shoulder_right")]
+script = ExtResource("pauldron")
+mech = NodePath("../..")
+shoulder_left = NodePath("../../Visual/Roll/Upper/Torso/ShoulderL")
+shoulder_right = NodePath("../../Visual/Roll/Upper/Torso/ShoulderR")
+
 [node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("target", "free_aim")]
 top_level = true
 script = ExtResource("rig")
@@ -168,7 +174,7 @@ mech_aim = NodePath("../../MechAim")
 
 [node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm" node_paths=PackedStringArray("mech", "footsteps", "dodge")]
 current = true
-fov = 70.0
+fov = 65.0
 far = 2000.0
 script = ExtResource("shake")
 mech = NodePath("../../../..")

@@ -122,10 +122,13 @@ def build(m):
         x = sign * 2.9
         m.part(f"ShoulderJoint{s}", TO, "joint", "cyl", (0.75, 0.75, 0.8), TT(sign * 2.35, 8.3, 0), X())
         m.part(f"ShoulderGear{s}", TO, "frame", "cyl", (0.55, 0.55, 0.9), TT(sign * 2.35, 8.3, 0), X())
-        m.part(f"Pauldron{s}", TO, "armor", "box", (1.8, 1.4, 2.3), TT(x, 9.0, 0))
-        m.part(f"PauldronTop{s}", TO, "armor", "box", (1.4, 0.35, 1.9), TT(x, 9.85, 0))
-        m.part(f"PauldronFront{s}", TO, "armor_dark", "box", (1.6, 1.0, 0.3), TT(x, 8.8, -1.2), (10, 0, 0))
-        m.part(f"PauldronSide{s}", TO, "armor", "box", (0.3, 1.5, 2.1), TT(sign * 3.85, 8.6, 0), (0, 0, -sign * 8))
+        # Pauldron pivot at the shoulder: PauldronFollow turns it with the raised arm.
+        PV = f"{TO}/PauldronPivot{s}"
+        m.node(f"PauldronPivot{s}", TO, pos=TT(x, 8.3, 0), groups=[f"pauldron_{s.lower()}"])
+        m.part(f"Pauldron{s}", PV, "armor", "box", (1.8, 1.4, 2.3), (0, 0.7, 0))
+        m.part(f"PauldronTop{s}", PV, "armor", "box", (1.4, 0.35, 1.9), (0, 1.55, 0))
+        m.part(f"PauldronFront{s}", PV, "armor_dark", "box", (1.6, 1.0, 0.3), (0, 0.5, -1.2), (10, 0, 0))
+        m.part(f"PauldronSide{s}", PV, "armor", "box", (0.3, 1.5, 2.1), (sign * 0.95, 0.3, 0), (0, 0, -sign * 8))
 
     # ---- Arms ----
     for s, sign in SIDES:

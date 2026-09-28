@@ -74,7 +74,7 @@ func _physics_process(delta: float) -> void:
 	var frequency_now := frequency
 	_hold_left = maxf(_hold_left - delta, 0.0)
 	if mech.is_skidding:
-		akira_amount = smoothstep(akira_start, akira_end, mech.get_skid_progress())
+		akira_amount = smoothstep(akira_start, akira_end, mech.get_skid_progress()) if mech.skid_akira else 0.0
 		_hold_left = akira_hold_time if akira_amount > 0.0 else 0.0
 	elif _hold_left <= 0.0:
 		akira_amount = move_toward(akira_amount, 0.0, delta * akira_recover_speed)

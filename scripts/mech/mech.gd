@@ -154,6 +154,8 @@ var _lunge_left: float = 0.0
 var is_brake_skidding: bool = false
 ## Random side of the current skid: +1 = left, -1 = right. Set when a skid starts.
 var skid_side: float = 1.0
+## False = this skid ends without the Akira slide (back dodge).
+var skid_akira: bool = true
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _was_on_floor: bool = true
@@ -251,7 +253,8 @@ func start_lunge(direction: Vector3, speed: float, distance: float) -> void:
 ## slowdown: skid slowdown in m/s per second (0 = skid_deceleration).
 ## boost_brake: true when small thrusters help to brake (BrakeThrusters shows their fire).
 func start_skid(stop_strides: PackedFloat32Array = PackedFloat32Array(), slowdown: float = 0.0,
-		boost_brake: bool = false) -> void:
+		boost_brake: bool = false, akira: bool = true) -> void:
+	skid_akira = akira
 	_skid_stop_plan = stop_strides if not stop_strides.is_empty() else skid_stop_strides
 	_skid_slowdown = slowdown if slowdown > 0.0 else skid_deceleration
 	is_brake_skidding = boost_brake

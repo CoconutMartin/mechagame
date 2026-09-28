@@ -194,7 +194,8 @@ func _on_landed(_fall_speed: float) -> void:
 	var distance := boost_skid_distance if _from_boost else skid_distance
 	var slowdown := maxf((speed * speed - end_speed * end_speed) / (2.0 * distance), 0.5)
 	mech.cancel_landing_steps()
-	mech.start_skid(stop_strides, slowdown, true)
+	# No Akira slide after a back dodge.
+	mech.start_skid(stop_strides, slowdown, true, _local_direction.z < 0.5)
 	_recover_left = recovery_time
 	# Start the recovery spring from the full landing pose.
 	_recover.value = 1.0
