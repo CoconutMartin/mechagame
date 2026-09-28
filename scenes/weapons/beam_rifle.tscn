@@ -1,0 +1,162 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://materials/rx78/rifle.tres" id="rifle"]
+[ext_resource type="Material" path="res://materials/rx78/dark.tres" id="dark"]
+[ext_resource type="Material" path="res://materials/rx78/lens.tres" id="lens"]
+
+[sub_resource type="BoxMesh" id="m0"]
+size = Vector3(0.3, 0.6, 1.2)
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(0.36, 0.78, 0.2)
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(0.5, 0.8, 3.2)
+
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(0.42, 0.12, 2.6)
+
+[sub_resource type="BoxMesh" id="m4"]
+size = Vector3(0.3, 0.7, 0.35)
+
+[sub_resource type="BoxMesh" id="m5"]
+size = Vector3(0.12, 0.08, 0.7)
+
+[sub_resource type="BoxMesh" id="m6"]
+size = Vector3(0.38, 0.5, 0.8)
+
+[sub_resource type="BoxMesh" id="m7"]
+size = Vector3(0.25, 0.7, 0.3)
+
+[sub_resource type="BoxMesh" id="m8"]
+size = Vector3(0.3, 0.45, 1.6)
+
+[sub_resource type="BoxMesh" id="m9"]
+size = Vector3(0.34, 0.5, 0.2)
+
+[sub_resource type="CylinderMesh" id="m10"]
+top_radius = 0.24
+bottom_radius = 0.24
+height = 0.08
+radial_segments = 16
+rings = 1
+
+[sub_resource type="CylinderMesh" id="m11"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 0.06
+radial_segments = 16
+rings = 1
+
+[sub_resource type="BoxMesh" id="m12"]
+size = Vector3(0.3, 0.4, 2.4)
+
+[sub_resource type="BoxMesh" id="m13"]
+size = Vector3(0.18, 0.16, 2)
+
+[sub_resource type="BoxMesh" id="m14"]
+size = Vector3(0.42, 0.52, 0.4)
+
+[sub_resource type="CylinderMesh" id="m15"]
+top_radius = 0.12
+bottom_radius = 0.14
+height = 0.3
+radial_segments = 16
+rings = 1
+
+[node name="BeamRifle" type="Node3D"]
+
+[node name="Stock" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, -0.6)
+mesh = SubResource("m0")
+surface_material_override/0 = ExtResource("rifle")
+
+[node name="StockPad" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+mesh = SubResource("m1")
+surface_material_override/0 = ExtResource("dark")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -2.8)
+mesh = SubResource("m2")
+surface_material_override/0 = ExtResource("rifle")
+
+[node name="BodyTop" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -2.9)
+mesh = SubResource("m3")
+surface_material_override/0 = ExtResource("dark")
+
+[node name="Grip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.93969, 0.34202, 0, -0.34202, 0.93969, 0, -0.6, -1.65)
+mesh = SubResource("m4")
+surface_material_override/0 = ExtResource("dark")
+
+[node name="TriggerGuard" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.55, -2.1)
+mesh = SubResource("m5")
+surface_material_override/0 = ExtResource("dark")
+
+[node name="EnergyCap" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.55, -3)
+mesh = SubResource("m6")
+surface_material_override/0 = ExtResource("rifle")
+
+[node name="ForeGrip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.98481, 0.17365, 0, -0.17365, 0.98481, 0, -0.6, -4.6)
+mesh = SubResource("m7")
+surface_material_override/0 = ExtResource("dark")
+
+[node name="Scope" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.78, -2.6)
+mesh = SubResource("m8")
+surface_material_override/0 = ExtResource("rifle")
+
+[node name="ScopeFront" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.78, -3.45)
+mesh = SubResource("m9")
+surface_material_override/0 = ExtResource("dark")
+
+[node name="ScopeLens" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.2, 0.8, -2.2)
+mesh = SubResource("m10")
+surface_material_override/0 = ExtResource("lens")
+
+[node name="ScopeLensRim" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0.17, 0.8, -2.2)
+mesh = SubResource("m11")
+surface_material_override/0 = ExtResource("dark")
+
+[node name="Barrel" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -5.6)
+mesh = SubResource("m12")
+surface_material_override/0 = ExtResource("rifle")
+
+[node name="BarrelRail" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, -5.4)
+mesh = SubResource("m13")
+surface_material_override/0 = ExtResource("dark")
+
+[node name="MuzzleBlock" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -6.8)
+mesh = SubResource("m14")
+surface_material_override/0 = ExtResource("dark")
+
+[node name="MuzzleTip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.05, -7.1)
+mesh = SubResource("m15")
+surface_material_override/0 = ExtResource("rifle")
+
+[node name="GripRight" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.55, -1.65)
+
+[node name="GripLeft" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.45, -5)
+
+[node name="GripLeftRest" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.45, -4.6)
+
+[node name="GripLeftAim" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.45, -4.2)
+
+[node name="Muzzle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -7.3)

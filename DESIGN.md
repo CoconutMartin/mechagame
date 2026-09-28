@@ -160,6 +160,8 @@ All of this logic lives in one function so it is easy to tune.
   - Crouch: 20° hip bend and 40° knee bend (inside knee angle 140°) while boosting on the ground. Landing crouch 8° (short fall) to 40° (9 m fall or higher).
   - `MechKneel`: Ctrl toggles the kneel pose (0.13 s down or up), body drops 1.74 m.
   - Walk: forward leg knee bend 60° and hip lift 20.4°. Run: hip swing 40°, knee bend 70°, hip lift 20°.
+- Player mech look (revision 41): RX-78-2 Gundam style, built from box, cylinder, sphere, and prism shapes. White armor, blue chest with yellow vents, red abdomen, red feet, yellow V-fin, green eyes, backpack with two beam saber handles. Red shield on the outer side of the left forearm. Beam rifle (`beam_rifle.tscn`, 7.3 m) in the hands. Colors are in `materials/rx78/`. This is a placeholder until Phase 8. The Gundam design belongs to Sunrise and Bandai, so a public release needs an original design.
+  - `SkirtFollow`: front waist plates turn with the thigh that swings forward (80%). The rear plate turns with the thigh that swings back.
 - Mech visual tree: `Visual > Roll > Upper` (Roll is free for future whole-body moves; the dodge roll was removed). `Visual > Roll > Upper > Torso` (pivot at the waist, 5.4 m) holds the core, head, arms, and rifle. `Upper > Lower` holds the pelvis and legs.
 - Phase 8: complete animation on rigged .glb models. Walk cycles for biped, reverse-joint, tank, and quad legs. Leg IK so feet stay on slopes and steps. Torso twist toward the aim. Weapon recoil. Boost and jump jet poses.
 
@@ -202,7 +204,7 @@ One active skill slot (example: Overdrive, +30% speed for 8 seconds).
 
 ```
 data/               Part, weapon, mod, plate, skill resources (.tres). From Phase 2.
-materials/          Shared materials.
+materials/          Shared materials. rx78/ holds the player mech colors.
 shaders/            greybox_grid.gdshader (1 m and 10 m grid lines).
 scenes/levels/      test_map.tscn (main scene).
 scenes/mech/        player_mech.tscn.
@@ -211,8 +213,8 @@ scenes/ui/          debug_hud.tscn.
 scripts/mech/       mech.gd (movement), mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd,
                     mech_jump_charge.gd, mech_air_steer.gd, mech_landing_recovery.gd, mech_aim.gd (camera target and real mech aim with jitter).
 scripts/animation/  mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd, torso_pose.gd,
-                    inertia_sway.gd, skid_body_turn.gd (placeholder animation).
-scenes/weapons/     long_rifle.tscn (markers: GripRight, GripLeft, Muzzle).
+                    inertia_sway.gd, skid_body_turn.gd, skirt_follow.gd (placeholder animation).
+scenes/weapons/     beam_rifle.tscn (player weapon), long_rifle.tscn (old box rifle). Markers: GripRight, GripLeft, GripLeftRest, GripLeftAim, Muzzle.
 scripts/camera/     mech_camera_rig.gd (follow and mouse look), aim_spring.gd (aim overshoot), camera_shake.gd, camera_ads.gd (aim down sight zoom).
 scripts/world/      greybox_block.gd (box with collision, set size in Inspector).
 scripts/ui/         debug_hud.gd, aim_reticle.gd.
@@ -279,6 +281,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 38: dodge 50% faster (1.7 s). Spring forward out of the roll.
 - Phase 1 revision 39: dodge recovery fix: smooth height plan (no pop and drop), inertia sway paused during the dodge, recovery crouch and lean with one spring back to upright.
 - Phase 1 revision 40: dodge roll replaced by a directional dodge hop (11.9 m, 50% of the roll).
+- Phase 1 revision 41: player mech model replaced with an RX-78-2 Gundam style placeholder (same skeleton, same animation). Beam rifle and shield. Waist skirts follow the thighs.
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.
