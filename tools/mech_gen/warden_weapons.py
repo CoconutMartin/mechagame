@@ -56,7 +56,8 @@ def sniper(part, marker):
     part("Barrel", "rifle", "box", (0.34, 0.4, 3.2), (0, 0.05, -5.2))
     for i, z in enumerate((-4.2, -5.0, -5.8)):
         part(f"Coil{i}", "dark", "cyl", (0.3, 0.3, 0.25), (0, 0.05, z), (90, 0, 0))
-    part("Emitter", "beam_core", "cyl", (0.16, 0.2, 0.3), (0, 0.05, -6.95), (90, 0, 0))
+    # Emitter: a flat lens set into the barrel face (it lights up with the charge, BeamRifleWeapon).
+    part("Emitter", "dark", "cyl", (0.14, 0.14, 0.04), (0, 0.05, -6.81), (90, 0, 0))
     marker("GripRight", (0, -0.5, -1.4))
     marker("GripLeft", (0, -0.45, -2.9))
     marker("GripLeftRest", (0, -0.45, -2.9))
@@ -172,7 +173,7 @@ if __name__ == "__main__":
                                 grip=(0, 0, 0), torso_scale=K)
     res("data/weapons/pile_bunker.tres", {"display_name": '"Pile Bunker"', "weight_t": 2.5, "hp": 300.0,
         "kind": 5, "fire_rate": 0.3333, "damage": 900.0, "magazine": 3, "reload_time": 5.0,
-        "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,
+        "lunge_distance": 16.0, "lunge_speed": 22.0, "lunge_energy": 20.0,
         "shake_trauma": 0.45, "shake_kick": 0.6, "recoil_up_deg": 2.0, "recoil_side_deg": 1.0,
         "rest_transform": bunker_rest, "aim_anchor": v3(anchor),
         "right_pole_rest": v3((0.6, -1.0, 0.3)), "right_pole_aim": v3((0.6, -1.0, 0.4))},

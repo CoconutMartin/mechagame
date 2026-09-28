@@ -26,6 +26,8 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 @export var charge_shake_max: float = 0.22
 ## Shake while the beam fires (screen, aim and torso) x this value. 0.7 = 30% less (revision 63).
 @export var discharge_shake: float = 0.7
+## Screen shake when the charge is released x this value. 0.5 = 50% less (revision 64).
+@export var release_shake: float = 0.5
 ## Extra screen shake and aim jitter at full charge = weapon data values x this value.
 @export var full_charge_kick: float = 2.0
 
@@ -40,6 +42,16 @@ var _beam: BeamShot = null
 var _last_mark: float = 0.0
 
 @onready var _muzzle: Node3D = $Muzzle
+@onready var _glow := ChargeGlow.new()
+
+
+func _ready() -> void:
+	# The barrel coils and the emitter lens light up with the charge.
+	add_child(_glow)
+	var coils: Array[MeshInstance3D] = []
+	for i in 3:
+		coils.append(get_node("Coil%d" % i) as MeshInstance3D)
+	_glow.setup(coils, $Emitter as MeshInstance3D, _muzzle)
 
 
 ## True while charging or firing (WeaponController keeps it active and raised).
@@ -48,6 +60,7 @@ func is_busy() -> bool:
 
 
 func _update(delta: float) -> void:
+	_glow.level = 1.0 if discharge_left > 0.0 else charge
 	if discharge_left > 0.0:
 		_update_discharge(delta)
 		return
@@ -74,7 +87,7 @@ func _start_discharge() -> void:
 	var kick := lerpf(1.0, full_charge_kick, charge)
 	controller.mech_aim.kick_aim(data.recoil_up_deg * kick * 0.5, data.recoil_side_deg * kick * 0.5, kick)
 	if controller.camera_shake != null:
-		controller.camera_shake.add_shake(data.shake_trauma * kick, data.shake_kick * kick)
+		controller.camera_shake.add_shake(data.shake_trauma * kick * release_shake, data.shake_kick * kick * release_shake)
 	fired.emit()
 
 

@@ -116,6 +116,15 @@ knee_right = NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR")
 upper_body = NodePath("../../Visual/Roll/Upper")
 skid_turn = NodePath("../SkidBodyTurn")
 
+[node name="LungeLeapPose" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "hip_left", "hip_right", "knee_left", "knee_right", "upper_body")]
+script = ExtResource("lungeleap")
+mech = NodePath("../..")
+hip_left = NodePath("../../Visual/Roll/Upper/Lower/HipL")
+hip_right = NodePath("../../Visual/Roll/Upper/Lower/HipR")
+knee_left = NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL")
+knee_right = NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR")
+upper_body = NodePath("../../Visual/Roll/Upper")
+
 [node name="SkidDust" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "feet")]
 script = ExtResource("skiddust")
 mech = NodePath("../..")

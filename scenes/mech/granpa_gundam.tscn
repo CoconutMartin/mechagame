@@ -31,6 +31,7 @@
 [ext_resource type="Script" path="res://scripts/animation/shield_mount.gd" id="shieldmount"]
 [ext_resource type="Script" path="res://scripts/animation/dodge_slide_pose.gd" id="dodgeslide"]
 [ext_resource type="Script" path="res://scripts/animation/pauldron_follow.gd" id="pauldron"]
+[ext_resource type="Script" path="res://scripts/animation/lunge_leap_pose.gd" id="lungeleap"]
 [ext_resource type="Script" path="res://scripts/camera/free_aim.gd" id="freeaim"]
 [ext_resource type="Script" path="res://scripts/mech/mech_assembler.gd" id="assembler"]
 [ext_resource type="Script" path="res://scripts/weapons/weapon_controller.gd" id="weaponctl"]
@@ -1090,6 +1091,15 @@ knee_left = NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL")
 knee_right = NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR")
 upper_body = NodePath("../../Visual/Roll/Upper")
 skid_turn = NodePath("../SkidBodyTurn")
+
+[node name="LungeLeapPose" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "hip_left", "hip_right", "knee_left", "knee_right", "upper_body")]
+script = ExtResource("lungeleap")
+mech = NodePath("../..")
+hip_left = NodePath("../../Visual/Roll/Upper/Lower/HipL")
+hip_right = NodePath("../../Visual/Roll/Upper/Lower/HipR")
+knee_left = NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL")
+knee_right = NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR")
+upper_body = NodePath("../../Visual/Roll/Upper")
 
 [node name="SkidDust" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "feet")]
 script = ExtResource("skiddust")

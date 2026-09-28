@@ -61,6 +61,9 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export_flags_3d_physics var collision_mask: int = 7
 
 @export_group("Charge")
+## The charge is shown as this many big leaps (LungeLeapPose), with a camera kick at each landing.
+@export var charge_leaps: int = 2
+@export var leap_land_shake: float = 0.12
 ## Stop this far in front of the target (target center), in meters.
 @export var stop_distance: float = 8.0
 ## Targets inside this cone around the aim can pull the charge, in degrees.
@@ -113,7 +116,14 @@ func _attach_to_forearm() -> void:
 		return
 	_mount.reparent(forearm, false)
 	_mount.transform = Transform3D(Basis.from_euler(mount_rotation_deg * PI / 180.0), mount_position)
+	var leap_pose := controller.mech.get_node_or_null("Animation/LungeLeapPose") as LungeLeapPose
+	if leap_pose != null:
+		leap_pose.leap_landed.connect(_on_leap_landed)
 
+
+func _on_leap_landed() -> void:
+	if (state == State.CHARGE or state == State.WINDUP) and controller.camera_shake != null:
+		controller.camera_shake.add_shake(leap_land_shake * 0.5, leap_land_shake)
 
 func _update(delta: float) -> void:
 	_attach_to_forearm()
@@ -189,7 +199,7 @@ func _start() -> void:
 		to_target.y = 0.0
 		direction = to_target.normalized()
 		distance = clampf(to_target.length() - stop_distance, 0.0, data.lunge_distance)
-	mech.start_lunge(direction, data.lunge_speed, distance)
+	mech.start_lunge(direction, data.lunge_speed, distance, charge_leaps)
 	# One punch per fire_rate wait, hit or miss.
 	_cooldown = 1.0 / maxf(data.fire_rate, 0.01)
 	has_fired = false
