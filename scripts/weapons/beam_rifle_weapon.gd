@@ -26,6 +26,8 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 @export var charge_shake_max: float = 0.22
 ## Shake while the beam fires (screen, aim and torso) x this value. 0.7 = 30% less (revision 63).
 @export var discharge_shake: float = 0.7
+## Torso and shoulder shake while the beam fires x this value. 0.6 = 40% less (revision 66).
+@export var torso_shake: float = 0.6
 ## Screen shake when the charge is released x this value. 0.075 = 85% less than 0.5 (revision 65).
 @export var release_shake: float = 0.075
 ## Extra screen shake and aim jitter at full charge = weapon data values x this value.
@@ -103,7 +105,7 @@ func _update_discharge(delta: float) -> void:
 	if is_instance_valid(_beam):
 		_beam.show_beam(origin, end)
 	# The shoulders and torso shake while the beam fires (more with more charge).
-	controller.torso_pose.action_shake = _power * discharge_shake
+	controller.torso_pose.action_shake = _power * discharge_shake * torso_shake
 	_tick -= delta
 	if _tick <= 0.0:
 		_tick += tick_time

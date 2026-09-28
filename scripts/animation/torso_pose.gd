@@ -72,7 +72,8 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var boosting_on_ground := mech.is_boosting and mech.is_on_floor()
+	# A melee charge (lunge) copies the ground boost lean.
+	var boosting_on_ground := (mech.is_boosting or mech.is_lunging) and mech.is_on_floor()
 	var blend := 1.0 - exp(-blend_speed * delta)
 	_boost = lerpf(_boost, 1.0 if boosting_on_ground else 0.0, blend)
 	_run = lerpf(_run, 1.0 if mech.is_running else 0.0, blend)
