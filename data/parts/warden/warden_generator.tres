@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="GeneratorPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/generator_part.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Warden Generator"
+weight_t = 3.0
+hp = 200.0
+energy_output = 17.5
+recharge_delay = 2.0

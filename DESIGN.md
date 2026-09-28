@@ -9,7 +9,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | Phase | Content | Status |
 |---|---|---|
 | 1 | Mech controller and third-person camera on a test map | Done |
-| 2 | Part resources, sockets, assembler, stat calculator, weight-to-speed formula, debug HUD | Not started |
+| 2 | Part resources, sockets, assembler, stat calculator, weight-to-speed formula, debug HUD | Done |
 | 3 | Weapons: guns, lock-on missiles, sniper zoom, melee blade, energy use | Not started |
 | 4 | Per-part HP, hitboxes, destruction, target dummies, enemy AI, greybox urban map with destructible props | Not started |
 | 5 | Garage screen: swap parts, add plates, live stat preview. Graphics settings menu (low, medium, high) | Not started |
@@ -209,6 +209,18 @@ Name, callsign, portrait, skill tree.
 Skills give passive bonuses (example: faster lock-on, less recoil, more boost energy).
 One active skill slot (example: Overdrive, +30% speed for 8 seconds).
 
+## Part system (Phase 2)
+
+- Data classes (`scripts/data/`): `PartData` (name, weight, HP, model scene) with `HeadPart`, `CorePart`, `ArmPart`, `LegPart` (leg type, load capacity, base speed, jump, leg turn speeds), `BackUnitPart`, `BoosterPart` (thrust, boost speed multiplier, energy use), `GeneratorPart` (energy output, recharge delay), `FcsPart`, `WeaponData`. Also `PlateData` (slot, HP, weight), `ModData` (stat, percent) and `Loadout` (all parts, weapons, plates, mods).
+- Data files: `data/parts/warden/`, `data/weapons/`, `data/plates/`, `data/mods/`, `data/loadouts/warden.tres`.
+- Sockets: the frame nodes in the mech scene (Torso, ShoulderL/R, ElbowL/R, Lower, HipL/R, KneeL/R). A part scene has one child group per socket, named like the socket. `MechAssembler` (first node after the collision) moves each group's children onto the socket when the mech starts, then runs `StatCalculator.compute()` and `MechStatApplier.apply()`.
+- Logic nodes find part nodes by group: `booster_flame`, `booster_light` (BoosterFlames), `brake_flame` (BrakeThrusters), `foot` (SkidDust).
+- `StatCalculator.weight_factor(load_ratio)` holds the weight formula. Walk speed = legs base speed x factor. Boost acceleration = booster thrust / total weight. Torso and leg turn speeds x factor. Energy from the core (capacity) and generator (output, delay). Recoil from the right arm. Part HP = part HP + plates in its slot. Mods change these by percent.
+- Warden parts (60 t total): head 4 t / 400 HP, core 18 t / 1600 HP, arms 5 t / 600 HP each, legs 16 t / 1400 HP (load capacity 80 t, base speed 11.742 m/s), booster 3 t (thrust 1200), generator 3 t, FCS 1 t, heavy rifle 2 t, hex shield 3 t. Load ratio 0.75, factor 0.775, walk 9.1 m/s, boost acceleration 20: the same feel as Phase 1.
+- Weapons (rifle, shield) stay in the mech scene until Phase 3 makes them parts. Their weight counts already.
+- Mech height stays 10 m (one frame). It will come from the frame or the parts when other frames exist.
+- Debug HUD build panel: total weight / load capacity, load ratio, walk and boost speed, boost acceleration, turn speeds, jump, HP of each part.
+
 ## Architecture rules
 
 - Parts, weapons, mods, plates, and skills are Godot Resources (.tres) in `/data`. New parts need no code changes.
@@ -224,15 +236,17 @@ One active skill slot (example: Overdrive, +30% speed for 8 seconds).
 ## Project layout
 
 ```
-data/               Part, weapon, mod, plate, skill resources (.tres). From Phase 2.
+data/               Part, weapon, mod, plate and loadout resources (.tres): parts/warden, weapons, plates, mods, loadouts.
 materials/          Shared materials. warden/ and rx78/ hold the mech colors.
 shaders/            greybox_grid.gdshader (1 m and 10 m grid lines).
 scenes/levels/      test_map.tscn (main scene).
-scenes/mech/        player_mech.tscn (Warden), granpa_gundam.tscn (saved RX-78-2 style model).
+scenes/parts/warden/ Warden part models (head, core, arm_l, arm_r, legs, booster).
+scenes/mech/        player_mech.tscn (Warden frame, weapons and logic), granpa_gundam.tscn (saved RX-78-2 style model).
 tools/mech_gen/     Python generators for the mech models and rifles (Godot ignores this folder).
 scenes/props/       greybox_block, car, lamppost, person, box_truck (8 m), semi_truck (16.5 m).
 scenes/ui/          debug_hud.tscn.
-scripts/mech/       mech.gd (movement), mech_shield.gd (shield lift and speed limit), mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd,
+scripts/data/       Part, plate, mod, loadout resource classes, mech_stats.gd, stat_calculator.gd.
+scripts/mech/       mech.gd (movement), mech_shield.gd (shield lift and speed limit), mech_assembler.gd, mech_stat_applier.gd, mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd,
                     mech_jump_charge.gd, mech_air_steer.gd, mech_landing_recovery.gd, mech_aim.gd (camera target and real mech aim with jitter).
 scripts/animation/  shield_pose.gd, shield_mount.gd, dodge_slide_pose.gd, mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd, torso_pose.gd,
                     inertia_sway.gd, skid_body_turn.gd, skirt_follow.gd (placeholder animation).
@@ -242,7 +256,7 @@ scripts/camera/     mech_camera_rig.gd (follow and mouse look), free_aim.gd (fre
 scripts/world/      greybox_block.gd (box with collision, set size in Inspector).
 scripts/ui/         debug_hud.gd, aim_reticle.gd.
 scripts/effects/    skid_dust.gd (dust while skidding), brake_thrusters.gd, booster_flames.gd, muzzle_flash.gd, impact_spark.gd.
-scripts/core/       mouse_capture.gd.
+scripts/core/       mouse_capture.gd, group_nodes.gd.
 ```
 
 ### Phase 1 structure
@@ -305,6 +319,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 39: dodge recovery fix: smooth height plan (no pop and drop), inertia sway paused during the dodge, recovery crouch and lean with one spring back to upright.
 - Phase 1 revision 40: dodge roll replaced by a directional dodge hop (11.9 m, 50% of the roll).
 - Phase 1 revision 41: player mech model replaced with an RX-78-2 Gundam style placeholder (same skeleton, same animation). Beam rifle and shield. Waist skirts follow the thighs.
+- Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).
 - Phase 1 revision 57: Akira swing 65% smaller (19°, lean 2.8°). Recoil and jitter 70% less kneeling, 60% more with the shield up.
 - Phase 1 revision 56: free aim smoothing and recoil jitter. Box ±4° x ±3°. Recoil 2° up, up to 1° side.

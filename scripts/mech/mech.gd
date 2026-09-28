@@ -24,7 +24,7 @@ signal landed(fall_speed: float)
 ## Optional. While the shield is up the mech moves slower (MechShield.get_speed_limit).
 @export var shield: MechShield
 
-## Total mech weight in tons. Phase 2 computes this from parts.
+## Total mech weight in tons. MechAssembler sets it from the loadout.
 @export var mass_tons: float = 60.0
 ## Mech height in meters. Sway and footstep shake scale with it (10 m = base). Phase 2 computes it from parts.
 @export var height_m: float = 10.0
@@ -131,6 +131,8 @@ enum BoostExit { SKID, LEAP }
 @export var gravity_scale: float = 2.2
 @export var max_fall_speed: float = 60.0
 
+## Final stats from the loadout (set by MechAssembler). Null when the mech has no loadout.
+var stats: MechStats
 var is_boosting: bool = false
 ## True while the mech runs between the walk steps and the boost (Shift held).
 var is_running: bool = false

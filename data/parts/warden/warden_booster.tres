@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BoosterPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/booster_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/parts/warden/warden_booster.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Warden Booster"
+weight_t = 3.0
+hp = 200.0
+thrust = 1200.0
+boost_speed_multiplier = 1.5
+energy_per_second = 30.0
+scene = ExtResource("scene")

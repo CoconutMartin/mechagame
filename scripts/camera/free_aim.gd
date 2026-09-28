@@ -46,6 +46,9 @@ extends Node
 ## How fast the ring follows the mouse and the kicks (1 / seconds). Lower = smoother, slower.
 @export var follow_speed: float = 14.0
 
+## Recoil multiplier from the arm (ArmPart.recoil_control) and mods. Set by MechStatApplier.
+var recoil_multiplier: float = 1.0
+
 ## Control position of the mech aim from the camera crosshair, in degrees: x = yaw (positive =
 ## left), y = pitch (positive = up). The mouse and the kicks move it. Stays inside the box.
 var offset: Vector2 = Vector2.ZERO
@@ -104,7 +107,7 @@ func _get_booster_jitter() -> float:
 
 ## Recoil and jitter multiplier from the stance: less while kneeling, more with the shield up.
 func get_recoil_scale() -> float:
-	var scale := 1.0
+	var scale := recoil_multiplier
 	if kneel != null:
 		scale *= lerpf(1.0, kneel_multiplier, kneel.amount)
 	if shield != null:

@@ -32,6 +32,16 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 text = "ENERGY"
 
+[node name="Build" type="Label" parent="."]
+offset_left = 16.0
+offset_top = 324.0
+offset_right = 420.0
+offset_bottom = 520.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 15
+text = "Build"
+
 [node name="AimReticle" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 15

@@ -13,6 +13,8 @@ var _emitters: Array[CPUParticles3D] = []
 
 
 func _ready() -> void:
+	if feet.is_empty():
+		feet = GroupNodes.find(mech, &"foot")  # Feet from the leg part model.
 	for foot in feet:
 		var emitter := _make_emitter()
 		foot.add_child(emitter)

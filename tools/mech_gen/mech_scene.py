@@ -1,8 +1,12 @@
-"""Writes a player mech scene: the shared skeleton and logic nodes plus a model's meshes.
+"""Writes a player mech scene: the shared skeleton (frame) and logic nodes plus a model's meshes.
 
 A model module calls write_scene() with a build(m) function. build() adds meshes to the
 skeleton nodes with m.part() and m.node(). Run from the project root, for example:
     python3 tools/mech_gen/warden.py
+
+Part scenes (Phase 2): set m.current_part = "<id>" in build() and the next meshes go to that part
+scene instead of the mech scene. A part scene has one child group per socket (frame node name,
+for example Torso or KneeL). MechAssembler moves the group children onto the frame at run time.
 """
 import os, sys
 from shapes import Builder, xf, xf_aim, xf_rows, apply_rows
@@ -26,7 +30,35 @@ SCRIPTS = [("mech/mech","mech"),("mech/mech_input","input"),("mech/mech_energy",
  ("weapons/weapon_recoil","recoil"),("effects/booster_flames","flames"),("animation/shield_pose","shieldpose"),
  ("mech/mech_shield","shield"),("effects/brake_thrusters","brakes"),("animation/shield_mount","shieldmount"),
  ("animation/dodge_slide_pose","dodgeslide"),
- ("camera/free_aim","freeaim")]
+ ("camera/free_aim","freeaim"),("mech/mech_assembler","assembler")]
+
+
+# Frame nodes that part groups attach to, with their paths in the mech scene.
+SOCKETS = {"Torso": TO, "Lower": L}
+for _s in ("L", "R"):
+    SOCKETS[f"Shoulder{_s}"] = f"{TO}/Shoulder{_s}"
+    SOCKETS[f"Elbow{_s}"] = f"{TO}/Shoulder{_s}/Elbow{_s}"
+    SOCKETS[f"Hip{_s}"] = f"{L}/Hip{_s}"
+    SOCKETS[f"Knee{_s}"] = f"{L}/Hip{_s}/Knee{_s}"
+
+
+def socket_path(parent):
+    """Mech scene parent path to a part scene path (socket group name plus the rest)."""
+    best = None
+    for name, path in SOCKETS.items():
+        if parent == path or parent.startswith(path + "/"):
+            if best is None or len(path) > len(SOCKETS[best]):
+                best = name
+    assert best is not None, f"no socket for {parent}"
+    return best + parent[len(SOCKETS[best]):]
+
+
+class PartScene:
+    """Nodes of one part scene (its own meshes and node list)."""
+    def __init__(self):
+        self.b = Builder()
+        self.nodes = []
+        self.groups = []
 
 
 def TT(x, y, z):
@@ -43,6 +75,28 @@ class Model:
         self.flames = []     # Booster flame node names on the torso.
         self.brake_flames = []  # Brake thruster flame paths (relative to the mech root).
         self.torso_scale = 1.0  # Set by write_scene. Scales build() parts on the torso and arms.
+        self.current_part = None  # Part id: the next nodes go to that part scene.
+        self.parts = {}           # Part id -> PartScene.
+
+    def _target(self, parent):
+        """(builder, node list, parent path) for a new node: the mech scene or the current part."""
+        if self.current_part is None:
+            return self.b, self.nodes, parent
+        part = self.parts.setdefault(self.current_part, PartScene())
+        path = socket_path(parent)
+        group = path.split("/")[0]
+        if group not in part.groups:
+            part.groups.append(group)
+            part.nodes.append(f'[node name="{group}" type="Node3D" parent="."]\n')
+        return part.b, part.nodes, path
+
+    @staticmethod
+    def _with_groups(text, groups):
+        if not groups:
+            return text
+        g = ", ".join(f'"{x}"' for x in groups)
+        head, rest = text.split("]\n", 1)
+        return f"{head} groups=[{g}]]\n{rest}"
 
     def _scaled(self, parent, kind, params, pos):
         k = self.torso_scale
@@ -55,25 +109,31 @@ class Model:
     def flame(self, name, pos, rot=(0, 0, 0), length=3.0, radius=0.45, parent=TO, brake=False):
         """Flame node. Points down its -Y axis. Uses materials "flame" and "flame_core".
         Booster flames (default) sit on the torso. brake=True: a brake thruster flame (BrakeThrusters)."""
-        self.node(name, parent, pos=pos, rot=rot)
-        outer = self.b.mesh("cyl", radius, 0.04, length)
-        core = self.b.mesh("cyl", radius * 0.55, 0.02, length * 0.6)
+        self.node(name, parent, pos=pos, rot=rot, groups=["brake_flame" if brake else "booster_flame"])
+        b, nodes, path = self._target(parent)
+        outer = b.mesh("cyl", radius, 0.04, length)
+        core = b.mesh("cyl", radius * 0.55, 0.02, length * 0.6)
         for part, mid, mat, y in (("Outer", outer, "flame", -length / 2), ("Core", core, "flame_core", -length * 0.3)):
-            self.nodes.append(f'[node name="{part}" type="MeshInstance3D" parent="{parent}/{name}"]\ntransform = {xf((0, y, 0))}\ncast_shadow = 0\nmesh = SubResource("{mid}")\nsurface_material_override/0 = ExtResource("{mat}")\n')
+            nodes.append(f'[node name="{part}" type="MeshInstance3D" parent="{path}/{name}"]\ntransform = {xf((0, y, 0))}\ncast_shadow = 0\nmesh = SubResource("{mid}")\nsurface_material_override/0 = ExtResource("{mat}")\n')
+        if self.current_part is not None:
+            return  # Part flames are found by group at run time.
         if brake:
             self.brake_flames.append(f"{parent}/{name}")
         else:
             self.flames.append(name)
 
-    def node(self, name, parent, typ="Node3D", pos=(0, 0, 0), rot=(0, 0, 0)):
+    def node(self, name, parent, typ="Node3D", pos=(0, 0, 0), rot=(0, 0, 0), groups=None, extra=""):
         _, pos = self._scaled(parent, None, (), pos)
-        self.nodes.append(f'[node name="{name}" type="{typ}" parent="{parent}"]\ntransform = {xf(pos, rot)}\n')
+        _, nodes, path = self._target(parent)
+        text = f'[node name="{name}" type="{typ}" parent="{path}"]\ntransform = {xf(pos, rot)}\n{extra}'
+        nodes.append(self._with_groups(text, groups))
 
-    def part(self, name, parent, mat, kind, params, pos=(0, 0, 0), rot=(0, 0, 0)):
+    def part(self, name, parent, mat, kind, params, pos=(0, 0, 0), rot=(0, 0, 0), groups=None):
         params, pos = self._scaled(parent, kind, params, pos)
-        self.b.nodes = []
-        self.b.part(name, parent, mat, kind, params, pos, rot)
-        self.nodes.extend(self.b.nodes)
+        b, nodes, path = self._target(parent)
+        b.nodes = []
+        b.part(name, path, mat, kind, params, pos, rot)
+        nodes.extend(self._with_groups(t, groups) for t in b.nodes)
 
     def skirt(self, name, pivot, hips, placement):
         """placement 0 = front plate, 1 = rear plate."""
@@ -95,15 +155,17 @@ def one_hand_rest(hand, muzzle_dir, up_hint, grip=(0, -0.33, -0.99), torso_scale
 
 
 def write_scene(out_path, rifle_scene, materials, build, shoulder_x=2.9, shoulder_y=8.3, hip_x=1.3, thigh=2.6,
-                rest_xf=None, one_hand=None, muzzle_flash=False, torso_scale=1.0):
+                rest_xf=None, one_hand=None, muzzle_flash=False, torso_scale=1.0, parts=None, loadout=None):
     """rest_xf: weapon rest transform text in torso space (default: two-hand low ready).
     one_hand: dict for a one-hand weapon with a shield on the left arm. Keys (mech space):
     rest / raised (left hand markers), pole_rest / pole_raised (left elbow), right_pole_rest /
     right_pole_aim (right elbow), aim_anchor (stock place for hip fire), shield_area (m², sets the
     top speed with the shield up), shield_scale. The model makes the nodes Shield and ShieldMountRest
     (children of ElbowL) and ShieldCover (child of the torso).
-    torso_scale: size of the upper body (torso, head, arms). Weapon and shield keep their size. RMB fires from the hip
-    with no zoom. LMB lifts the shield (ShieldPose)."""
+    RMB fires from the hip with no zoom. LMB lifts the shield (ShieldPose).
+    torso_scale: size of the upper body (torso, head, arms). Weapon and shield keep their size.
+    parts: {part id: (scene path, root name)} for the part scenes build() makes. loadout: res:// path
+    of the Loadout that MechAssembler uses. With parts, the mech scene holds only the frame."""
     m = Model()
     m.nodes.append('''[node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery", "jump_charge", "air_steer", "kneel", "dodge")]
 collision_layer = 2
@@ -148,6 +210,13 @@ shape = SubResource("body_shape")
     here = os.path.dirname(os.path.abspath(__file__))
     logic = open(os.path.join(here, "logic_nodes.tscn.txt")).read()
     logic = logic.replace("KneeL/FootL", f"KneeL/{m.foot}L").replace("KneeR/FootR", f"KneeR/{m.foot}R")
+    if parts:
+        # The feet come from the leg part: SkidDust finds them by the "foot" group.
+        feet = [line for line in logic.split("\n") if line.startswith("feet = [")]
+        assert len(feet) == 1
+        logic = logic.replace(feet[0] + "\n", "")
+        logic = logic.replace('[node name="SkidDust" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "feet")]',
+                              '[node name="SkidDust" type="Node" parent="Animation" node_paths=PackedStringArray("mech")]')
     logic = logic.replace('arm_ik_left = NodePath("../ArmIKLeft")\narm_ik_right = NodePath("../ArmIKRight")',
                           'arm_ik_left = NodePath("../ArmIKLeft")\narm_ik_right = NodePath("../ArmIKRight")\nrecoil = NodePath("../WeaponRecoil")')
     logic = logic.replace('"arm_ik_left", "arm_ik_right")]', '"arm_ik_left", "arm_ik_right", "recoil")]')
@@ -210,30 +279,38 @@ shooter = NodePath("../..")
 script = ExtResource("recoil")
 weapon_fire = NodePath("../WeaponFire")
 ''')
-    if m.brake_flames:
+    # With part scenes, BrakeThrusters and BoosterFlames find their flames by group at run time.
+    if m.brake_flames or parts:
         bf = ", ".join(f'NodePath("../../{f}")' for f in m.brake_flames)
-        extra.append(f'''[node name="BrakeThrusters" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "flames")]
+        extra.append(f'''[node name="BrakeThrusters" type="Node" parent="Animation" node_paths=PackedStringArray("mech"{', "flames"' if bf else ''})]
 script = ExtResource("brakes")
 mech = NodePath("../..")
-flames = [{bf}]
-''')
-    if m.flames:
+''' + (f"flames = [{bf}]\n" if bf else ""))
+    if m.flames or parts:
         logic = logic.replace('[node name="FreeAim" type="Node" parent="CameraRig" node_paths=PackedStringArray("kneel"',
                               '[node name="FreeAim" type="Node" parent="CameraRig" node_paths=PackedStringArray("boosters", "kneel"')
         logic = logic.replace('script = ExtResource("freeaim")\n', 'script = ExtResource("freeaim")\nboosters = NodePath("../../Animation/BoosterFlames")\n')
         fl = ", ".join(f'NodePath("../../{TO}/{f}")' for f in m.flames)
-        extra.append(f'''[node name="BoosterFlames" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "dodge", "flames", "light")]
+        wired = f'flames = [{fl}]\nlight = NodePath("../../{TO}/BoosterLight")\n' if fl else ""
+        extra.append(f'''[node name="BoosterFlames" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "dodge"{', "flames", "light"' if fl else ''})]
 script = ExtResource("flames")
 mech = NodePath("../..")
 dodge = NodePath("../../MechDodge")
-flames = [{fl}]
-light = NodePath("../../{TO}/BoosterLight")
-''')
+''' + wired)
     o = ['[gd_scene format=3]\n']
     for p, i in SCRIPTS:
         o.append(f'[ext_resource type="Script" path="res://scripts/{p}.gd" id="{i}"]')
     o.append(f'[ext_resource type="PackedScene" path="{rifle_scene}" id="rifle"]')
     o.append('[ext_resource type="PackedScene" path="res://scenes/weapons/bullet.tscn" id="bullet"]')
+    if loadout:
+        o.append(f'[ext_resource type="Resource" path="{loadout}" id="loadout"]')
+        # MechAssembler goes first (after the collision), so the parts exist before the other nodes start.
+        m.nodes.insert(1, '''[node name="MechAssembler" type="Node" parent="." node_paths=PackedStringArray("mech", "frame")]
+script = ExtResource("assembler")
+loadout = ExtResource("loadout")
+mech = NodePath("..")
+frame = NodePath("../Visual")
+''')
     for mid, path in materials.items():
         o.append(f'[ext_resource type="Material" path="{path}" id="{mid}"]')
     o.append('')
@@ -247,4 +324,20 @@ light = NodePath("../../{TO}/BoosterLight")
         hp = ", ".join(f'NodePath("../../{L}/{h}")' for h in hips)
         o.append(f'[node name="{name}" type="Node" parent="Animation" node_paths=PackedStringArray("skirt", "hips")]\nscript = ExtResource("skirt")\nskirt = NodePath("../../{L}/{pivot}")\nhips = [{hp}]\nplacement = {placement}\n')
     open(out_path, "w").write("\n".join(o))
+    for part_id, (path, root) in (parts or {}).items():
+        write_part_scene(path, root, m.parts[part_id], materials)
+        print("wrote", path)
     print("wrote", out_path)
+
+
+def write_part_scene(path, root, part, materials):
+    """One part model: child groups named after sockets, meshes under them."""
+    o = ['[gd_scene format=3]\n']
+    for mid, mat in materials.items():
+        o.append(f'[ext_resource type="Material" path="{mat}" id="{mid}"]')
+    o.append('')
+    o.append(part.b.sub_text())
+    o.append(f'[node name="{root}" type="Node3D"]\n')
+    o += part.nodes
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    open(path, "w").write("\n".join(o))

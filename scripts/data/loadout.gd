@@ -1,0 +1,28 @@
+class_name Loadout
+extends Resource
+## A full mech build: parts, weapons, plates and mods. MechAssembler builds a mech from it.
+
+@export var display_name: String = ""
+@export var head: HeadPart
+@export var core: CorePart
+@export var arm_left: ArmPart
+@export var arm_right: ArmPart
+@export var legs: LegPart
+@export var back_left: BackUnitPart
+@export var back_right: BackUnitPart
+@export var booster: BoosterPart
+@export var generator: GeneratorPart
+@export var fcs: FcsPart
+@export var weapon_left: WeaponData
+@export var weapon_right: WeaponData
+@export var plates: Array[PlateData] = []
+@export var mods: Array[ModData] = []
+
+
+## All parts and weapons that are set, in a fixed order.
+func get_parts() -> Array[PartData]:
+	var parts: Array[PartData] = []
+	for part: PartData in [head, core, arm_left, arm_right, legs, back_left, back_right, booster, generator, fcs, weapon_left, weapon_right]:
+		if part != null:
+			parts.append(part)
+	return parts

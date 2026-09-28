@@ -31,6 +31,7 @@
 [ext_resource type="Script" path="res://scripts/animation/shield_mount.gd" id="shieldmount"]
 [ext_resource type="Script" path="res://scripts/animation/dodge_slide_pose.gd" id="dodgeslide"]
 [ext_resource type="Script" path="res://scripts/camera/free_aim.gd" id="freeaim"]
+[ext_resource type="Script" path="res://scripts/mech/mech_assembler.gd" id="assembler"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/beam_rifle.tscn" id="rifle"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/bullet.tscn" id="bullet"]
 [ext_resource type="Material" path="res://materials/rx78/white.tres" id="white"]
@@ -932,7 +933,7 @@ transform = Transform3D(1, 0, 0, 0, 0.93969, 0.34202, 0, -0.34202, 0.93969, 0, -
 mesh = SubResource("m67")
 surface_material_override/0 = ExtResource("red")
 
-[node name="BoosterFlameL" type="Node3D" parent="Visual/Roll/Upper/Torso"]
+[node name="BoosterFlameL" type="Node3D" parent="Visual/Roll/Upper/Torso" groups=["booster_flame"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.675, 0.75, 2)
 
 [node name="Outer" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/BoosterFlameL"]
@@ -947,7 +948,7 @@ cast_shadow = 0
 mesh = SubResource("m69")
 surface_material_override/0 = ExtResource("flame_core")
 
-[node name="BoosterFlameR" type="Node3D" parent="Visual/Roll/Upper/Torso"]
+[node name="BoosterFlameR" type="Node3D" parent="Visual/Roll/Upper/Torso" groups=["booster_flame"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.675, 0.75, 2)
 
 [node name="Outer" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/BoosterFlameR"]

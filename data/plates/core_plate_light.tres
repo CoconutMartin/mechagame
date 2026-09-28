@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="PlateData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/plate_data.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Core Plate (light)"
+slot = 1
+hp = 300.0
+weight_t = 2.0

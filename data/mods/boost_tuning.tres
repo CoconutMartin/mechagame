@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="ModData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/mod_data.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Boost Tuning (+10% thrust)"
+stat = 2
+percent = 10.0

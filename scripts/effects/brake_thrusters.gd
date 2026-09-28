@@ -21,6 +21,11 @@ var _amount: float = 0.0
 var _direction: Vector3 = Vector3.FORWARD
 
 
+func _ready() -> void:
+	if flames.is_empty():
+		flames = GroupNodes.find(mech, &"brake_flame")  # Flames from the leg part model.
+
+
 func _physics_process(delta: float) -> void:
 	var target := thrust if mech.is_brake_skidding else 0.0
 	_amount = move_toward(_amount, target, (ignite_speed if target > _amount else fade_speed) * delta)

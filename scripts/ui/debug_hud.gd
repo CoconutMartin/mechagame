@@ -1,11 +1,13 @@
 extends CanvasLayer
-## Shows live movement values for testing. Phase 2 adds weight and part HP.
+## Shows live movement values for testing, and the build stats from the loadout (Phase 2):
+## total weight, load ratio, speeds and the HP of each part.
 
 @export var mech: Mech
 @export var mech_aim: MechAim
 
 @onready var _info: Label = $Info
 @onready var _energy_bar: ProgressBar = $EnergyBar
+@onready var _build: Label = $Build
 
 
 func _ready() -> void:
@@ -43,5 +45,19 @@ func _process(_delta: float) -> void:
 		"  (EMPTY)" if energy.is_depleted else "",
 		Engine.get_frames_per_second(),
 	]
+	_build.text = _build_text()
 	_energy_bar.value = energy.get_fraction() * 100.0
 	_energy_bar.modulate = Color(1.0, 0.35, 0.3) if energy.is_depleted else Color.WHITE
+
+
+func _build_text() -> String:
+	var stats := mech.stats
+	if stats == null:
+		return "Build: no loadout"
+	var text := "BUILD\nWeight: %.1f / %.0f t   Load: %d%%\n" % [stats.total_weight_t, stats.load_capacity_t, roundi(stats.load_ratio * 100.0)]
+	text += "Walk %.1f m/s   Boost %.1f m/s   Boost accel %.1f\n" % [stats.walk_speed, stats.walk_speed * stats.boost_speed_multiplier, stats.boost_acceleration]
+	text += "Torso turn %d deg/s   Legs turn %d deg/s   Jump %.1f m\n" % [roundi(stats.torso_turn_speed_deg), roundi(stats.leg_turn_speed_deg), stats.jump_height]
+	text += "PART HP"
+	for part_name in stats.part_hp:
+		text += "\n  %s: %d" % [part_name, roundi(stats.part_hp[part_name])]
+	return text

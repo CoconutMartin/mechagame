@@ -47,6 +47,12 @@ func burst() -> void:
 
 
 func _ready() -> void:
+	# Flames and light from the booster part model.
+	if flames.is_empty():
+		flames = GroupNodes.find(mech, &"booster_flame")
+	if light == null:
+		var lights := GroupNodes.find(mech, &"booster_light")
+		light = lights[0] as OmniLight3D if not lights.is_empty() else null
 	if dodge != null:
 		dodge.dodge_started.connect(burst)
 	_process(0.0)

@@ -1,0 +1,78 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://materials/warden/armor.tres" id="armor"]
+[ext_resource type="Material" path="res://materials/warden/armor_dark.tres" id="armor_dark"]
+[ext_resource type="Material" path="res://materials/warden/frame.tres" id="frame"]
+[ext_resource type="Material" path="res://materials/warden/joint.tres" id="joint"]
+[ext_resource type="Material" path="res://materials/warden/mark.tres" id="mark"]
+[ext_resource type="Material" path="res://materials/warden/emblem.tres" id="emblem"]
+[ext_resource type="Material" path="res://materials/warden/eye.tres" id="eye"]
+[ext_resource type="Material" path="res://materials/effects/booster_flame.tres" id="flame"]
+[ext_resource type="Material" path="res://materials/effects/booster_core.tres" id="flame_core"]
+
+[sub_resource type="BoxMesh" id="m0"]
+size = Vector3(1.275, 1.105, 1.615)
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(1.36, 0.2975, 0.595)
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(0.2975, 0.765, 0.765)
+
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(0.765, 0.595, 0.17)
+
+[sub_resource type="PrismMesh" id="m4"]
+size = Vector3(0.6375, 0.4675, 0.102)
+left_to_right = 0.5
+
+[sub_resource type="PrismMesh" id="m5"]
+size = Vector3(1.36, 1.275, 0.187)
+left_to_right = 0.25
+
+[sub_resource type="BoxMesh" id="m6"]
+size = Vector3(0.425, 0.34, 1.19)
+
+[node name="WardenHead" type="Node3D"]
+
+[node name="Torso" type="Node3D" parent="."]
+
+[node name="Head" type="MeshInstance3D" parent="Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.145, -0.4675)
+mesh = SubResource("m0")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="HeadBrow" type="MeshInstance3D" parent="Torso"]
+transform = Transform3D(1, 0, 0, 0, 0.97815, -0.20791, 0, 0.20791, 0.97815, 0, 3.5275, -1.1475)
+mesh = SubResource("m1")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="HeadCheekL" type="MeshInstance3D" parent="Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5525, 2.8475, -1.105)
+mesh = SubResource("m2")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="HeadCheekR" type="MeshInstance3D" parent="Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5525, 2.8475, -1.105)
+mesh = SubResource("m2")
+surface_material_override/0 = ExtResource("armor_dark")
+
+[node name="EyeHousing" type="MeshInstance3D" parent="Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.9325, -1.36)
+mesh = SubResource("m3")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Eye" type="MeshInstance3D" parent="Torso"]
+transform = Transform3D(-1, -0, 0, 0, -1, 0, 0, 0, 1, 0, 2.9325, -1.428)
+mesh = SubResource("m4")
+surface_material_override/0 = ExtResource("eye")
+
+[node name="Fin" type="MeshInstance3D" parent="Torso"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 4.25, -0.255)
+mesh = SubResource("m5")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="FinBase" type="MeshInstance3D" parent="Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.7825, -0.34)
+mesh = SubResource("m6")
+surface_material_override/0 = ExtResource("armor_dark")

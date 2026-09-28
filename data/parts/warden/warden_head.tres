@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HeadPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/head_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/parts/warden/warden_head.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Warden Head"
+weight_t = 4.0
+hp = 400.0
+sensor_range = 600.0
+lock_on_speed = 1.0
+scene = ExtResource("scene")

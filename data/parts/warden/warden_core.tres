@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CorePart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/core_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/parts/warden/warden_core.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Warden Core"
+weight_t = 18.0
+hp = 1600.0
+energy_capacity = 100.0
+torso_turn_speed_deg = 56.9
+scene = ExtResource("scene")
