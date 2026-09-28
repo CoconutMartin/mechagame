@@ -139,10 +139,14 @@ pole_direction = Vector3(-1, -1, 0.3)
 upper_length = 2.7
 lower_length = 3.0
 
-[node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("target")]
+[node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("target", "free_aim")]
 top_level = true
 script = ExtResource("rig")
 target = NodePath("..")
+free_aim = NodePath("FreeAim")
+
+[node name="FreeAim" type="Node" parent="CameraRig"]
+script = ExtResource("freeaim")
 
 [node name="Pitch" type="Node3D" parent="CameraRig"]
 

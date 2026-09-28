@@ -4,9 +4,13 @@ extends Node3D
 ## The mouse moves an aim target (yaw). The torso turns toward that target at its own turn speed,
 ## and the camera turns with the torso. Pitch follows the mouse on a spring.
 ## Hold V (front_view) to swing the camera around to the front of the mech and look at it.
+## With a FreeAim node the mouse first moves the mech aim inside a box. Only the movement past the
+## box edge turns the camera.
 ## Node layout: MechCameraRig > Pitch > SpringArm3D > Camera3D.
 
 @export var target: Node3D
+## Optional. Free aim box for the mech aim (see FreeAim).
+@export var free_aim: FreeAim
 ## Height of the camera pivot above the mech's feet, in meters. Above the head, so the camera looks down over it.
 @export var pivot_height: float = 11.5
 ## Higher value = camera follows more tightly.
@@ -67,11 +71,18 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		var motion := event as InputEventMouseMotion
-		var sensitivity := mouse_sensitivity * sensitivity_scale
-		_target_yaw -= motion.relative.x * sensitivity
-		_target_pitch -= motion.relative.y * sensitivity * pitch_sensitivity_scale
-		_target_pitch = clampf(_target_pitch, deg_to_rad(min_pitch_deg), deg_to_rad(max_pitch_deg))
+		apply_mouse_motion((event as InputEventMouseMotion).relative)
+
+
+## Turns a mouse movement (pixels) into free aim and camera turn.
+func apply_mouse_motion(relative: Vector2) -> void:
+	var sensitivity := mouse_sensitivity * sensitivity_scale
+	var turn := Vector2(-relative.x * sensitivity, -relative.y * sensitivity * pitch_sensitivity_scale)
+	if free_aim != null and front_view_amount <= 0.0:
+		# The mech aim moves first. The camera turns by the part past the box edge.
+		turn = free_aim.take_motion(turn * rad_to_deg(1.0)) * deg_to_rad(1.0)
+	_target_yaw += turn.x
+	_target_pitch = clampf(_target_pitch + turn.y, deg_to_rad(min_pitch_deg), deg_to_rad(max_pitch_deg))
 
 
 func _process(delta: float) -> void:

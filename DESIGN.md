@@ -120,7 +120,7 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 
 - One-hand weapons: RMB uses the right arm weapon, LMB uses the left arm weapon.
 - Two-hand firearm: RMB aims down sight, LMB shoots.
-- Now (revision 47): the Warden rifle is a one-hand weapon. Hold RMB: hip fire, 1 shot every 2 seconds, no zoom (one-hand weapons never zoom). Each shot moves the mech aim (blue ring) 3° off the crosshair in a random direction. It stays off (no automatic return). Re-align with the mouse along the kick line: view movement moves the mech aim along that line by a tenth of the movement (`MechAim.realign_rate` 0.1). Opposite to the kick closes the gap and can pass the crosshair (overshoot, up to 3° on the other side); toward the kick opens it again. The player lines them up. Moves across the kick line move both together. Moves in other directions move both together. Camera shake per shot: trauma 0.052, kick 0.078 (30% more since revision 51). Hold LMB: the shield on the left arm lifts in front of the chest. Two-hand weapons keep the ADS zoom on RMB.
+- Now (revision 47): the Warden rifle is a one-hand weapon. Hold RMB: hip fire, 1 shot every 2 seconds, no zoom (one-hand weapons never zoom). Free aim with a dead zone (revision 55, `FreeAim` under the camera rig): the mouse moves the mech aim (blue ring) 1:1 inside a box around the camera crosshair (±3° left and right, ±2° up and down). Only the mouse movement past the box edge turns the camera (and the torso target). Each shot kicks the ring 1.8° up and up to 0.8° to the side (muzzle climb), inside the box; the camera does not move. The player pulls the ring back onto the target. No automatic return. Moves in other directions move both together. Camera shake per shot: trauma 0.052, kick 0.078 (30% more since revision 51). Hold LMB: the shield on the left arm lifts in front of the chest. Two-hand weapons keep the ADS zoom on RMB.
 - "Use" means fire for guns and activate for shields and melee weapons.
 
 ## Mech parts (all interchangeable)
@@ -238,7 +238,7 @@ scripts/animation/  shield_pose.gd, shield_mount.gd, dodge_slide_pose.gd, mech_l
                     inertia_sway.gd, skid_body_turn.gd, skirt_follow.gd (placeholder animation).
 scripts/weapons/    weapon_fire.gd, weapon_recoil.gd, bullet.gd. Scenes: scenes/weapons/bullet.tscn, scenes/effects/impact_spark.tscn.
 scenes/weapons/     heavy_rifle.tscn (Warden), beam_rifle.tscn (Granpa Gundam), long_rifle.tscn (old box rifle). Markers: GripRight, GripLeft, GripLeftRest, GripLeftAim, Muzzle.
-scripts/camera/     mech_camera_rig.gd (follow and mouse look), aim_spring.gd (aim overshoot), camera_shake.gd, camera_ads.gd (aim down sight zoom).
+scripts/camera/     mech_camera_rig.gd (follow and mouse look), free_aim.gd (free aim box), aim_spring.gd (aim overshoot), camera_shake.gd, camera_ads.gd (aim down sight zoom).
 scripts/world/      greybox_block.gd (box with collision, set size in Inspector).
 scripts/ui/         debug_hud.gd, aim_reticle.gd.
 scripts/effects/    skid_dust.gd (dust while skidding), brake_thrusters.gd, booster_flames.gd, muzzle_flash.gd, impact_spark.gd.
@@ -305,7 +305,8 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 39: dodge recovery fix: smooth height plan (no pop and drop), inertia sway paused during the dodge, recovery crouch and lean with one spring back to upright.
 - Phase 1 revision 40: dodge roll replaced by a directional dodge hop (11.9 m, 50% of the roll).
 - Phase 1 revision 41: player mech model replaced with an RX-78-2 Gundam style placeholder (same skeleton, same animation). Beam rifle and shield. Waist skirts follow the thighs.
-- Phase 1 revision 54: mech aim follows the body turn in slides. Camera 8.5 m, above the head, FOV 70°. Targeting model: options given to the user, waiting for a choice.
+- Phase 1 revision 55: targeting option 1 chosen: free aim with a dead zone (box 6° x 4°), recoil kicks the ring up, the player corrects it 1:1. The kick-line re-align is removed.
+- Phase 1 revision 54: mech aim follows the body turn in slides. Camera 8.5 m, above the head, FOV 70°.
 - Phase 1 revision 53: camera zoom undone (10.3 m, pivot 11.5 m, FOV 70°). Akira slide milder (55°, lean 8°). Mech aim re-align can overshoot the crosshair; the player lines them up along the kick line.
 - Phase 1 revision 52: Akira slide at the end of the boost stop too, side from A / D or random, recovery 40% slower. Shot kick 3°, re-align rate 0.1. Bullet impacts with dust and bullet marks. Camera 25% closer (7.7 m), pivot 7.8 m, FOV 74°. Debug HUD text updated and moved off the bottom of the screen.
 - Phase 1 revision 51: dodge slide in a deep crouch with an Akira slide end. Shot kick 2°, re-align by moving the mouse opposite to the kick (half rate). Re-center key removed. Shot camera shake +30%.

@@ -30,6 +30,7 @@
 [ext_resource type="Script" path="res://scripts/effects/brake_thrusters.gd" id="brakes"]
 [ext_resource type="Script" path="res://scripts/animation/shield_mount.gd" id="shieldmount"]
 [ext_resource type="Script" path="res://scripts/animation/dodge_slide_pose.gd" id="dodgeslide"]
+[ext_resource type="Script" path="res://scripts/camera/free_aim.gd" id="freeaim"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/heavy_rifle.tscn" id="rifle"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/bullet.tscn" id="bullet"]
 [ext_resource type="Material" path="res://materials/warden/armor.tres" id="armor"]
@@ -1256,10 +1257,14 @@ pole_direction = Vector3(-1, -1, 0.3)
 upper_length = 2.295
 lower_length = 2.55
 
-[node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("target")]
+[node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("target", "free_aim")]
 top_level = true
 script = ExtResource("rig")
 target = NodePath("..")
+free_aim = NodePath("FreeAim")
+
+[node name="FreeAim" type="Node" parent="CameraRig"]
+script = ExtResource("freeaim")
 
 [node name="Pitch" type="Node3D" parent="CameraRig"]
 

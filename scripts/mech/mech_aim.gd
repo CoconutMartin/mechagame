@@ -2,7 +2,8 @@ class_name MechAim
 extends Node
 ## Finds two points in the world:
 ## camera_target: where the camera crosshair points (a little above the screen center).
-## aim_point: where the mech really aims. It follows the body turn, and shakes while the mech walks or boosts.
+## aim_point: where the mech really aims: the crosshair direction plus the free aim offset (FreeAim),
+## turned with the body in slides.
 
 @export var mech: Mech
 @export var camera: Camera3D
@@ -35,26 +36,11 @@ extends Node
 ## How fast the shake moves.
 @export var jitter_speed: float = 2.0
 
-@export_group("Shot Kick")
-## Each shot moves the mech aim this far off the camera crosshair, in a random direction (degrees).
-## The aim stays there until the player re-aligns it. There is no automatic return.
-@export var shot_kick_deg: float = 3.0
-## Re-align: view movement along the kick line moves the mech aim along that line by this part of
-## the movement (0.1 = a tenth). Opposite to the kick closes the gap and can go past the crosshair
-## (overshoot) up to the kick size on the other side. Toward the kick opens it again. The player
-## lines the two up. Moves across the kick line move both together.
-@export_range(0.0, 1.0) var realign_rate: float = 0.1
-@export_group("")
 
 var camera_target: Vector3 = Vector3.ZERO
 var aim_point: Vector3 = Vector3.ZERO
 var aim_direction: Vector3 = Vector3.FORWARD
-## Shot kick offset of the mech aim from the crosshair, in degrees: x = yaw (left), y = pitch (up).
-## Each shot sets it. The player moves it along the kick line with the mouse.
-var _last_view: Vector2 = Vector2.ZERO
-## Kick line direction (unit) and the offset along it, in degrees (limits: +/- shot_kick_deg).
-var _kick_axis: Vector2 = Vector2.RIGHT
-var _kick_amount: float = 0.0
+## Free aim offset of the mech aim from the crosshair, in degrees: x = yaw (left), y = pitch (up).
 var shot_offset: Vector2 = Vector2.ZERO
 
 var _noise := FastNoiseLite.new()
@@ -85,8 +71,8 @@ func _physics_process(delta: float) -> void:
 	var body_error := wrapf(mech.get_aim_yaw() - camera_yaw, -PI, PI)
 	direction = direction.rotated(Vector3.UP, body_error + get_body_turn())
 
-	# Shot kick: the aim stays off the crosshair until the player re-centers it.
-	_mouse_realign()
+	# Free aim: the mech aim sits at the free aim offset from the crosshair (mouse and recoil).
+	shot_offset = camera_rig.free_aim.offset if camera_rig != null and camera_rig.free_aim != null else Vector2.ZERO
 	var kick_right := direction.cross(Vector3.UP).normalized()
 	direction = direction.rotated(Vector3.UP, deg_to_rad(shot_offset.x))
 	direction = direction.rotated(kick_right, deg_to_rad(shot_offset.y)).normalized()
@@ -100,28 +86,15 @@ func _physics_process(delta: float) -> void:
 	aim_point = _cast(origin, direction)
 
 
-## View movement along the kick line moves the mech aim along it (like pulling a gun back down
-## after its recoil). It can pass the crosshair: the player lines them up.
-func _mouse_realign() -> void:
-	var view := Vector2(mech.get_aim_yaw(), camera_rig.pitch if camera_rig != null else 0.0)
-	var moved := Vector2(rad_to_deg(wrapf(view.x - _last_view.x, -PI, PI)), rad_to_deg(view.y - _last_view.y))
-	_last_view = view
-	_kick_amount = clampf(_kick_amount + moved.dot(_kick_axis) * realign_rate, -shot_kick_deg, shot_kick_deg)
-	shot_offset = _kick_axis * _kick_amount
-
-
 ## Whole-body turn from a slide (radians, positive = left). The mech aim turns with the body.
 func get_body_turn() -> float:
 	return body_visual.rotation.y if body_visual != null else 0.0
 
 
-## Moves the mech aim shot_kick_deg off the crosshair in a random direction. WeaponFire calls it
-## after each shot.
+## Recoil kick after a shot. WeaponFire calls it. The kick goes to the free aim box.
 func kick_aim() -> void:
-	var angle := randf() * TAU
-	_kick_axis = Vector2(cos(angle), sin(angle))
-	_kick_amount = shot_kick_deg
-	shot_offset = _kick_axis * _kick_amount
+	if camera_rig != null and camera_rig.free_aim != null:
+		camera_rig.free_aim.kick()
 
 
 ## Screen position of the camera crosshair, in pixels.

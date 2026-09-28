@@ -25,7 +25,8 @@ SCRIPTS = [("mech/mech","mech"),("mech/mech_input","input"),("mech/mech_energy",
  ("camera/camera_shake","shake"),("animation/skirt_follow","skirt"),("weapons/weapon_fire","fire"),
  ("weapons/weapon_recoil","recoil"),("effects/booster_flames","flames"),("animation/shield_pose","shieldpose"),
  ("mech/mech_shield","shield"),("effects/brake_thrusters","brakes"),("animation/shield_mount","shieldmount"),
- ("animation/dodge_slide_pose","dodgeslide")]
+ ("animation/dodge_slide_pose","dodgeslide"),
+ ("camera/free_aim","freeaim")]
 
 
 def TT(x, y, z):
