@@ -133,7 +133,7 @@ if __name__ == "__main__":
         "rest_transform": xf_rows(rest_rows, stock_rest), "aim_anchor": v3(sniper_anchor),
         "right_pole_rest": v3((1.0, -0.6, 0.4)), "right_pole_aim": v3((1.0, -0.6, 0.3)),
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
-        "aim_twist_deg": 20.0, "aim_tilt_deg": 4.0, "zoom_fov": 12.0},
+        "aim_twist_deg": 20.0, "aim_tilt_deg": 4.0, "zoom_fov": 52.6},
         "res://scenes/weapons/beam_sniper.tscn")
     # Beam blade: one hand, held upright in front of the right shoulder (reference image 12),
     # blade up and a little forward, edge facing forward.

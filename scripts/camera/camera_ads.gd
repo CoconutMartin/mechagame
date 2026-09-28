@@ -13,7 +13,7 @@ extends Node
 ## Camera field of view while aiming, in degrees.
 @export var aim_fov: float = 35.0
 ## Camera distance behind the pivot while aiming, in meters.
-@export var aim_spring_length: float = 4.0
+@export var aim_spring_length: float = 8.0
 ## Mouse sensitivity multiplier while aiming.
 @export var aim_sensitivity_scale: float = 0.5
 ## How fast the zoom changes (1 / seconds).

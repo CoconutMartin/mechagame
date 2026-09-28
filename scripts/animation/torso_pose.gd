@@ -45,6 +45,9 @@ extends Node
 ## How fast the boost lean changes.
 @export var blend_speed: float = 5.0
 
+## Extra torso turn from an action (the blade slash), in degrees. Positive = turn left.
+## Set every frame by the action.
+var action_twist_deg: float = 0.0
 var _boost: float = 0.0
 var _run: float = 0.0
 ## Skid lean in degrees (positive = back), on a spring.
@@ -93,7 +96,7 @@ func _physics_process(delta: float) -> void:
 	lean += deg_to_rad(recovery.x)
 	torso.rotation = Vector3(
 		-lean,
-		mech.get_torso_twist() - deg_to_rad(aim_twist_deg) * aim + deg_to_rad(inertia.yaw_deg),
+		mech.get_torso_twist() - deg_to_rad(aim_twist_deg) * aim + deg_to_rad(inertia.yaw_deg) + deg_to_rad(action_twist_deg),
 		-deg_to_rad(aim_tilt_deg) * aim + deg_to_rad(_skid_roll.value) + deg_to_rad(inertia.roll_deg) + deg_to_rad(recovery.y))
 
 

@@ -48,6 +48,7 @@ func _process(_delta: float) -> void:
 		state += "\nLanding recovery: %.1f s" % recovery.time_left
 	elif not mech.is_boost_ready():
 		state += "\nBoost ready in %d steps (walk %d, run %d)" % [mech.get_walk_steps_left(), mech.boost_start_steps, mech.run_steps]
+	state += "\n" + _camera_text()
 	var energy := mech.energy
 	_info.text = "Speed: %.1f m/s (%d km/h)\nHeight: %.1f m\nWeight: %d t\nState: %s\nEnergy: %d / %d%s\nFPS: %d" % [
 		speed, roundi(speed * 3.6), mech.global_position.y, roundi(mech.mass_tons), state,
@@ -59,6 +60,18 @@ func _process(_delta: float) -> void:
 	_weapons_label.text = _weapons_text()
 	_energy_bar.value = energy.get_fraction() * 100.0
 	_energy_bar.modulate = Color(1.0, 0.35, 0.3) if energy.is_depleted else Color.WHITE
+
+
+## Camera angle: camera pitch (negative = looking down), aim pitch, distance to the mech and FOV.
+func _camera_text() -> String:
+	var camera := mech_aim.camera
+	if camera == null:
+		return "Camera: none"
+	var forward := -camera.global_basis.z
+	var cam_pitch := rad_to_deg(asin(clampf(forward.y, -1.0, 1.0)))
+	var aim_pitch := rad_to_deg(mech_aim.camera_rig.pitch) if mech_aim.camera_rig != null else 0.0
+	var distance := camera.global_position.distance_to(mech.global_position)
+	return "Camera: pitch %.1f deg   aim %.1f deg   dist %.1f m   FOV %d" % [cam_pitch, aim_pitch, distance, roundi(camera.fov)]
 
 
 func _build_text() -> String:

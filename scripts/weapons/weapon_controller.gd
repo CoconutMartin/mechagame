@@ -122,8 +122,8 @@ func _physics_process(_delta: float) -> void:
 		wants[back_left] = input.back_left_held
 	if back_right != null:
 		wants[back_right] = input.back_right_held
-	# One weapon at a time (not counting the blade).
-	if active != null and not (wants.get(active, false) or _is_busy(active)):
+	# One weapon at a time (not counting the blade). Both missile pods count as one weapon.
+	if active != null and not _still_in_use(active, wants):
 		active = null
 	if active == null:
 		for weapon in wants:
@@ -131,12 +131,13 @@ func _physics_process(_delta: float) -> void:
 				active = weapon
 				break
 	for weapon in wants:
-		var allowed: bool = weapon == active or weapon is BladeWeapon
+		var allowed: bool = weapon == active or weapon is BladeWeapon \
+				or (weapon is MissilePodWeapon and active is MissilePodWeapon)
 		weapon.set_trigger(wants[weapon] and allowed)
 	if right_weapon != null:
 		var right_on := right_weapon == active
 		if _two_handed():
-			weapon_pose.wants_raise = input.aim_held or (input.left_fire_held and right_on)
+			weapon_pose.wants_raise = input.aim_held or (right_on and (input.left_fire_held or right_weapon.is_busy()))
 		else:
 			weapon_pose.wants_raise = input.fire_held and right_on and right_data.kind == WeaponData.Kind.GUN
 		if input.reload_pressed:
@@ -145,6 +146,16 @@ func _physics_process(_delta: float) -> void:
 		for pod in [back_left, back_right]:
 			if pod != null:
 				pod.start_reload()
+
+
+func _still_in_use(weapon: MechWeapon, wants: Dictionary) -> bool:
+	if wants.get(weapon, false) or _is_busy(weapon):
+		return true
+	if weapon is MissilePodWeapon:
+		for other in wants:
+			if other is MissilePodWeapon and (wants[other] or _is_busy(other)):
+				return true
+	return false
 
 
 func _is_busy(weapon: MechWeapon) -> bool:

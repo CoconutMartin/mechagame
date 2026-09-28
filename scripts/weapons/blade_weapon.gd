@@ -13,6 +13,10 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export var windup_direction: Vector3 = Vector3(0.0, 0.55, 1.0)
 @export var slash_end_position: Vector3 = Vector3(0.9, 1.3, -3.3)
 @export var slash_end_direction: Vector3 = Vector3(-0.1, -0.6, -1.0)
+## Torso turn during the dash: to the right, so the left shoulder (shield) leads. Degrees.
+@export var dash_twist_deg: float = -45.0
+## Torso turn at the end of the down swing: to the left, so the right shoulder comes forward.
+@export var swing_twist_deg: float = 35.0
 ## Down swing time in seconds.
 @export var swing_time: float = 0.18
 ## How fast the blade lifts overhead at the start of the charge (1 / seconds).
@@ -74,6 +78,14 @@ func _update(delta: float) -> void:
 				state = State.IDLE
 	# Charge with the shield up.
 	controller.mech_shield.force_up = state == State.LUNGE
+	# Shoulders: left shoulder leads the dash, then the torso twists the right shoulder forward
+	# with the down swing.
+	var twist := lerpf(dash_twist_deg, swing_twist_deg, _swing) if state != State.IDLE else 0.0
+	if state == State.RECOVER or state == State.IDLE:
+		twist = swing_twist_deg * smoothstep(0.0, 1.0, _pose_weight)
+	elif state == State.LUNGE:
+		twist = dash_twist_deg * smoothstep(0.0, 1.0, _pose_weight)
+	controller.torso_pose.action_twist_deg = twist
 
 
 func _start() -> void:

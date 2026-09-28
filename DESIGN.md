@@ -92,7 +92,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Mech aim reticle | blue ring, placed from the torso angle (no shake, no jitter). The camera follows the torso, so it sits on the yellow dot |
 | Aim jitter | removed (0°). The code and exports stay in `MechAim` for later use |
 | Vertical aim | mouse pitch speed 30% of horizontal |
-| Aim down sight (RMB) | camera moves in along the aim line (10.3 m to 4 m) and zooms FOV 70° to 35°, same target, mouse sensitivity 50%. Rifle butt on the right shoulder, torso turns 30° right and tilts 6°, left hand under the handguard near the muzzle |
+| Aim down sight (RMB) | camera moves in along the aim line (to 8 m) and zooms from FOV 70° to the weapon zoom FOV (beam sniper 52.6°), same target, mouse sensitivity 50%. Rifle butt on the right shoulder, torso turns 30° right and tilts 6°, left hand under the handguard near the muzzle |
 
 ### Current camera tuning (Phase 1)
 
@@ -100,11 +100,11 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 
 | Value | Current |
 |---|---|
-| Distance behind the pivot (spring length) | 8.5 m since revision 54 (above the head, FOV 70°). The feet are below the screen edge at the start pitch. RMB moves it to 4 m and zooms (FOV 35°) |
+| Distance behind the pivot (spring length) | 8.5 m since revision 54 (above the head, FOV 70°). The feet are below the screen edge at the start pitch. RMB (two-hand weapons) moves it to 8 m and zooms to the weapon zoom FOV |
 | Shoulder offset | 3 m right (right side of the head) |
 | Crosshair height | 0.3 of the screen height above the center since revision 59 (was 0.135): the view is about 12° lower (more ground and the whole mech in view), as the user drew |
 | Pivot height | 11.5 m (above the head). The camera sits on the aim line behind the pivot, 3 m to the right, and tilts down by the crosshair angle (about 10.7° at FOV 70°), so it looks down over the head |
-| Start view | aim pitch starts at -10° (set by the user); with the crosshair tilt the view is about 21° down over the head. `MechCameraRig.start_pitch_deg` |
+| Start view | aim pitch starts at +6° (revision 60, to match the user's image); with the crosshair tilt (about 23°) the camera looks about 17° down. `MechCameraRig.start_pitch_deg`. The debug HUD shows the camera angle: camera pitch, aim pitch, distance and FOV |
 | Same target in ADS | the camera stays on the aim line and its tilt follows the FOV, so the crosshair points at the same spot with and without RMB |
 | Tilt limits | 27.5° down, 15° up |
 | Boost shake | steady shake while boosting (trauma 0.4) |
@@ -125,18 +125,18 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 Phase 3 decisions (user):
 - Solid guns (rifle, missiles) use ammo and reloads. Beam weapons (beam sniper, beam blade) use a heat bar: each use adds heat; at full heat the weapon overheats and works again only after it cools to zero (the heat cooldown is the "reload"). The blade lunge also uses energy.
 - Missiles: hold Q (left pod) or E (right pod) to lock targets inside the lock box around the blue ring (one after another, up to the FCS max locks and the missiles left). Release to fire one missile per lock; no lock = one missile straight at the aim point.
-- Blade: rest = upright in the right hand in front of the shoulder (reference image 12). RMB = charge slash: the mech charges toward the target in the aim cone (or 16 m along the aim) with the shield up and the blade lifted overhead, then swings the blade straight down, fast (0.18 s).
-- Only one weapon works at a time (the first pressed stays active until it is done). The blade is the exception.
+- Blade: rest = upright in the right hand in front of the shoulder (reference image 12). RMB = charge slash: the mech charges toward the target in the aim cone (or 16 m along the aim) with the shield up and the blade lifted overhead, then swings the blade straight down, fast (0.18 s). The torso twists: left shoulder leads during the dash (45°), then the right shoulder comes forward during the down swing (35°), and the torso returns to center in the recovery (`TorsoPose.action_twist_deg`).
+- Only one weapon works at a time (the first pressed stays active until it is done). The blade is the exception. The two missile pods count as one weapon: Q and E work together (free fire and locked fire), and each pod locks its own targets.
 - A missile volley at locked targets entrenches the mech (it stops and crouches during the volley and 0.6 s after). A free shot (quick press, no lock) does not.
 - Missile pods reload one missile at a time (1.5 s each), so they can lock and fire with the missiles they have.
-- Beam sniper: hold LMB to charge (3 s to full), release to fire. A tap is a 25% shot. Damage, beam width, screen shake and aim jitter grow with the charge. RMB zooms (no scope overlay).
+- Beam sniper: hold LMB to charge (3 s to full), release to fire. The shot is a sustained beam (like a kamehameha): 2 s at full charge (shorter for a partial charge, at least 0.15 s). It follows the aim and hits every 0.1 s with a small kick and shake. A tap is a 25% shot. Damage, beam width, screen shake and aim jitter grow with the charge. RMB zooms to FOV 52.6° (70% less zoom than before) at 8 m behind the pivot, so the head, weapon arm and gun stay in view (no scope overlay).
 - Keys 1 to 4 switch test loadouts (until the garage in Phase 5): 1 Gunner (heavy rifle + shield), 2 Sniper (beam sniper, two hands), 3 Melee (beam blade + shield), 4 Missile (heavy rifle + shield + two missile pods).
 
 Weapons:
 | Weapon | Slot | Keys | Values |
 |---|---|---|---|
 | Heavy rifle | right arm, one hand | RMB hip fire | 0.5 shots/s, 12 rounds, reload 3.5 s (R reloads early), bullets 400 m/s, recoil 2° up |
-| Beam sniper | right arm, two hands | RMB zoom (FOV 12°), hold LMB charge (3 s), release fire | 1.25 shots/s, instant beam 1500 m, heat 34/shot, cooling 10/s, overheated cooling 25/s (overheats on the 4th fast shot, about 4 s to recover), recoil 3.5° up |
+| Beam sniper | right arm, two hands | RMB zoom (FOV 52.6°), hold LMB charge (3 s), release fire | 1.25 shots/s, instant beam 1500 m, heat 34/shot, cooling 10/s, overheated cooling 25/s (overheats on the 4th fast shot, about 4 s to recover), recoil 3.5° up |
 | Beam blade | right arm | RMB charge slash (shield up, blade overhead, down swing) | lunge 16 m at 32 m/s, 20 energy, slash reach 11 m, heat 30/slash |
 | Missile pod L / R | back | hold Q / E lock, release fire | 4 missiles, one reloaded every 1.5 s, terminal guidance near the target (up to 4x turn), lock box 7°, 0.5 s per lock (head lock-on speed), missiles 90 m/s, turn 110°/s |
 | Hex shield | left arm | LMB lift | 10.9 m², 3 t |
@@ -357,6 +357,7 @@ scripts/core/       mouse_capture.gd, group_nodes.gd.
 - Phase 1 revision 40: dodge roll replaced by a directional dodge hop (11.9 m, 50% of the roll).
 - Phase 1 revision 41: player mech model replaced with an RX-78-2 Gundam style placeholder (same skeleton, same animation). Beam rifle and shield. Waist skirts follow the thighs.
 - Phase 3 revision 59: aim ray hits dummies (shots land on the blue ring), dummy collision fixed. Beam sniper charge shot (hold and release LMB), no scope overlay. Missiles: terminal guidance (close targets hit), one-at-a-time reload, lock with partial ammo, entrench on a locked volley. One weapon at a time (not the blade). Blade upright rest pose and charge slash (shield up, overhead, down swing). Camera view 12° lower (crosshair 0.3 above center).
+- Phase 3 revision 60: beam sniper zoom 70% less (FOV 52.6°, ADS 8 m back) and a 2 s sustained beam for a full charge. Blade dash with the left shoulder leading, torso twist to the right shoulder on the down swing. Both missile pods work at the same time. Start pitch +6° (camera about 17° down, as in the user's image). Camera angle line in the debug HUD.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).
