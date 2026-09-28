@@ -26,12 +26,14 @@ signal dodge_ended
 @export var energy_cost: float = 25.0
 ## Speed kept in the hop direction at the landing (m/s). The skid slows the mech down from it.
 @export var landing_speed: float = 10.0
-## Landing speed for a dodge that starts while boosting (m/s). It keeps the hop speed.
-@export var boost_landing_speed: float = 16.0
+
 ## Skid length after the landing, in meters (until the steps start). The brake thrusters fire.
 @export var skid_distance: float = 5.3
-## Skid length for a dodge that starts while boosting, in meters (500% more).
-@export var boost_skid_distance: float = 32.0
+## Skid length for a dodge that starts while boosting, in meters.
+@export var boost_skid_distance: float = 28.0
+## Skid time for a dodge that starts while boosting, in seconds. With the distance this sets the
+## speed: the boost dodge hops and lands at 2 x distance / time - skid end speed (about 20.9 m/s).
+@export var boost_skid_time: float = 2.25
 ## Stride lengths (meters) of the two steps after the skid.
 @export var stop_strides: PackedFloat32Array = PackedFloat32Array([1.5, 1.5])
 ## After the landing the mech cannot move for this long, in seconds.
@@ -132,6 +134,11 @@ func _physics_process(delta: float) -> void:
 		_last_press = _clock
 
 
+## Landing speed of a boost dodge that gives boost_skid_distance in boost_skid_time.
+func _get_boost_landing_speed() -> float:
+	return 2.0 * boost_skid_distance / boost_skid_time - mech.skid_end_speed
+
+
 func _get_air_progress() -> float:
 	return clampf(_air_time / _flight_time, 0.0, 1.0)
 
@@ -161,6 +168,8 @@ func _start() -> void:
 	var up_speed := sqrt(2.0 * gravity * hop_height)
 	_flight_time = 2.0 * up_speed / gravity
 	var side_speed := distance / _flight_time
+	if _from_boost:
+		side_speed = maxf(side_speed, _get_boost_landing_speed())  # Keeps the boost momentum.
 	mech.velocity = direction * side_speed + Vector3.UP * up_speed
 	is_dodging = true
 	_air_time = 0.0
@@ -176,7 +185,7 @@ func _on_landed(_fall_speed: float) -> void:
 		return
 	is_dodging = false
 	# Keep some speed in the hop direction. The braked skid slows it down, then two steps to a stop.
-	var speed := boost_landing_speed if _from_boost else landing_speed
+	var speed := _get_boost_landing_speed() if _from_boost else landing_speed
 	var keep := direction * speed
 	mech.velocity.x = keep.x
 	mech.velocity.z = keep.z

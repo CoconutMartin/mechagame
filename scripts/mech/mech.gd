@@ -49,9 +49,9 @@ signal landed(fall_speed: float)
 ## The torso and the legs turn separately. The torso turns toward the camera aim (torso turn speed),
 ## inside these twist limits. The legs turn only with A / D. The camera cannot look past the limits.
 ## Largest torso twist to the left of the legs, in degrees.
-@export var torso_twist_left_deg: float = 65.0
+@export var torso_twist_left_deg: float = 52.0
 ## Largest torso twist to the right of the legs, in degrees.
-@export var torso_twist_right_deg: float = 80.0
+@export var torso_twist_right_deg: float = 64.0
 ## Leg turn speed (A / D) while moving, in degrees per second. Steady (no speed-up).
 @export var leg_turn_speed_deg: float = 60.0
 ## Leg turn speed (A / D) while standing still, in degrees per second.
