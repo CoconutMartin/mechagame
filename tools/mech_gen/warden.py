@@ -3,6 +3,8 @@ Weathered grey plates, head built into the center torso with a red eye, hex shie
 forearm, claw feet, two backpack thrusters with flames.
 Revision 43: missile rack removed, shield 20% larger, rifle held in the right hand only
 (one-hand high ready, like reference image 10).
+Revision 46: two small brake thrusters on the hips (fire during the dodge skid). Shield area sets
+the top speed with the shield up (6 m/s at this size).
 Revision 45: upper body (torso, head, arms) 15% smaller. Rifle and shield keep their size.
 Revision 44: blade antenna removed, legs 20% thicker, RMB hip fire (no zoom), LMB lifts the shield.
 Mech faces -Z. Right is +X. Heights are in mech space (feet at 0)."""
@@ -29,6 +31,8 @@ ONE_HAND = {
     "right_pole_aim": (0.4, -1.0, 0.5),     # Hip fire: elbow down and back.
     "aim_anchor": (2.8, 6.5, -1.0),         # Hip fire: stock at the right hip.
 }
+# Shield front area: body 2.1 x 3.8 plus two end triangles 2.1 x 0.7, times the scale squared.
+ONE_HAND["shield_area"] = (2.1 * 3.8 + 2 * 0.5 * 2.1 * 0.7) * SHIELD_SCALE ** 2
 LEG_THICKNESS = 1.2  # Leg width and depth multiplier (revision 44: 20% thicker).
 HIP_X = 1.5
 SIDES = (("L", -1), ("R", 1))
@@ -122,6 +126,11 @@ def build(m):
     m.part("CrotchMarkStem", L, "mark", "box", (0.08, 0.4, 0.05), (0, -0.1, -1.19))
     m.part("CrotchTip", L, "armor_dark", "prism", (0.9, 0.35, 0.45, 0.5), (0, -1.03, -0.95), (0, 0, 180))
     m.part("PelvisBack", L, "armor", "box", (1.6, 1.0, 0.4), (0, -0.05, 0.95))
+    # Brake thrusters: small pods on the pelvis sides. Their flames point the way the mech slides.
+    for s, sign in SIDES:
+        m.part(f"BrakePod{s}", L, "joint", "sphere", (0.34,), (sign * 1.5, 0.95, 0.4))
+        m.part(f"BrakeNozzle{s}", L, "frame", "cyl", (0.22, 0.22, 0.2), (sign * 1.78, 0.95, 0.4), (0, 0, 90))
+        m.flame(f"BrakeFlame{s}", (sign * 1.82, 0.95, 0.4), length=2.2, radius=0.24, parent=L, brake=True)
     for s, sign in SIDES:
         m.part(f"HipGear{s}", L, "joint", "cyl", (0.6, 0.6, 0.5), (sign * 0.75, 0, 0), X())
     k = LEG_THICKNESS

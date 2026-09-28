@@ -26,6 +26,8 @@
 [ext_resource type="Script" path="res://scripts/weapons/weapon_recoil.gd" id="recoil"]
 [ext_resource type="Script" path="res://scripts/effects/booster_flames.gd" id="flames"]
 [ext_resource type="Script" path="res://scripts/animation/shield_pose.gd" id="shieldpose"]
+[ext_resource type="Script" path="res://scripts/mech/mech_shield.gd" id="shield"]
+[ext_resource type="Script" path="res://scripts/effects/brake_thrusters.gd" id="brakes"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/beam_rifle.tscn" id="rifle"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/bullet.tscn" id="bullet"]
 [ext_resource type="Material" path="res://materials/rx78/white.tres" id="white"]
@@ -1006,7 +1008,8 @@ energy = NodePath("../MechEnergy")
 landing_recovery = NodePath("../MechLandingRecovery")
 kneel = NodePath("../MechKneel")
 
-[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin")]
+[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin", "camera_rig")]
+camera_rig = NodePath("../CameraRig")
 script = ExtResource("aim")
 mech = NodePath("..")
 camera = NodePath("../CameraRig/Pitch/SpringArm/Camera")

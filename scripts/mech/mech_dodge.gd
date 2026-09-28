@@ -3,7 +3,8 @@ extends Node
 ## Double tap Space for a dodge hop: a quick, low hop in the chosen direction.
 ## Directions: A / D = side, W = forward, S or no key = back. Costs energy.
 ## In the air the mech leans into the hop and tucks its legs a little. It lands in a small crouch and
-## springs upright. Ending: the boost skid stop (feet slide with dust), then two steps to a stop.
+## springs upright. Ending: a short skid (feet slide with dust, two small brake thrusters fire),
+## then two steps to a stop.
 ## No landing delay.
 
 signal dodge_started
@@ -23,6 +24,9 @@ signal dodge_ended
 @export var energy_cost: float = 25.0
 ## Speed kept in the hop direction at the landing (m/s). The skid slows the mech down from it.
 @export var landing_speed: float = 10.0
+## Skid slowdown in m/s per second. The brake thrusters make it stronger than the boost skid (9.4):
+## 23.5 gives a skid 60% shorter (about 1.8 m from 10 m/s down to 4 m/s).
+@export var skid_slowdown: float = 23.5
 ## Stride lengths (meters) of the two steps after the skid.
 @export var stop_strides: PackedFloat32Array = PackedFloat32Array([1.5, 1.5])
 ## After the landing the mech cannot move for this long, in seconds.
@@ -155,12 +159,12 @@ func _on_landed(_fall_speed: float) -> void:
 	if not is_dodging:
 		return
 	is_dodging = false
-	# Keep some speed in the hop direction. The skid slows it down, then two steps to a stop.
+	# Keep some speed in the hop direction. The braked skid slows it down, then two steps to a stop.
 	var keep := direction * landing_speed
 	mech.velocity.x = keep.x
 	mech.velocity.z = keep.z
 	mech.cancel_landing_steps()
-	mech.start_skid(stop_strides)
+	mech.start_skid(stop_strides, skid_slowdown, true)
 	_recover_left = recovery_time
 	# Start the recovery spring from the full landing pose.
 	_recover.value = 1.0

@@ -23,7 +23,8 @@ SCRIPTS = [("mech/mech","mech"),("mech/mech_input","input"),("mech/mech_energy",
  ("animation/torso_pose","torsopose"),("effects/skid_dust","skiddust"),("animation/skid_body_turn","skidturn"),
  ("animation/inertia_sway","inertia"),("mech/mech_dodge","dodge"),("animation/weapon_pose","weaponpose"),
  ("camera/camera_shake","shake"),("animation/skirt_follow","skirt"),("weapons/weapon_fire","fire"),
- ("weapons/weapon_recoil","recoil"),("effects/booster_flames","flames"),("animation/shield_pose","shieldpose")]
+ ("weapons/weapon_recoil","recoil"),("effects/booster_flames","flames"),("animation/shield_pose","shieldpose"),
+ ("mech/mech_shield","shield"),("effects/brake_thrusters","brakes")]
 
 
 def TT(x, y, z):
@@ -38,6 +39,7 @@ class Model:
         self.skirts = []
         self.foot = "Foot"   # Mesh name prefix used by SkidDust (FootL, FootR).
         self.flames = []     # Booster flame node names on the torso.
+        self.brake_flames = []  # Brake thruster flame paths (relative to the mech root).
         self.torso_scale = 1.0  # Set by write_scene. Scales build() parts on the torso and arms.
 
     def _scaled(self, parent, kind, params, pos):
@@ -48,14 +50,18 @@ class Model:
         params = tuple(v * k for v in params[:n]) + tuple(params[n:])
         return params, tuple(v * k for v in pos)
 
-    def flame(self, name, pos, rot=(0, 0, 0), length=3.0, radius=0.45):
-        """Booster flame on the torso. Points down its -Y axis. Uses materials "flame" and "flame_core"."""
-        self.node(name, TO, pos=pos, rot=rot)
+    def flame(self, name, pos, rot=(0, 0, 0), length=3.0, radius=0.45, parent=TO, brake=False):
+        """Flame node. Points down its -Y axis. Uses materials "flame" and "flame_core".
+        Booster flames (default) sit on the torso. brake=True: a brake thruster flame (BrakeThrusters)."""
+        self.node(name, parent, pos=pos, rot=rot)
         outer = self.b.mesh("cyl", radius, 0.04, length)
         core = self.b.mesh("cyl", radius * 0.55, 0.02, length * 0.6)
         for part, mid, mat, y in (("Outer", outer, "flame", -length / 2), ("Core", core, "flame_core", -length * 0.3)):
-            self.nodes.append(f'[node name="{part}" type="MeshInstance3D" parent="{TO}/{name}"]\ntransform = {xf((0, y, 0))}\ncast_shadow = 0\nmesh = SubResource("{mid}")\nsurface_material_override/0 = ExtResource("{mat}")\n')
-        self.flames.append(name)
+            self.nodes.append(f'[node name="{part}" type="MeshInstance3D" parent="{parent}/{name}"]\ntransform = {xf((0, y, 0))}\ncast_shadow = 0\nmesh = SubResource("{mid}")\nsurface_material_override/0 = ExtResource("{mat}")\n')
+        if brake:
+            self.brake_flames.append(f"{parent}/{name}")
+        else:
+            self.flames.append(name)
 
     def node(self, name, parent, typ="Node3D", pos=(0, 0, 0), rot=(0, 0, 0)):
         _, pos = self._scaled(parent, None, (), pos)
@@ -91,7 +97,8 @@ def write_scene(out_path, rifle_scene, materials, build, shoulder_x=2.9, shoulde
     """rest_xf: weapon rest transform text in torso space (default: two-hand low ready).
     one_hand: dict for a one-hand weapon with a shield on the left arm. Keys (mech space):
     rest / raised (left hand markers), pole_rest / pole_raised (left elbow), right_pole_rest /
-    right_pole_aim (right elbow), aim_anchor (stock place for hip fire).
+    right_pole_aim (right elbow), aim_anchor (stock place for hip fire), shield_area (m², sets the
+    top speed with the shield up).
     torso_scale: size of the upper body (torso, head, arms). Weapon and shield keep their size. RMB fires from the hip
     with no zoom. LMB lifts the shield (ShieldPose)."""
     m = Model()
@@ -141,11 +148,13 @@ shape = SubResource("body_shape")
     logic = logic.replace('arm_ik_left = NodePath("../ArmIKLeft")\narm_ik_right = NodePath("../ArmIKRight")',
                           'arm_ik_left = NodePath("../ArmIKLeft")\narm_ik_right = NodePath("../ArmIKRight")\nrecoil = NodePath("../WeaponRecoil")')
     logic = logic.replace('"arm_ik_left", "arm_ik_right")]', '"arm_ik_left", "arm_ik_right", "recoil")]')
+    logic = logic.replace('[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin")]',
+                          '[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin", "camera_rig")]\ncamera_rig = NodePath("../CameraRig")')
     logic = logic.replace("upper_length = 2.7\nlower_length = 3.0", f"upper_length = {round(2.7 * k, 4)}\nlower_length = {round(3.0 * k, 4)}")
     extra = []
     if one_hand:
         m.nodes[0] = m.nodes[0].replace('"kneel", "dodge")]', '"kneel", "dodge", "shield")]').replace(
-            'dodge = NodePath("MechDodge")\n', 'dodge = NodePath("MechDodge")\nshield = NodePath("Animation/ShieldPose")\n', 1)
+            'dodge = NodePath("MechDodge")\n', 'dodge = NodePath("MechDodge")\nshield = NodePath("MechShield")\n', 1)
         v = lambda t: f"Vector3({t[0]}, {t[1]}, {t[2]})"
         for line in ('left_grip_target = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripLeft")\n',
                      'left_grip_rest = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripLeftRest")\n',
@@ -158,9 +167,14 @@ shape = SubResource("body_shape")
                               f'arm_ik_right = NodePath("../ArmIKRight")\nright_pole_rest = {v(one_hand["right_pole_rest"])}\nright_pole_aim = {v(one_hand["right_pole_aim"])}\n')
         logic = logic.replace('script = ExtResource("ads")\n', 'script = ExtResource("ads")\nenabled = false\n')
         logic = logic.replace('script = ExtResource("torsopose")\n', 'script = ExtResource("torsopose")\naim_twist_deg = 0.0\naim_tilt_deg = 0.0\n')
-        extra.append(f'''[node name="ShieldPose" type="Node" parent="Animation" node_paths=PackedStringArray("input", "arm_ik", "hand_target", "rest", "raised")]
+        extra.append(f'''[node name="MechShield" type="Node" parent="." node_paths=PackedStringArray("input")]
+script = ExtResource("shield")
+input = NodePath("../MechInput")
+area_m2 = {round(one_hand["shield_area"], 3)}
+''')
+        extra.append(f'''[node name="ShieldPose" type="Node" parent="Animation" node_paths=PackedStringArray("shield", "arm_ik", "hand_target", "rest", "raised")]
 script = ExtResource("shieldpose")
-input = NodePath("../../MechInput")
+shield = NodePath("../../MechShield")
 arm_ik = NodePath("../ArmIKLeft")
 hand_target = NodePath("../../{TO}/LeftHand")
 rest = NodePath("../../{TO}/LeftHandRest")
@@ -182,6 +196,13 @@ shooter = NodePath("../..")
     extra.append('''[node name="WeaponRecoil" type="Node" parent="Animation" node_paths=PackedStringArray("weapon_fire")]
 script = ExtResource("recoil")
 weapon_fire = NodePath("../WeaponFire")
+''')
+    if m.brake_flames:
+        bf = ", ".join(f'NodePath("../../{f}")' for f in m.brake_flames)
+        extra.append(f'''[node name="BrakeThrusters" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "flames")]
+script = ExtResource("brakes")
+mech = NodePath("../..")
+flames = [{bf}]
 ''')
     if m.flames:
         fl = ", ".join(f'NodePath("../../{TO}/{f}")' for f in m.flames)

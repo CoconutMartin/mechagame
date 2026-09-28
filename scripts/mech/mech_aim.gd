@@ -6,6 +6,9 @@ extends Node
 
 @export var mech: Mech
 @export var camera: Camera3D
+## Optional. While the camera looks at the front of the mech, the aim keeps its last pitch and
+## follows the torso turn (the camera view is not used then).
+@export var camera_rig: MechCameraRig
 ## Start point of the mech's aim (the weapon stock at the shoulder).
 @export var aim_origin: Node3D
 @export var max_range: float = 1500.0
@@ -47,6 +50,11 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_time += delta * jitter_speed
 	var origin := aim_origin.global_position
+	if camera_rig != null and camera_rig.front_view_amount > 0.0:
+		var flat_yaw := atan2(-aim_direction.x, -aim_direction.z)
+		aim_direction = aim_direction.rotated(Vector3.UP, wrapf(mech.get_aim_yaw() - flat_yaw, -PI, PI))
+		aim_point = _cast(origin, aim_direction)
+		return
 	var screen_point := get_crosshair_screen_point()
 	camera_target = _cast(camera.project_ray_origin(screen_point), camera.project_ray_normal(screen_point))
 

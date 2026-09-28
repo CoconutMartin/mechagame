@@ -21,8 +21,8 @@ signal landed(fall_speed: float)
 @export var air_steer: MechAirSteer
 @export var kneel: MechKneel
 @export var dodge: MechDodge
-## Optional. While the shield is up the mech moves slower.
-@export var shield: ShieldPose
+## Optional. While the shield is up the mech moves slower (MechShield.get_speed_limit).
+@export var shield: MechShield
 
 ## Total mech weight in tons. Phase 2 computes this from parts.
 @export var mass_tons: float = 60.0
@@ -44,8 +44,6 @@ signal landed(fall_speed: float)
 @export var landing_stop_steps: int = 3
 ## Slowdown while the mech charges its jump jets (m/s per second). The mech stands still to charge.
 @export var jump_charge_brake: float = 9.0
-## Top speeds (walk, run, boost) with the shield fully up = normal x this value.
-@export_range(0.1, 1.0) var shield_speed_multiplier: float = 0.5
 
 @export_group("Turning")
 ## The torso and the legs turn separately. The torso turns toward the camera aim (torso turn speed),
@@ -142,6 +140,8 @@ var is_air_boosting: bool = false
 var is_exiting_boost: bool = false
 ## True while the feet slide in a boost skid stop.
 var is_skidding: bool = false
+## True while the current skid uses the brake thrusters (dodge hop ending).
+var is_brake_skidding: bool = false
 ## Random side of the current skid: +1 = left, -1 = right. Set when a skid starts.
 var skid_side: float = 1.0
 
@@ -158,6 +158,7 @@ var _landing_stop: bool = false
 var _airborne: bool = false
 var _in_exit_leap: bool = false
 var _skid_stop_plan: PackedFloat32Array = PackedFloat32Array()
+var _skid_slowdown: float = 9.4
 ## World yaw where the torso (and the mech aim) points.
 var _aim_yaw: float = 0.0
 var _previous_aim_yaw: float = 0.0
@@ -217,8 +218,13 @@ func get_torso_twist() -> float:
 ## Starts a skid stop: the feet plant and slide, then heavy steps. The body turns and rolls to a
 ## random side. Used by the boost exit and at the end of a dodge hop.
 ## stop_strides: stride lengths of the steps after the slide (empty = skid_stop_strides).
-func start_skid(stop_strides: PackedFloat32Array = PackedFloat32Array()) -> void:
+## slowdown: skid slowdown in m/s per second (0 = skid_deceleration).
+## boost_brake: true when small thrusters help to brake (BrakeThrusters shows their fire).
+func start_skid(stop_strides: PackedFloat32Array = PackedFloat32Array(), slowdown: float = 0.0,
+		boost_brake: bool = false) -> void:
 	_skid_stop_plan = stop_strides if not stop_strides.is_empty() else skid_stop_strides
+	_skid_slowdown = slowdown if slowdown > 0.0 else skid_deceleration
+	is_brake_skidding = boost_brake
 	is_exiting_boost = true
 	_exit_deceleration = 0.0
 	_stop_deceleration = 0.0
@@ -328,13 +334,13 @@ func _update_horizontal(delta: float) -> void:
 	elif not has_input:
 		rate = _get_stop_deceleration() if on_floor else deceleration
 	elif is_boosting:
-		target = wish * get_boost_speed() * _get_shield_scale()
+		target = _limit_for_shield(wish * get_boost_speed())
 		rate = boost_acceleration
 	elif is_running:
-		target = wish * get_run_speed() * _get_shield_scale()
+		target = _limit_for_shield(wish * get_run_speed())
 		rate = acceleration
 	else:
-		target = wish * _get_walk_speed(wish) * _get_shield_scale()
+		target = _limit_for_shield(wish * _get_walk_speed(wish))
 		rate = _get_exit_deceleration() if is_exiting_boost and on_floor else acceleration
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z).move_toward(target, rate * delta)
@@ -356,12 +362,13 @@ func _update_horizontal(delta: float) -> void:
 ## or back to walking if a move key is held.
 func _update_skid(delta: float, has_input: bool) -> void:
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
-	horizontal = horizontal.move_toward(Vector3.ZERO, skid_deceleration * delta)
+	horizontal = horizontal.move_toward(Vector3.ZERO, _skid_slowdown * delta)
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 	if horizontal.length() > skid_end_speed:
 		return
 	is_skidding = false
+	is_brake_skidding = false
 	_stop_deceleration = 0.0
 	if has_input:
 		is_exiting_boost = false
@@ -369,11 +376,13 @@ func _update_skid(delta: float, has_input: bool) -> void:
 		footsteps.start_stride_plan(_skid_stop_plan)
 
 
-## Speed multiplier from the shield: 1 = shield down, shield_speed_multiplier = shield fully up.
-func _get_shield_scale() -> float:
-	if shield == null:
-		return 1.0
-	return lerpf(1.0, shield_speed_multiplier, shield.amount)
+## Limits a target velocity while the shield is up. Blends in as the shield comes up.
+func _limit_for_shield(target: Vector3) -> Vector3:
+	if shield == null or shield.amount <= 0.0:
+		return target
+	var speed := target.length()
+	var limit := lerpf(speed, minf(speed, shield.get_speed_limit()), shield.amount)
+	return target.limit_length(limit)
 
 
 ## Walk speed for a move direction. Moving to the side is slower than forward.

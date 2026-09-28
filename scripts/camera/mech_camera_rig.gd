@@ -3,6 +3,7 @@ extends Node3D
 ## Over-the-shoulder camera. Stays behind the mech torso and turns with it.
 ## The mouse moves an aim target (yaw). The torso turns toward that target at its own turn speed,
 ## and the camera turns with the torso. Pitch follows the mouse on a spring.
+## Hold V (front_view) to swing the camera around to the front of the mech and look at it.
 ## Node layout: MechCameraRig > Pitch > SpringArm3D > Camera3D.
 
 @export var target: Node3D
@@ -35,6 +36,13 @@ var pitch: float = 0.0
 var sensitivity_scale: float = 1.0
 
 var _target_yaw: float = 0.0
+## 0 = camera behind the mech, 1 = camera in front, looking at the mech.
+var front_view_amount: float = 0.0
+
+@export_group("Front View")
+## How fast the camera swings to the front and back (1 / seconds).
+@export var front_view_speed: float = 3.0
+@export_group("")
 
 @export_group("Mech Limits")
 ## Camera drop when the mech kneels fully, in meters.
@@ -78,6 +86,9 @@ func _process(delta: float) -> void:
 	# The camera stays behind the torso.
 	var mech := target as Mech
 	var view_yaw := mech.get_aim_yaw_interpolated() if mech != null else yaw
+	var front := Input.is_action_pressed("front_view")
+	front_view_amount = move_toward(front_view_amount, 1.0 if front else 0.0, front_view_speed * delta)
+	view_yaw += PI * smoothstep(0.0, 1.0, front_view_amount)
 	rotation = Vector3(0.0, view_yaw, 0.0)
 	_pitch_node.rotation = Vector3(pitch, 0.0, 0.0)
 

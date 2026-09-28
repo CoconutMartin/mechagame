@@ -33,6 +33,9 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
+	var rig := mech_aim.camera_rig
+	if rig != null and rig.front_view_amount > 0.0:
+		return  # Front view: no crosshair.
 	var half := crosshair_size * 0.5
 	draw_rect(Rect2(_crosshair_position - Vector2(half, half), Vector2(crosshair_size, crosshair_size)), crosshair_color)
 	if not _visible_on_screen:
