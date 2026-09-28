@@ -24,6 +24,8 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 ## Small steady camera shake while charging: trauma at no charge and at full charge.
 @export var charge_shake_min: float = 0.08
 @export var charge_shake_max: float = 0.22
+## Shake while the beam fires (screen, aim and torso) x this value. 0.7 = 30% less (revision 63).
+@export var discharge_shake: float = 0.7
 ## Extra screen shake and aim jitter at full charge = weapon data values x this value.
 @export var full_charge_kick: float = 2.0
 
@@ -88,7 +90,7 @@ func _update_discharge(delta: float) -> void:
 	if is_instance_valid(_beam):
 		_beam.show_beam(origin, end)
 	# The shoulders and torso shake while the beam fires (more with more charge).
-	controller.torso_pose.action_shake = _power
+	controller.torso_pose.action_shake = _power * discharge_shake
 	_tick -= delta
 	if _tick <= 0.0:
 		_tick += tick_time
@@ -97,7 +99,7 @@ func _update_discharge(delta: float) -> void:
 			var share := tick_time / maxf(discharge_time, tick_time)
 			_impact(hit.position, hit.normal, hit.collider, data.damage * _power * share * 2.0)
 		# The beam pushes the aim up a little and shakes the view while it fires.
-		var kick := _power
+		var kick := _power * discharge_shake
 		controller.mech_aim.kick_aim(data.recoil_up_deg * 0.12 * kick, data.recoil_side_deg * 0.2 * kick, 0.3 * kick)
 		if controller.camera_shake != null:
 			controller.camera_shake.add_shake(0.03 * kick, 0.02 * kick)

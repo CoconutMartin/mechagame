@@ -23,8 +23,8 @@ def write_model(path, root, script, build, root_transform=None, extra_ext=()):
         b.nodes = []
         b.part(name, parent, mat, kind, params, pos, rot)
         nodes.extend(b.nodes)
-    def marker(name, pos, rot=(0, 0, 0)):
-        nodes.append(f'[node name="{name}" type="Marker3D" parent="."]\ntransform = {xf(pos, rot)}\n')
+    def marker(name, pos, rot=(0, 0, 0), parent="."):
+        nodes.append(f'[node name="{name}" type="Marker3D" parent="{parent}"]\ntransform = {xf(pos, rot)}\n')
     build(part, marker)
     o = ['[gd_scene format=3]\n', f'[ext_resource type="Script" path="res://scripts/weapons/{script}.gd" id="script"]']
     for mid, p in MATS.items():
@@ -77,19 +77,23 @@ def blade(part, marker):
 
 
 def pile_bunker(part, marker):
-    """Pile bunker. The hand holds the grip. The housing sits on the outer side of the forearm and
-    the stake (the "needle") points along -Z. The Stake node slides out when it fires."""
-    part("Grip", "dark", "box", (0.3, 0.7, 0.35), (0, 0, 0))
-    part("GripBar", "frame", "box", (0.6, 0.25, 0.3), (0.4, 0.25, 0))
-    part("Housing", "armor", "box", (0.8, 1.1, 3.6), (0.8, 0.2, 0.4))
-    part("HousingRail", "dark", "box", (0.85, 0.3, 3.2), (0.8, 0.85, 0.5))
-    part("Drum", "joint", "cyl", (0.45, 0.45, 0.7), (0.8, 1.2, 1.3), (0, 0, 90))
-    part("NoseRing", "dark", "cyl", (0.42, 0.42, 0.3), (0.8, 0.2, -1.5), (90, 0, 0))
-    marker("Stake", (0.8, 0.2, 0))
-    part("StakeRod", "frame", "cyl", (0.2, 0.2, 3.2), (0, 0, -0.2), (90, 0, 0), parent="Stake")
-    part("StakeTip", "rifle", "cyl", (0.2, 0.02, 0.7), (0, 0, -2.15), (90, 0, 0), parent="Stake")
-    marker("Nose", (0.8, 0.2, -1.65))
+    """Pile bunker. The root is the fist target (the hand holds nothing). The model is under "Mount",
+    which PileBunkerWeapon moves onto the right forearm (like the shield on the left forearm).
+    Mount space: -Z along the forearm toward the fist, +X to the outer side. The stake (the "needle")
+    points along -Z. The Stake node slides out when it fires."""
     marker("GripRight", (0, 0, 0))
+    marker("Mount", (0, 0, 0))
+    m = "Mount"
+    part("Housing", "armor", "box", (0.8, 1.1, 3.6), (0, 0, -0.6), parent=m)
+    part("HousingRail", "dark", "box", (0.85, 0.3, 3.2), (0, 0.65, -0.5), parent=m)
+    part("Clamp0", "frame", "box", (1.9, 1.5, 0.3), (-0.55, 0, 0.6), parent=m)
+    part("Clamp1", "frame", "box", (1.9, 1.5, 0.3), (-0.55, 0, -1.2), parent=m)
+    part("Drum", "joint", "cyl", (0.45, 0.45, 0.7), (0.25, 0.6, 0.5), (0, 0, 90), parent=m)
+    part("NoseRing", "dark", "cyl", (0.42, 0.42, 0.3), (0, 0, -2.45), (90, 0, 0), parent=m)
+    marker("Stake", (0, 0, -1.0), parent=m)
+    part("StakeRod", "frame", "cyl", (0.2, 0.2, 3.2), (0, 0, -0.2), (90, 0, 0), parent=f"{m}/Stake")
+    part("StakeTip", "rifle", "cyl", (0.2, 0.02, 0.7), (0, 0, -2.15), (90, 0, 0), parent=f"{m}/Stake")
+    marker("Nose", (0, 0, -2.6), parent=m)
 
 
 def pod(part, marker):
@@ -167,7 +171,7 @@ if __name__ == "__main__":
     bunker_rest = one_hand_rest(hand=(2.6, 6.4, -2.0), muzzle_dir=(0.0, -0.2, -1.0), up_hint=(0.0, 1.0, 0.0),
                                 grip=(0, 0, 0), torso_scale=K)
     res("data/weapons/pile_bunker.tres", {"display_name": '"Pile Bunker"', "weight_t": 2.5, "hp": 300.0,
-        "kind": 5, "fire_rate": 1.0, "damage": 900.0, "magazine": 3, "reload_time": 5.0,
+        "kind": 5, "fire_rate": 0.3333, "damage": 900.0, "magazine": 3, "reload_time": 5.0,
         "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,
         "shake_trauma": 0.45, "shake_kick": 0.6, "recoil_up_deg": 2.0, "recoil_side_deg": 1.0,
         "rest_transform": bunker_rest, "aim_anchor": v3(anchor),

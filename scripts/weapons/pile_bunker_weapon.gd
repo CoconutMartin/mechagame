@@ -1,6 +1,7 @@
 class_name PileBunkerWeapon
 extends MechWeapon
-## A pile bunker (right arm). RMB: a shield charge, then a punch.
+## A pile bunker on the right forearm (like the shield on the left). RMB: a shield charge, then a punch.
+## The weapon root is only the fist target for the arm IK; the model ("Mount") moves onto the forearm.
 ## The mech charges toward the target (or along the aim) with the shield up and the torso turned
 ## so the left shoulder (shield) leads. At the end of the charge the torso twists back and the right
 ## arm pulls back, then the arm punches forward. When the front of the pile bunker touches something,
@@ -19,6 +20,11 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 ## Punch: arm reaching forward.
 @export var punch_position: Vector3 = Vector3(1.2, 2.3, -4.7)
 @export var punch_direction: Vector3 = Vector3(-0.15, 0.0, -1.0)
+
+## Model place on the right forearm (elbow space: -Y runs down the forearm to the fist, -X is the
+## outer side, +Z is the top of the forearm).
+@export var mount_position: Vector3 = Vector3(-1.0, -1.6, 0.0)
+@export var mount_rotation_deg: Vector3 = Vector3(-90.0, 0.0, 180.0)
 
 @export_group("Torso")
 ## Torso turn during the shield charge, in degrees. Negative = turn right (left shoulder leads).
@@ -79,8 +85,9 @@ var _action := Transform3D.IDENTITY
 var _twist: float = 0.0
 var _stake_rest := Vector3.ZERO
 
-@onready var _stake: Node3D = $Stake
-@onready var _nose: Node3D = $Nose
+@onready var _mount: Node3D = $Mount
+@onready var _stake: Node3D = $Mount/Stake
+@onready var _nose: Node3D = $Mount/Nose
 
 
 func _ready() -> void:
@@ -99,7 +106,17 @@ func is_busy() -> bool:
 	return state != State.IDLE
 
 
+## Moves the model onto the right forearm (once, after WeaponController has wired the arm IK).
+func _attach_to_forearm() -> void:
+	var forearm := controller.arm_ik_right.mid_joint
+	if forearm == null or _mount.get_parent() == forearm:
+		return
+	_mount.reparent(forearm, false)
+	_mount.transform = Transform3D(Basis.from_euler(mount_rotation_deg * PI / 180.0), mount_position)
+
+
 func _update(delta: float) -> void:
+	_attach_to_forearm()
 	_time += delta
 	match state:
 		State.IDLE:
@@ -173,6 +190,8 @@ func _start() -> void:
 		direction = to_target.normalized()
 		distance = clampf(to_target.length() - stop_distance, 0.0, data.lunge_distance)
 	mech.start_lunge(direction, data.lunge_speed, distance)
+	# One punch per fire_rate wait, hit or miss.
+	_cooldown = 1.0 / maxf(data.fire_rate, 0.01)
 	has_fired = false
 	_next(State.CHARGE)
 
@@ -191,7 +210,10 @@ func _check_contact() -> void:
 
 
 func _fire_stake(point: Vector3, normal: Vector3, body: Object, forward: Vector3) -> void:
+	# Uses a stake but keeps the punch wait that started with the charge.
+	var wait := _cooldown
 	consume()
+	_cooldown = wait
 	has_fired = true
 	# Back to the start of the punch pose hold, so the stake stays out for the full hold time.
 	if state == State.HOLD:
