@@ -1,8 +1,9 @@
 """Warden: heavy armored mech from reference image 9 (Phase 1 revision 42).
-Weathered grey plates, head built into the center torso with a red eye, tall blade antenna on
-the left shoulder, hex shield on the left forearm, claw feet, two backpack thrusters with flames.
+Weathered grey plates, head built into the center torso with a red eye, hex shield on the left
+forearm, claw feet, two backpack thrusters with flames.
 Revision 43: missile rack removed, shield 20% larger, rifle held in the right hand only
 (one-hand high ready, like reference image 10).
+Revision 44: blade antenna removed, legs 20% thicker, RMB hip fire (no zoom), LMB lifts the shield.
 Mech faces -Z. Right is +X. Heights are in mech space (feet at 0)."""
 import math, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -16,13 +17,15 @@ SHIELD_SCALE = 1.2
 # One-hand high ready: grip in the right hand in front of the right shoulder, muzzle up.
 RIFLE_REST = one_hand_rest(hand=(2.7, 7.3, -2.15), muzzle_dir=(0.12, 1.0, -0.12), up_hint=(0.25, 0.0, 1.0))
 ONE_HAND = {
-    "rest": (-3.3, 3.8, -0.8),        # Left hand hangs at the side, shield on the outside.
-    "aim": (-2.3, 7.4, -2.6),         # Shield comes up in front of the left chest while aiming.
+    "rest": (-3.3, 3.8, -0.8),         # Left hand hangs at the side, shield on the outside.
+    "raised": (-1.9, 8.6, -2.7),       # LMB: forearm up in front of the left chest, shield faces forward.
     "pole_rest": (-1.0, -0.2, 0.3),
-    "pole_aim": (-0.3, -1.0, -0.2),
+    "pole_raised": (-0.3, -1.0, -0.1),
     "right_pole_rest": (0.25, -1.0, -0.2),  # Elbow down under the hand, like the photo.
-    "right_pole_aim": (1.0, -0.6, 0.3),
+    "right_pole_aim": (0.4, -1.0, 0.5),     # Hip fire: elbow down and back.
+    "aim_anchor": (2.8, 6.5, -1.0),         # Hip fire: stock at the right hip.
 }
+LEG_THICKNESS = 1.2  # Leg width and depth multiplier (revision 44: 20% thicker).
 HIP_X = 1.5
 SIDES = (("L", -1), ("R", 1))
 
@@ -80,9 +83,6 @@ def build(m):
         m.part(f"PauldronTop{s}", TO, "armor", "box", (1.4, 0.35, 1.9), TT(x, 9.85, 0))
         m.part(f"PauldronFront{s}", TO, "armor_dark", "box", (1.6, 1.0, 0.3), TT(x, 8.8, -1.2), (10, 0, 0))
         m.part(f"PauldronSide{s}", TO, "armor", "box", (0.3, 1.5, 2.1), TT(sign * 3.85, 8.6, 0), (0, 0, -sign * 8))
-    # Blade antenna on the left shoulder.
-    m.part("Antenna", TO, "armor", "prism", (0.9, 3.2, 0.25, 0.8), TT(-3.1, 11.1, 0.5), (-8, 65, 6))
-    m.part("AntennaBase", TO, "armor_dark", "box", (0.5, 0.6, 0.9), TT(-3.1, 9.95, 0.4))
 
     # ---- Arms ----
     for s, sign in SIDES:
@@ -120,31 +120,47 @@ def build(m):
     m.part("PelvisBack", L, "armor", "box", (1.6, 1.0, 0.4), (0, -0.05, 0.95))
     for s, sign in SIDES:
         m.part(f"HipGear{s}", L, "joint", "cyl", (0.6, 0.6, 0.5), (sign * 0.75, 0, 0), X())
+    k = LEG_THICKNESS
+    leg = m.part
+
+    def part(name, parent, mat, kind, params, pos=(0, 0, 0), rot=(0, 0, 0)):
+        """Leg part with width and depth times LEG_THICKNESS. Height stays the same."""
+        along_x = rot == (0, 0, 90)
+        if kind == "box":
+            params = (params[0] * k, params[1], params[2] * k)
+        elif kind == "cyl":
+            params = (params[0] * k, params[1] * k, params[2] * (k if along_x else 1.0))
+        elif kind == "sphere":
+            params = (params[0] * k,)
+        elif kind == "prism":
+            params = (params[0] * k, params[1], params[2], params[3])
+        leg(name, parent, mat, kind, params, (pos[0] * k, pos[1], pos[2] * k), rot)
+
     for s, sign in SIDES:
         HP = f"{L}/Hip{s}"
         KN = f"{HP}/Knee{s}"
         # Thigh: big square plate on top, armored thigh below.
-        m.part(f"ThighPlate{s}", HP, "armor", "box", (1.7, 1.7, 1.7), (sign * 0.1, -0.55, 0))
-        m.part(f"ThighPlateFace{s}", HP, "armor_dark", "box", (1.3, 1.3, 0.1), (sign * 0.1, -0.55, -0.88))
-        m.part(f"ThighFrame{s}", HP, "frame", "cyl", (0.5, 0.5, 1.2), (0, -1.6, 0))
-        m.part(f"Thigh{s}", HP, "armor", "box", (1.3, 1.1, 1.4), (0, -1.95, 0))
+        part(f"ThighPlate{s}", HP, "armor", "box", (1.7, 1.7, 1.7), (sign * 0.1, -0.55, 0))
+        part(f"ThighPlateFace{s}", HP, "armor_dark", "box", (1.3, 1.3, 0.1), (sign * 0.1, -0.55, -0.88))
+        part(f"ThighFrame{s}", HP, "frame", "cyl", (0.5, 0.5, 1.2), (0, -1.6, 0))
+        part(f"Thigh{s}", HP, "armor", "box", (1.3, 1.1, 1.4), (0, -1.95, 0))
         # Knee: round joint and a front cap.
-        m.part(f"KneeJoint{s}", KN, "joint", "cyl", (0.6, 0.6, 1.3), (0, 0, 0), X())
-        m.part(f"KneeCap{s}", KN, "armor", "box", (1.1, 1.2, 0.5), (0, -0.2, -0.75), (-10, 0, 0))
+        part(f"KneeJoint{s}", KN, "joint", "cyl", (0.6, 0.6, 1.3), (0, 0, 0), X())
+        part(f"KneeCap{s}", KN, "armor", "box", (1.1, 1.2, 0.5), (0, -0.2, -0.75), (-10, 0, 0))
         # Shin: thick armor with a front plate and a chamfered back.
-        m.part(f"Shin{s}", KN, "armor", "box", (1.45, 1.8, 1.6), (0, -1.15, 0.05))
-        m.part(f"ShinFront{s}", KN, "armor", "box", (1.15, 1.7, 0.3), (0, -1.1, -0.85), (-6, 0, 0))
-        m.part(f"ShinSide{s}", KN, "armor_dark", "box", (0.2, 1.2, 1.2), (sign * 0.8, -1.2, 0.05))
-        m.part(f"Ankle{s}", KN, "joint", "cyl", (0.4, 0.4, 1.2), (0, -2.05, 0), X())
+        part(f"Shin{s}", KN, "armor", "box", (1.45, 1.8, 1.6), (0, -1.15, 0.05))
+        part(f"ShinFront{s}", KN, "armor", "box", (1.15, 1.7, 0.3), (0, -1.1, -0.85), (-6, 0, 0))
+        part(f"ShinSide{s}", KN, "armor_dark", "box", (0.2, 1.2, 1.2), (sign * 0.8, -1.2, 0.05))
+        part(f"Ankle{s}", KN, "joint", "cyl", (0.4, 0.4, 1.2), (0, -2.05, 0), X())
         # Claw foot: base, three front toes, one heel toe. Bottom at y -2.6 (ground).
-        m.part(f"Foot{s}", KN, "armor", "box", (1.4, 0.55, 1.5), (0, -2.3, -0.15))
+        part(f"Foot{s}", KN, "armor", "box", (1.4, 0.55, 1.5), (0, -2.3, -0.15))
         for i, (x, yaw, length) in enumerate(((-0.5, 18, 1.2), (0, 0, 1.4), (0.5, -18, 1.2))):
             z = -0.9 - length / 2 * 0.9
-            m.part(f"Toe{s}{i}", KN, "armor", "box", (0.42, 0.4, length), (x * 1.2, -2.4, z), (0, yaw, 0))
+            part(f"Toe{s}{i}", KN, "armor", "box", (0.42, 0.4, length), (x * 1.2, -2.4, z), (0, yaw, 0))
             reach = length / 2 + 0.15
             tip = (x * 1.2 - math.sin(math.radians(yaw)) * reach, -2.45, z - math.cos(math.radians(yaw)) * reach)
-            m.part(f"ToeTip{s}{i}", KN, "armor_dark", "prism", (0.42, 0.3, 0.4, 0.5), tip, (-90, yaw, 0))
-        m.part(f"Heel{s}", KN, "armor", "box", (0.5, 0.4, 0.9), (0, -2.4, 0.95))
+            part(f"ToeTip{s}{i}", KN, "armor_dark", "prism", (0.42, 0.3, 0.4, 0.5), tip, (-90, yaw, 0))
+        part(f"Heel{s}", KN, "armor", "box", (0.5, 0.4, 0.9), (0, -2.4, 0.95))
 
 
 if __name__ == "__main__":

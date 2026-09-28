@@ -119,7 +119,7 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 
 - One-hand weapons: RMB uses the right arm weapon, LMB uses the left arm weapon.
 - Two-hand firearm: RMB aims down sight, LMB shoots.
-- Now (revision 43): the Warden rifle is a one-hand weapon. Hold RMB: the rifle comes up to the right shoulder (ADS camera), then fires 6 shots per second while RMB is held. The shield comes up in front of the left chest.
+- Now (revision 44): the Warden rifle is a one-hand weapon. Hold RMB: hip fire, 2 shots per second, no zoom (one-hand weapons never zoom). Hold LMB: the shield on the left arm lifts in front of the chest. Two-hand weapons keep the ADS zoom on RMB.
 - "Use" means fire for guns and activate for shields and melee weapons.
 
 ## Mech parts (all interchangeable)
@@ -158,17 +158,19 @@ All of this logic lives in one function so it is easy to tune.
   - `TwoBoneIK`: arms reach grip markers on the weapon. The long rifle rest pose follows stick figure reference 2: weapon low across the front, stock tucked under the right arm, muzzle down 18° toward the front left, right hand on the grip at mid body with the right elbow out, left hand under the front at hip level with the left elbow out.
   - `WeaponPose`: blends the rifle between the rest pose and the aim pose (RMB). It also moves the left grip (GripLeftRest / GripLeftAim) and the elbow directions.
   - `TorsoPose`: torso (above the waist) twists toward the mech aim inside the twist limits, leans forward after a landing in proportion to the fall height (30° at 9 m, fades with the landing delay), leans 35° forward while boosting on the ground, turns 30° right and tilts 6° when aiming, leans 8° when kneeling.
-  - Crouch: 20° hip bend and 40° knee bend (inside knee angle 140°) while boosting on the ground. Landing crouch 8° (short fall) to 40° (9 m fall or higher).
+  - Crouch: 14° hip bend and 28° knee bend while boosting on the ground. Landing crouch 8° (short fall) to 40° (9 m fall or higher).
   - `MechKneel`: Ctrl toggles the kneel pose (0.13 s down or up), body drops 1.74 m.
   - Walk: forward leg knee bend 60° and hip lift 20.4°. Run: hip swing 40°, knee bend 70°, hip lift 20°.
-- Player mech look (revision 42, changed in 43): "Warden", from reference image 9. No missile rack (removed in revision 43). Weathered grey armor plates. The head is built into the center torso, with a red eye, two round sensor ports below it and a fin on top. Emblem on the right torso. Big pauldrons, tall blade antenna on the left shoulder. Hex shield with a chevron on the left forearm. Square hip plates, round knee joints, claw feet (3 toes and a heel). Heavy rifle (`heavy_rifle.tscn`, 5.3 m since revision 43) with a straight barrel on the bore line. Colors are in `materials/warden/`. Hips are 1.5 m from the center.
+- Player mech look (revision 42, changed in 43): "Warden", from reference image 9. No missile rack (removed in revision 43). Weathered grey armor plates. The head is built into the center torso, with a red eye, two round sensor ports below it and a fin on top. Emblem on the right torso. Big pauldrons. Hex shield with a chevron on the left forearm. Square hip plates, round knee joints, claw feet (3 toes and a heel). Legs 20% thicker since revision 44. No blade antenna since revision 44. Heavy rifle (`heavy_rifle.tscn`, 5.3 m since revision 43) with a straight barrel on the bore line. Colors are in `materials/warden/`. Hips are 1.5 m from the center.
 - Saved model "Granpa Gundam" (revision 41): RX-78-2 style, in `scenes/mech/granpa_gundam.tscn` with `beam_rifle.tscn` and `materials/rx78/`. It is a complete player mech scene. The Gundam design belongs to Sunrise and Bandai, so a public release needs an original design.
 - Models are built from box, cylinder, sphere and prism shapes by Python scripts in `tools/mech_gen/` (run from the project root). `mech_scene.py` holds the shared skeleton and logic nodes. `warden.py` writes `player_mech.tscn`. `granpa_gundam.py` writes `granpa_gundam.tscn`. Give another path as the first argument to write somewhere else. Placeholders until Phase 8.
   - One-hand rifle (revision 43): the rifle is 60% of its old size (5.3 m). Rest pose is one-hand high ready (reference image 10): grip in the right hand in front of the right shoulder, elbow down, muzzle up. The left arm hangs at the side with the shield (20% larger) on the outside. `LeftHand` markers on the torso replace the left grip on the rifle.
-  - `WeaponFire`: bullets with tracers (400 m/s, 0.4° spread) fly to the mech aim point. Muzzle flash with a light, small camera shake. `Bullet` checks each step with a ray and makes `ImpactSpark` sparks where it hits. No damage yet (Phase 4).
+  - Hip fire (revision 44): the stock goes to the right hip (AimAnchor) and the rifle points at the mech aim point. No torso twist, no zoom.
+  - `WeaponFire`: 2 shots per second, bullets with tracers (400 m/s, 0.4° spread) fly to the mech aim point. Muzzle flash with a light, small camera shake. `Bullet` checks each step with a ray and makes `ImpactSpark` sparks where it hits. No damage yet (Phase 4).
   - `WeaponRecoil`: each shot kicks the rifle 0.35 m back, 5° up and a little to the side, on a spring (5 Hz, damping 0.55). The hand IK follows the grip.
   - `BoosterFlames`: fire and an orange light from the two backpack thrusters while boosting (80% length on the ground), air boosting, rising on the jump jets and during a dodge hop (burst at the start).
-  - `DodgeLandingPose`: dodge hop ending (1.1 s). The mech lands braced on the lead leg (the leg on the hop side) with the knee bent 55°. A side hop spreads the legs to the side, a forward or back hop splits them. The feet slide with dust. At 35 to 75% of the ending the trail leg steps in, then the lead leg stands up. Moving cancels it after the 0.2 s recovery. The legs face the body front during the hop and its ending.
+  - Dodge hop ending (revision 44): after the landing the mech takes two running steps (4.5 m each) at 10 m/s, then the boost skid stop starts (feet slide with dust, body turns, then heavy steps). The legs face the body front in the air and turn toward the run-out after the landing.
+  - `ShieldPose`: LMB moves the left hand from the side to a raised place in front of the left chest (forearm up, shield facing forward).
   - `SkirtFollow`: front waist plates turn with the thigh that swings forward (80%). The rear plate turns with the thigh that swings back.
 - Mech visual tree: `Visual > Roll > Upper` (Roll is free for future whole-body moves; the dodge roll was removed). `Visual > Roll > Upper > Torso` (pivot at the waist, 5.4 m) holds the core, head, arms, and rifle. `Upper > Lower` holds the pelvis and legs.
 - Phase 8: complete animation on rigged .glb models. Walk cycles for biped, reverse-joint, tank, and quad legs. Leg IK so feet stay on slopes and steps. Torso twist toward the aim. Weapon recoil. Boost and jump jet poses.
@@ -221,14 +223,14 @@ scenes/props/       greybox_block, car, lamppost, person, box_truck (8 m), semi_
 scenes/ui/          debug_hud.tscn.
 scripts/mech/       mech.gd (movement), mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd,
                     mech_jump_charge.gd, mech_air_steer.gd, mech_landing_recovery.gd, mech_aim.gd (camera target and real mech aim with jitter).
-scripts/animation/  mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd, torso_pose.gd,
-                    inertia_sway.gd, skid_body_turn.gd, skirt_follow.gd, dodge_landing_pose.gd (placeholder animation).
+scripts/animation/  shield_pose.gd, mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd, torso_pose.gd,
+                    inertia_sway.gd, skid_body_turn.gd, skirt_follow.gd (placeholder animation).
 scripts/weapons/    weapon_fire.gd, weapon_recoil.gd, bullet.gd. Scenes: scenes/weapons/bullet.tscn, scenes/effects/impact_spark.tscn.
 scenes/weapons/     heavy_rifle.tscn (Warden), beam_rifle.tscn (Granpa Gundam), long_rifle.tscn (old box rifle). Markers: GripRight, GripLeft, GripLeftRest, GripLeftAim, Muzzle.
 scripts/camera/     mech_camera_rig.gd (follow and mouse look), aim_spring.gd (aim overshoot), camera_shake.gd, camera_ads.gd (aim down sight zoom).
 scripts/world/      greybox_block.gd (box with collision, set size in Inspector).
 scripts/ui/         debug_hud.gd, aim_reticle.gd.
-scripts/effects/    skid_dust.gd (dust while skidding and after a dodge landing), booster_flames.gd, muzzle_flash.gd, impact_spark.gd.
+scripts/effects/    skid_dust.gd (dust while skidding), booster_flames.gd, muzzle_flash.gd, impact_spark.gd.
 scripts/core/       mouse_capture.gd.
 ```
 
@@ -292,6 +294,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 39: dodge recovery fix: smooth height plan (no pop and drop), inertia sway paused during the dodge, recovery crouch and lean with one spring back to upright.
 - Phase 1 revision 40: dodge roll replaced by a directional dodge hop (11.9 m, 50% of the roll).
 - Phase 1 revision 41: player mech model replaced with an RX-78-2 Gundam style placeholder (same skeleton, same animation). Beam rifle and shield. Waist skirts follow the thighs.
+- Phase 1 revision 44: dodge ending = 2 run-out steps, then the boost skid. Blade antenna removed. RMB hip fire with no zoom for one-hand weapons, LMB lifts the shield. Fire rate 2 per second. Legs 20% thicker. Boost crouch hip bend 20° to 14°.
 - Phase 1 revision 43: missile rack removed. Rifle 40% smaller, one-hand high ready, fires bullets with recoil (RMB). Shield 20% larger. Booster flames. Dodge hop ending animation.
 - Phase 1 revision 42: RX-78-2 model saved as Granpa Gundam. New player model Warden from reference image 9, with a straight rifle barrel. Model generators moved into `tools/mech_gen/`.
 - Weapon controls decided: RMB right arm, LMB left arm. Two-hand firearm: RMB aim, LMB shoot.

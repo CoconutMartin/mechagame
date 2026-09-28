@@ -1,14 +1,10 @@
 class_name SkidDust
 extends Node
-## Placeholder dust from the feet while the mech skids to a stop after a boost or a dodge hop.
+## Placeholder dust from the feet while the mech skids to a stop (after a boost or a dodge hop).
 ## Makes one CPUParticles3D per foot at start. Phase 8 replaces it with real effects.
 
 @export var mech: Mech
 @export var feet: Array[Node3D] = []
-## Optional. Dust also comes out while the mech slides after a dodge hop landing.
-@export var dodge: MechDodge
-## Seconds of dust after a dodge landing.
-@export var dodge_slide_time: float = 0.45
 ## Dust puffs per second from each foot.
 @export var amount: int = 40
 @export var dust_color: Color = Color(0.55, 0.52, 0.47, 0.55)
@@ -25,7 +21,7 @@ func _ready() -> void:
 
 func _physics_process(_delta: float) -> void:
 	for emitter in _emitters:
-		emitter.emitting = mech.is_skidding or (dodge != null and dodge.time_since_landing < dodge_slide_time)
+		emitter.emitting = mech.is_skidding
 
 
 func _make_emitter() -> CPUParticles3D:

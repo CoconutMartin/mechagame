@@ -2,10 +2,11 @@ class_name WeaponPose
 extends Node
 ## Moves the weapon between the rest pose and the aim pose.
 ## The rest pose comes from the rest_pose marker (for example one-hand high ready: weapon upright
-## beside the right shoulder). Aim pose: stock on the right shoulder, weapon points at MechAim.aim_point.
-## The arms follow their IK targets with TwoBoneIK. This script moves the left hand target between
-## two markers (on the weapon for a two-hand weapon, on the torso for a free left hand with a shield)
-## and blends the elbow directions.
+## beside the right shoulder). Aim pose: stock at aim_anchor (right shoulder for a two-hand weapon,
+## right hip for one-hand hip fire), weapon points at MechAim.aim_point.
+## The arms follow their IK targets with TwoBoneIK. For a two-hand weapon this script also moves the
+## left hand between two grip markers on the weapon. For a one-hand weapon the left arm is free
+## (ShieldPose moves it). It also blends the elbow directions.
 
 @export var weapon: Node3D
 ## Rest pose of the weapon. Same parent as the weapon.
@@ -22,11 +23,11 @@ extends Node
 @export var lower_speed: float = 3.0
 
 @export_group("Hands")
-## The left hand IK target. This script moves it between the two markers below.
+## The left hand IK target on the weapon. Leave empty for a one-hand weapon.
 @export var left_grip_target: Node3D
-## Left hand place in the rest pose. Same parent as left_grip_target.
+## Left hand place in the rest pose (on the weapon).
 @export var left_grip_rest: Node3D
-## Left hand place in the aim pose. Same parent as left_grip_target.
+## Left hand place in the aim pose (on the weapon).
 @export var left_grip_aim: Node3D
 @export var arm_ik_left: TwoBoneIK
 @export var arm_ik_right: TwoBoneIK
@@ -59,6 +60,8 @@ func _physics_process(delta: float) -> void:
 	if recoil != null:
 		weapon.transform = weapon.transform * recoil.get_offset()
 
+	arm_ik_right.pole_direction = right_pole_rest.lerp(right_pole_aim, t)
+	if left_grip_target == null:
+		return  # One-hand weapon: the left arm is free.
 	left_grip_target.position = left_grip_rest.position.lerp(left_grip_aim.position, t)
 	arm_ik_left.pole_direction = left_pole_rest.lerp(left_pole_aim, t)
-	arm_ik_right.pole_direction = right_pole_rest.lerp(right_pole_aim, t)

@@ -78,7 +78,7 @@ extends Node
 @export var landing_crouch_full_height: float = 9.0
 ## Crouch while boosting on the ground, in degrees of hip bend. Knees bend twice as much
 ## (20 = knee bent 40 degrees, an inside knee angle of 140 degrees).
-@export var boost_crouch_deg: float = 20.0
+@export var boost_crouch_deg: float = 14.0
 
 @export_group("Kneel")
 ## Left (front) leg: thigh forward, shin straight down to the foot.

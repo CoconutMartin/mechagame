@@ -2,8 +2,9 @@ class_name MechDodge
 extends Node
 ## Double tap Space for a dodge hop: a quick, low hop in the chosen direction.
 ## Directions: A / D = side, W = forward, S or no key = back. Costs energy.
-## In the air the mech leans into the hop and tucks its legs a little. It lands in a small crouch,
-## springs upright, and slows down in steps. No landing delay.
+## In the air the mech leans into the hop and tucks its legs a little. It lands in a small crouch and
+## springs upright. Ending: two running steps at the landing speed, then the boost skid stop
+## (feet slide with dust, then heavy steps). No landing delay.
 
 signal dodge_started
 signal dodge_ended
@@ -20,9 +21,14 @@ signal dodge_ended
 ## Hop height, in meters.
 @export var hop_height: float = 1.5
 @export var energy_cost: float = 25.0
-## Speed kept in the hop direction at the landing (m/s). Then the mech slows down in steps.
-@export var landing_speed: float = 4.0
-## After the landing the mech cannot move for this long, in seconds.
+## Speed kept in the hop direction at the landing (m/s). The run-out steps keep this speed,
+## then the skid slows the mech down.
+@export var landing_speed: float = 10.0
+## Stride lengths (meters) of the run-out steps after the landing. Then the skid starts.
+@export var run_out_strides: PackedFloat32Array = PackedFloat32Array([4.5, 4.5])
+## The run-out ends after this many seconds even if the steps are not done (for example at a wall).
+@export var run_out_max_time: float = 2.0
+## After the landing the mech cannot move for this long, in seconds (at least until the skid starts).
 @export var recovery_time: float = 0.2
 
 @export_group("Recovery")
@@ -38,8 +44,6 @@ signal dodge_ended
 @export_group("")
 
 var is_dodging: bool = false
-## Seconds since the last dodge landing. Large when there was no recent landing.
-var time_since_landing: float = 100.0
 ## World direction of the current dodge.
 var direction: Vector3 = Vector3.ZERO
 
@@ -53,6 +57,8 @@ var _suppress_jump: bool = false
 var _local_direction: Vector3 = Vector3.BACK
 var _recover := AimSpring.new(0.0)
 var _recovering: bool = false
+var _running_out: bool = false
+var _run_out_time: float = 0.0
 
 
 func _ready() -> void:
@@ -61,19 +67,19 @@ func _ready() -> void:
 	mech.landed.connect(_on_landed)
 
 
-## True while hopping or recovering. The mech cannot move, boost, or turn.
+## True while hopping, recovering or taking the run-out steps. The mech cannot move, boost, or turn.
 func is_busy() -> bool:
-	return is_dodging or _recover_left > 0.0
+	return is_dodging or _recover_left > 0.0 or _running_out
+
+
+## True during the run-out steps after the landing. The Mech keeps its speed then.
+func is_running_out() -> bool:
+	return _running_out
 
 
 ## True while the Space press that started the dodge is still held. The jump charge waits.
 func blocks_jump() -> bool:
 	return is_busy() or _suppress_jump
-
-
-## Dodge direction in the leg frame (-Z forward, +X right).
-func get_local_direction() -> Vector3:
-	return _local_direction
 
 
 ## True while the hop or its recovery spring moves the body. InertiaSway pauses then.
@@ -104,7 +110,6 @@ func get_recovery_lean() -> Vector2:
 
 func _physics_process(delta: float) -> void:
 	_clock += delta
-	time_since_landing += delta
 	_recover_left = maxf(_recover_left - delta, 0.0)
 	if is_dodging:
 		_air_time += delta
@@ -113,12 +118,25 @@ func _physics_process(delta: float) -> void:
 		if absf(_recover.value) < 0.002 and absf(_recover.velocity) < 0.01:
 			_recover.value = 0.0
 			_recovering = false
+	if _running_out:
+		_update_run_out(delta)
 	if not input.jump_held:
 		_suppress_jump = false
 	if input.jump_pressed:
 		if _clock - _last_press <= double_tap_window and _can_start():
 			_start()
 		_last_press = _clock
+
+
+## Run-out steps, then the skid.
+func _update_run_out(delta: float) -> void:
+	_run_out_time += delta
+	var stalled := mech.is_on_floor() and mech.get_horizontal_speed() < 1.0
+	if mech.footsteps.has_stride_plan() and _run_out_time < run_out_max_time and not stalled:
+		return
+	_running_out = false
+	if not stalled:
+		mech.start_skid()
 
 
 func _get_air_progress() -> float:
@@ -165,8 +183,10 @@ func _on_landed(_fall_speed: float) -> void:
 	mech.velocity.x = keep.x
 	mech.velocity.z = keep.z
 	mech.cancel_landing_steps()
+	mech.footsteps.start_stride_plan(run_out_strides)
+	_running_out = true
+	_run_out_time = 0.0
 	_recover_left = recovery_time
-	time_since_landing = 0.0
 	# Start the recovery spring from the full landing pose.
 	_recover.value = 1.0
 	_recover.velocity = 0.0

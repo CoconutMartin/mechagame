@@ -209,6 +209,16 @@ func get_torso_twist() -> float:
 	return wrapf(_aim_yaw - rotation.y, -PI, PI)
 
 
+## Starts a skid stop: the feet plant and slide, then heavy steps. The body turns and rolls to a
+## random side. Used by the boost exit and at the end of a dodge hop.
+func start_skid() -> void:
+	is_exiting_boost = true
+	_exit_deceleration = 0.0
+	_stop_deceleration = 0.0
+	is_skidding = true
+	skid_side = 1.0 if randf() < 0.5 else -1.0
+
+
 func get_boost_speed() -> float:
 	return walk_speed * boost_speed_multiplier
 
@@ -265,9 +275,7 @@ func _update_boost(delta: float) -> void:
 		_exit_deceleration = 0.0
 		_stop_deceleration = 0.0
 		if boost_exit_style == BoostExit.SKID:
-			# Feet plant and slide, then heavy steps. The body turns and rolls to a random side.
-			is_skidding = true
-			skid_side = 1.0 if randf() < 0.5 else -1.0
+			start_skid()
 		else:
 			# One leap forward that lands on one leg, then medium and small steps to slow down.
 			_in_exit_leap = true
@@ -301,6 +309,9 @@ func _update_horizontal(delta: float) -> void:
 	if is_skidding:
 		_update_skid(delta, has_input)
 		return
+
+	if dodge.is_running_out():
+		return  # The dodge run-out steps keep the landing speed.
 
 	var target := Vector3.ZERO
 	var rate := deceleration

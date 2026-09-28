@@ -12,11 +12,9 @@ extends Node
 @export var twist_speed_deg: float = 240.0
 ## Below this speed (m/s) the legs keep their current twist.
 @export var min_speed: float = 1.0
-## Optional. During a dodge hop and its landing the legs face the body front (no twist),
-## so the hop and the braced landing look the same in every direction.
+## Optional. During a dodge hop in the air the legs face the body front (no twist).
+## After the landing they turn toward the run-out steps as usual.
 @export var dodge: MechDodge
-## Seconds after a dodge landing with no twist.
-@export var dodge_hold_time: float = 1.1
 
 ## True when the legs step backward. MechLegSwing reads it.
 var moving_backward: bool = false
@@ -28,7 +26,7 @@ func _physics_process(delta: float) -> void:
 	var local_velocity := mech.global_basis.inverse() * mech.velocity
 	local_velocity.y = 0.0
 	moving_backward = false
-	if dodge != null and (dodge.is_dodging or dodge.time_since_landing < dodge_hold_time):
+	if dodge != null and dodge.is_dodging:
 		target = 0.0
 	elif local_velocity.length() > min_speed:
 		# Yaw of the move direction, relative to the body front (-Z).

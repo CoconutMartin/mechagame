@@ -23,6 +23,8 @@ var jump_pressed: bool = false
 var aim_held: bool = false
 ## True while the right arm weapon key (RMB) is held. The right arm weapon fires.
 var fire_held: bool = false
+## True while the left arm weapon key (LMB) is held. A shield on the left arm lifts.
+var shield_held: bool = false
 ## True while the walk forward key (W) is held. MechKneel stands up on it.
 var forward_held: bool = false
 ## True on the frame the crouch key (Ctrl) is pressed. MechKneel toggles on it.
@@ -44,6 +46,7 @@ func _physics_process(_delta: float) -> void:
 	jump_pressed = Input.is_action_just_pressed("jump")
 	aim_held = Input.is_action_pressed("aim")
 	fire_held = Input.is_action_pressed("use_right_arm")
+	shield_held = Input.is_action_pressed("use_left_arm")
 	crouch_pressed = Input.is_action_just_pressed("crouch")
 	forward_held = Input.is_action_pressed("move_forward")
 

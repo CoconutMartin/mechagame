@@ -25,7 +25,7 @@
 [ext_resource type="Script" path="res://scripts/weapons/weapon_fire.gd" id="fire"]
 [ext_resource type="Script" path="res://scripts/weapons/weapon_recoil.gd" id="recoil"]
 [ext_resource type="Script" path="res://scripts/effects/booster_flames.gd" id="flames"]
-[ext_resource type="Script" path="res://scripts/animation/dodge_landing_pose.gd" id="dodgeland"]
+[ext_resource type="Script" path="res://scripts/animation/shield_pose.gd" id="shieldpose"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/beam_rifle.tscn" id="rifle"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/bullet.tscn" id="bullet"]
 [ext_resource type="Material" path="res://materials/rx78/white.tres" id="white"]
@@ -1068,8 +1068,7 @@ script = ExtResource("skidturn")
 mech = NodePath("../..")
 body = NodePath("../../Visual")
 
-[node name="SkidDust" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "feet", "dodge")]
-dodge = NodePath("../../MechDodge")
+[node name="SkidDust" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "feet")]
 script = ExtResource("skiddust")
 mech = NodePath("../..")
 feet = [NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL/FootSoleL"), NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR/FootSoleR")]
@@ -1136,16 +1135,6 @@ shooter = NodePath("../..")
 [node name="WeaponRecoil" type="Node" parent="Animation" node_paths=PackedStringArray("weapon_fire")]
 script = ExtResource("recoil")
 weapon_fire = NodePath("../WeaponFire")
-
-[node name="DodgeLandingPose" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "dodge", "input", "hip_left", "hip_right", "knee_left", "knee_right")]
-script = ExtResource("dodgeland")
-mech = NodePath("../..")
-dodge = NodePath("../../MechDodge")
-input = NodePath("../../MechInput")
-hip_left = NodePath("../../Visual/Roll/Upper/Lower/HipL")
-hip_right = NodePath("../../Visual/Roll/Upper/Lower/HipR")
-knee_left = NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL")
-knee_right = NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR")
 
 [node name="BoosterFlames" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "dodge", "flames", "light")]
 script = ExtResource("flames")

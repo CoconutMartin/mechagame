@@ -17,7 +17,7 @@ signal fired
 ## The mech that fires. Its body does not stop its own bullets.
 @export var shooter: CollisionObject3D
 ## Shots per second.
-@export var fire_rate: float = 6.0
+@export var fire_rate: float = 2.0
 ## Random spread cone, in degrees.
 @export var spread_deg: float = 0.4
 ## Bullet speed in m/s.

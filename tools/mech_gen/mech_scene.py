@@ -23,7 +23,7 @@ SCRIPTS = [("mech/mech","mech"),("mech/mech_input","input"),("mech/mech_energy",
  ("animation/torso_pose","torsopose"),("effects/skid_dust","skiddust"),("animation/skid_body_turn","skidturn"),
  ("animation/inertia_sway","inertia"),("mech/mech_dodge","dodge"),("animation/weapon_pose","weaponpose"),
  ("camera/camera_shake","shake"),("animation/skirt_follow","skirt"),("weapons/weapon_fire","fire"),
- ("weapons/weapon_recoil","recoil"),("effects/booster_flames","flames"),("animation/dodge_landing_pose","dodgeland")]
+ ("weapons/weapon_recoil","recoil"),("effects/booster_flames","flames"),("animation/shield_pose","shieldpose")]
 
 
 def TT(x, y, z):
@@ -72,8 +72,10 @@ def one_hand_rest(hand, muzzle_dir, up_hint, grip=(0, -0.33, -0.99)):
 def write_scene(out_path, rifle_scene, materials, build, shoulder_x=2.9, shoulder_y=8.3, hip_x=1.3, thigh=2.6,
                 rest_xf=None, one_hand=None, muzzle_flash=False):
     """rest_xf: weapon rest transform text in torso space (default: two-hand low ready).
-    one_hand: dict with left hand markers in mech space: rest, aim, pole_rest, pole_aim, right_pole_rest,
-    right_pole_aim. The left hand then holds no weapon (for example a shield arm)."""
+    one_hand: dict for a one-hand weapon with a shield on the left arm. Keys (mech space):
+    rest / raised (left hand markers), pole_rest / pole_raised (left elbow), right_pole_rest /
+    right_pole_aim (right elbow), aim_anchor (stock place for hip fire). RMB fires from the hip
+    with no zoom. LMB lifts the shield (ShieldPose)."""
     m = Model()
     m.nodes.append('''[node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery", "jump_charge", "air_steer", "kneel", "dodge")]
 collision_layer = 2
@@ -109,8 +111,8 @@ shape = SubResource("body_shape")
     if one_hand:
         m.node("LeftHand", TO, "Marker3D", TT(*one_hand["rest"]))
         m.node("LeftHandRest", TO, "Marker3D", TT(*one_hand["rest"]))
-        m.node("LeftHandAim", TO, "Marker3D", TT(*one_hand["aim"]))
-    m.node("AimAnchor", TO, "Marker3D", TT(*AIM_ANCHOR))
+        m.node("LeftHandRaised", TO, "Marker3D", TT(*one_hand["raised"]))
+    m.node("AimAnchor", TO, "Marker3D", TT(*(one_hand["aim_anchor"] if one_hand else AIM_ANCHOR)))
     build(m)
 
     here = os.path.dirname(os.path.abspath(__file__))
@@ -119,16 +121,30 @@ shape = SubResource("body_shape")
     logic = logic.replace('arm_ik_left = NodePath("../ArmIKLeft")\narm_ik_right = NodePath("../ArmIKRight")',
                           'arm_ik_left = NodePath("../ArmIKLeft")\narm_ik_right = NodePath("../ArmIKRight")\nrecoil = NodePath("../WeaponRecoil")')
     logic = logic.replace('"arm_ik_left", "arm_ik_right")]', '"arm_ik_left", "arm_ik_right", "recoil")]')
-    logic = logic.replace('[node name="SkidDust" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "feet")]',
-                          '[node name="SkidDust" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "feet", "dodge")]\ndodge = NodePath("../../MechDodge")')
+    extra = []
     if one_hand:
         v = lambda t: f"Vector3({t[0]}, {t[1]}, {t[2]})"
+        for line in ('left_grip_target = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripLeft")\n',
+                     'left_grip_rest = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripLeftRest")\n',
+                     'left_grip_aim = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripLeftAim")\n'):
+            assert line in logic
+            logic = logic.replace(line, "")
+        logic = logic.replace('"input", "left_grip_target", "left_grip_rest", "left_grip_aim", ', '"input", ')
         logic = logic.replace('Torso/Rifle/GripLeft")', 'Torso/LeftHand")')
-        logic = logic.replace('Torso/Rifle/GripLeftRest")', 'Torso/LeftHandRest")')
-        logic = logic.replace('Torso/Rifle/GripLeftAim")', 'Torso/LeftHandAim")')
         logic = logic.replace('arm_ik_right = NodePath("../ArmIKRight")\n',
-                              f'arm_ik_right = NodePath("../ArmIKRight")\nleft_pole_rest = {v(one_hand["pole_rest"])}\nleft_pole_aim = {v(one_hand["pole_aim"])}\nright_pole_rest = {v(one_hand["right_pole_rest"])}\nright_pole_aim = {v(one_hand["right_pole_aim"])}\n')
-    extra = []
+                              f'arm_ik_right = NodePath("../ArmIKRight")\nright_pole_rest = {v(one_hand["right_pole_rest"])}\nright_pole_aim = {v(one_hand["right_pole_aim"])}\n')
+        logic = logic.replace('script = ExtResource("ads")\n', 'script = ExtResource("ads")\nenabled = false\n')
+        logic = logic.replace('script = ExtResource("torsopose")\n', 'script = ExtResource("torsopose")\naim_twist_deg = 0.0\naim_tilt_deg = 0.0\n')
+        extra.append(f'''[node name="ShieldPose" type="Node" parent="Animation" node_paths=PackedStringArray("input", "arm_ik", "hand_target", "rest", "raised")]
+script = ExtResource("shieldpose")
+input = NodePath("../../MechInput")
+arm_ik = NodePath("../ArmIKLeft")
+hand_target = NodePath("../../{TO}/LeftHand")
+rest = NodePath("../../{TO}/LeftHandRest")
+raised = NodePath("../../{TO}/LeftHandRaised")
+pole_rest = {v(one_hand["pole_rest"])}
+pole_raised = {v(one_hand["pole_raised"])}
+''')
     flash = '"muzzle_flash", ' if muzzle_flash else ""
     extra.append(f'''[node name="WeaponFire" type="Node" parent="Animation" node_paths=PackedStringArray("input", "weapon_pose", "mech_aim", "muzzle", {flash}"camera_shake", "shooter")]
 script = ExtResource("fire")
@@ -143,16 +159,6 @@ shooter = NodePath("../..")
     extra.append('''[node name="WeaponRecoil" type="Node" parent="Animation" node_paths=PackedStringArray("weapon_fire")]
 script = ExtResource("recoil")
 weapon_fire = NodePath("../WeaponFire")
-''')
-    extra.append(f'''[node name="DodgeLandingPose" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "dodge", "input", "hip_left", "hip_right", "knee_left", "knee_right")]
-script = ExtResource("dodgeland")
-mech = NodePath("../..")
-dodge = NodePath("../../MechDodge")
-input = NodePath("../../MechInput")
-hip_left = NodePath("../../{L}/HipL")
-hip_right = NodePath("../../{L}/HipR")
-knee_left = NodePath("../../{L}/HipL/KneeL")
-knee_right = NodePath("../../{L}/HipR/KneeR")
 ''')
     if m.flames:
         fl = ", ".join(f'NodePath("../../{TO}/{f}")' for f in m.flames)
