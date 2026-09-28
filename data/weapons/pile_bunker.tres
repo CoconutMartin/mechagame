@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/pile_bunker.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Pile Bunker"
+weight_t = 2.5
+hp = 300.0
+kind = 5
+fire_rate = 1.0
+damage = 900.0
+magazine = 3
+reload_time = 5.0
+lunge_distance = 16.0
+lunge_speed = 32.0
+lunge_energy = 20.0
+shake_trauma = 0.45
+shake_kick = 0.6
+recoil_up_deg = 2.0
+recoil_side_deg = 1.0
+rest_transform = Transform3D(1, 0, -0, 0, 0.98058, 0.19612, 0, -0.19612, 0.98058, 2.21, 0.85, -1.7)
+aim_anchor = Vector3(2.3800, 0.9350, -0.8500)
+right_pole_rest = Vector3(0.6000, -1.0000, 0.3000)
+right_pole_aim = Vector3(0.6000, -1.0000, 0.4000)
+scene = ExtResource("scene")

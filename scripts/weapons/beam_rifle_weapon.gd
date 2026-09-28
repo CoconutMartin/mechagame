@@ -21,6 +21,9 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 @export var min_discharge: float = 0.15
 ## Hit, spark, aim push and shake interval during a sustained beam, in seconds.
 @export var tick_time: float = 0.1
+## Small steady camera shake while charging: trauma at no charge and at full charge.
+@export var charge_shake_min: float = 0.08
+@export var charge_shake_max: float = 0.22
 ## Extra screen shake and aim jitter at full charge = weapon data values x this value.
 @export var full_charge_kick: float = 2.0
 
@@ -48,6 +51,8 @@ func _update(delta: float) -> void:
 		return
 	if trigger_held and not overheated:
 		charge = minf(charge + delta / charge_time, 1.0)
+		if controller.camera_shake != null:
+			controller.camera_shake.hold_shake(lerpf(charge_shake_min, charge_shake_max, charge))
 	elif trigger_released() and can_use():
 		_start_discharge()
 		charge = 0.0

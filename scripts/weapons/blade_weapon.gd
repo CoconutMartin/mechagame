@@ -46,6 +46,10 @@ func _ready() -> void:
 	_slash_end = _pose_from(slash_end_position, slash_end_direction)
 
 
+func is_melee() -> bool:
+	return true
+
+
 func _update(delta: float) -> void:
 	_time += delta
 	match state:

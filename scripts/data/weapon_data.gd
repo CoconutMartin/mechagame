@@ -5,7 +5,7 @@ extends PartData
 ## Solid guns (rifle, missiles) use ammo and reloads. Beam weapons (sniper beam, blade) use heat:
 ## each use adds heat; at full heat the weapon overheats and must cool down to zero (the "reload").
 
-enum Kind { GUN, BEAM_RIFLE, BLADE, MISSILE_POD, SHIELD }
+enum Kind { GUN, BEAM_RIFLE, BLADE, MISSILE_POD, SHIELD, PILE_BUNKER }
 enum Slot { ARM, BACK }
 
 @export var kind: Kind = Kind.GUN
@@ -58,8 +58,8 @@ enum Slot { ARM, BACK }
 ## Missile turn speed in degrees per second.
 @export var missile_turn_deg: float = 110.0
 
-@export_group("Blade")
-## Lunge length (m), lunge speed (m/s) and energy cost of one lunge slash.
+@export_group("Melee")
+## Lunge length (m), lunge speed (m/s) and energy cost of one melee charge (blade, pile bunker).
 @export var lunge_distance: float = 16.0
 @export var lunge_speed: float = 32.0
 @export var lunge_energy: float = 20.0

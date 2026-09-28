@@ -76,6 +76,22 @@ def blade(part, marker):
     marker("BladeTip", (0, 0, -6.2))
 
 
+def pile_bunker(part, marker):
+    """Pile bunker. The hand holds the grip. The housing sits on the outer side of the forearm and
+    the stake (the "needle") points along -Z. The Stake node slides out when it fires."""
+    part("Grip", "dark", "box", (0.3, 0.7, 0.35), (0, 0, 0))
+    part("GripBar", "frame", "box", (0.6, 0.25, 0.3), (0.4, 0.25, 0))
+    part("Housing", "armor", "box", (0.8, 1.1, 3.6), (0.8, 0.2, 0.4))
+    part("HousingRail", "dark", "box", (0.85, 0.3, 3.2), (0.8, 0.85, 0.5))
+    part("Drum", "joint", "cyl", (0.45, 0.45, 0.7), (0.8, 1.2, 1.3), (0, 0, 90))
+    part("NoseRing", "dark", "cyl", (0.42, 0.42, 0.3), (0.8, 0.2, -1.5), (90, 0, 0))
+    marker("Stake", (0.8, 0.2, 0))
+    part("StakeRod", "frame", "cyl", (0.2, 0.2, 3.2), (0, 0, -0.2), (90, 0, 0), parent="Stake")
+    part("StakeTip", "rifle", "cyl", (0.2, 0.02, 0.7), (0, 0, -2.15), (90, 0, 0), parent="Stake")
+    marker("Nose", (0.8, 0.2, -1.65))
+    marker("GripRight", (0, 0, 0))
+
+
 def pod(part, marker):
     """Missile pod: a box with 2 x 2 tubes on the front. -Z forward."""
     part("Box", "armor", "box", (1.5, 1.3, 2.2), (0, 0, 0))
@@ -107,6 +123,7 @@ if __name__ == "__main__":
     os.makedirs("scenes/weapons", exist_ok=True)
     write_model("scenes/weapons/beam_sniper.tscn", "BeamSniper", "beam_rifle_weapon", sniper)
     write_model("scenes/weapons/beam_blade.tscn", "BeamBlade", "blade_weapon", blade)
+    write_model("scenes/weapons/pile_bunker.tscn", "PileBunker", "pile_bunker_weapon", pile_bunker)
     # Pods sit above the shoulders, behind the head (torso space), tilted 10 degrees up.
     for side, sign in (("l", -1), ("r", 1)):
         place = xf(TT(*torso_point((sign * 1.6, 10.1, 1.2), K)), (10, 0, 0))
@@ -146,6 +163,16 @@ if __name__ == "__main__":
         "rest_transform": blade_rest, "aim_anchor": v3(anchor),
         "right_pole_rest": v3((0.25, -1.0, -0.2)), "right_pole_aim": v3((0.6, -1.0, 0.4))},
         "res://scenes/weapons/beam_blade.tscn")
+    # Pile bunker: one hand, fist ready at the right side, stake forward.
+    bunker_rest = one_hand_rest(hand=(2.6, 6.4, -2.0), muzzle_dir=(0.0, -0.2, -1.0), up_hint=(0.0, 1.0, 0.0),
+                                grip=(0, 0, 0), torso_scale=K)
+    res("data/weapons/pile_bunker.tres", {"display_name": '"Pile Bunker"', "weight_t": 2.5, "hp": 300.0,
+        "kind": 5, "fire_rate": 1.0, "damage": 900.0, "magazine": 3, "reload_time": 5.0,
+        "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,
+        "shake_trauma": 0.45, "shake_kick": 0.6, "recoil_up_deg": 2.0, "recoil_side_deg": 1.0,
+        "rest_transform": bunker_rest, "aim_anchor": v3(anchor),
+        "right_pole_rest": v3((0.6, -1.0, 0.3)), "right_pole_aim": v3((0.6, -1.0, 0.4))},
+        "res://scenes/weapons/pile_bunker.tscn")
     for side in ("l", "r"):
         res(f"data/weapons/missile_pod_{side}.tres", {"display_name": f'"Missile Pod {side.upper()}"', "weight_t": 3.0, "hp": 250.0,
             "kind": 3, "slot": 1, "fire_rate": 1.0, "damage": 150.0, "projectile_speed": 90.0, "range_m": 600.0,

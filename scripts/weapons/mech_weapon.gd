@@ -26,6 +26,11 @@ func is_busy() -> bool:
 	return false
 
 
+## True for melee weapons (blade, pile bunker): they work together with the other weapons.
+func is_melee() -> bool:
+	return false
+
+
 func setup(weapon_data: WeaponData, weapon_controller: WeaponController) -> void:
 	data = weapon_data
 	controller = weapon_controller

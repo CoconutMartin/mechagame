@@ -91,6 +91,11 @@ func add_shake(trauma: float, kick: float) -> void:
 	_kick.value = minf(_kick.value + kick, 1.5)
 
 
+## Keeps the shake at least at this trauma level (call it every frame for a steady shake).
+func hold_shake(trauma: float) -> void:
+	_trauma = clampf(maxf(_trauma, trauma), 0.0, 1.0)
+
+
 # One kick at the start of each steady movement.
 func _physics_process(_delta: float) -> void:
 	var airborne := not mech.is_on_floor()

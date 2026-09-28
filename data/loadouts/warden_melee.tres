@@ -9,7 +9,7 @@
 [ext_resource type="Resource" path="res://data/parts/warden/warden_booster.tres" id="booster"]
 [ext_resource type="Resource" path="res://data/parts/warden/warden_generator.tres" id="generator"]
 [ext_resource type="Resource" path="res://data/parts/warden/warden_fcs.tres" id="fcs"]
-[ext_resource type="Resource" path="res://data/weapons/beam_blade.tres" id="weapon_right"]
+[ext_resource type="Resource" path="res://data/weapons/pile_bunker.tres" id="weapon_right"]
 [ext_resource type="Resource" path="res://data/weapons/warden_shield.tres" id="weapon_left"]
 
 [resource]

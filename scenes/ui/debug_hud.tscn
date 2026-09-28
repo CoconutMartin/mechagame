@@ -86,7 +86,7 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 14
 text = "W / S walk   A / D turn legs   Mouse: aim (camera stays behind the torso)
-RMB fire (hip) or blade charge slash   LMB lift shield (sniper: RMB zoom, hold LMB charge, release fire)
+RMB fire (hip) or pile bunker shield charge + punch   LMB lift shield (sniper: RMB zoom, hold LMB charge, release fire)
 Q / E hold: lock missiles, release: fire (locked volley entrenches)   R reload   V front view   1-4 test loadouts
 Space hold: charge jump jets, release to jump (W or S held: jump that way)
 Space double tap: dodge hop (A / D side, W forward, S or none back; forward while boosting)

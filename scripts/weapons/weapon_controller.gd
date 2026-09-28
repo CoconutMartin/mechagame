@@ -122,16 +122,16 @@ func _physics_process(_delta: float) -> void:
 		wants[back_left] = input.back_left_held
 	if back_right != null:
 		wants[back_right] = input.back_right_held
-	# One weapon at a time (not counting the blade). Both missile pods count as one weapon.
+	# One weapon at a time (not counting melee weapons). Both missile pods count as one weapon.
 	if active != null and not _still_in_use(active, wants):
 		active = null
 	if active == null:
 		for weapon in wants:
-			if wants[weapon] and not weapon is BladeWeapon:
+			if wants[weapon] and not weapon.is_melee():
 				active = weapon
 				break
 	for weapon in wants:
-		var allowed: bool = weapon == active or weapon is BladeWeapon \
+		var allowed: bool = weapon == active or weapon.is_melee() \
 				or (weapon is MissilePodWeapon and active is MissilePodWeapon)
 		weapon.set_trigger(wants[weapon] and allowed)
 	if right_weapon != null:
