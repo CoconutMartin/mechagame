@@ -1155,9 +1155,10 @@ energy = NodePath("../MechEnergy")
 landing_recovery = NodePath("../MechLandingRecovery")
 kneel = NodePath("../MechKneel")
 
-[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin", "camera_rig")]
+[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin", "body_visual", "camera_rig")]
 script = ExtResource("aim")
 camera_rig = NodePath("../CameraRig")
+body_visual = NodePath("../Visual")
 mech = NodePath("..")
 camera = NodePath("../CameraRig/Pitch/SpringArm/Camera")
 aim_origin = NodePath("../Visual/Roll/Upper/Torso/AimAnchor")
@@ -1266,7 +1267,7 @@ target = NodePath("..")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
 collision_mask = 1
 shape = SubResource("arm_shape")
-spring_length = 10.3
+spring_length = 8.5
 margin = 0.4
 
 [node name="CameraAds" type="Node" parent="CameraRig" node_paths=PackedStringArray("input", "camera", "spring_arm", "rig", "mech_aim")]

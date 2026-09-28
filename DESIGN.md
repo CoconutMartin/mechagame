@@ -97,7 +97,7 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 
 | Value | Current |
 |---|---|
-| Distance behind the pivot (spring length) | 10.3 m (the revision 52 zoom was undone in revision 53). RMB moves it to 4 m and zooms (FOV 35°) |
+| Distance behind the pivot (spring length) | 8.5 m since revision 54 (above the head, FOV 70°). The feet are below the screen edge at the start pitch. RMB moves it to 4 m and zooms (FOV 35°) |
 | Shoulder offset | 3 m right (right side of the head) |
 | Pivot height | 11.5 m (above the head). The camera sits on the aim line behind the pivot, 3 m to the right, and tilts down by the crosshair angle (about 10.7° at FOV 70°), so it looks down over the head |
 | Start view | aim pitch starts at -10° (set by the user); with the crosshair tilt the view is about 21° down over the head. `MechCameraRig.start_pitch_deg` |
@@ -173,6 +173,7 @@ All of this logic lives in one function so it is easy to tune.
   - `WeaponRecoil`: each shot kicks the rifle 0.7 m back, 10° up and up to 3° to the side, on a spring (5 Hz, damping 0.55). The hand IK follows the grip.
   - `BoosterFlames`: fire and an orange light from the two backpack thrusters while boosting (80% length on the ground), air boosting, rising on the jump jets and during a dodge hop (burst at the start).
   - Dodge hop ending (revision 46): at the landing a short skid starts (feet slide with dust, body turns) from 10 m/s down to 4 m/s in about 1.8 m (60% shorter than the boost skid), then 2 heavy steps (1.5 m each) to a stop.
+  - The mech aim turns with the whole body during slides (skid drift and Akira slide): `MechAim.get_body_turn()` adds the `Visual` turn. The blue ring moves off the crosshair and comes back with the body (revision 54).
   - Akira slide (revision 52): every slide ends with it, the dodge slide and the boost stop skid. Swing side: A = left, D = right when held, otherwise random. The recovery (turn back) is 40% slower: `SkidBodyTurn.akira_recover_speed` 1.2, `DodgeSlidePose.blend_out_speed` 1.2.
   - Bullet hits (revision 52): sparks, a dust puff and a light (`ImpactSpark`), and a 1.4 m dark bullet mark decal (`BulletMark`, stays 20 s, fades in 3 s, at most 60).
   - Dodge slide (revision 51, `DodgeSlidePose`): the mech slides in a deep crouch (front leg hip 40° knee 75°, back leg knee 85°, body 1.5 m lower). Akira slide end (`SkidBodyTurn`): from 50% to 90% of the slide the whole body swings until the legs are at 55° to the slide (less since revision 53, was 90°), and leans 8° back against the motion (the `Visual/Roll` node). The lead leg braces out 12° to the side, the other leg folds (knee 80°). The pose holds 0.4 s after the slide, then turns back during the steps.
@@ -304,6 +305,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 39: dodge recovery fix: smooth height plan (no pop and drop), inertia sway paused during the dodge, recovery crouch and lean with one spring back to upright.
 - Phase 1 revision 40: dodge roll replaced by a directional dodge hop (11.9 m, 50% of the roll).
 - Phase 1 revision 41: player mech model replaced with an RX-78-2 Gundam style placeholder (same skeleton, same animation). Beam rifle and shield. Waist skirts follow the thighs.
+- Phase 1 revision 54: mech aim follows the body turn in slides. Camera 8.5 m, above the head, FOV 70°. Targeting model: options given to the user, waiting for a choice.
 - Phase 1 revision 53: camera zoom undone (10.3 m, pivot 11.5 m, FOV 70°). Akira slide milder (55°, lean 8°). Mech aim re-align can overshoot the crosshair; the player lines them up along the kick line.
 - Phase 1 revision 52: Akira slide at the end of the boost stop too, side from A / D or random, recovery 40% slower. Shot kick 3°, re-align rate 0.1. Bullet impacts with dust and bullet marks. Camera 25% closer (7.7 m), pivot 7.8 m, FOV 74°. Debug HUD text updated and moved off the bottom of the screen.
 - Phase 1 revision 51: dodge slide in a deep crouch with an Akira slide end. Shot kick 2°, re-align by moving the mouse opposite to the kick (half rate). Re-center key removed. Shot camera shake +30%.

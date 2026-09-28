@@ -25,7 +25,7 @@ func _process(_delta: float) -> void:
 		# Horizontal gap between the torso aim and the camera view, turned into pixels.
 		var forward := -camera.get_parent_node_3d().global_basis.z
 		var camera_yaw := atan2(-forward.x, -forward.z)
-		var gap := wrapf(mech_aim.mech.get_aim_yaw_interpolated() - camera_yaw, -PI, PI)
+		var gap := wrapf(mech_aim.mech.get_aim_yaw_interpolated() + mech_aim.get_body_turn() - camera_yaw, -PI, PI)
 		var focal := get_viewport_rect().size.y * 0.5 / tan(deg_to_rad(camera.fov) * 0.5)
 		_visible_on_screen = absf(gap) < deg_to_rad(80.0)
 		_screen_position = _crosshair_position + Vector2(-tan(gap) * focal, 0.0)

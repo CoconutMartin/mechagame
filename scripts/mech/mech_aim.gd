@@ -11,6 +11,8 @@ extends Node
 @export var camera_rig: MechCameraRig
 ## Start point of the mech's aim (the weapon stock at the shoulder).
 @export var aim_origin: Node3D
+## Optional. The whole-body visual. When it turns (skid drift, Akira slide) the mech aim turns with it.
+@export var body_visual: Node3D
 @export var max_range: float = 1500.0
 ## The crosshair sits this far above the screen center, as a part of the screen height.
 ## 0.135 matches the reference screenshot (about 120 px above the center of a 900 px view).
@@ -81,7 +83,7 @@ func _physics_process(delta: float) -> void:
 	var forward := -camera.global_basis.z
 	var camera_yaw := atan2(-forward.x, -forward.z)
 	var body_error := wrapf(mech.get_aim_yaw() - camera_yaw, -PI, PI)
-	direction = direction.rotated(Vector3.UP, body_error)
+	direction = direction.rotated(Vector3.UP, body_error + get_body_turn())
 
 	# Shot kick: the aim stays off the crosshair until the player re-centers it.
 	_mouse_realign()
@@ -106,6 +108,11 @@ func _mouse_realign() -> void:
 	_last_view = view
 	_kick_amount = clampf(_kick_amount + moved.dot(_kick_axis) * realign_rate, -shot_kick_deg, shot_kick_deg)
 	shot_offset = _kick_axis * _kick_amount
+
+
+## Whole-body turn from a slide (radians, positive = left). The mech aim turns with the body.
+func get_body_turn() -> float:
+	return body_visual.rotation.y if body_visual != null else 0.0
 
 
 ## Moves the mech aim shot_kick_deg off the crosshair in a random direction. WeaponFire calls it
