@@ -32,6 +32,7 @@
 [ext_resource type="Script" path="res://scripts/animation/dodge_slide_pose.gd" id="dodgeslide"]
 [ext_resource type="Script" path="res://scripts/camera/free_aim.gd" id="freeaim"]
 [ext_resource type="Script" path="res://scripts/mech/mech_assembler.gd" id="assembler"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_controller.gd" id="weaponctl"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/heavy_rifle.tscn" id="rifle"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/bullet.tscn" id="bullet"]
 [ext_resource type="Resource" path="res://data/loadouts/warden.tres" id="loadout"]
@@ -52,25 +53,6 @@ height = 10.0
 [sub_resource type="SphereShape3D" id="arm_shape"]
 radius = 0.6
 
-[sub_resource type="BoxMesh" id="m0"]
-size = Vector3(1.68, 3.8, 0.25)
-
-[sub_resource type="PrismMesh" id="m1"]
-size = Vector3(1.68, 0.7, 0.25)
-left_to_right = 0.5
-
-[sub_resource type="BoxMesh" id="m2"]
-size = Vector3(0.7, 2.4, 0.4)
-
-[sub_resource type="BoxMesh" id="m3"]
-size = Vector3(0.16, 0.95, 0.06)
-
-[sub_resource type="CylinderMesh" id="m4"]
-top_radius = 0.08
-bottom_radius = 0.08
-height = 0.06
-radial_segments = 16
-rings = 1
 
 [node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery", "jump_charge", "air_steer", "kneel", "dodge", "shield")]
 collision_layer = 2
@@ -91,11 +73,12 @@ shield = NodePath("MechShield")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
 shape = SubResource("body_shape")
 
-[node name="MechAssembler" type="Node" parent="." node_paths=PackedStringArray("mech", "frame")]
+[node name="MechAssembler" type="Node" parent="." node_paths=PackedStringArray("mech", "frame", "weapon_controller")]
 script = ExtResource("assembler")
 loadout = ExtResource("loadout")
 mech = NodePath("..")
 frame = NodePath("../Visual")
+weapon_controller = NodePath("../WeaponController")
 
 [node name="Visual" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
@@ -136,12 +119,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 0)
 [node name="KneeR" type="Node3D" parent="Visual/Roll/Upper/Lower/HipR"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.6, 0)
 
-[node name="Rifle" parent="Visual/Roll/Upper/Torso" instance=ExtResource("rifle")]
-transform = Transform3D(1, 0, -0, 0, 0.99682, 0.07975, 0, -0.07975, 0.99682, 2.38, 1.0624, -0.73097)
-
-[node name="RiflePoseRest" type="Marker3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(1, 0, -0, 0, 0.99682, 0.07975, 0, -0.07975, 0.99682, 2.38, 1.0624, -0.73097)
-
 [node name="LeftHand" type="Marker3D" parent="Visual/Roll/Upper/Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.601, -0.306, -2.397)
 
@@ -153,70 +130,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 1.53, -1.275)
 
 [node name="AimAnchor" type="Marker3D" parent="Visual/Roll/Upper/Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.38, 0.935, -0.85)
-
-[node name="ShieldMountRest" type="Marker3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
-transform = Transform3D(0, 0, -1, 0, -1, 0, -1, 0, 0, 0.7224999999999999, -1.615, 0.0)
-
-[node name="Shield" type="Node3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL"]
-transform = Transform3D(0, 0, -1.2, 0, -1.2, 0, -1.2, 0, 0, 0.7224999999999999, -1.615, 0.0)
-
-[node name="ShieldCover" type="Marker3D" parent="Visual/Roll/Upper/Torso"]
-transform = Transform3D(0.76604, 0.64279, 0, -0.64279, 0.76604, 0, 0, 0, 1, -0.17, 1.53, -1.9975)
-
-[node name="ShieldBody" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
-mesh = SubResource("m0")
-surface_material_override/0 = ExtResource("armor")
-
-[node name="ShieldTop" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.25, 0)
-mesh = SubResource("m1")
-surface_material_override/0 = ExtResource("armor")
-
-[node name="ShieldBottom" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(-1, -0, 0, 0, -1, 0, 0, 0, 1, 0, -2.25, 0)
-mesh = SubResource("m1")
-surface_material_override/0 = ExtResource("armor")
-
-[node name="ShieldFrame" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0.3)
-mesh = SubResource("m2")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="Chevron0" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(0.70711, 0.70711, 0, -0.70711, 0.70711, 0, 0, 0, 1, -0.24, -1.25, -0.14)
-mesh = SubResource("m3")
-surface_material_override/0 = ExtResource("mark")
-
-[node name="Chevron1" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(0.70711, -0.70711, 0, 0.70711, 0.70711, 0, 0, 0, 1, 0.24, -1.25, -0.14)
-mesh = SubResource("m3")
-surface_material_override/0 = ExtResource("mark")
-
-[node name="Bolt0" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.6, 1.7, -0.14)
-mesh = SubResource("m4")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="Bolt1" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.6, 1.7, -0.14)
-mesh = SubResource("m4")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="Bolt2" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.6, -1.7, -0.14)
-mesh = SubResource("m4")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="Bolt3" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.6, -1.7, -0.14)
-mesh = SubResource("m4")
-surface_material_override/0 = ExtResource("frame")
-
-[node name="Bolt4" type="MeshInstance3D" parent="Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield"]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 2.25, -0.14)
-mesh = SubResource("m4")
-surface_material_override/0 = ExtResource("frame")
 
 [node name="MechInput" type="Node" parent="." node_paths=PackedStringArray("camera_rig", "mech")]
 script = ExtResource("input")
@@ -271,10 +184,8 @@ aim_origin = NodePath("../Visual/Roll/Upper/Torso/AimAnchor")
 
 [node name="Animation" type="Node" parent="."]
 
-[node name="WeaponPose" type="Node" parent="Animation" node_paths=PackedStringArray("weapon", "rest_pose", "aim_anchor", "mech_aim", "input", "arm_ik_left", "arm_ik_right", "recoil")]
+[node name="WeaponPose" type="Node" parent="Animation" node_paths=PackedStringArray("aim_anchor", "mech_aim", "input", "arm_ik_left", "arm_ik_right", "recoil")]
 script = ExtResource("weaponpose")
-weapon = NodePath("../../Visual/Roll/Upper/Torso/Rifle")
-rest_pose = NodePath("../../Visual/Roll/Upper/Torso/RiflePoseRest")
 aim_anchor = NodePath("../../Visual/Roll/Upper/Torso/AimAnchor")
 mech_aim = NodePath("../../MechAim")
 input = NodePath("../../MechInput")
@@ -343,11 +254,10 @@ skid_turn = NodePath("../SkidBodyTurn")
 script = ExtResource("skiddust")
 mech = NodePath("../..")
 
-[node name="ArmIKRight" type="Node" parent="Animation" node_paths=PackedStringArray("root_joint", "mid_joint", "target")]
+[node name="ArmIKRight" type="Node" parent="Animation" node_paths=PackedStringArray("root_joint", "mid_joint")]
 script = ExtResource("ik")
 root_joint = NodePath("../../Visual/Roll/Upper/Torso/ShoulderR")
 mid_joint = NodePath("../../Visual/Roll/Upper/Torso/ShoulderR/ElbowR")
-target = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripRight")
 pole_direction = Vector3(1, -1, 0.6)
 upper_length = 2.295
 lower_length = 2.55
@@ -415,28 +325,13 @@ raised = NodePath("../../Visual/Roll/Upper/Torso/LeftHandRaised")
 pole_rest = Vector3(-0.1, -0.4, 1.0)
 pole_raised = Vector3(-1.0, -0.8, -0.3)
 
-[node name="ShieldMount" type="Node" parent="Animation" node_paths=PackedStringArray("shield", "shield_node", "rest_mount", "cover")]
+[node name="ShieldMount" type="Node" parent="Animation" node_paths=PackedStringArray("shield")]
 script = ExtResource("shieldmount")
 shield = NodePath("../../MechShield")
-shield_node = NodePath("../../Visual/Roll/Upper/Torso/ShoulderL/ElbowL/Shield")
-rest_mount = NodePath("../../Visual/Roll/Upper/Torso/ShoulderL/ElbowL/ShieldMountRest")
-cover = NodePath("../../Visual/Roll/Upper/Torso/ShieldCover")
 shield_scale = 1.2
-
-[node name="WeaponFire" type="Node" parent="Animation" node_paths=PackedStringArray("input", "weapon_pose", "mech_aim", "muzzle", "muzzle_flash", "camera_shake", "shooter")]
-script = ExtResource("fire")
-input = NodePath("../../MechInput")
-weapon_pose = NodePath("../WeaponPose")
-mech_aim = NodePath("../../MechAim")
-muzzle = NodePath("../../Visual/Roll/Upper/Torso/Rifle/Muzzle")
-bullet_scene = ExtResource("bullet")
-muzzle_flash = NodePath("../../Visual/Roll/Upper/Torso/Rifle/Muzzle/MuzzleFlash")
-camera_shake = NodePath("../../CameraRig/Pitch/SpringArm/Camera")
-shooter = NodePath("../..")
 
 [node name="WeaponRecoil" type="Node" parent="Animation" node_paths=PackedStringArray("weapon_fire")]
 script = ExtResource("recoil")
-weapon_fire = NodePath("../WeaponFire")
 
 [node name="BrakeThrusters" type="Node" parent="Animation" node_paths=PackedStringArray("mech")]
 script = ExtResource("brakes")
@@ -446,3 +341,21 @@ mech = NodePath("../..")
 script = ExtResource("flames")
 mech = NodePath("../..")
 dodge = NodePath("../../MechDodge")
+
+[node name="WeaponController" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "mech_aim", "weapon_pose", "weapon_recoil", "arm_ik_left", "arm_ik_right", "camera_ads", "torso_pose", "camera_shake", "mech_shield", "shield_pose", "shield_mount", "torso", "left_hand")]
+script = ExtResource("weaponctl")
+mech = NodePath("..")
+input = NodePath("../MechInput")
+mech_aim = NodePath("../MechAim")
+weapon_pose = NodePath("../Animation/WeaponPose")
+weapon_recoil = NodePath("../Animation/WeaponRecoil")
+arm_ik_left = NodePath("../Animation/ArmIKLeft")
+arm_ik_right = NodePath("../Animation/ArmIKRight")
+camera_ads = NodePath("../CameraRig/CameraAds")
+torso_pose = NodePath("../Animation/TorsoPose")
+camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
+mech_shield = NodePath("../MechShield")
+shield_pose = NodePath("../Animation/ShieldPose")
+shield_mount = NodePath("../Animation/ShieldMount")
+torso = NodePath("../Visual/Roll/Upper/Torso")
+left_hand = NodePath("../Visual/Roll/Upper/Torso/LeftHand")

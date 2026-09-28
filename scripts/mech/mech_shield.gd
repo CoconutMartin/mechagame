@@ -19,6 +19,8 @@ extends Node
 ## How fast the shield goes down (1 / seconds).
 @export var lower_speed: float = 3.0
 
+## False when the loadout has no shield (WeaponController sets it). LMB does nothing then.
+var enabled: bool = true
 ## 0 = shield down, 1 = shield up.
 var amount: float = 0.0
 
@@ -29,8 +31,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var speed := raise_speed if input.shield_held else lower_speed
-	amount = move_toward(amount, 1.0 if input.shield_held else 0.0, speed * delta)
+	var held := enabled and input.shield_held
+	var speed := raise_speed if held else lower_speed
+	amount = move_toward(amount, 1.0 if held else 0.0, speed * delta)
 
 
 ## Top move speed (m/s) with the shield fully up.

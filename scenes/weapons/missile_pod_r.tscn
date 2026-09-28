@@ -1,0 +1,77 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/missile_pod_weapon.gd" id="script"]
+[ext_resource type="Material" path="res://materials/warden/rifle.tres" id="rifle"]
+[ext_resource type="Material" path="res://materials/warden/rifle_dark.tres" id="dark"]
+[ext_resource type="Material" path="res://materials/warden/armor.tres" id="armor"]
+[ext_resource type="Material" path="res://materials/warden/joint.tres" id="joint"]
+[ext_resource type="Material" path="res://materials/effects/beam.tres" id="beam"]
+[ext_resource type="Material" path="res://materials/effects/beam_core.tres" id="beam_core"]
+[ext_resource type="Material" path="res://materials/warden/frame.tres" id="frame"]
+
+[sub_resource type="BoxMesh" id="m0"]
+size = Vector3(1.5, 1.3, 2.2)
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(1.3, 1.1, 0.15)
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(0.6, 0.5, 1.2)
+
+[sub_resource type="CylinderMesh" id="m3"]
+top_radius = 0.24
+bottom_radius = 0.24
+height = 0.12
+radial_segments = 16
+rings = 1
+
+[node name="MissilePodR" type="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 0.98481, -0.17365, 0, 0.17365, 0.98481, 1.36, 3.995, 1.02)
+script = ExtResource("script")
+
+[node name="Box" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("m0")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="Face" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.12)
+mesh = SubResource("m1")
+surface_material_override/0 = ExtResource("dark")
+
+[node name="Mount" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.8, 0.2)
+mesh = SubResource("m2")
+surface_material_override/0 = ExtResource("joint")
+
+[node name="Tube0" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.33, 0.28, -1.2)
+mesh = SubResource("m3")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Launch0" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.33, 0.28, -1.3)
+
+[node name="Tube1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.33, 0.28, -1.2)
+mesh = SubResource("m3")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Launch1" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.33, 0.28, -1.3)
+
+[node name="Tube2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.33, -0.28, -1.2)
+mesh = SubResource("m3")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Launch2" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.33, -0.28, -1.3)
+
+[node name="Tube3" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.33, -0.28, -1.2)
+mesh = SubResource("m3")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Launch3" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.33, -0.28, -1.3)

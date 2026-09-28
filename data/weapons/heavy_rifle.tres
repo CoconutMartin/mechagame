@@ -1,9 +1,28 @@
 [gd_resource type="Resource" script_class="WeaponData" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/heavy_rifle.tscn" id="scene"]
 
 [resource]
 script = ExtResource("script")
 display_name = "Heavy Rifle"
 weight_t = 2.0
 hp = 300.0
+kind = 0
+fire_rate = 0.5
+damage = 120.0
+projectile_speed = 400.0
+spread_deg = 0.4
+recoil_up_deg = 2.0
+recoil_side_deg = 1.0
+model_kick_back = 0.7
+model_kick_up_deg = 10.0
+shake_trauma = 0.052
+shake_kick = 0.078
+magazine = 12
+reload_time = 3.5
+rest_transform = Transform3D(1, 0, -0, 0, 0.99682, 0.07975, 0, -0.07975, 0.99682, 2.38, 1.0624, -0.73097)
+aim_anchor = Vector3(2.3800, 0.9350, -0.8500)
+right_pole_rest = Vector3(0.4000, -1.0000, 0.5000)
+right_pole_aim = Vector3(0.4000, -1.0000, 0.5000)
+scene = ExtResource("scene")

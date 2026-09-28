@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/effects/beam_shot.gd" id="script"]
+[ext_resource type="Material" path="res://materials/effects/beam.tres" id="beam"]
+[ext_resource type="Material" path="res://materials/effects/beam_core.tres" id="core"]
+
+[sub_resource type="BoxMesh" id="outer"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="BoxMesh" id="inner"]
+size = Vector3(0.4, 0.4, 1)
+
+[node name="BeamShot" type="Node3D"]
+script = ExtResource("script")
+
+[node name="Beam" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+mesh = SubResource("outer")
+surface_material_override/0 = ExtResource("beam")
+
+[node name="Core" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+mesh = SubResource("inner")
+surface_material_override/0 = ExtResource("core")

@@ -1,0 +1,101 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://materials/warden/armor.tres" id="armor"]
+[ext_resource type="Material" path="res://materials/warden/armor_dark.tres" id="armor_dark"]
+[ext_resource type="Material" path="res://materials/warden/frame.tres" id="frame"]
+[ext_resource type="Material" path="res://materials/warden/joint.tres" id="joint"]
+[ext_resource type="Material" path="res://materials/warden/mark.tres" id="mark"]
+[ext_resource type="Material" path="res://materials/warden/emblem.tres" id="emblem"]
+[ext_resource type="Material" path="res://materials/warden/eye.tres" id="eye"]
+[ext_resource type="Material" path="res://materials/effects/booster_flame.tres" id="flame"]
+[ext_resource type="Material" path="res://materials/effects/booster_core.tres" id="flame_core"]
+
+[sub_resource type="BoxMesh" id="m0"]
+size = Vector3(1.68, 3.8, 0.25)
+
+[sub_resource type="PrismMesh" id="m1"]
+size = Vector3(1.68, 0.7, 0.25)
+left_to_right = 0.5
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(0.7, 2.4, 0.4)
+
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(0.16, 0.95, 0.06)
+
+[sub_resource type="CylinderMesh" id="m4"]
+top_radius = 0.08
+bottom_radius = 0.08
+height = 0.06
+radial_segments = 16
+rings = 1
+
+[node name="WardenShield" type="Node3D"]
+
+[node name="ElbowL" type="Node3D" parent="."]
+
+[node name="ShieldMountRest" type="Marker3D" parent="ElbowL"]
+transform = Transform3D(0, 0, -1, 0, -1, 0, -1, 0, 0, 0.7224999999999999, -1.615, 0.0)
+
+[node name="Shield" type="Node3D" parent="ElbowL"]
+transform = Transform3D(0, 0, -1.2, 0, -1.2, 0, -1.2, 0, 0, 0.7224999999999999, -1.615, 0.0)
+
+[node name="Torso" type="Node3D" parent="."]
+
+[node name="ShieldCover" type="Marker3D" parent="Torso"]
+transform = Transform3D(0.76604, 0.64279, 0, -0.64279, 0.76604, 0, 0, 0, 1, -0.17, 1.53, -1.9975)
+
+[node name="ShieldBody" type="MeshInstance3D" parent="ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("m0")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ShieldTop" type="MeshInstance3D" parent="ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.25, 0)
+mesh = SubResource("m1")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ShieldBottom" type="MeshInstance3D" parent="ElbowL/Shield"]
+transform = Transform3D(-1, -0, 0, 0, -1, 0, 0, 0, 1, 0, -2.25, 0)
+mesh = SubResource("m1")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="ShieldFrame" type="MeshInstance3D" parent="ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0.3)
+mesh = SubResource("m2")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Chevron0" type="MeshInstance3D" parent="ElbowL/Shield"]
+transform = Transform3D(0.70711, 0.70711, 0, -0.70711, 0.70711, 0, 0, 0, 1, -0.24, -1.25, -0.14)
+mesh = SubResource("m3")
+surface_material_override/0 = ExtResource("mark")
+
+[node name="Chevron1" type="MeshInstance3D" parent="ElbowL/Shield"]
+transform = Transform3D(0.70711, -0.70711, 0, 0.70711, 0.70711, 0, 0, 0, 1, 0.24, -1.25, -0.14)
+mesh = SubResource("m3")
+surface_material_override/0 = ExtResource("mark")
+
+[node name="Bolt0" type="MeshInstance3D" parent="ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.6, 1.7, -0.14)
+mesh = SubResource("m4")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Bolt1" type="MeshInstance3D" parent="ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.6, 1.7, -0.14)
+mesh = SubResource("m4")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Bolt2" type="MeshInstance3D" parent="ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.6, -1.7, -0.14)
+mesh = SubResource("m4")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Bolt3" type="MeshInstance3D" parent="ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.6, -1.7, -0.14)
+mesh = SubResource("m4")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Bolt4" type="MeshInstance3D" parent="ElbowL/Shield"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 2.25, -0.14)
+mesh = SubResource("m4")
+surface_material_override/0 = ExtResource("frame")

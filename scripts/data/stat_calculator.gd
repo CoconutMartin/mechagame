@@ -58,6 +58,13 @@ static func compute(loadout: Loadout) -> MechStats:
 	var arm_recoil := loadout.arm_right.recoil_control if loadout.arm_right != null else 1.0
 	stats.recoil_multiplier = arm_recoil * _mod(mods, ModData.Stat.RECOIL)
 
+	# Lock-on.
+	if loadout.fcs != null:
+		stats.lock_range = loadout.fcs.lock_range
+		stats.max_locks = loadout.fcs.max_locks
+	if loadout.head != null:
+		stats.lock_on_speed = loadout.head.lock_on_speed
+
 	# Part HP with plates.
 	var hp_mod := _mod(mods, ModData.Stat.PART_HP)
 	var slots := {

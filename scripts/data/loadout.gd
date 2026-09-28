@@ -8,8 +8,9 @@ extends Resource
 @export var arm_left: ArmPart
 @export var arm_right: ArmPart
 @export var legs: LegPart
-@export var back_left: BackUnitPart
-@export var back_right: BackUnitPart
+## Back units are weapons (slot BACK), for example missile pods.
+@export var back_left: WeaponData
+@export var back_right: WeaponData
 @export var booster: BoosterPart
 @export var generator: GeneratorPart
 @export var fcs: FcsPart

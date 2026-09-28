@@ -11,14 +11,18 @@ extends Node
 @export var mech: Mech
 ## The frame: the skeleton with the socket nodes.
 @export var frame: Node3D
+## Optional. Mounts the loadout weapons.
+@export var weapon_controller: WeaponController
 
 
 func _ready() -> void:
 	if loadout == null:
 		return
 	for part in loadout.get_parts():
-		if part.scene != null:
+		if part.scene != null and not part is WeaponData:
 			attach(part.scene)
+	if weapon_controller != null:
+		weapon_controller.mount(loadout, self)
 	var stats := StatCalculator.compute(loadout)
 	MechStatApplier.apply(stats, mech)
 

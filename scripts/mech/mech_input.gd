@@ -25,6 +25,13 @@ var aim_held: bool = false
 var fire_held: bool = false
 ## True while the left arm weapon key (LMB) is held. A shield on the left arm lifts.
 var shield_held: bool = false
+## True while LMB is held. Fires a two-hand weapon (RMB aims it).
+var left_fire_held: bool = false
+## True while Q / E are held. Back units (missile pods): hold to lock, release to fire.
+var back_left_held: bool = false
+var back_right_held: bool = false
+## True on the frame R is pressed. Reloads the guns.
+var reload_pressed: bool = false
 ## True while the walk forward key (W) is held. MechKneel stands up on it.
 var forward_held: bool = false
 ## True on the frame the crouch key (Ctrl) is pressed. MechKneel toggles on it.
@@ -49,6 +56,10 @@ func _physics_process(_delta: float) -> void:
 	aim_held = Input.is_action_pressed("aim")
 	fire_held = Input.is_action_pressed("use_right_arm")
 	shield_held = Input.is_action_pressed("use_left_arm")
+	left_fire_held = shield_held
+	back_left_held = Input.is_action_pressed("fire_back_left")
+	back_right_held = Input.is_action_pressed("fire_back_right")
+	reload_pressed = Input.is_action_just_pressed("reload")
 	crouch_pressed = Input.is_action_just_pressed("crouch")
 	forward_held = Input.is_action_pressed("move_forward")
 

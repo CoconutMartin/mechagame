@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/beam_blade.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Beam Blade"
+weight_t = 1.5
+hp = 200.0
+kind = 2
+fire_rate = 1.5
+damage = 400.0
+heat_per_use = 30.0
+heat_cooling = 22.0
+overheat_cooling = 30.0
+lunge_distance = 16.0
+lunge_speed = 32.0
+lunge_energy = 20.0
+slash_reach = 11.0
+shake_trauma = 0.1
+shake_kick = 0.1
+recoil_up_deg = 0.0
+recoil_side_deg = 0.0
+rest_transform = Transform3D(0.98894, 0.05457, -0.13794, 0, 0.92989, 0.36784, 0.14834, -0.36377, 0.9196, 2.25362, 0.79035, -1.33912)
+aim_anchor = Vector3(2.3800, 0.9350, -0.8500)
+right_pole_rest = Vector3(0.6000, -1.0000, 0.4000)
+right_pole_aim = Vector3(0.6000, -1.0000, 0.4000)
+scene = ExtResource("scene")

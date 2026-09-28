@@ -1,0 +1,96 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/effects/explosion.gd" id="script"]
+[ext_resource type="Material" path="res://materials/effects/booster_core.tres" id="flash"]
+
+[sub_resource type="SphereMesh" id="ball"]
+radius = 0.5
+height = 1.0
+radial_segments = 16
+rings = 8
+
+[sub_resource type="StandardMaterial3D" id="fire_material"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+billboard_mode = 3
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="fire_quad"]
+material = SubResource("fire_material")
+size = Vector2(2.5, 2.5)
+
+[sub_resource type="Gradient" id="fire_fade"]
+colors = PackedColorArray(1, 0.8, 0.4, 1, 0.9, 0.3, 0.05, 0)
+
+[sub_resource type="StandardMaterial3D" id="smoke_material"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+billboard_mode = 3
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="smoke_quad"]
+material = SubResource("smoke_material")
+size = Vector2(3.5, 3.5)
+
+[sub_resource type="Gradient" id="smoke_fade"]
+colors = PackedColorArray(0.25, 0.23, 0.2, 0.7, 0.4, 0.38, 0.35, 0)
+
+[node name="Explosion" type="Node3D"]
+script = ExtResource("script")
+
+[node name="Flash" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+mesh = SubResource("ball")
+surface_material_override/0 = ExtResource("flash")
+
+[node name="Fire" type="CPUParticles3D" parent="."]
+emitting = false
+amount = 24
+lifetime = 0.7
+one_shot = true
+explosiveness = 0.95
+mesh = SubResource("fire_quad")
+emission_shape = 1
+emission_sphere_radius = 1.0
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 4.0
+initial_velocity_max = 12.0
+gravity = Vector3(0, 2, 0)
+damping_min = 4.0
+damping_max = 8.0
+scale_amount_min = 0.8
+scale_amount_max = 2.0
+color_ramp = SubResource("fire_fade")
+
+[node name="Smoke" type="CPUParticles3D" parent="."]
+emitting = false
+amount = 16
+lifetime = 1.5
+one_shot = true
+explosiveness = 0.8
+mesh = SubResource("smoke_quad")
+emission_shape = 1
+emission_sphere_radius = 1.5
+direction = Vector3(0, 1, 0)
+spread = 60.0
+initial_velocity_min = 2.0
+initial_velocity_max = 5.0
+gravity = Vector3(0, 1, 0)
+damping_min = 1.0
+damping_max = 2.0
+scale_amount_min = 1.0
+scale_amount_max = 2.5
+color_ramp = SubResource("smoke_fade")
+
+[node name="Light" type="OmniLight3D" parent="."]
+light_color = Color(1, 0.6, 0.25, 1)
+light_energy = 12.0
+omni_range = 25.0

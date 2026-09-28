@@ -30,7 +30,7 @@ SCRIPTS = [("mech/mech","mech"),("mech/mech_input","input"),("mech/mech_energy",
  ("weapons/weapon_recoil","recoil"),("effects/booster_flames","flames"),("animation/shield_pose","shieldpose"),
  ("mech/mech_shield","shield"),("effects/brake_thrusters","brakes"),("animation/shield_mount","shieldmount"),
  ("animation/dodge_slide_pose","dodgeslide"),
- ("camera/free_aim","freeaim"),("mech/mech_assembler","assembler")]
+ ("camera/free_aim","freeaim"),("mech/mech_assembler","assembler"),("weapons/weapon_controller","weaponctl")]
 
 
 # Frame nodes that part groups attach to, with their paths in the mech scene.
@@ -122,10 +122,11 @@ class Model:
         else:
             self.flames.append(name)
 
-    def node(self, name, parent, typ="Node3D", pos=(0, 0, 0), rot=(0, 0, 0), groups=None, extra=""):
+    def node(self, name, parent, typ="Node3D", pos=(0, 0, 0), rot=(0, 0, 0), groups=None, extra="", transform=None):
+        """transform: a Transform3D text that replaces pos and rot (no torso scaling)."""
         _, pos = self._scaled(parent, None, (), pos)
         _, nodes, path = self._target(parent)
-        text = f'[node name="{name}" type="{typ}" parent="{path}"]\ntransform = {xf(pos, rot)}\n{extra}'
+        text = f'[node name="{name}" type="{typ}" parent="{path}"]\ntransform = {transform or xf(pos, rot)}\n{extra}'
         nodes.append(self._with_groups(text, groups))
 
     def part(self, name, parent, mat, kind, params, pos=(0, 0, 0), rot=(0, 0, 0), groups=None):
@@ -197,8 +198,10 @@ shape = SubResource("body_shape")
         m.node(f"Hip{s}", L, pos=(sign * hip_x, 0, 0))
         m.node(f"Knee{s}", f"{L}/Hip{s}", pos=(0, -thigh, 0))
     rest = rest_xf or xf(TT(*RIFLE_POS), RIFLE_ROT)
-    m.nodes.append(f'[node name="Rifle" parent="{TO}" instance=ExtResource("rifle")]\ntransform = {rest}\n')
-    m.nodes.append(f'[node name="RiflePoseRest" type="Marker3D" parent="{TO}"]\ntransform = {rest}\n')
+    if not parts:
+        # Phase 3: with part scenes, WeaponController adds the weapons from the loadout instead.
+        m.nodes.append(f'[node name="Rifle" parent="{TO}" instance=ExtResource("rifle")]\ntransform = {rest}\n')
+        m.nodes.append(f'[node name="RiflePoseRest" type="Marker3D" parent="{TO}"]\ntransform = {rest}\n')
     if one_hand:
         m.node("LeftHand", TO, "Marker3D", TT(*torso_point(one_hand["rest"], k)))
         m.node("LeftHandRest", TO, "Marker3D", TT(*torso_point(one_hand["rest"], k)))
@@ -305,11 +308,12 @@ dodge = NodePath("../../MechDodge")
     if loadout:
         o.append(f'[ext_resource type="Resource" path="{loadout}" id="loadout"]')
         # MechAssembler goes first (after the collision), so the parts exist before the other nodes start.
-        m.nodes.insert(1, '''[node name="MechAssembler" type="Node" parent="." node_paths=PackedStringArray("mech", "frame")]
+        m.nodes.insert(1, '''[node name="MechAssembler" type="Node" parent="." node_paths=PackedStringArray("mech", "frame", "weapon_controller")]
 script = ExtResource("assembler")
 loadout = ExtResource("loadout")
 mech = NodePath("..")
 frame = NodePath("../Visual")
+weapon_controller = NodePath("../WeaponController")
 ''')
     for mid, path in materials.items():
         o.append(f'[ext_resource type="Material" path="{path}" id="{mid}"]')
@@ -323,7 +327,10 @@ frame = NodePath("../Visual")
     for name, pivot, hips, placement in m.skirts:
         hp = ", ".join(f'NodePath("../../{L}/{h}")' for h in hips)
         o.append(f'[node name="{name}" type="Node" parent="Animation" node_paths=PackedStringArray("skirt", "hips")]\nscript = ExtResource("skirt")\nskirt = NodePath("../../{L}/{pivot}")\nhips = [{hp}]\nplacement = {placement}\n')
-    open(out_path, "w").write("\n".join(o))
+    text = "\n".join(o)
+    if parts:
+        text = _weapons_by_controller(text, one_hand)
+    open(out_path, "w").write(text)
     for part_id, (path, root) in (parts or {}).items():
         write_part_scene(path, root, m.parts[part_id], materials)
         print("wrote", path)
@@ -341,3 +348,51 @@ def write_part_scene(path, root, part, materials):
     o += part.nodes
     os.makedirs(os.path.dirname(path), exist_ok=True)
     open(path, "w").write("\n".join(o))
+
+
+def _strip(text, node, props):
+    """Removes properties (and their node_paths entries) from one node block."""
+    start = text.index(f'[node name="{node}"')
+    end = text.find("\n[node ", start + 1)
+    end = len(text) if end < 0 else end
+    block = text[start:end]
+    for prop in props:
+        lines = [l for l in block.split("\n") if not l.startswith(prop + " = ")]
+        block = "\n".join(lines).replace(f'"{prop}", ', "").replace(f', "{prop}"', "")
+    return text[:start] + block + text[end:]
+
+
+def _drop_node(text, node):
+    start = text.index(f'[node name="{node}"')
+    end = text.find("\n[node ", start + 1)
+    return text[:start] + (text[end + 1:] if end >= 0 else "")
+
+
+def _weapons_by_controller(text, one_hand):
+    """Phase 3: the weapon nodes come from the loadout, so WeaponController wires them at start."""
+    text = _strip(text, "WeaponPose", ["weapon", "rest_pose"])
+    text = _strip(text, "ArmIKRight", ["target"])
+    text = _strip(text, "WeaponRecoil", ["weapon_fire"])
+    text = _drop_node(text, "WeaponFire")
+    if one_hand:
+        text = _strip(text, "ShieldMount", ["shield_node", "rest_mount", "cover"])
+    text += f'''
+[node name="WeaponController" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "mech_aim", "weapon_pose", "weapon_recoil", "arm_ik_left", "arm_ik_right", "camera_ads", "torso_pose", "camera_shake", "mech_shield", "shield_pose", "shield_mount", "torso", "left_hand")]
+script = ExtResource("weaponctl")
+mech = NodePath("..")
+input = NodePath("../MechInput")
+mech_aim = NodePath("../MechAim")
+weapon_pose = NodePath("../Animation/WeaponPose")
+weapon_recoil = NodePath("../Animation/WeaponRecoil")
+arm_ik_left = NodePath("../Animation/ArmIKLeft")
+arm_ik_right = NodePath("../Animation/ArmIKRight")
+camera_ads = NodePath("../CameraRig/CameraAds")
+torso_pose = NodePath("../Animation/TorsoPose")
+camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
+mech_shield = NodePath("../MechShield")
+shield_pose = NodePath("../Animation/ShieldPose")
+shield_mount = NodePath("../Animation/ShieldMount")
+torso = NodePath("../{TO}")
+left_hand = NodePath("../{TO}/LeftHand")
+'''
+    return text

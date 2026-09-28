@@ -1,9 +1,14 @@
 [gd_resource type="Resource" script_class="WeaponData" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/warden_shield.tscn" id="scene"]
 
 [resource]
 script = ExtResource("script")
 display_name = "Warden Hex Shield"
 weight_t = 3.0
 hp = 1200.0
+kind = 4
+shield_area_m2 = 10.886
+shield_scale = 1.2
+scene = ExtResource("scene")

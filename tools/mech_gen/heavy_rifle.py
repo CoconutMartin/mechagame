@@ -40,11 +40,12 @@ o = ['[gd_scene format=3]\n',
  '[ext_resource type="Material" path="res://materials/warden/rifle_dark.tres" id="dark"]',
  '[ext_resource type="Material" path="res://materials/warden/lens.tres" id="lens"]',
  '[ext_resource type="Material" path="res://materials/effects/muzzle_flash.tres" id="flash"]',
- '[ext_resource type="Script" path="res://scripts/effects/muzzle_flash.gd" id="flash_script"]\n',
+ '[ext_resource type="Script" path="res://scripts/effects/muzzle_flash.gd" id="flash_script"]',
+ '[ext_resource type="Script" path="res://scripts/weapons/gun_weapon.gd" id="weapon_script"]\n',
  '[sub_resource type="CylinderMesh" id="flash_cone"]\ntop_radius = 0.0\nbottom_radius = 0.35\nheight = 1.3\nradial_segments = 8\nrings = 1\n',
  '[sub_resource type="SphereMesh" id="flash_core"]\nradius = 0.28\nheight = 0.56\nradial_segments = 8\nrings = 4\n',
  b.sub_text(),
- '[node name="HeavyRifle" type="Node3D"]\n']
+ '[node name="HeavyRifle" type="Node3D"]\nscript = ExtResource("weapon_script")\n']
 o += b.nodes
 def marker(n, pos): o.append(f'[node name="{n}" type="Marker3D" parent="."]\ntransform = {xf(tuple(v * SCALE for v in pos))}\n')
 marker("GripRight", (0, -0.55, -1.65))

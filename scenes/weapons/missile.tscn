@@ -1,0 +1,77 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/missile.gd" id="script"]
+[ext_resource type="Material" path="res://materials/warden/armor.tres" id="armor"]
+[ext_resource type="Material" path="res://materials/warden/frame.tres" id="frame"]
+[ext_resource type="Material" path="res://materials/effects/booster_flame.tres" id="flame"]
+
+[sub_resource type="CylinderMesh" id="body"]
+top_radius = 0.18
+bottom_radius = 0.18
+height = 1.6
+radial_segments = 10
+rings = 1
+
+[sub_resource type="CylinderMesh" id="nose"]
+top_radius = 0.0
+bottom_radius = 0.18
+height = 0.4
+radial_segments = 10
+rings = 1
+
+[sub_resource type="CylinderMesh" id="fire"]
+top_radius = 0.2
+bottom_radius = 0.02
+height = 1.4
+radial_segments = 8
+rings = 1
+
+[sub_resource type="StandardMaterial3D" id="smoke_material"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+billboard_mode = 3
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="smoke_quad"]
+material = SubResource("smoke_material")
+size = Vector2(1, 1)
+
+[sub_resource type="Gradient" id="smoke_fade"]
+colors = PackedColorArray(0.8, 0.78, 0.75, 0.55, 0.6, 0.58, 0.55, 0)
+
+[node name="Missile" type="Node3D"]
+script = ExtResource("script")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0)
+mesh = SubResource("body")
+surface_material_override/0 = ExtResource("armor")
+
+[node name="Nose" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, -1)
+mesh = SubResource("nose")
+surface_material_override/0 = ExtResource("frame")
+
+[node name="Fire" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 1.5)
+cast_shadow = 0
+mesh = SubResource("fire")
+surface_material_override/0 = ExtResource("flame")
+
+[node name="Smoke" type="CPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+amount = 60
+lifetime = 1.4
+local_coords = false
+mesh = SubResource("smoke_quad")
+direction = Vector3(0, 0, 1)
+spread = 12.0
+initial_velocity_min = 1.0
+initial_velocity_max = 3.0
+gravity = Vector3(0, 0.5, 0)
+scale_amount_min = 1.0
+scale_amount_max = 2.5
+color_ramp = SubResource("smoke_fade")

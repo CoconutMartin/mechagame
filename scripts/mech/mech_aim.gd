@@ -91,10 +91,11 @@ func get_body_turn() -> float:
 	return body_visual.rotation.y if body_visual != null else 0.0
 
 
-## Recoil kick after a shot. WeaponFire calls it. The kick goes to the free aim box.
-func kick_aim() -> void:
+## Recoil kick after a shot. The weapons call it. The kick goes to the free aim box.
+## Negative values use the FreeAim defaults.
+func kick_aim(up_deg: float = -1.0, side_deg: float = -1.0) -> void:
 	if camera_rig != null and camera_rig.free_aim != null:
-		camera_rig.free_aim.kick()
+		camera_rig.free_aim.kick(up_deg, side_deg)
 
 
 ## Screen position of the camera crosshair, in pixels.

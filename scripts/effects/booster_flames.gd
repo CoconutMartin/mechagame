@@ -31,8 +31,8 @@ var thrust: float = 0.0
 func _physics_process(delta: float) -> void:
 	var target := 0.0
 	var airborne := not mech.is_on_floor()
-	if mech.is_boosting:
-		target = air_thrust if airborne else ground_boost_thrust
+	if mech.is_boosting or mech.is_lunging:
+		target = air_thrust if airborne or mech.is_lunging else ground_boost_thrust
 	elif airborne and mech.velocity.y > 0.0:
 		target = air_thrust  # Jump jets or dodge hop going up.
 	if dodge != null and dodge.is_dodging:

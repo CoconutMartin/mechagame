@@ -15,6 +15,8 @@ extends Node3D
 @export var gravity: float = 4.0
 
 var velocity: Vector3 = Vector3.ZERO
+## Damage on a hit (Phase 4 uses it).
+var damage: float = 100.0
 ## Bodies the bullet does not hit (the mech that fired it).
 var exclude: Array[RID] = []
 
@@ -47,7 +49,9 @@ func _impact(point: Vector3, normal: Vector3, hit_body: Object = null) -> void:
 			effect.look_at(point + normal, Vector3.UP)
 		else:
 			effect.look_at(point + normal, Vector3.FORWARD)
-	if mark_scene != null and not (hit_body is Mech):
+	if hit_body != null and hit_body.has_method(&"on_hit"):
+		hit_body.on_hit(damage)
+	if mark_scene != null and not (hit_body is Mech or hit_body is TargetDummy):
 		var mark := mark_scene.instantiate() as Node3D
 		get_parent().add_child(mark)
 		# The decal projects down its -Y axis: point +Y along the surface normal.

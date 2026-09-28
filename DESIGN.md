@@ -10,7 +10,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 |---|---|---|
 | 1 | Mech controller and third-person camera on a test map | Done |
 | 2 | Part resources, sockets, assembler, stat calculator, weight-to-speed formula, debug HUD | Done |
-| 3 | Weapons: guns, lock-on missiles, sniper zoom, melee blade, energy use | Not started |
+| 3 | Weapons: guns, lock-on missiles, sniper zoom, melee blade, energy use | Done |
 | 4 | Per-part HP, hitboxes, destruction, target dummies, enemy AI, greybox urban map with destructible props | Not started |
 | 5 | Garage screen: swap parts, add plates, live stat preview. Graphics settings menu (low, medium, high) | Not started |
 | 6 | Pilot creation and skill tree | Not started |
@@ -23,6 +23,9 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 |---|---|---|
 | W / S | Walk forward / back along the legs (MechWarrior style) | `move_forward`, `move_back` |
 | A / D | Turn the legs at a steady speed (60°/s moving, 30°/s standing). The legs turn only with A / D and keep their heading when the mech stops | `move_left`, `move_right` |
+| Q / E (hold, release) | Missile pods: hold to lock targets, release to fire | `fire_back_left`, `fire_back_right` |
+| R | Reload guns and missile pods | `reload` |
+| 1 to 4 | Test loadouts: Gunner, Sniper, Melee, Missile | `loadout_1` to `loadout_4` |
 | V (hold) | Front view: the camera swings around to the front of the mech (about 0.33 s). The mech aim stays on the torso direction and the crosshair hides | `front_view` |
 | Mouse | Aim. Sets the torso target (up to 52° left and 64° right of the legs). The torso turns at its turn speed and the camera always stays behind the torso | |
 | Space | Hold on the ground to charge the jump jets, release to jump. No plain jump | `jump` |
@@ -117,6 +120,21 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 | 3 | props | cars, lampposts, people (mechs pass through them until Phase 4 destruction) |
 
 ## Weapon controls (Phase 3)
+
+Phase 3 decisions (user):
+- Solid guns (rifle, missiles) use ammo and reloads. Beam weapons (beam sniper, beam blade) use a heat bar: each use adds heat; at full heat the weapon overheats and works again only after it cools to zero (the heat cooldown is the "reload"). The blade lunge also uses energy.
+- Missiles: hold Q (left pod) or E (right pod) to lock targets inside the lock box around the blue ring (one after another, up to the FCS max locks and the missiles left). Release to fire one missile per lock; no lock = one missile straight at the aim point.
+- Blade: RMB = lunge slash (a boost lunge toward the target in the aim cone or 16 m along the aim, then a swing from high right to low left).
+- Keys 1 to 4 switch test loadouts (until the garage in Phase 5): 1 Gunner (heavy rifle + shield), 2 Sniper (beam sniper, two hands), 3 Melee (beam blade + shield), 4 Missile (heavy rifle + shield + two missile pods).
+
+Weapons:
+| Weapon | Slot | Keys | Values |
+|---|---|---|---|
+| Heavy rifle | right arm, one hand | RMB hip fire | 0.5 shots/s, 12 rounds, reload 3.5 s (R reloads early), bullets 400 m/s, recoil 2° up |
+| Beam sniper | right arm, two hands | RMB zoom (FOV 12°, scope), LMB fire | 1.25 shots/s, instant beam 1500 m, heat 34/shot, cooling 10/s, overheated cooling 25/s (overheats on the 4th fast shot, about 4 s to recover), recoil 3.5° up |
+| Beam blade | right arm | RMB lunge slash | lunge 16 m at 32 m/s, 20 energy, slash reach 11 m, heat 30/slash |
+| Missile pod L / R | back | hold Q / E lock, release fire | 4 missiles, reload 6 s, lock box 7°, 0.5 s per lock (head lock-on speed), missiles 90 m/s, turn 110°/s |
+| Hex shield | left arm | LMB lift | 10.9 m², 3 t |
 
 - One-hand weapons: RMB uses the right arm weapon, LMB uses the left arm weapon.
 - Two-hand firearm: RMB aims down sight, LMB shoots.
@@ -221,6 +239,18 @@ One active skill slot (example: Overdrive, +30% speed for 8 seconds).
 - Mech height stays 10 m (one frame). It will come from the frame or the parts when other frames exist.
 - Debug HUD build panel: total weight / load capacity, load ratio, walk and boost speed, boost acceleration, turn speeds, jump, HP of each part.
 
+## Weapon system (Phase 3)
+
+- `WeaponData` (`scripts/data/weapon_data.gd`): kind (gun, beam rifle, blade, missile pod, shield), slot (arm, back), two-handed, firing, recoil, ammo, heat, lock-on, blade and pose values. The pose values (rest transform, aim anchor, elbow directions, torso twist, zoom FOV) are for the Warden frame and come from `tools/mech_gen/warden_weapons.py`.
+- Weapon models are scenes whose root has a `MechWeapon` script: `GunWeapon`, `BeamRifleWeapon`, `BladeWeapon`, `MissilePodWeapon`. The shield is a socket-group scene (`scenes/weapons/warden_shield.tscn`).
+- `WeaponController` (mech node): MechAssembler calls `mount()`. It adds the weapons from the loadout under the torso, wires WeaponPose, the arm IK targets, WeaponRecoil, CameraAds (zoom only for two-hand weapons with a zoom FOV), TorsoPose (aim twist), and the shield nodes (MechShield, ShieldPose, ShieldMount are off without a shield). Each physics frame it sends the buttons to the weapons.
+- Effects: `Missile` (homing, explodes on contact or near the target), `Explosion`, `BeamShot`, bullet `ImpactSpark` and `BulletMark`. Hits call `on_hit(damage)` on the target (Phase 4 adds HP).
+- `TargetDummy` (`scenes/world/target_dummy.tscn`): lockable (group "lockable"), flashes on hits. Six in the test map (two on raised platforms).
+- HUD: weapon panel at the bottom right (ammo, reload, heat, overheat, lock count), lock box and target brackets, sniper scope overlay.
+- `LoadoutSwitcher` (test map): keys 1 to 4 rebuild the player mech with another loadout; the HUD follows it (`DebugHud.set_mech`).
+- Mech: `start_lunge()` (blade), boosters fire during the lunge. MechStats has the FCS lock range and max locks and the head lock-on speed.
+- Granpa Gundam still uses the older hard-wired rifle nodes (WeaponFire).
+
 ## Architecture rules
 
 - Parts, weapons, mods, plates, and skills are Godot Resources (.tres) in `/data`. New parts need no code changes.
@@ -250,7 +280,7 @@ scripts/mech/       mech.gd (movement), mech_shield.gd (shield lift and speed li
                     mech_jump_charge.gd, mech_air_steer.gd, mech_landing_recovery.gd, mech_aim.gd (camera target and real mech aim with jitter).
 scripts/animation/  shield_pose.gd, shield_mount.gd, dodge_slide_pose.gd, mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd, torso_pose.gd,
                     inertia_sway.gd, skid_body_turn.gd, skirt_follow.gd (placeholder animation).
-scripts/weapons/    weapon_fire.gd, weapon_recoil.gd, bullet.gd. Scenes: scenes/weapons/bullet.tscn, scenes/effects/impact_spark.tscn.
+scripts/weapons/    weapon_controller.gd, mech_weapon.gd, gun_weapon.gd, beam_rifle_weapon.gd, blade_weapon.gd, missile_pod_weapon.gd, missile.gd, bullet.gd, weapon_recoil.gd, weapon_fire.gd (Granpa Gundam only). Scenes: scenes/weapons/bullet.tscn, scenes/effects/impact_spark.tscn.
 scenes/weapons/     heavy_rifle.tscn (Warden), beam_rifle.tscn (Granpa Gundam), long_rifle.tscn (old box rifle). Markers: GripRight, GripLeft, GripLeftRest, GripLeftAim, Muzzle.
 scripts/camera/     mech_camera_rig.gd (follow and mouse look), free_aim.gd (free aim box), aim_spring.gd (aim overshoot), camera_shake.gd, camera_ads.gd (aim down sight zoom).
 scripts/world/      greybox_block.gd (box with collision, set size in Inspector).
@@ -273,7 +303,7 @@ scripts/core/       mouse_capture.gd, group_nodes.gd.
 
 ## Reminders for the user
 
-- Update the dodge hop animation (requested after Phase 1 revision 40). Revision 43 added the landing ending; the hop itself is still the simple version. Bring this up before Phase 1 is closed, and again at the start of Phase 2 if still open.
+- No open reminders. (Closed: "update the dodge hop animation", the user accepted the current hop at the start of Phase 3.)
 
 ## Decisions log
 
@@ -319,6 +349,7 @@ scripts/core/       mouse_capture.gd, group_nodes.gd.
 - Phase 1 revision 39: dodge recovery fix: smooth height plan (no pop and drop), inertia sway paused during the dodge, recovery crouch and lean with one spring back to upright.
 - Phase 1 revision 40: dodge roll replaced by a directional dodge hop (11.9 m, 50% of the roll).
 - Phase 1 revision 41: player mech model replaced with an RX-78-2 Gundam style placeholder (same skeleton, same animation). Beam rifle and shield. Waist skirts follow the thighs.
+- Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).
 - Phase 1 revision 57: Akira swing 65% smaller (19°, lean 2.8°). Recoil and jitter 70% less kneeling, 60% more with the shield up.

@@ -26,6 +26,11 @@ var _normal_fov: float
 var _normal_spring_length: float
 
 
+## 0 = normal view, 1 = fully zoomed (the scope HUD reads it).
+func get_zoom_amount() -> float:
+	return _amount
+
+
 func _ready() -> void:
 	_normal_fov = camera.fov
 	_normal_spring_length = spring_arm.spring_length

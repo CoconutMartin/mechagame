@@ -142,6 +142,11 @@ var is_air_boosting: bool = false
 var is_exiting_boost: bool = false
 ## True while the feet slide in a boost skid stop.
 var is_skidding: bool = false
+## True during a blade lunge (the boosters push the mech toward the target).
+var is_lunging: bool = false
+var _lunge_direction: Vector3 = Vector3.ZERO
+var _lunge_speed: float = 0.0
+var _lunge_left: float = 0.0
 ## True while the current skid uses the brake thrusters (dodge hop ending).
 var is_brake_skidding: bool = false
 ## Random side of the current skid: +1 = left, -1 = right. Set when a skid starts.
@@ -216,6 +221,17 @@ func get_aim_yaw_interpolated() -> float:
 ## Torso twist from the legs, in radians. Positive = left.
 func get_torso_twist() -> float:
 	return wrapf(_aim_yaw - rotation.y, -PI, PI)
+
+
+## Blade lunge: moves the mech along direction at speed for distance meters (no steering).
+## At the end the mech keeps a third of the speed and slows down normally.
+func start_lunge(direction: Vector3, speed: float, distance: float) -> void:
+	_lunge_direction = Vector3(direction.x, 0.0, direction.z).normalized()
+	_lunge_speed = speed
+	_lunge_left = distance
+	is_lunging = distance > 0.05
+	is_skidding = false
+	is_brake_skidding = false
 
 
 ## Starts a skid stop: the feet plant and slide, then heavy steps. The body turns and rolls to a
@@ -318,6 +334,17 @@ func _update_horizontal(delta: float) -> void:
 	# A jump that starts this frame counts as air.
 	var on_floor := is_on_floor() and velocity.y <= 0.0
 	var speed := get_horizontal_speed()
+
+	if is_lunging:
+		var step := _lunge_speed * delta
+		_lunge_left -= step
+		var push := _lunge_direction * _lunge_speed
+		if _lunge_left <= 0.0:
+			is_lunging = false
+			push *= 0.33
+		velocity.x = push.x
+		velocity.z = push.z
+		return
 
 	if not on_floor:
 		if not _airborne:

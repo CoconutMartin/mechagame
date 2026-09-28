@@ -8,10 +8,20 @@ extends CanvasLayer
 @onready var _info: Label = $Info
 @onready var _energy_bar: ProgressBar = $EnergyBar
 @onready var _build: Label = $Build
+@onready var _weapons_label: Label = $Weapons
 
 
 func _ready() -> void:
-	($AimReticle as AimReticle).mech_aim = mech_aim
+	set_mech(mech)
+
+
+## Follows a mech (LoadoutSwitcher calls it after it builds a new one).
+func set_mech(new_mech: Mech) -> void:
+	mech = new_mech
+	mech_aim = mech.get_node("MechAim") as MechAim
+	var reticle := $AimReticle as AimReticle
+	reticle.mech_aim = mech_aim
+	reticle.weapons = mech.get_node_or_null("WeaponController") as WeaponController
 
 
 func _process(_delta: float) -> void:
@@ -46,6 +56,7 @@ func _process(_delta: float) -> void:
 		Engine.get_frames_per_second(),
 	]
 	_build.text = _build_text()
+	_weapons_label.text = _weapons_text()
 	_energy_bar.value = energy.get_fraction() * 100.0
 	_energy_bar.modulate = Color(1.0, 0.35, 0.3) if energy.is_depleted else Color.WHITE
 
@@ -61,3 +72,19 @@ func _build_text() -> String:
 	for part_name in stats.part_hp:
 		text += "\n  %s: %d" % [part_name, roundi(stats.part_hp[part_name])]
 	return text
+
+
+func _weapons_text() -> String:
+	var weapons := mech.get_node_or_null("WeaponController") as WeaponController
+	if weapons == null:
+		return ""
+	var lines := PackedStringArray()
+	for slot in weapons.get_hud_slots():
+		var key: String = slot[0]
+		var item = slot[1]
+		if item is MechWeapon:
+			var weapon := item as MechWeapon
+			lines.append("%s  %s   %s" % [key, weapon.data.display_name, weapon.get_status_text()])
+		else:
+			lines.append("%s  %s" % [key, (item as WeaponData).display_name])
+	return "\n".join(lines)

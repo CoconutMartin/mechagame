@@ -5,6 +5,7 @@
 [ext_resource type="Material" path="res://materials/warden/lens.tres" id="lens"]
 [ext_resource type="Material" path="res://materials/effects/muzzle_flash.tres" id="flash"]
 [ext_resource type="Script" path="res://scripts/effects/muzzle_flash.gd" id="flash_script"]
+[ext_resource type="Script" path="res://scripts/weapons/gun_weapon.gd" id="weapon_script"]
 
 [sub_resource type="CylinderMesh" id="flash_cone"]
 top_radius = 0.0
@@ -90,6 +91,7 @@ radial_segments = 16
 rings = 1
 
 [node name="HeavyRifle" type="Node3D"]
+script = ExtResource("weapon_script")
 
 [node name="Stock" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, -0.33)

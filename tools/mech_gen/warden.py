@@ -67,6 +67,7 @@ PARTS = {
     "arm_r": (f"{PART_DIR}/warden_arm_r.tscn", "WardenArmR"),
     "legs": (f"{PART_DIR}/warden_legs.tscn", "WardenLegs"),
     "booster": (f"{PART_DIR}/warden_booster.tscn", "WardenBooster"),
+    "shield": ("scenes/weapons/warden_shield.tscn", "WardenShield"),
 }
 LOADOUT = "res://data/loadouts/warden.tres"
 
@@ -140,9 +141,9 @@ def build(m):
         m.part(f"Hand{s}", EL, "joint", "box", (0.7, 0.7, 0.85), (0, -2.95, 0))
         for i, z in enumerate((-0.28, -0.05, 0.18)):
             m.part(f"Finger{s}{i}", EL, "frame", "box", (0.6, 0.45, 0.18), (0, -3.45, z))
-    # Hex shield on the outer side of the left forearm (local -Z). A weapon: stays in the mech scene
-    # until Phase 3 makes weapons parts.
-    m.current_part = None
+    # Hex shield on the outer side of the left forearm (local -Z). A weapon scene (Phase 3):
+    # WeaponController attaches it when the loadout has it.
+    m.current_part = "shield"
     SL = f"{TO}/ShoulderL/ElbowL"
     # Shield down: on the outside of the forearm (elbow +X), long side along the forearm, top toward
     # the hand (elbow -Y), face out. ShieldMount moves the shield between this place and ShieldCover.
@@ -150,10 +151,10 @@ def build(m):
     mount = (0.85 * UPPER_BODY_SCALE, -1.9 * UPPER_BODY_SCALE, 0.0)
     rest_rows = "0, 0, -1, 0, -1, 0, -1, 0, 0"
     scaled_rows = f"0, 0, {-k}, 0, {-k}, 0, {-k}, 0, 0"
-    m.nodes.append(f'[node name="ShieldMountRest" type="Marker3D" parent="{SL}"]\ntransform = Transform3D({rest_rows}, {mount[0]}, {mount[1]}, {mount[2]})\n')
-    m.nodes.append(f'[node name="Shield" type="Node3D" parent="{SL}"]\ntransform = Transform3D({scaled_rows}, {mount[0]}, {mount[1]}, {mount[2]})\n')
+    m.node("ShieldMountRest", SL, "Marker3D", transform=f"Transform3D({rest_rows}, {mount[0]}, {mount[1]}, {mount[2]})")
+    m.node("Shield", SL, transform=f"Transform3D({scaled_rows}, {mount[0]}, {mount[1]}, {mount[2]})")
     cover = torso_point(SHIELD_COVER_POS, UPPER_BODY_SCALE)
-    m.nodes.append(f'[node name="ShieldCover" type="Marker3D" parent="{TO}"]\ntransform = {xf(TT(*cover), (0, 0, SHIELD_COVER_ROLL))}\n')
+    m.node("ShieldCover", TO, "Marker3D", transform=xf(TT(*cover), (0, 0, SHIELD_COVER_ROLL)))
     SHD = f"{SL}/Shield"
     m.part("ShieldBody", SHD, "armor", "box", (SW, 3.8, 0.25), (0, 0, 0))
     m.part("ShieldTop", SHD, "armor", "prism", (SW, 0.7, 0.25, 0.5), (0, 2.25, 0))

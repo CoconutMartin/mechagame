@@ -42,6 +42,25 @@ theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 15
 text = "Build"
 
+[node name="Weapons" type="Label" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -520.0
+offset_top = -150.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+horizontal_alignment = 2
+vertical_alignment = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 17
+text = "Weapons"
+
 [node name="AimReticle" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 15
@@ -67,7 +86,8 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 14
 text = "W / S walk   A / D turn legs   Mouse: aim (camera stays behind the torso)
-RMB fire (hip)   LMB lift shield   V front view
+RMB fire (hip) or blade lunge   LMB lift shield (two-hand weapon: RMB zoom, LMB fire)
+Q / E hold: lock missiles, release: fire   R reload   V front view   1-4 test loadouts
 Space hold: charge jump jets, release to jump (W or S held: jump that way)
 Space double tap: dodge hop (A / D side, W forward, S or none back; forward while boosting)
 Shift + W: walk 2 steps, run 2 steps, then boost   Ctrl kneel

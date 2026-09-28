@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/missile_pod_r.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Missile Pod R"
+weight_t = 3.0
+hp = 250.0
+kind = 3
+slot = 1
+fire_rate = 1.0
+damage = 150.0
+projectile_speed = 90.0
+range_m = 600.0
+magazine = 4
+reload_time = 6.0
+lock_box_deg = 7.0
+lock_time = 0.5
+missile_turn_deg = 110.0
+recoil_up_deg = 0.3
+recoil_side_deg = 0.3
+shake_trauma = 0.08
+shake_kick = 0.1
+scene = ExtResource("scene")

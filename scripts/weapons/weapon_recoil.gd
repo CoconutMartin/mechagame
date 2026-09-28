@@ -3,6 +3,7 @@ extends Node
 ## Kicks the weapon back and up at each shot, then a spring brings it back.
 ## WeaponPose adds get_offset() to the weapon pose. The hand IK follows the weapon grip.
 
+## Optional (older scenes). WeaponController calls bind() instead.
 @export var weapon_fire: WeaponFire
 ## Push back per shot, in meters.
 @export var kick_back: float = 0.7
@@ -26,7 +27,13 @@ var _side: float = 0.0
 func _ready() -> void:
 	# Before WeaponPose (5).
 	process_physics_priority = 4
-	weapon_fire.fired.connect(_on_fired)
+	if weapon_fire != null:
+		weapon_fire.fired.connect(_on_fired)
+
+
+## Listens to a weapon's fired signal (WeaponController calls it).
+func bind(emitter: Object) -> void:
+	emitter.connect(&"fired", _on_fired)
 
 
 func _on_fired() -> void:

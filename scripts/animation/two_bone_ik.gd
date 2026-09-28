@@ -27,6 +27,8 @@ func _physics_process(_delta: float) -> void:
 
 
 func solve() -> void:
+	if target == null:
+		return
 	var parent_basis := root_joint.get_parent_node_3d().global_basis
 	var shoulder := root_joint.global_position
 	var to_target := target.global_position - shoulder

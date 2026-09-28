@@ -6,6 +6,10 @@ extends Control
 ## body bob, and the physics frame rate do not make it jitter.
 
 @export var mech_aim: MechAim
+## Optional. Gives the missile locks and the zoom for the lock boxes and the scope.
+var weapons: WeaponController
+@export var lock_color: Color = Color(1.0, 0.35, 0.25, 0.95)
+@export var locking_color: Color = Color(1.0, 0.8, 0.3, 0.8)
 @export var radius: float = 14.0
 @export var tick_length: float = 7.0
 @export var color: Color = Color(0.35, 0.95, 1.0, 0.9)
@@ -39,6 +43,8 @@ func _draw() -> void:
 	var rig := mech_aim.camera_rig
 	if rig != null and rig.front_view_amount > 0.0:
 		return  # Front view: no crosshair.
+	_draw_scope()
+	_draw_locks()
 	var half := crosshair_size * 0.5
 	draw_rect(Rect2(_crosshair_position - Vector2(half, half), Vector2(crosshair_size, crosshair_size)), crosshair_color)
 	if not _visible_on_screen:
@@ -49,3 +55,63 @@ func _draw() -> void:
 	draw_line(p - Vector2(radius, 0), p - Vector2(radius + tick_length, 0), color, 2.0)
 	draw_line(p + Vector2(0, radius), p + Vector2(0, radius + tick_length), color, 2.0)
 	draw_line(p - Vector2(0, radius), p - Vector2(0, radius + tick_length), color, 2.0)
+
+
+## Sniper scope: a dark screen with a round hole around the crosshair while zoomed in.
+func _draw_scope() -> void:
+	if weapons == null or weapons.camera_ads == null or not weapons.camera_ads.enabled:
+		return
+	var zoom := weapons.camera_ads.get_zoom_amount()
+	if zoom < 0.5:
+		return
+	var alpha := clampf((zoom - 0.5) * 2.0, 0.0, 1.0)
+	var size := get_viewport_rect().size
+	var radius := size.y * 0.42
+	var ring := size.length()
+	draw_arc(_crosshair_position, radius + ring * 0.5, 0.0, TAU, 96, Color(0, 0, 0, 0.92 * alpha), ring)
+	draw_arc(_crosshair_position, radius, 0.0, TAU, 96, Color(0.1, 0.1, 0.1, alpha), 4.0, true)
+	var line := Color(0.1, 0.1, 0.1, 0.8 * alpha)
+	draw_line(_crosshair_position + Vector2(-radius, 0), _crosshair_position + Vector2(-20, 0), line, 2.0)
+	draw_line(_crosshair_position + Vector2(20, 0), _crosshair_position + Vector2(radius, 0), line, 2.0)
+	draw_line(_crosshair_position + Vector2(0, 20), _crosshair_position + Vector2(0, radius), line, 2.0)
+
+
+## Missile lock-on: the lock box around the mech aim, brackets on locked targets, and a closing
+## bracket on the target being locked.
+func _draw_locks() -> void:
+	if weapons == null:
+		return
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		return
+	for pod in weapons.get_lock_pods():
+		if not pod.is_lock_mode():
+			continue
+		# Lock box: its half size in pixels from the lock angle.
+		var focal := get_viewport_rect().size.y * 0.5 / tan(deg_to_rad(camera.fov) * 0.5)
+		var half := tan(deg_to_rad(pod.data.lock_box_deg)) * focal
+		_draw_corners(_screen_position, half, Color(lock_color, 0.6), 2.0)
+		for target in pod.locks:
+			_draw_target(camera, target, 26.0, lock_color, 3.0)
+		if pod.locking != null:
+			var closing := lerpf(70.0, 26.0, pod.lock_progress)
+			_draw_target(camera, pod.locking, closing, locking_color, 2.0)
+
+
+func _draw_target(camera: Camera3D, target: Node3D, half: float, color: Color, width: float) -> void:
+	if not is_instance_valid(target):
+		return
+	var point: Vector3 = target.get_lock_point() if target.has_method(&"get_lock_point") else target.global_position
+	if camera.is_position_behind(point):
+		return
+	_draw_corners(camera.unproject_position(point), half, color, width)
+
+
+## Four corner brackets of a square.
+func _draw_corners(center: Vector2, half: float, color: Color, width: float) -> void:
+	var arm := half * 0.4
+	for sx in [-1.0, 1.0]:
+		for sy in [-1.0, 1.0]:
+			var corner := center + Vector2(sx * half, sy * half)
+			draw_line(corner, corner - Vector2(sx * arm, 0.0), color, width)
+			draw_line(corner, corner - Vector2(0.0, sy * arm), color, width)

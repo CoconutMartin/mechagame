@@ -14,7 +14,7 @@
 
 [resource]
 script = ExtResource("script")
-display_name = "Warden"
+display_name = "Warden Gunner"
 head = ExtResource("head")
 core = ExtResource("core")
 arm_left = ExtResource("arm_left")
@@ -23,5 +23,5 @@ legs = ExtResource("legs")
 booster = ExtResource("booster")
 generator = ExtResource("generator")
 fcs = ExtResource("fcs")
-weapon_left = ExtResource("weapon_left")
 weapon_right = ExtResource("weapon_right")
+weapon_left = ExtResource("weapon_left")

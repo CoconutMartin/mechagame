@@ -19,5 +19,9 @@ var energy_capacity: float = 0.0
 var energy_output: float = 0.0
 var recharge_delay: float = 0.0
 var recoil_multiplier: float = 1.0
+## Lock-on: FCS range and max targets, head lock-on speed.
+var lock_range: float = 500.0
+var max_locks: int = 4
+var lock_on_speed: float = 1.0
 ## Max HP of each part (with plates and mods). Keys: "Head", "Core", "Arm L", "Arm R", "Legs".
 var part_hp: Dictionary = {}

@@ -9,6 +9,12 @@
 [ext_resource type="Script" path="res://scripts/core/mouse_capture.gd" id="mouse"]
 [ext_resource type="PackedScene" path="res://scenes/props/semi_truck.tscn" id="semi"]
 [ext_resource type="PackedScene" path="res://scenes/props/box_truck.tscn" id="boxtruck"]
+[ext_resource type="PackedScene" path="res://scenes/world/target_dummy.tscn" id="dummy"]
+[ext_resource type="Script" path="res://scripts/core/loadout_switcher.gd" id="switcher"]
+[ext_resource type="Resource" path="res://data/loadouts/warden.tres" id="loadout_gunner"]
+[ext_resource type="Resource" path="res://data/loadouts/warden_sniper.tres" id="loadout_sniper"]
+[ext_resource type="Resource" path="res://data/loadouts/warden_melee.tres" id="loadout_melee"]
+[ext_resource type="Resource" path="res://data/loadouts/warden_missile.tres" id="loadout_missile"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_top_color = Color(0.32, 0.45, 0.62, 1)
@@ -309,8 +315,35 @@ shape = SubResource("wall_ew")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 102.616, 60, 0)
 shape = SubResource("wall_ew")
 
+[node name="Targets" type="Node3D" parent="."]
+
+[node name="Dummy1" parent="Targets" instance=ExtResource("dummy")]
+transform = Transform3D(1.0000, 0, 0.0000, 0, 1, 0, -0.0000, 0, 1.0000, 0, 0, -30)
+
+[node name="Dummy2" parent="Targets" instance=ExtResource("dummy")]
+transform = Transform3D(0.9397, 0, 0.3420, 0, 1, 0, -0.3420, 0, 0.9397, -6, 0, -48)
+
+[node name="Dummy3" parent="Targets" instance=ExtResource("dummy")]
+transform = Transform3D(0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659, 7, 0, -64)
+
+[node name="Dummy4" parent="Targets" instance=ExtResource("dummy")]
+transform = Transform3D(1.0000, 0, 0.0000, 0, 1, 0, -0.0000, 0, 1.0000, -3, 0, -80)
+
+[node name="Dummy5" parent="Targets" instance=ExtResource("dummy")]
+transform = Transform3D(0.8660, 0, 0.5000, 0, 1, 0, -0.5000, 0, 0.8660, -20.5, 9, -76.4)
+
+[node name="Dummy6" parent="Targets" instance=ExtResource("dummy")]
+transform = Transform3D(0.8660, 0, -0.5000, 0, 1, 0, 0.5000, 0, 0.8660, 20.5, 13, -84.4)
+
 [node name="PlayerMech" parent="." instance=ExtResource("mech")]
 
 [node name="DebugHud" parent="." node_paths=PackedStringArray("mech", "mech_aim") instance=ExtResource("hud")]
 mech = NodePath("../PlayerMech")
 mech_aim = NodePath("../PlayerMech/MechAim")
+
+[node name="LoadoutSwitcher" type="Node" parent="." node_paths=PackedStringArray("mech", "hud")]
+script = ExtResource("switcher")
+mech_scene = ExtResource("mech")
+loadouts = Array[Resource]([ExtResource("loadout_gunner"), ExtResource("loadout_sniper"), ExtResource("loadout_melee"), ExtResource("loadout_missile")])
+mech = NodePath("../PlayerMech")
+hud = NodePath("../DebugHud")

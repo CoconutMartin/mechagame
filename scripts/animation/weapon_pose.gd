@@ -7,6 +7,8 @@ extends Node
 ## The arms follow their IK targets with TwoBoneIK. For a two-hand weapon this script also moves the
 ## left hand between two grip markers on the weapon. For a one-hand weapon the left arm is free
 ## (ShieldPose moves it). It also blends the elbow directions.
+## Phase 3: WeaponController can set the weapon, its rest transform, aim anchor and raise state at
+## start (use_weapon_data). A MechWeapon can change the pose (for example the blade swing).
 
 @export var weapon: Node3D
 ## Rest pose of the weapon. Same parent as the weapon.
@@ -40,6 +42,12 @@ extends Node
 
 ## 0 = rest pose, 1 = aim pose.
 var aim_amount: float = 0.0
+## Set by WeaponController: rest transform and aim anchor position come from the weapon data,
+## and wants_raise replaces the aim key.
+var use_weapon_data: bool = false
+var rest_transform: Transform3D = Transform3D.IDENTITY
+var aim_origin: Vector3 = Vector3.ZERO
+var wants_raise: bool = false
 
 
 func _ready() -> void:
@@ -48,15 +56,22 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var speed := raise_speed if input.aim_held else lower_speed
-	aim_amount = move_toward(aim_amount, 1.0 if input.aim_held else 0.0, speed * delta)
+	if weapon == null:
+		return
+	var raise := wants_raise if use_weapon_data else input.aim_held
+	var speed := raise_speed if raise else lower_speed
+	aim_amount = move_toward(aim_amount, 1.0 if raise else 0.0, speed * delta)
 	var t := smoothstep(0.0, 1.0, aim_amount)
 
 	var parent := weapon.get_parent_node_3d()
-	var origin := aim_anchor.transform.origin
+	var origin := aim_origin if use_weapon_data else aim_anchor.transform.origin
+	var rest := rest_transform if use_weapon_data else rest_pose.transform
 	var target := parent.global_transform.affine_inverse() * mech_aim.aim_point
 	var aim_pose := Transform3D(Basis.looking_at(target - origin, Vector3.UP), origin)
-	weapon.transform = rest_pose.transform.interpolate_with(aim_pose, t)
+	if weapon is MechWeapon:
+		weapon.transform = (weapon as MechWeapon).get_pose(rest, aim_pose, t)
+	else:
+		weapon.transform = rest.interpolate_with(aim_pose, t)
 	if recoil != null:
 		weapon.transform = weapon.transform * recoil.get_offset()
 
