@@ -5,11 +5,11 @@ extends Node
 
 @export var weapon_fire: WeaponFire
 ## Push back per shot, in meters.
-@export var kick_back: float = 0.35
+@export var kick_back: float = 0.7
 ## Muzzle climb per shot, in degrees.
-@export var kick_up_deg: float = 5.0
+@export var kick_up_deg: float = 10.0
 ## Random side turn per shot, in degrees.
-@export var kick_side_deg: float = 1.5
+@export var kick_side_deg: float = 3.0
 ## Spring start speed per shot. 1.8 gives a peak of about 1 (one full kick).
 @export var kick_speed: float = 1.8
 ## Largest total recoil (1 = one full kick).

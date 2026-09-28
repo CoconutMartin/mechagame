@@ -33,9 +33,23 @@ extends Node
 ## How fast the shake moves.
 @export var jitter_speed: float = 2.0
 
+@export_group("Shot Kick")
+## Each shot moves the mech aim this far off the camera crosshair, in a random direction (degrees).
+@export var shot_kick_deg: float = 3.0
+## Spring speed back to the crosshair (swings per second). Lower = slower return.
+@export var shot_recover_frequency: float = 0.6
+## Spring damping. 1 = no swing past the crosshair.
+@export_range(0.1, 1.0) var shot_recover_damping: float = 1.0
+@export_group("")
+
 var camera_target: Vector3 = Vector3.ZERO
 var aim_point: Vector3 = Vector3.ZERO
 var aim_direction: Vector3 = Vector3.FORWARD
+## Shot kick offset of the mech aim from the crosshair, in degrees: x = yaw (left), y = pitch (up).
+var shot_offset: Vector2 = Vector2.ZERO
+
+var _kick_yaw := AimSpring.new(0.0)
+var _kick_pitch := AimSpring.new(0.0)
 
 var _noise := FastNoiseLite.new()
 var _time: float = 0.0
@@ -65,6 +79,14 @@ func _physics_process(delta: float) -> void:
 	var body_error := wrapf(mech.get_aim_yaw() - camera_yaw, -PI, PI)
 	direction = direction.rotated(Vector3.UP, body_error)
 
+	# Shot kick: the aim springs back to the crosshair after each shot.
+	_kick_yaw.update(0.0, shot_recover_frequency, shot_recover_damping, 90.0, delta)
+	_kick_pitch.update(0.0, shot_recover_frequency, shot_recover_damping, 90.0, delta)
+	shot_offset = Vector2(_kick_yaw.value, _kick_pitch.value)
+	var kick_right := direction.cross(Vector3.UP).normalized()
+	direction = direction.rotated(Vector3.UP, deg_to_rad(shot_offset.x))
+	direction = direction.rotated(kick_right, deg_to_rad(shot_offset.y)).normalized()
+
 	var jitter := deg_to_rad(_get_jitter_deg())
 	var right := direction.cross(Vector3.UP).normalized()
 	direction = direction.rotated(Vector3.UP, jitter * _noise.get_noise_2d(_time, 0.0))
@@ -72,6 +94,16 @@ func _physics_process(delta: float) -> void:
 
 	aim_direction = direction
 	aim_point = _cast(origin, direction)
+
+
+## Moves the mech aim shot_kick_deg off the crosshair in a random direction. WeaponFire calls it
+## after each shot.
+func kick_aim() -> void:
+	var angle := randf() * TAU
+	_kick_yaw.value = shot_kick_deg * cos(angle)
+	_kick_pitch.value = shot_kick_deg * sin(angle)
+	_kick_yaw.velocity = 0.0
+	_kick_pitch.velocity = 0.0
 
 
 ## Screen position of the camera crosshair, in pixels.

@@ -42,8 +42,10 @@ func _physics_process(_delta: float) -> void:
 	move_direction = Vector3(0.0, 0.0, -throttle).rotated(Vector3.UP, mech.rotation.y)
 	turn_input = Input.get_axis("move_right", "move_left")
 	boost_held = Input.is_action_pressed("boost")
+	# Pressed = held now but not in the last frame, so the two values always agree.
+	var was_held := jump_held
 	jump_held = Input.is_action_pressed("jump")
-	jump_pressed = Input.is_action_just_pressed("jump")
+	jump_pressed = jump_held and not was_held
 	aim_held = Input.is_action_pressed("aim")
 	fire_held = Input.is_action_pressed("use_right_arm")
 	shield_held = Input.is_action_pressed("use_left_arm")

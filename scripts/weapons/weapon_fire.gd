@@ -17,7 +17,7 @@ signal fired
 ## The mech that fires. Its body does not stop its own bullets.
 @export var shooter: CollisionObject3D
 ## Shots per second.
-@export var fire_rate: float = 2.0
+@export var fire_rate: float = 0.5
 ## Random spread cone, in degrees.
 @export var spread_deg: float = 0.4
 ## Bullet speed in m/s.
@@ -59,6 +59,7 @@ func _fire() -> void:
 	world.add_child(bullet)
 	bullet.global_position = origin
 	bullet.look_at(origin + direction, Vector3.UP if absf(direction.y) < 0.99 else Vector3.FORWARD)
+	mech_aim.kick_aim()
 	if muzzle_flash != null:
 		muzzle_flash.flash()
 	if camera_shake != null:

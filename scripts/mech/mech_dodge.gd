@@ -1,7 +1,9 @@
 class_name MechDodge
 extends Node
 ## Double tap Space for a dodge hop: a quick, low hop in the chosen direction.
-## Directions: A / D = side, W = forward, S or no key = back. Costs energy.
+## Directions: A / D = side, W = forward, S or no key = back. While boosting: always forward.
+## While boosting, the first Space press waits for the double tap before the jump charge starts,
+## so the boost does not stop. Costs energy.
 ## In the air the mech leans into the hop and tucks its legs a little. It lands in a small crouch and
 ## springs upright. Ending: a short skid (feet slide with dust, two small brake thrusters fire),
 ## then two steps to a stop.
@@ -58,6 +60,8 @@ var _suppress_jump: bool = false
 var _local_direction: Vector3 = Vector3.BACK
 var _recover := AimSpring.new(0.0)
 var _recovering: bool = false
+## Time left in the double tap window after a Space press during a boost.
+var _boost_tap_left: float = 0.0
 
 
 func _ready() -> void:
@@ -71,9 +75,10 @@ func is_busy() -> bool:
 	return is_dodging or _recover_left > 0.0
 
 
-## True while the Space press that started the dodge is still held. The jump charge waits.
+## True while the Space press that started the dodge is still held, or while a boost waits for
+## the second tap. The jump charge waits.
 func blocks_jump() -> bool:
-	return is_busy() or _suppress_jump
+	return is_busy() or _suppress_jump or _boost_tap_left > 0.0
 
 
 ## True while the hop or its recovery spring moves the body. InertiaSway pauses then.
@@ -112,8 +117,11 @@ func _physics_process(delta: float) -> void:
 		if absf(_recover.value) < 0.002 and absf(_recover.velocity) < 0.01:
 			_recover.value = 0.0
 			_recovering = false
+	_boost_tap_left = maxf(_boost_tap_left - delta, 0.0)
 	if not input.jump_held:
 		_suppress_jump = false
+	if input.jump_pressed and mech.is_boosting and mech.is_on_floor() and _boost_tap_left <= 0.0:
+		_boost_tap_left = double_tap_window
 	if input.jump_pressed:
 		if _clock - _last_press <= double_tap_window and _can_start():
 			_start()
@@ -133,7 +141,9 @@ func _start() -> void:
 	energy.try_drain(energy_cost)
 	# Direction in the leg frame: -Z forward, +X right.
 	var local := Vector3(0.0, 0.0, 1.0)  # No key: back.
-	if input.turn_input > 0.5:
+	if mech.is_boosting:
+		local = Vector3(0.0, 0.0, -1.0)  # Boosting: forward.
+	elif input.turn_input > 0.5:
 		local = Vector3(-1.0, 0.0, 0.0)  # A: left.
 	elif input.turn_input < -0.5:
 		local = Vector3(1.0, 0.0, 0.0)  # D: right.
@@ -151,6 +161,7 @@ func _start() -> void:
 	_air_time = 0.0
 	_recovering = false
 	_last_press = -10.0
+	_boost_tap_left = 0.0
 	_suppress_jump = true
 	dodge_started.emit()
 

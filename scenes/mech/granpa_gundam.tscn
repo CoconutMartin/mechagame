@@ -28,6 +28,7 @@
 [ext_resource type="Script" path="res://scripts/animation/shield_pose.gd" id="shieldpose"]
 [ext_resource type="Script" path="res://scripts/mech/mech_shield.gd" id="shield"]
 [ext_resource type="Script" path="res://scripts/effects/brake_thrusters.gd" id="brakes"]
+[ext_resource type="Script" path="res://scripts/animation/shield_mount.gd" id="shieldmount"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/beam_rifle.tscn" id="rifle"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/bullet.tscn" id="bullet"]
 [ext_resource type="Material" path="res://materials/rx78/white.tres" id="white"]

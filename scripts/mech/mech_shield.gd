@@ -14,8 +14,8 @@ extends Node
 ## Top speed limits (m/s) for very big or very small shields.
 @export var min_speed: float = 2.0
 @export var max_speed: float = 9.1
-## How fast the shield comes up (1 / seconds).
-@export var raise_speed: float = 5.0
+## How fast the shield comes up (1 / seconds). 2 = 0.5 s.
+@export var raise_speed: float = 2.0
 ## How fast the shield goes down (1 / seconds).
 @export var lower_speed: float = 3.0
 

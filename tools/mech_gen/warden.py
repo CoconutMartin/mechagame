@@ -3,6 +3,9 @@ Weathered grey plates, head built into the center torso with a red eye, hex shie
 forearm, claw feet, two backpack thrusters with flames.
 Revision 43: missile rack removed, shield 20% larger, rifle held in the right hand only
 (one-hand high ready, like reference image 10).
+Revision 47: rifle rest = ready to fire (level at the right hip). Left arm rest like drawing 11:
+upper arm down, forearm forward, shield on the outside along the forearm. Shield up: diagonal
+across the front of the torso (ShieldMount).
 Revision 46: two small brake thrusters on the hips (fire during the dodge skid). Shield area sets
 the top speed with the shield up (6 m/s at this size).
 Revision 45: upper body (torso, head, arms) 15% smaller. Rifle and shield keep their size.
@@ -10,7 +13,8 @@ Revision 44: blade antenna removed, legs 20% thicker, RMB hip fire (no zoom), LM
 Mech faces -Z. Right is +X. Heights are in mech space (feet at 0)."""
 import math, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mech_scene import write_scene, one_hand_rest, TT, TO, L
+from mech_scene import write_scene, one_hand_rest, torso_point, TT, TO, L
+from shapes import xf
 
 UPPER_BODY_SCALE = 0.85
 
@@ -20,19 +24,23 @@ MATS["flame"] = "res://materials/effects/booster_flame.tres"
 MATS["flame_core"] = "res://materials/effects/booster_core.tres"
 SHIELD_SCALE = 1.2
 # One-hand high ready: grip in the right hand in front of the right shoulder, muzzle up.
-RIFLE_REST = one_hand_rest(hand=(2.7, 7.3, -2.15), muzzle_dir=(0.12, 1.0, -0.12), up_hint=(0.25, 0.0, 1.0),
+# Ready to fire: grip at the right hip (the hip fire place), muzzle forward and a little down.
+RIFLE_REST = one_hand_rest(hand=(2.8, 6.17, -1.99), muzzle_dir=(0.0, -0.08, -1.0), up_hint=(0.0, 1.0, 0.0),
                            torso_scale=UPPER_BODY_SCALE)
 ONE_HAND = {
-    "rest": (-3.3, 3.8, -0.8),         # Left hand hangs at the side, shield on the outside.
-    "raised": (-1.9, 8.6, -2.7),       # LMB: forearm up in front of the left chest, shield faces forward.
-    "pole_rest": (-1.0, -0.2, 0.3),
-    "pole_raised": (-0.3, -1.0, -0.1),
-    "right_pole_rest": (0.25, -1.0, -0.2),  # Elbow down under the hand, like the photo.
+    "rest": (-3.06, 5.04, -2.82),      # Upper arm down, forearm forward and 20 degrees down.
+    "raised": (-0.2, 7.2, -1.5),       # LMB: hand behind the middle of the torso, holding the shield.
+    "pole_rest": (-0.1, -0.4, 1.0),    # Elbow back and down.
+    "pole_raised": (-1.0, -0.8, -0.3),
+    "right_pole_rest": (0.4, -1.0, 0.5),
     "right_pole_aim": (0.4, -1.0, 0.5),     # Hip fire: elbow down and back.
     "aim_anchor": (2.8, 6.5, -1.0),         # Hip fire: stock at the right hip.
-}
-# Shield front area: body 2.1 x 3.8 plus two end triangles 2.1 x 0.7, times the scale squared.
+}# Shield front area: body 2.1 x 3.8 plus two end triangles 2.1 x 0.7, times the scale squared.
 ONE_HAND["shield_area"] = (2.1 * 3.8 + 2 * 0.5 * 2.1 * 0.7) * SHIELD_SCALE ** 2
+ONE_HAND["shield_scale"] = SHIELD_SCALE
+# Shield up: center in front of the torso, face forward, top toward the right shoulder (40 degrees).
+SHIELD_COVER_POS = (-0.2, 7.2, -2.35)
+SHIELD_COVER_ROLL = -40.0
 LEG_THICKNESS = 1.2  # Leg width and depth multiplier (revision 44: 20% thicker).
 HIP_X = 1.5
 SIDES = (("L", -1), ("R", 1))
@@ -107,8 +115,16 @@ def build(m):
             m.part(f"Finger{s}{i}", EL, "frame", "box", (0.6, 0.45, 0.18), (0, -3.45, z))
     # Hex shield on the outer side of the left forearm (local -Z).
     SL = f"{TO}/ShoulderL/ElbowL"
+    # Shield down: on the outside of the forearm (elbow +X), long side along the forearm, top toward
+    # the hand (elbow -Y), face out. ShieldMount moves the shield between this place and ShieldCover.
     k = SHIELD_SCALE
-    m.nodes.append(f'[node name="Shield" type="Node3D" parent="{SL}"]\ntransform = Transform3D({k}, 0, 0, 0, {k}, 0, 0, 0, {k}, 0, {-1.5 * UPPER_BODY_SCALE}, {-1.05 * UPPER_BODY_SCALE})\n')
+    mount = (0.85 * UPPER_BODY_SCALE, -1.9 * UPPER_BODY_SCALE, 0.0)
+    rest_rows = "0, 0, -1, 0, -1, 0, -1, 0, 0"
+    scaled_rows = f"0, 0, {-k}, 0, {-k}, 0, {-k}, 0, 0"
+    m.nodes.append(f'[node name="ShieldMountRest" type="Marker3D" parent="{SL}"]\ntransform = Transform3D({rest_rows}, {mount[0]}, {mount[1]}, {mount[2]})\n')
+    m.nodes.append(f'[node name="Shield" type="Node3D" parent="{SL}"]\ntransform = Transform3D({scaled_rows}, {mount[0]}, {mount[1]}, {mount[2]})\n')
+    cover = torso_point(SHIELD_COVER_POS, UPPER_BODY_SCALE)
+    m.nodes.append(f'[node name="ShieldCover" type="Marker3D" parent="{TO}"]\ntransform = {xf(TT(*cover), (0, 0, SHIELD_COVER_ROLL))}\n')
     SHD = f"{SL}/Shield"
     m.part("ShieldBody", SHD, "armor", "box", (2.1, 3.8, 0.25), (0, 0, 0))
     m.part("ShieldTop", SHD, "armor", "prism", (2.1, 0.7, 0.25, 0.5), (0, 2.25, 0))

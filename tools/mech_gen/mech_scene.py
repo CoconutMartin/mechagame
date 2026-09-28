@@ -24,7 +24,7 @@ SCRIPTS = [("mech/mech","mech"),("mech/mech_input","input"),("mech/mech_energy",
  ("animation/inertia_sway","inertia"),("mech/mech_dodge","dodge"),("animation/weapon_pose","weaponpose"),
  ("camera/camera_shake","shake"),("animation/skirt_follow","skirt"),("weapons/weapon_fire","fire"),
  ("weapons/weapon_recoil","recoil"),("effects/booster_flames","flames"),("animation/shield_pose","shieldpose"),
- ("mech/mech_shield","shield"),("effects/brake_thrusters","brakes")]
+ ("mech/mech_shield","shield"),("effects/brake_thrusters","brakes"),("animation/shield_mount","shieldmount")]
 
 
 def TT(x, y, z):
@@ -98,7 +98,8 @@ def write_scene(out_path, rifle_scene, materials, build, shoulder_x=2.9, shoulde
     one_hand: dict for a one-hand weapon with a shield on the left arm. Keys (mech space):
     rest / raised (left hand markers), pole_rest / pole_raised (left elbow), right_pole_rest /
     right_pole_aim (right elbow), aim_anchor (stock place for hip fire), shield_area (m², sets the
-    top speed with the shield up).
+    top speed with the shield up), shield_scale. The model makes the nodes Shield and ShieldMountRest
+    (children of ElbowL) and ShieldCover (child of the torso).
     torso_scale: size of the upper body (torso, head, arms). Weapon and shield keep their size. RMB fires from the hip
     with no zoom. LMB lifts the shield (ShieldPose)."""
     m = Model()
@@ -181,6 +182,14 @@ rest = NodePath("../../{TO}/LeftHandRest")
 raised = NodePath("../../{TO}/LeftHandRaised")
 pole_rest = {v(one_hand["pole_rest"])}
 pole_raised = {v(one_hand["pole_raised"])}
+''')
+        extra.append(f'''[node name="ShieldMount" type="Node" parent="Animation" node_paths=PackedStringArray("shield", "shield_node", "rest_mount", "cover")]
+script = ExtResource("shieldmount")
+shield = NodePath("../../MechShield")
+shield_node = NodePath("../../{TO}/ShoulderL/ElbowL/Shield")
+rest_mount = NodePath("../../{TO}/ShoulderL/ElbowL/ShieldMountRest")
+cover = NodePath("../../{TO}/ShieldCover")
+shield_scale = {one_hand["shield_scale"]}
 ''')
     flash = '"muzzle_flash", ' if muzzle_flash else ""
     extra.append(f'''[node name="WeaponFire" type="Node" parent="Animation" node_paths=PackedStringArray("input", "weapon_pose", "mech_aim", "muzzle", {flash}"camera_shake", "shooter")]

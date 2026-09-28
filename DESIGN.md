@@ -40,7 +40,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 - 1 unit = 1 meter. Mech height is about 10 m.
 - Speed, jump, boost, and camera are tuned for this size.
 - Maps: small to medium urban arenas.
-- Test map: 178 x 178 m. 5 small buildings (6 to 8 m), 5 medium (10 to 16 m), 3 tall (30, 34, 40 m). Platforms: steps 3, 6, 9, 12 m, a 15° ramp to a 13 m deck, a 2.5 m loading dock, a 5 m plaza, a 3 m wall. Main street 60 m wide with lampposts.
+- Test map: 206 x 206 m (walls at ±102.6 m, 30% more area since revision 47). 5 small buildings (6 to 8 m), 5 medium (10 to 16 m), 3 tall (30, 34, 40 m). Platforms: steps 3, 6, 9, 12 m, a 15° ramp to a 13 m deck, a 2.5 m loading dock, a 5 m plaza, a 3 m wall. Main street about 68 m wide with lampposts.
 - Greybox all maps with simple shapes. Include human-scale props: cars (4.5 m), doors (2 m), lampposts (6 m), people (1.8 m).
 - Camera: over-the-shoulder, low height, small shake on each heavy footstep.
 - Movement has weight: gradual acceleration and deceleration.
@@ -57,7 +57,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Walk stop | 2 steps from full walk speed | slower speeds take fewer steps |
 | Boost start | Shift held: 3 walking steps (skipped if the mech already walked 3 steps), then always 4 running steps (run speed 1.25x walk = 11.4 m/s, 12° torso lean), then boost | HUD shows "Boost ready in N steps" |
 | Boost speed | 1.5x walk = 13.65 m/s (49 km/h) | boost acceleration 20 m/s². Boost ends when Shift is released |
-| Boost exit (SKID, current) | feet plant and slide (9.4 m/s² slowdown, about 8.8 m in 1 s, down to 4 m/s), knees bent, torso leans 15° back, dust from the feet, camera shake. Then 2 short heavy steps (0.45 m, 0.35 m, about 0.4 s) to a stop, or walking again with W held. The torso sways forward and back on a spring (0.9 Hz, damping 0.3) and is upright after about 2 s. It also rolls to a random side (3° to 7°) and sways back. The whole body turns 15° to 30° to the same side during the slide (like a drift) and turns back to center in the recovery (`SkidBodyTurn`, visual only) | `Mech.boost_exit_style` = SKID |
+| Boost exit (SKID, current) | feet plant and slide (6.7 m/s² slowdown, about 12.4 m in 1.4 s, down to 4 m/s, 40% longer since revision 47), knees bent, torso leans 15° back, dust from the feet, camera shake. Then 2 short heavy steps (0.45 m, 0.35 m, about 0.4 s) to a stop, or walking again with W held. The torso sways forward and back on a spring (0.9 Hz, damping 0.3) and is upright after about 2 s. It also rolls to a random side (3° to 7°) and sways back. The whole body turns 15° to 30° to the same side during the slide (like a drift) and turns back to center in the recovery (`SkidBodyTurn`, visual only) | `Mech.boost_exit_style` = SKID |
 | Boost exit (LEAP, "revert 1") | one low leap forward (5 m/s up, about 6 m) that lands on one leg, then 2 medium steps (4.8 m) and 2 small steps (3.4 m) | `Mech.boost_exit_style` = LEAP. Also saved as commit f51bd42 | if all keys are released: hop, then 4 steps to a stop |
 | Boost energy use | 30 per second (50% of jump jets), capacity 100 | about 3.3 s of boost |
 | Energy recharge | 17.5 per second after 2 s delay | empty energy locks boost until 30% |
@@ -75,7 +75,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 | Footstep shake | camera kick 0.117 m, trauma 0.2, for a 10 m mech | scales with `Mech.height_m` |
 | Shake overall | `CameraShake.intensity` 0.75, noise speed 21, final offset smoothing 100. Kicks return on a spring (2.2 Hz, damping 0.45) with a small bounce | |
 | Movement start kicks | camera drop 0.2 m (0.267 before intensity) at boost start, skid start, takeoff, the top of a jump, and each wall bump | |
-| Dodge hop | double tap Space (within 0.3 s): a low hop (1.5 m high) of 11.9 m (50% of the old dodge roll) in about 0.77 s. A / D = side, W = forward, S or no key = back. The mech leans into the hop (up to 10° toward the hop direction) and tucks its legs a little. It lands with 10 m/s left, in a small crouch, springs upright (1.2 Hz, damping 0.45), skids with two brake thrusters firing (23.5 m/s² slowdown, about 1.8 m and 0.26 s, down to 4 m/s), then takes 2 steps (1.5 m each) to a stop. No landing delay (unless it falls off an edge). 25 energy, 0.2 s recovery, camera kicks at start and landing. The inertia sway pauses during the hop and its recovery | `MechDodge` |
+| Dodge hop | double tap Space (within 0.3 s). While boosting: always forward, and the boost goes on after the first tap: a low hop (1.5 m high) of 11.9 m (50% of the old dodge roll) in about 0.77 s. A / D = side, W = forward, S or no key = back. The mech leans into the hop (up to 10° toward the hop direction) and tucks its legs a little. It lands with 10 m/s left, in a small crouch, springs upright (1.2 Hz, damping 0.45), skids with two brake thrusters firing (23.5 m/s² slowdown, about 1.8 m and 0.26 s, down to 4 m/s), then takes 2 steps (1.5 m each) to a stop. No landing delay (unless it falls off an edge). 25 energy, 0.2 s recovery, camera kicks at start and landing. The inertia sway pauses during the hop and its recovery | `MechDodge` |
 | Inertia sway | `InertiaSway`: the torso leans 1.2° per m/s² of speed change (slowing = forward), rolls 1° per m/s² sideways, lags 0.1 s behind leg turns (max 10°). Springs at 1.3 Hz, damping 0.35, so movements end with a sway. 40% less while boosting | |
 | Turning steps | standing still with the legs turning: one step every 20° of leg turn, knee lift 60% of the walk lift, light footstep shake | the feet do not slide |
 | Torso aim turn | 44.1°/s max, 189°/s² acceleration | in the last 25% of each turn the torso turns at 50% speed, then stops exactly on the aim (no overshoot, no settle swings) |
@@ -120,7 +120,7 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 
 - One-hand weapons: RMB uses the right arm weapon, LMB uses the left arm weapon.
 - Two-hand firearm: RMB aims down sight, LMB shoots.
-- Now (revision 44): the Warden rifle is a one-hand weapon. Hold RMB: hip fire, 2 shots per second, no zoom (one-hand weapons never zoom). Hold LMB: the shield on the left arm lifts in front of the chest. Two-hand weapons keep the ADS zoom on RMB.
+- Now (revision 47): the Warden rifle is a one-hand weapon. Hold RMB: hip fire, 1 shot every 2 seconds, no zoom (one-hand weapons never zoom). Each shot kicks the mech aim (blue ring) 3° off the crosshair in a random direction; it springs back in about 1 s. Hold LMB: the shield on the left arm lifts in front of the chest. Two-hand weapons keep the ADS zoom on RMB.
 - "Use" means fire for guns and activate for shields and melee weapons.
 
 ## Mech parts (all interchangeable)
@@ -167,8 +167,10 @@ All of this logic lives in one function so it is easy to tune.
 - Models are built from box, cylinder, sphere and prism shapes by Python scripts in `tools/mech_gen/` (run from the project root). `mech_scene.py` holds the shared skeleton and logic nodes. `warden.py` writes `player_mech.tscn`. `granpa_gundam.py` writes `granpa_gundam.tscn`. Give another path as the first argument to write somewhere else. Placeholders until Phase 8.
   - One-hand rifle (revision 43): the rifle is 60% of its old size (5.3 m). Rest pose is one-hand high ready (reference image 10): grip in the right hand in front of the right shoulder, elbow down, muzzle up. The left arm hangs at the side with the shield (20% larger) on the outside. `LeftHand` markers on the torso replace the left grip on the rifle.
   - Hip fire (revision 44): the stock goes to the right hip (AimAnchor) and the rifle points at the mech aim point. No torso twist, no zoom.
+  - Rifle rest (revision 47): ready to fire, level at the right hip, muzzle forward and 5° down.
+  - Left arm (revision 47, drawing 11): shield down = upper arm down, forearm forward and 20° down, shield on the outside along the forearm. Shield up (LMB) = shield diagonal (40°) across the front of the torso, top toward the right shoulder, hand behind it. `ShieldMount` blends the shield between the two places after the arm IK. The shield takes 0.5 s to come up (60% slower).
   - `WeaponFire`: 2 shots per second, bullets with tracers (400 m/s, 0.4° spread) fly to the mech aim point. Muzzle flash with a light, small camera shake. `Bullet` checks each step with a ray and makes `ImpactSpark` sparks where it hits. No damage yet (Phase 4).
-  - `WeaponRecoil`: each shot kicks the rifle 0.35 m back, 5° up and a little to the side, on a spring (5 Hz, damping 0.55). The hand IK follows the grip.
+  - `WeaponRecoil`: each shot kicks the rifle 0.7 m back, 10° up and up to 3° to the side, on a spring (5 Hz, damping 0.55). The hand IK follows the grip.
   - `BoosterFlames`: fire and an orange light from the two backpack thrusters while boosting (80% length on the ground), air boosting, rising on the jump jets and during a dodge hop (burst at the start).
   - Dodge hop ending (revision 46): at the landing a short skid starts (feet slide with dust, body turns) from 10 m/s down to 4 m/s in about 1.8 m (60% shorter than the boost skid), then 2 heavy steps (1.5 m each) to a stop.
   - `BrakeThrusters`: two small thruster pods on the pelvis sides fire during the dodge skid. The fire points the way the mech slides (a stabilizer and brake against the momentum). The legs face the body front in the air and turn toward the slide after the landing.
@@ -227,7 +229,7 @@ scenes/props/       greybox_block, car, lamppost, person, box_truck (8 m), semi_
 scenes/ui/          debug_hud.tscn.
 scripts/mech/       mech.gd (movement), mech_shield.gd (shield lift and speed limit), mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd,
                     mech_jump_charge.gd, mech_air_steer.gd, mech_landing_recovery.gd, mech_aim.gd (camera target and real mech aim with jitter).
-scripts/animation/  shield_pose.gd, mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd, torso_pose.gd,
+scripts/animation/  shield_pose.gd, shield_mount.gd, mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd, torso_pose.gd,
                     inertia_sway.gd, skid_body_turn.gd, skirt_follow.gd (placeholder animation).
 scripts/weapons/    weapon_fire.gd, weapon_recoil.gd, bullet.gd. Scenes: scenes/weapons/bullet.tscn, scenes/effects/impact_spark.tscn.
 scenes/weapons/     heavy_rifle.tscn (Warden), beam_rifle.tscn (Granpa Gundam), long_rifle.tscn (old box rifle). Markers: GripRight, GripLeft, GripLeftRest, GripLeftAim, Muzzle.
@@ -298,6 +300,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 39: dodge recovery fix: smooth height plan (no pop and drop), inertia sway paused during the dodge, recovery crouch and lean with one spring back to upright.
 - Phase 1 revision 40: dodge roll replaced by a directional dodge hop (11.9 m, 50% of the roll).
 - Phase 1 revision 41: player mech model replaced with an RX-78-2 Gundam style placeholder (same skeleton, same animation). Beam rifle and shield. Waist skirts follow the thighs.
+- Phase 1 revision 47: left arm and shield poses from drawing 11 (side when down, diagonal cover when up). Rifle rest = ready to fire. 1 shot per 2 s, recoil x2, 3° aim kick per shot. Boost skid 40% longer. Double tap while boosting = forward dodge. Shield lifts 60% slower. Map area +30% (objects spread 14%, ground 206 m, walls at ±102.6 m).
 - Phase 1 revision 46: dodge skid 60% shorter with two brake thrusters. Shield up top speed 6 m/s from the shield size (bigger shield = slower). Hold V for a front view of the mech.
 - Phase 1 revision 45: boost after 2 walk and 2 run steps. Shield up halves the speed. Left torso twist 65°. Boost lean 21° and boost inertia sway 40% less. Walk and run sway 30% less. Warden upper body 15% smaller. Dodge ending: skid first, then 2 steps.
 - Phase 1 revision 44: dodge ending = 2 run-out steps, then the boost skid. Blade antenna removed. RMB hip fire with no zoom for one-hand weapons, LMB lifts the shield. Fire rate 2 per second. Legs 20% thicker. Boost crouch hip bend 20° to 14°.

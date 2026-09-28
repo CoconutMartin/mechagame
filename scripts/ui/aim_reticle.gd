@@ -29,6 +29,9 @@ func _process(_delta: float) -> void:
 		var focal := get_viewport_rect().size.y * 0.5 / tan(deg_to_rad(camera.fov) * 0.5)
 		_visible_on_screen = absf(gap) < deg_to_rad(80.0)
 		_screen_position = _crosshair_position + Vector2(-tan(gap) * focal, 0.0)
+		# Shot kick offset (yaw left, pitch up), in pixels.
+		var kick := mech_aim.shot_offset
+		_screen_position += Vector2(-tan(deg_to_rad(kick.x)) * focal, -tan(deg_to_rad(kick.y)) * focal)
 	queue_redraw()
 
 

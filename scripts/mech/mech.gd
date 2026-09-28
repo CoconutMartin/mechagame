@@ -93,7 +93,7 @@ enum BoostExit { SKID, LEAP }
 ## LEAP ("revert 1"): a leap that lands on one leg, then 2 medium and 2 small steps.
 @export var boost_exit_style: BoostExit = BoostExit.SKID
 ## SKID: slowdown while the feet slide (m/s per second).
-@export var skid_deceleration: float = 9.4
+@export var skid_deceleration: float = 6.7
 ## SKID: the slide ends at this speed (m/s). Then the heavy steps start, or the walk with a move key.
 @export var skid_end_speed: float = 4.0
 ## SKID: stride lengths (meters) of the heavy steps to a stop after the slide, when no move key is held.
@@ -283,7 +283,8 @@ func _update_boost(delta: float) -> void:
 	_boost_on_ground = is_boosting and is_on_floor()
 	if is_boosting:
 		is_exiting_boost = false
-	elif was_ground_boosting and is_on_floor() and get_horizontal_speed() > walk_speed * 1.05:
+	elif was_ground_boosting and is_on_floor() and get_horizontal_speed() > walk_speed * 1.05 \
+			and not dodge.is_dodging:
 		is_exiting_boost = true
 		_exit_deceleration = 0.0
 		_stop_deceleration = 0.0
