@@ -150,9 +150,6 @@ var is_lunging: bool = false
 var _lunge_direction: Vector3 = Vector3.ZERO
 var _lunge_speed: float = 0.0
 var _lunge_left: float = 0.0
-var _lunge_total: float = 0.0
-## Number of big leaps the lunge is shown as (0 = none). LungeLeapPose reads it.
-var lunge_leaps: int = 0
 ## True while the current skid uses the brake thrusters (dodge hop ending).
 var is_brake_skidding: bool = false
 ## Random side of the current skid: +1 = left, -1 = right. Set when a skid starts.
@@ -241,28 +238,13 @@ func brace(seconds: float) -> void:
 
 ## Blade lunge: moves the mech along direction at speed for distance meters (no steering).
 ## At the end the mech keeps a third of the speed and slows down normally.
-## leaps > 0: the lunge is shown as that many big leaps (visual only, LungeLeapPose).
-func start_lunge(direction: Vector3, speed: float, distance: float, leaps: int = 0) -> void:
+func start_lunge(direction: Vector3, speed: float, distance: float) -> void:
 	_lunge_direction = Vector3(direction.x, 0.0, direction.z).normalized()
 	_lunge_speed = speed
 	_lunge_left = distance
-	_lunge_total = distance
-	lunge_leaps = leaps
 	is_lunging = distance > 0.05
 	is_skidding = false
 	is_brake_skidding = false
-
-
-## 0 at the lunge start, 1 at the lunge end.
-func get_lunge_progress() -> float:
-	if not is_lunging or _lunge_total <= 0.0:
-		return 1.0
-	return clampf(1.0 - _lunge_left / _lunge_total, 0.0, 1.0)
-
-
-## Lunge length in meters.
-func get_lunge_distance() -> float:
-	return _lunge_total
 
 
 ## Starts a skid stop: the feet plant and slide, then heavy steps. The body turns and rolls to a

@@ -26,8 +26,8 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 @export var charge_shake_max: float = 0.22
 ## Shake while the beam fires (screen, aim and torso) x this value. 0.7 = 30% less (revision 63).
 @export var discharge_shake: float = 0.7
-## Screen shake when the charge is released x this value. 0.5 = 50% less (revision 64).
-@export var release_shake: float = 0.5
+## Screen shake when the charge is released x this value. 0.075 = 85% less than 0.5 (revision 65).
+@export var release_shake: float = 0.075
 ## Extra screen shake and aim jitter at full charge = weapon data values x this value.
 @export var full_charge_kick: float = 2.0
 

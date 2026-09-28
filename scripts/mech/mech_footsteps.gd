@@ -28,7 +28,7 @@ var _stride_plan: Array[float] = []
 
 
 func _physics_process(delta: float) -> void:
-	if not mech.is_on_floor() or mech.is_boosting or mech.is_skidding:
+	if not mech.is_on_floor() or mech.is_boosting or mech.is_lunging or mech.is_skidding:
 		return  # No steps while boosting or skidding: the feet slide.
 	var speed := mech.get_horizontal_speed()
 	var strength := clampf(speed / mech.walk_speed, 0.4, 1.0)

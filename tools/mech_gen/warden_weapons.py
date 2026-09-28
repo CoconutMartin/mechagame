@@ -173,7 +173,7 @@ if __name__ == "__main__":
                                 grip=(0, 0, 0), torso_scale=K)
     res("data/weapons/pile_bunker.tres", {"display_name": '"Pile Bunker"', "weight_t": 2.5, "hp": 300.0,
         "kind": 5, "fire_rate": 0.3333, "damage": 900.0, "magazine": 3, "reload_time": 5.0,
-        "lunge_distance": 16.0, "lunge_speed": 22.0, "lunge_energy": 20.0,
+        "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,
         "shake_trauma": 0.45, "shake_kick": 0.6, "recoil_up_deg": 2.0, "recoil_side_deg": 1.0,
         "rest_transform": bunker_rest, "aim_anchor": v3(anchor),
         "right_pole_rest": v3((0.6, -1.0, 0.3)), "right_pole_aim": v3((0.6, -1.0, 0.4))},

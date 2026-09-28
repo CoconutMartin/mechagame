@@ -128,7 +128,9 @@ func _ready() -> void:
 # Runs in physics frames so it stays smooth with physics interpolation.
 func _physics_process(delta: float) -> void:
 	var on_floor := mech.is_on_floor()
-	var walking := on_floor and not mech.is_boosting
+	# A melee charge (lunge) glides like a boost: no steps, low stance, legs trail back.
+	var gliding := mech.is_boosting or mech.is_lunging
+	var walking := on_floor and not gliding
 	var speed_ratio := clampf(mech.get_horizontal_speed() / mech.walk_speed, 0.0, 1.0)
 	var blend := 1.0 - exp(-blend_speed * delta)
 	_walk_amount = lerpf(_walk_amount, speed_ratio if walking else 0.0, blend)
@@ -137,8 +139,8 @@ func _physics_process(delta: float) -> void:
 	var turn_ratio := clampf(absf(rad_to_deg(mech.leg_turn_rate)) / turn_step_full_rate_deg, 0.0, 1.0)
 	_turn_step = lerpf(_turn_step, turn_ratio * turn_step_amount if standing else 0.0, blend)
 	var lift_amount := maxf(_walk_amount, _turn_step)
-	_trail = lerpf(_trail, 1.0 if mech.is_boosting else 0.0, blend)
-	_boost_crouch = lerpf(_boost_crouch, 1.0 if mech.is_boosting and on_floor else 0.0, blend)
+	_trail = lerpf(_trail, 1.0 if gliding else 0.0, blend)
+	_boost_crouch = lerpf(_boost_crouch, 1.0 if gliding and on_floor else 0.0, blend)
 	_air_knee = lerpf(_air_knee, 0.0 if on_floor else 1.0, blend)
 	_run = lerpf(_run, 1.0 if mech.is_running else 0.0, blend)
 	_skid = lerpf(_skid, 1.0 if mech.is_skidding else 0.0, 1.0 - exp(-blend_speed * 2.5 * delta))
