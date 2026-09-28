@@ -76,6 +76,8 @@ extends Node
 @export var landing_crouch_max_deg: float = 40.0
 ## Fall height (meters) that gives the deepest landing crouch.
 @export var landing_crouch_full_height: float = 9.0
+## Crouch while entrenched for a missile volley, in degrees of hip bend (knees bend twice as much).
+@export var brace_crouch_deg: float = 22.0
 ## Crouch while boosting on the ground, in degrees of hip bend. Knees bend twice as much
 ## (20 = knee bent 40 degrees, an inside knee angle of 140 degrees).
 @export var boost_crouch_deg: float = 14.0
@@ -107,6 +109,7 @@ extends Node
 var _walk_amount: float = 0.0
 var _trail: float = 0.0
 var _boost_crouch: float = 0.0
+var _brace: float = 0.0
 var _run: float = 0.0
 var _turn_step: float = 0.0
 var _stride_scale: float = 1.0
@@ -167,7 +170,9 @@ func _physics_process(delta: float) -> void:
 	var dodge_tuck := deg_to_rad(dodge_tuck_deg) * dodge.get_tuck()
 	# Dodge recovery crouch (only the part above upright).
 	dodge_tuck = maxf(dodge_tuck, deg_to_rad(dodge.recover_crouch_deg) * maxf(dodge.get_recovery_pose(), 0.0))
-	var crouch := maxf(maxf(maxf(landing_crouch, charge_crouch), boost_crouch), dodge_tuck)
+	_brace = lerpf(_brace, 1.0 if mech.is_bracing else 0.0, 1.0 - exp(-blend_speed * 1.5 * delta))
+	var brace_crouch := deg_to_rad(brace_crouch_deg) * _brace
+	var crouch := maxf(maxf(maxf(maxf(landing_crouch, charge_crouch), boost_crouch), dodge_tuck), brace_crouch)
 
 	hip_left.rotation.x = hip + knee_lift * maxf(0.0, -lift) + trail + air * 0.5 + crouch
 	hip_right.rotation.x = -hip + knee_lift * maxf(0.0, lift) + trail + air * 0.5 + crouch

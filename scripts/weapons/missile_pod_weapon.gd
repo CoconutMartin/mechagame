@@ -3,12 +3,17 @@ extends MechWeapon
 ## A missile pod on the back. Hold its key (Q = left, E = right) to lock targets: each target inside
 ## the lock box around the mech aim locks after lock_time (faster with a better head). Up to the
 ## FCS max locks (and the missiles left). Release: one missile per lock. No lock: one missile fires
-## straight at the aim point. Uses ammo (one magazine = one pod load), then reloads.
+## straight at the aim point. Uses ammo: the pod reloads one missile at a time (reload_time /
+## magazine each), so it can lock and fire with the missiles it has, even while it reloads.
+## A volley at locked targets entrenches the mech (it stops and braces). A free shot (no lock)
+## does not.
 
 const MISSILE := preload("res://scenes/weapons/missile.tscn")
 
 ## Seconds between missile launches in a volley.
 @export var launch_interval: float = 0.12
+## The mech stays entrenched this long after the last missile of a locked volley, in seconds.
+@export var brace_after: float = 0.6
 ## Layers that block the lock line of sight (1 = world).
 @export_flags_3d_physics var sight_mask: int = 1
 
@@ -21,13 +26,33 @@ var lock_progress: float = 0.0
 var _queue: Array = []
 var _launch_wait: float = 0.0
 var _next_tube: int = 0
+## Time toward the next loaded missile.
+var _trickle: float = 0.0
 
 
 func is_lock_mode() -> bool:
-	return trigger_held and reload_left <= 0.0 and ammo > 0
+	return trigger_held and ammo > 0
+
+
+## True while the pod locks or launches (WeaponController keeps it as the active weapon).
+func is_busy() -> bool:
+	return trigger_held or not _queue.is_empty()
+
+
+## One missile at a time instead of a full reload.
+func start_reload() -> void:
+	pass
 
 
 func _update(delta: float) -> void:
+	if ammo < data.magazine:
+		_trickle += delta
+		var each := data.reload_time / maxf(data.magazine, 1)
+		if _trickle >= each:
+			_trickle -= each
+			ammo += 1
+	else:
+		_trickle = 0.0
 	_update_launches(delta)
 	if is_lock_mode():
 		_update_locking(delta)
@@ -58,13 +83,16 @@ func _update_locking(delta: float) -> void:
 
 
 func _fire_volley() -> void:
-	if reload_left > 0.0 or ammo <= 0:
+	if ammo <= 0:
 		locks.clear()
 		return
 	var targets: Array = locks.duplicate()
-	if targets.is_empty():
+	var locked := not targets.is_empty()
+	if not locked:
 		targets = [null]  # Straight at the aim point.
 	targets = targets.slice(0, ammo)
+	if locked:
+		controller.mech.brace(targets.size() * launch_interval + brace_after)
 	for target in targets:
 		_queue.append(target)
 	consume(targets.size())
@@ -128,7 +156,9 @@ static func _lock_point(target: Node3D) -> Vector3:
 
 
 func get_status_text() -> String:
-	var text := super.get_status_text()
-	if trigger_held and reload_left <= 0.0:
+	var text := "%d / %d" % [ammo, data.magazine]
+	if ammo < data.magazine:
+		text += "  +%s" % _bar(_trickle / (data.reload_time / maxf(data.magazine, 1)))
+	if trigger_held:
 		text += "  LOCK %d/%d" % [locks.size(), mini(controller.get_max_locks(), ammo)]
 	return text

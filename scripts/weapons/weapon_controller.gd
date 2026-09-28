@@ -5,6 +5,8 @@ extends Node
 ##   One-hand gun: RMB raises and fires (hip fire). Blade: RMB lunge slash.
 ##   Two-hand weapon: RMB aims down sight (zoom), LMB fires. The left hand holds the weapon.
 ## Left arm: a shield (LMB lifts it). Back units: missile pods, Q = left, E = right.
+## Only one weapon works at a time: the first one whose button is pressed stays active until it is
+## done (trigger released, missiles launched). The blade is the exception: it works any time.
 ## MechAssembler calls mount() before the other nodes start.
 
 @export var mech: Mech
@@ -30,6 +32,8 @@ var back_left: MechWeapon
 var back_right: MechWeapon
 var right_data: WeaponData
 var left_data: WeaponData
+## The weapon in use now (null = none).
+var active: MechWeapon = null
 
 
 func _ready() -> void:
@@ -111,23 +115,40 @@ func _two_handed() -> bool:
 
 
 func _physics_process(_delta: float) -> void:
+	var wants := {}
 	if right_weapon != null:
+		wants[right_weapon] = input.left_fire_held if _two_handed() else input.fire_held
+	if back_left != null:
+		wants[back_left] = input.back_left_held
+	if back_right != null:
+		wants[back_right] = input.back_right_held
+	# One weapon at a time (not counting the blade).
+	if active != null and not (wants.get(active, false) or _is_busy(active)):
+		active = null
+	if active == null:
+		for weapon in wants:
+			if wants[weapon] and not weapon is BladeWeapon:
+				active = weapon
+				break
+	for weapon in wants:
+		var allowed: bool = weapon == active or weapon is BladeWeapon
+		weapon.set_trigger(wants[weapon] and allowed)
+	if right_weapon != null:
+		var right_on := right_weapon == active
 		if _two_handed():
-			right_weapon.set_trigger(input.left_fire_held)
-			weapon_pose.wants_raise = input.aim_held or input.left_fire_held
+			weapon_pose.wants_raise = input.aim_held or (input.left_fire_held and right_on)
 		else:
-			right_weapon.set_trigger(input.fire_held)
-			weapon_pose.wants_raise = input.fire_held and right_data.kind == WeaponData.Kind.GUN
+			weapon_pose.wants_raise = input.fire_held and right_on and right_data.kind == WeaponData.Kind.GUN
 		if input.reload_pressed:
 			right_weapon.start_reload()
-	if back_left != null:
-		back_left.set_trigger(input.back_left_held)
-	if back_right != null:
-		back_right.set_trigger(input.back_right_held)
 	if input.reload_pressed:
 		for pod in [back_left, back_right]:
 			if pod != null:
 				pod.start_reload()
+
+
+func _is_busy(weapon: MechWeapon) -> bool:
+	return weapon.has_method(&"is_busy") and weapon.is_busy()
 
 
 ## Weapons for the HUD: [label, weapon or data] pairs.

@@ -21,6 +21,8 @@ extends Node
 
 ## False when the loadout has no shield (WeaponController sets it). LMB does nothing then.
 var enabled: bool = true
+## True while an action holds the shield up (the blade charge).
+var force_up: bool = false
 ## 0 = shield down, 1 = shield up.
 var amount: float = 0.0
 
@@ -31,7 +33,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var held := enabled and input.shield_held
+	var held := enabled and (input.shield_held or force_up)
 	var speed := raise_speed if held else lower_speed
 	amount = move_toward(amount, 1.0 if held else 0.0, speed * delta)
 

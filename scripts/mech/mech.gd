@@ -142,6 +142,9 @@ var is_air_boosting: bool = false
 var is_exiting_boost: bool = false
 ## True while the feet slide in a boost skid stop.
 var is_skidding: bool = false
+## True while the mech is entrenched (braced for a missile volley). It cannot move or boost.
+var is_bracing: bool = false
+var _brace_left: float = 0.0
 ## True during a blade lunge (the boosters push the mech toward the target).
 var is_lunging: bool = false
 var _lunge_direction: Vector3 = Vector3.ZERO
@@ -184,6 +187,8 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_previous_aim_yaw = _aim_yaw
+	_brace_left = maxf(_brace_left - delta, 0.0)
+	is_bracing = _brace_left > 0.0
 	_update_boost(delta)
 	_update_horizontal(delta)
 	_update_vertical(delta)
@@ -221,6 +226,12 @@ func get_aim_yaw_interpolated() -> float:
 ## Torso twist from the legs, in radians. Positive = left.
 func get_torso_twist() -> float:
 	return wrapf(_aim_yaw - rotation.y, -PI, PI)
+
+
+## Entrenches the mech for this many seconds (missile volley at locked targets).
+func brace(seconds: float) -> void:
+	_brace_left = maxf(_brace_left, seconds)
+	is_bracing = true
 
 
 ## Blade lunge: moves the mech along direction at speed for distance meters (no steering).
@@ -294,7 +305,7 @@ func _update_boost(delta: float) -> void:
 	if is_on_floor():
 		wants_boost = input.boost_held and has_input and is_boost_ready() \
 				and not landing_recovery.is_recovering() and not jump_charge.is_charging and not kneel.is_kneeling \
-				and not dodge.is_busy()
+				and not dodge.is_busy() and not is_bracing
 	else:
 		# Shift + a move key fires the boosters in the air. A move key alone uses free steering.
 		wants_boost = input.boost_held and has_input
@@ -328,7 +339,7 @@ func _update_boost(delta: float) -> void:
 func _update_horizontal(delta: float) -> void:
 	var recovering := landing_recovery.is_recovering()
 	# Charging a jump, kneeling, or recovering from a dodge: the mech stands still.
-	var charging := jump_charge.is_charging or kneel.is_kneeling or dodge.is_busy()
+	var charging := jump_charge.is_charging or kneel.is_kneeling or dodge.is_busy() or is_bracing
 	var wish := Vector3.ZERO if recovering or charging else input.move_direction
 	var has_input := wish.length_squared() > 0.001
 	# A jump that starts this frame counts as air.

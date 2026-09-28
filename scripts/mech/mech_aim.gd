@@ -16,11 +16,12 @@ extends Node
 @export var body_visual: Node3D
 @export var max_range: float = 1500.0
 ## The crosshair sits this far above the screen center, as a part of the screen height.
-## 0.135 matches the reference screenshot (about 120 px above the center of a 900 px view).
-## The camera tilts down by the matching angle (CameraAds), so a higher crosshair means a steeper view.
-@export var screen_offset_up: float = 0.135
-## Physics layers the aim rays hit (1 = world, 3 = props).
-@export_flags_3d_physics var collision_mask: int = 5
+## The camera tilts down by the matching angle (CameraAds), so a higher crosshair shows more ground
+## below the mech. 0.3 (revision 59) = the view about 12 degrees lower than 0.135, as the user drew.
+@export var screen_offset_up: float = 0.3
+## Physics layers the aim rays hit (1 = world, 2 = mechs and dummies, 3 = props).
+## Layer 2 (mechs and target dummies) counts too, so the aim stops on them. The own mech is skipped.
+@export_flags_3d_physics var collision_mask: int = 7
 
 @export_group("Jitter")
 ## Aim shake at full walk speed, in degrees.
@@ -93,9 +94,9 @@ func get_body_turn() -> float:
 
 ## Recoil kick after a shot. The weapons call it. The kick goes to the free aim box.
 ## Negative values use the FreeAim defaults.
-func kick_aim(up_deg: float = -1.0, side_deg: float = -1.0) -> void:
+func kick_aim(up_deg: float = -1.0, side_deg: float = -1.0, jitter_scale: float = 1.0) -> void:
 	if camera_rig != null and camera_rig.free_aim != null:
-		camera_rig.free_aim.kick(up_deg, side_deg)
+		camera_rig.free_aim.kick(up_deg, side_deg, jitter_scale)
 
 
 ## Screen position of the camera crosshair, in pixels.
@@ -120,6 +121,6 @@ func _get_base_jitter_deg() -> float:
 
 func _cast(from: Vector3, direction: Vector3) -> Vector3:
 	var to := from + direction * max_range
-	var query := PhysicsRayQueryParameters3D.create(from, to, collision_mask)
+	var query := PhysicsRayQueryParameters3D.create(from, to, collision_mask, [mech.get_rid()])
 	var hit := mech.get_world_3d().direct_space_state.intersect_ray(query)
 	return hit.position if hit else to

@@ -21,6 +21,11 @@ var _cooldown: float = 0.0
 var _was_held: bool = false
 
 
+## True while the weapon still works after its button is released (subclasses override).
+func is_busy() -> bool:
+	return false
+
+
 func setup(weapon_data: WeaponData, weapon_controller: WeaponController) -> void:
 	data = weapon_data
 	controller = weapon_controller

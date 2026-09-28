@@ -1,19 +1,22 @@
 class_name BladeWeapon
 extends MechWeapon
-## A beam blade (right arm). RMB: a lunge slash. The mech boosts toward the target (or the aim
-## direction), then swings the blade from high right to low left. The lunge uses energy, the slash
-## adds heat. Targets in front within the slash reach get hit (damage in Phase 4).
+## A beam blade (right arm), held upright in the right hand at rest. RMB: a lunge slash.
+## The mech charges toward the target (or along the aim) with the shield up, lifting the blade
+## overhead. At the end of the charge it swings the blade straight down, fast. The lunge uses
+## energy, the slash adds heat. Targets in front within the slash reach get hit (damage in Phase 4).
 
 const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 
-## Blade pose at the top of the wind-up and at the end of the swing (torso space).
-## Position, then the direction the blade points.
-@export var windup_position: Vector3 = Vector3(1.4, 3.1, -0.6)
-@export var windup_direction: Vector3 = Vector3(0.3, 1.0, 0.5)
-@export var slash_end_position: Vector3 = Vector3(-1.0, 0.8, -2.2)
-@export var slash_end_direction: Vector3 = Vector3(-0.7, -0.5, -0.5)
-## Swing time in seconds.
-@export var swing_time: float = 0.3
+## Blade pose overhead (during the charge) and at the end of the down swing (torso space).
+## Position of the hilt, then the direction the blade points.
+@export var windup_position: Vector3 = Vector3(1.3, 5.6, 0.4)
+@export var windup_direction: Vector3 = Vector3(0.0, 0.55, 1.0)
+@export var slash_end_position: Vector3 = Vector3(0.9, 1.3, -3.3)
+@export var slash_end_direction: Vector3 = Vector3(-0.1, -0.6, -1.0)
+## Down swing time in seconds.
+@export var swing_time: float = 0.18
+## How fast the blade lifts overhead at the start of the charge (1 / seconds).
+@export var lift_speed: float = 5.0
 ## Time to come back to rest after the swing, in seconds.
 @export var recover_time: float = 0.35
 ## Stop this far in front of the target, in meters.
@@ -47,9 +50,9 @@ func _update(delta: float) -> void:
 			if trigger_pressed() and can_use() and controller.mech.energy.current >= data.lunge_energy:
 				_start()
 		State.LUNGE:
-			_pose_weight = move_toward(_pose_weight, 1.0, delta * 6.0)
+			_pose_weight = move_toward(_pose_weight, 1.0, delta * lift_speed)
 			_swing = 0.0
-			if not controller.mech.is_lunging:
+			if not controller.mech.is_lunging and _pose_weight >= 1.0:
 				state = State.SWING
 				_time = 0.0
 				_hit_done = false
@@ -57,7 +60,8 @@ func _update(delta: float) -> void:
 					controller.camera_shake.add_shake(0.1, 0.15)
 		State.SWING:
 			_pose_weight = 1.0
-			_swing = smoothstep(0.0, 1.0, _time / swing_time)
+			# Fast down swing: accelerates to the end.
+			_swing = pow(clampf(_time / swing_time, 0.0, 1.0), 1.6)
 			if not _hit_done and _swing > 0.5:
 				_hit_done = true
 				_hit_targets()
@@ -68,6 +72,8 @@ func _update(delta: float) -> void:
 			_pose_weight = move_toward(_pose_weight, 0.0, delta / recover_time)
 			if _pose_weight <= 0.0:
 				state = State.IDLE
+	# Charge with the shield up.
+	controller.mech_shield.force_up = state == State.LUNGE
 
 
 func _start() -> void:

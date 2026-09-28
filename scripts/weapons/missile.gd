@@ -13,7 +13,11 @@ const EXPLOSION := preload("res://scenes/effects/explosion.tscn")
 ## Speed gain in m/s per second.
 @export var acceleration: float = 160.0
 ## Explodes this close to its target, in meters.
-@export var proximity: float = 3.0
+@export var proximity: float = 3.5
+## Terminal guidance: closer than this (meters) to its target, the missile turns faster,
+## up to terminal_turn_multiplier times, so near targets are hit too.
+@export var terminal_distance: float = 45.0
+@export var terminal_turn_multiplier: float = 4.0
 ## Layers the missile hits: 1 world, 2 mechs, 3 props.
 @export_flags_3d_physics var collision_mask: int = 7
 
@@ -48,7 +52,11 @@ func _physics_process(delta: float) -> void:
 		var wanted := (goal - global_position).normalized()
 		var current := velocity.normalized()
 		var angle := current.angle_to(wanted)
-		var step := minf(deg_to_rad(turn_rate) * delta, angle)
+		var turn := turn_rate
+		if is_instance_valid(target):
+			var closeness := terminal_distance / maxf(global_position.distance_to(goal), 1.0)
+			turn *= clampf(closeness, 1.0, terminal_turn_multiplier)
+		var step := minf(deg_to_rad(turn) * delta, angle)
 		if angle > 0.0001:
 			var axis := current.cross(wanted)
 			if axis.length_squared() > 0.000001:

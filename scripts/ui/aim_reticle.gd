@@ -6,7 +6,7 @@ extends Control
 ## body bob, and the physics frame rate do not make it jitter.
 
 @export var mech_aim: MechAim
-## Optional. Gives the missile locks and the zoom for the lock boxes and the scope.
+## Optional. Gives the missile locks for the lock boxes.
 var weapons: WeaponController
 @export var lock_color: Color = Color(1.0, 0.35, 0.25, 0.95)
 @export var locking_color: Color = Color(1.0, 0.8, 0.3, 0.8)
@@ -43,7 +43,6 @@ func _draw() -> void:
 	var rig := mech_aim.camera_rig
 	if rig != null and rig.front_view_amount > 0.0:
 		return  # Front view: no crosshair.
-	_draw_scope()
 	_draw_locks()
 	var half := crosshair_size * 0.5
 	draw_rect(Rect2(_crosshair_position - Vector2(half, half), Vector2(crosshair_size, crosshair_size)), crosshair_color)
@@ -55,25 +54,6 @@ func _draw() -> void:
 	draw_line(p - Vector2(radius, 0), p - Vector2(radius + tick_length, 0), color, 2.0)
 	draw_line(p + Vector2(0, radius), p + Vector2(0, radius + tick_length), color, 2.0)
 	draw_line(p - Vector2(0, radius), p - Vector2(0, radius + tick_length), color, 2.0)
-
-
-## Sniper scope: a dark screen with a round hole around the crosshair while zoomed in.
-func _draw_scope() -> void:
-	if weapons == null or weapons.camera_ads == null or not weapons.camera_ads.enabled:
-		return
-	var zoom := weapons.camera_ads.get_zoom_amount()
-	if zoom < 0.5:
-		return
-	var alpha := clampf((zoom - 0.5) * 2.0, 0.0, 1.0)
-	var size := get_viewport_rect().size
-	var radius := size.y * 0.42
-	var ring := size.length()
-	draw_arc(_crosshair_position, radius + ring * 0.5, 0.0, TAU, 96, Color(0, 0, 0, 0.92 * alpha), ring)
-	draw_arc(_crosshair_position, radius, 0.0, TAU, 96, Color(0.1, 0.1, 0.1, alpha), 4.0, true)
-	var line := Color(0.1, 0.1, 0.1, 0.8 * alpha)
-	draw_line(_crosshair_position + Vector2(-radius, 0), _crosshair_position + Vector2(-20, 0), line, 2.0)
-	draw_line(_crosshair_position + Vector2(20, 0), _crosshair_position + Vector2(radius, 0), line, 2.0)
-	draw_line(_crosshair_position + Vector2(0, 20), _crosshair_position + Vector2(0, radius), line, 2.0)
 
 
 ## Missile lock-on: the lock box around the mech aim, brackets on locked targets, and a closing

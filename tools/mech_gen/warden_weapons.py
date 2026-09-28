@@ -135,15 +135,16 @@ if __name__ == "__main__":
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
         "aim_twist_deg": 20.0, "aim_tilt_deg": 4.0, "zoom_fov": 12.0},
         "res://scenes/weapons/beam_sniper.tscn")
-    # Beam blade: one hand, held low at the right side, blade forward and down.
-    blade_rest = one_hand_rest(hand=(2.7, 6.2, -1.9), muzzle_dir=(0.15, -0.4, -1.0), up_hint=(0.0, 1.0, 0.0),
+    # Beam blade: one hand, held upright in front of the right shoulder (reference image 12),
+    # blade up and a little forward, edge facing forward.
+    blade_rest = one_hand_rest(hand=(2.6, 7.0, -2.1), muzzle_dir=(0.05, 1.0, -0.12), up_hint=(0.0, 0.0, 1.0),
                                grip=(0, 0, -0.3), torso_scale=K)
     res("data/weapons/beam_blade.tres", {"display_name": '"Beam Blade"', "weight_t": 1.5, "hp": 200.0,
         "kind": 2, "fire_rate": 1.5, "damage": 400.0, "heat_per_use": 30.0, "heat_cooling": 22.0, "overheat_cooling": 30.0,
         "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0, "slash_reach": 11.0,
         "shake_trauma": 0.1, "shake_kick": 0.1, "recoil_up_deg": 0.0, "recoil_side_deg": 0.0,
         "rest_transform": blade_rest, "aim_anchor": v3(anchor),
-        "right_pole_rest": v3((0.6, -1.0, 0.4)), "right_pole_aim": v3((0.6, -1.0, 0.4))},
+        "right_pole_rest": v3((0.25, -1.0, -0.2)), "right_pole_aim": v3((0.6, -1.0, 0.4))},
         "res://scenes/weapons/beam_blade.tscn")
     for side in ("l", "r"):
         res(f"data/weapons/missile_pod_{side}.tres", {"display_name": f'"Missile Pod {side.upper()}"', "weight_t": 3.0, "hp": 250.0,

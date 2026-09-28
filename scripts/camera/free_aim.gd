@@ -93,12 +93,13 @@ func take_motion(motion: Vector2) -> Vector2:
 
 ## Recoil kick after a shot: up, plus a random side kick, and some jitter.
 ## up_deg and side_deg < 0 use recoil_up_deg and recoil_side_deg (the weapon data gives its own).
-func kick(up_deg: float = -1.0, side_deg: float = -1.0) -> void:
+## jitter_scale multiplies the jitter of this shot (a charged beam shakes more).
+func kick(up_deg: float = -1.0, side_deg: float = -1.0, jitter_scale: float = 1.0) -> void:
 	var scale := get_recoil_scale()
 	var up := up_deg if up_deg >= 0.0 else recoil_up_deg
 	var side := side_deg if side_deg >= 0.0 else recoil_side_deg
 	_pending_kick += Vector2(randf_range(-side, side), up) * scale
-	_jitter = minf(_jitter + jitter_per_shot_deg * scale, max_jitter_deg * scale)
+	_jitter = minf(_jitter + jitter_per_shot_deg * scale * jitter_scale, max_jitter_deg * scale * maxf(jitter_scale, 1.0))
 
 
 ## Steady aim shake from the boosters, in degrees (with the stance multiplier).
