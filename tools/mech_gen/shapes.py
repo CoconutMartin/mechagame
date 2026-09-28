@@ -38,3 +38,24 @@ class Builder:
         self.nodes.append(f'[node name="{name}" type="MeshInstance3D" parent="{parent}"]\ntransform = {xf(pos, rot)}\nmesh = SubResource("{mid}")\nsurface_material_override/0 = ExtResource("{mat}")\n')
     def sub_text(self):
         return "\n".join(t for _, t in self.meshes.values())
+
+
+def xf_aim(forward, up_hint, pos):
+    """Transform whose -Z points along forward and whose +Y is as close as possible to up_hint."""
+    def norm(v):
+        l = math.sqrt(sum(c * c for c in v)); return tuple(c / l for c in v)
+    def cross(a, b): return (a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0])
+    z = norm(tuple(-c for c in forward))
+    d = sum(a * b for a, b in zip(up_hint, z))
+    y = norm(tuple(u - d * c for u, c in zip(up_hint, z)))
+    x = cross(y, z)
+    rows = [(x[i], y[i], z[i]) for i in range(3)]
+    return rows
+
+
+def xf_rows(rows, pos):
+    return "Transform3D(" + ", ".join(r(v) for row in rows for v in row) + f", {r(pos[0])}, {r(pos[1])}, {r(pos[2])})"
+
+
+def apply_rows(rows, v):
+    return tuple(sum(rows[i][j] * v[j] for j in range(3)) for i in range(3))

@@ -1,11 +1,11 @@
 class_name WeaponPose
 extends Node
 ## Moves the weapon between the rest pose and the aim pose.
-## Rest pose (stick figure reference 2): weapon low across the front, stock tucked under the right arm,
-## muzzle down about 18 degrees to the front left. Right hand on the grip with the right elbow out,
-## left hand under the front of the weapon with the left elbow out and down.
-## Aim pose: stock on the right shoulder, weapon points at MechAim.aim_point, left hand under the handguard.
-## The arms follow the weapon grips with TwoBoneIK. This script also moves the left grip and the elbow directions.
+## The rest pose comes from the rest_pose marker (for example one-hand high ready: weapon upright
+## beside the right shoulder). Aim pose: stock on the right shoulder, weapon points at MechAim.aim_point.
+## The arms follow their IK targets with TwoBoneIK. This script moves the left hand target between
+## two markers (on the weapon for a two-hand weapon, on the torso for a free left hand with a shield)
+## and blends the elbow directions.
 
 @export var weapon: Node3D
 ## Rest pose of the weapon. Same parent as the weapon.
@@ -14,17 +14,19 @@ extends Node
 @export var aim_anchor: Node3D
 @export var mech_aim: MechAim
 @export var input: MechInput
+## Optional. Adds the shot kick to the weapon pose.
+@export var recoil: WeaponRecoil
 ## How fast the weapon comes up to aim (1 / seconds).
 @export var raise_speed: float = 4.0
 ## How fast the weapon goes down to rest (1 / seconds).
 @export var lower_speed: float = 3.0
 
 @export_group("Hands")
-## The left hand IK target. This script moves it between the two grip markers.
+## The left hand IK target. This script moves it between the two markers below.
 @export var left_grip_target: Node3D
-## Left hand place in the rest pose (on the weapon).
+## Left hand place in the rest pose. Same parent as left_grip_target.
 @export var left_grip_rest: Node3D
-## Left hand place in the aim pose (on the weapon).
+## Left hand place in the aim pose. Same parent as left_grip_target.
 @export var left_grip_aim: Node3D
 @export var arm_ik_left: TwoBoneIK
 @export var arm_ik_right: TwoBoneIK
@@ -54,6 +56,8 @@ func _physics_process(delta: float) -> void:
 	var target := parent.global_transform.affine_inverse() * mech_aim.aim_point
 	var aim_pose := Transform3D(Basis.looking_at(target - origin, Vector3.UP), origin)
 	weapon.transform = rest_pose.transform.interpolate_with(aim_pose, t)
+	if recoil != null:
+		weapon.transform = weapon.transform * recoil.get_offset()
 
 	left_grip_target.position = left_grip_rest.position.lerp(left_grip_aim.position, t)
 	arm_ik_left.pole_direction = left_pole_rest.lerp(left_pole_aim, t)

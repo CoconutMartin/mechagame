@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/bullet.gd" id="bullet"]
+[ext_resource type="PackedScene" path="res://scenes/effects/impact_spark.tscn" id="impact"]
+[ext_resource type="Material" path="res://materials/effects/tracer.tres" id="tracer"]
+
+[sub_resource type="BoxMesh" id="tracer_mesh"]
+size = Vector3(0.14, 0.14, 6)
+
+[node name="Bullet" type="Node3D"]
+script = ExtResource("bullet")
+impact_scene = ExtResource("impact")
+
+[node name="Tracer" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
+cast_shadow = 0
+mesh = SubResource("tracer_mesh")
+surface_material_override/0 = ExtResource("tracer")

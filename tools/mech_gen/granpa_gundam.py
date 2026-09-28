@@ -4,6 +4,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mech_scene import write_scene, TT, TO, L
 
 MATS = {m: f"res://materials/rx78/{m}.tres" for m in ["white", "blue", "red", "yellow", "frame", "dark", "eye"]}
+MATS["flame"] = "res://materials/effects/booster_flame.tres"
+MATS["flame_core"] = "res://materials/effects/booster_core.tres"
 
 
 def build(m):
@@ -105,6 +107,9 @@ def build(m):
         m.part(f"FootSole{s}", KN, "red", "box", (1.8, 0.36, 3.2), (0, -2.42, -0.45))
         m.part(f"FootToe{s}", KN, "red", "box", (1.6, 0.35, 0.6), (0, -2.15, -1.8), (-20, 0, 0))
 
+    for s, x in (("L", -0.675), ("R", 0.675)):
+        m.flame(f"BoosterFlame{s}", TT(x, 6.15, 2.0), (0, 0, 0), length=2.6, radius=0.4)
+    m.nodes.append(f'[node name="BoosterLight" type="OmniLight3D" parent="{TO}"]\ntransform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, 3.0)\nvisible = false\nlight_color = Color(1, 0.55, 0.2, 1)\nomni_range = 12.0\n')
     for s in ("L", "R"):
         m.skirt(f"SkirtFollow{s}", f"SkirtFront{s}", [f"Hip{s}"], 0)
     m.skirt("SkirtFollowRear", "SkirtRear", ["HipL", "HipR"], 1)

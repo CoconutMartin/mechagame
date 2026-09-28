@@ -38,6 +38,8 @@ signal dodge_ended
 @export_group("")
 
 var is_dodging: bool = false
+## Seconds since the last dodge landing. Large when there was no recent landing.
+var time_since_landing: float = 100.0
 ## World direction of the current dodge.
 var direction: Vector3 = Vector3.ZERO
 
@@ -69,6 +71,11 @@ func blocks_jump() -> bool:
 	return is_busy() or _suppress_jump
 
 
+## Dodge direction in the leg frame (-Z forward, +X right).
+func get_local_direction() -> Vector3:
+	return _local_direction
+
+
 ## True while the hop or its recovery spring moves the body. InertiaSway pauses then.
 func is_animating() -> bool:
 	return is_dodging or _recovering
@@ -97,6 +104,7 @@ func get_recovery_lean() -> Vector2:
 
 func _physics_process(delta: float) -> void:
 	_clock += delta
+	time_since_landing += delta
 	_recover_left = maxf(_recover_left - delta, 0.0)
 	if is_dodging:
 		_air_time += delta
@@ -158,6 +166,7 @@ func _on_landed(_fall_speed: float) -> void:
 	mech.velocity.z = keep.z
 	mech.cancel_landing_steps()
 	_recover_left = recovery_time
+	time_since_landing = 0.0
 	# Start the recovery spring from the full landing pose.
 	_recover.value = 1.0
 	_recover.velocity = 0.0

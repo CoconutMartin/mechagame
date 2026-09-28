@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/effects/impact_spark.gd" id="impact"]
+[ext_resource type="Material" path="res://materials/effects/tracer.tres" id="spark"]
+
+[sub_resource type="BoxMesh" id="spark_mesh"]
+material = ExtResource("spark")
+size = Vector3(0.08, 0.5, 0.08)
+
+[sub_resource type="Gradient" id="fade"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 0.4, 0.1, 0)
+
+[node name="ImpactSpark" type="Node3D" node_paths=PackedStringArray("sparks", "light")]
+script = ExtResource("impact")
+sparks = NodePath("Sparks")
+light = NodePath("Light")
+
+[node name="Sparks" type="CPUParticles3D" parent="."]
+emitting = false
+amount = 14
+lifetime = 0.45
+one_shot = true
+explosiveness = 1.0
+mesh = SubResource("spark_mesh")
+particle_flag_align_y = true
+direction = Vector3(0, 0, -1)
+spread = 50.0
+initial_velocity_min = 8.0
+initial_velocity_max = 18.0
+gravity = Vector3(0, -15, 0)
+color_ramp = SubResource("fade")
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.5)
+light_color = Color(1, 0.6, 0.25, 1)
+light_energy = 4.0
+omni_range = 6.0

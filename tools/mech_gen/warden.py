@@ -1,13 +1,28 @@
 """Warden: heavy armored mech from reference image 9 (Phase 1 revision 42).
-Weathered grey plates, head built into the center torso with a red eye, missile rack on the
-left torso, tall blade antenna on the left shoulder, hex shield on the left forearm, claw feet.
+Weathered grey plates, head built into the center torso with a red eye, tall blade antenna on
+the left shoulder, hex shield on the left forearm, claw feet, two backpack thrusters with flames.
+Revision 43: missile rack removed, shield 20% larger, rifle held in the right hand only
+(one-hand high ready, like reference image 10).
 Mech faces -Z. Right is +X. Heights are in mech space (feet at 0)."""
 import math, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mech_scene import write_scene, TT, TO, L
+from mech_scene import write_scene, one_hand_rest, TT, TO, L
 
 MATS = {m: f"res://materials/warden/{m}.tres" for m in
         ["armor", "armor_dark", "frame", "joint", "mark", "emblem", "eye"]}
+MATS["flame"] = "res://materials/effects/booster_flame.tres"
+MATS["flame_core"] = "res://materials/effects/booster_core.tres"
+SHIELD_SCALE = 1.2
+# One-hand high ready: grip in the right hand in front of the right shoulder, muzzle up.
+RIFLE_REST = one_hand_rest(hand=(2.7, 7.3, -2.15), muzzle_dir=(0.12, 1.0, -0.12), up_hint=(0.25, 0.0, 1.0))
+ONE_HAND = {
+    "rest": (-3.3, 3.8, -0.8),        # Left hand hangs at the side, shield on the outside.
+    "aim": (-2.3, 7.4, -2.6),         # Shield comes up in front of the left chest while aiming.
+    "pole_rest": (-1.0, -0.2, 0.3),
+    "pole_aim": (-0.3, -1.0, -0.2),
+    "right_pole_rest": (0.25, -1.0, -0.2),  # Elbow down under the hand, like the photo.
+    "right_pole_aim": (1.0, -0.6, 0.3),
+}
 HIP_X = 1.5
 SIDES = (("L", -1), ("R", 1))
 
@@ -42,20 +57,20 @@ def build(m):
     m.part("TorsoRFront", TO, "armor", "box", (1.2, 1.4, 0.25), TT(1.45, 8.4, -1.25))
     m.part("Emblem", TO, "emblem", "box", (0.6, 0.6, 0.05), TT(1.45, 8.45, -1.39), (0, 0, 45))
     m.part("TorsoRLower", TO, "armor_dark", "box", (1.2, 0.8, 0.3), TT(1.45, 7.2, -1.2))
-    # Left torso: missile rack, 4 columns x 5 rows of tubes.
+    # Left torso: plain armor block.
     m.part("TorsoL", TO, "armor", "box", (1.4, 2.4, 2.3), TT(-1.45, 8.1, -0.05))
-    m.part("RackFace", TO, "armor_dark", "box", (1.25, 1.7, 0.2), TT(-1.45, 8.15, -1.25))
-    for c, x in enumerate((-1.9, -1.6, -1.3, -1.0)):
-        for r, y in enumerate((8.83, 8.49, 8.15, 7.81, 7.47)):
-            m.part(f"Tube{c}{r}", TO, "frame", "cyl", (0.12, 0.12, 0.08), TT(x, y, -1.36), (90, 0, 0))
-    for i in range(4):
-        m.part(f"RackVent{i}", TO, "frame", "box", (1.1, 0.06, 0.1), TT(-1.45, 7.1 - i * 0.13, -1.28))
+    m.part("TorsoLFront", TO, "armor", "box", (1.2, 1.4, 0.25), TT(-1.45, 8.4, -1.25))
+    m.part("TorsoLLower", TO, "armor_dark", "box", (1.2, 0.8, 0.3), TT(-1.45, 7.2, -1.2))
     # Shoulder yoke and back.
     m.part("Yoke", TO, "armor", "box", (4.0, 0.7, 2.3), TT(0, 9.45, 0.35))
     m.part("Back", TO, "armor", "box", (3.0, 2.8, 1.3), TT(0, 8.0, 1.8))
     m.part("BackPlate", TO, "armor_dark", "box", (2.4, 2.2, 0.3), TT(0, 7.9, 2.5))
+    # Backpack thrusters, tilted back 25 degrees, with flames out of the nozzles.
     for s, sign in SIDES:
-        m.part(f"BackThruster{s}", TO, "joint", "cyl", (0.3, 0.45, 0.7), TT(sign * 0.7, 6.4, 2.0))
+        m.part(f"BackThruster{s}", TO, "joint", "cyl", (0.32, 0.48, 0.8), TT(sign * 0.75, 6.35, 2.05), (-25, 0, 0))
+        m.part(f"BackThrusterInner{s}", TO, "frame", "cyl", (0.34, 0.34, 0.06), TT(sign * 0.75, 5.99, 2.22), (-25, 0, 0))
+        m.flame(f"BoosterFlame{s}", TT(sign * 0.75, 5.98, 2.22), (-25, 0, 0))
+    m.nodes.append(f'[node name="BoosterLight" type="OmniLight3D" parent="{TO}"]\ntransform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, {5.0 - 5.4}, 3.0)\nvisible = false\nlight_color = Color(1, 0.55, 0.2, 1)\nomni_range = 12.0\n')
     # Shoulders: round joint and a big pauldron on each side.
     for s, sign in SIDES:
         x = sign * 2.9
@@ -84,7 +99,8 @@ def build(m):
             m.part(f"Finger{s}{i}", EL, "frame", "box", (0.6, 0.45, 0.18), (0, -3.45, z))
     # Hex shield on the outer side of the left forearm (local -Z).
     SL = f"{TO}/ShoulderL/ElbowL"
-    m.node("Shield", SL, pos=(0, -1.5, -1.0))
+    k = SHIELD_SCALE
+    m.nodes.append(f'[node name="Shield" type="Node3D" parent="{SL}"]\ntransform = Transform3D({k}, 0, 0, 0, {k}, 0, 0, 0, {k}, 0, -1.5, -1.05)\n')
     SHD = f"{SL}/Shield"
     m.part("ShieldBody", SHD, "armor", "box", (2.1, 3.8, 0.25), (0, 0, 0))
     m.part("ShieldTop", SHD, "armor", "prism", (2.1, 0.7, 0.25, 0.5), (0, 2.25, 0))
@@ -133,4 +149,5 @@ def build(m):
 
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "scenes/mech/player_mech.tscn"
-    write_scene(out, "res://scenes/weapons/heavy_rifle.tscn", MATS, build, hip_x=HIP_X)
+    write_scene(out, "res://scenes/weapons/heavy_rifle.tscn", MATS, build, hip_x=HIP_X,
+                rest_xf=RIFLE_REST, one_hand=ONE_HAND, muzzle_flash=True)

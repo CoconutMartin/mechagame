@@ -62,9 +62,10 @@ left_grip_aim = NodePath("../../Visual/Roll/Upper/Torso/Rifle/GripLeftAim")
 arm_ik_left = NodePath("../ArmIKLeft")
 arm_ik_right = NodePath("../ArmIKRight")
 
-[node name="LegTwist" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "lower_body")]
+[node name="LegTwist" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "lower_body", "dodge")]
 script = ExtResource("legtwist")
 mech = NodePath("../..")
+dodge = NodePath("../../MechDodge")
 lower_body = NodePath("../../Visual/Roll/Upper/Lower")
 
 [node name="LegSwing" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "footsteps", "leg_twist", "landing_recovery", "jump_charge", "kneel", "dodge", "upper_body", "hip_left", "hip_right", "knee_left", "knee_right")]
