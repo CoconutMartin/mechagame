@@ -35,24 +35,18 @@ extends Node
 
 @export_group("Shot Kick")
 ## Each shot moves the mech aim this far off the camera crosshair, in a random direction (degrees).
-## The aim stays there until the next shot.
-@export var shot_kick_deg: float = 1.5
-## Mouse re-center: after a shot kick the mech aim stays still in the world. Move the view toward
-## it and the crosshair moves onto it (the gap closes by the same angle). Moves in other directions
-## move both together. There is no automatic return.
-@export var mouse_recenter: bool = true
-## Key re-center: while the re-center key is held, the mech aim moves back onto the crosshair at
-## this speed (degrees per second).
-@export var recenter_speed_deg: float = 4.0
-## Optional. Gives the re-center key.
-@export var input: MechInput
+## The aim stays there until the player re-aligns it. There is no automatic return.
+@export var shot_kick_deg: float = 2.0
+## Re-align: move the mouse (the view) in the opposite direction of the kick. The gap closes by
+## this part of the view movement (0.5 = half). Moves in other directions move both together.
+@export_range(0.0, 1.0) var realign_rate: float = 0.5
 @export_group("")
 
 var camera_target: Vector3 = Vector3.ZERO
 var aim_point: Vector3 = Vector3.ZERO
 var aim_direction: Vector3 = Vector3.FORWARD
 ## Shot kick offset of the mech aim from the crosshair, in degrees: x = yaw (left), y = pitch (up).
-## Each shot sets it. Moving the view toward the mech aim, or the re-center key, brings it to zero.
+## Each shot sets it. Moving the view in the opposite direction brings it back to zero.
 var _last_view: Vector2 = Vector2.ZERO
 var shot_offset: Vector2 = Vector2.ZERO
 
@@ -85,9 +79,7 @@ func _physics_process(delta: float) -> void:
 	direction = direction.rotated(Vector3.UP, body_error)
 
 	# Shot kick: the aim stays off the crosshair until the player re-centers it.
-	_mouse_recenter()
-	if input != null and input.recenter_held:
-		shot_offset = shot_offset.move_toward(Vector2.ZERO, recenter_speed_deg * delta)
+	_mouse_realign()
 	var kick_right := direction.cross(Vector3.UP).normalized()
 	direction = direction.rotated(Vector3.UP, deg_to_rad(shot_offset.x))
 	direction = direction.rotated(kick_right, deg_to_rad(shot_offset.y)).normalized()
@@ -101,18 +93,18 @@ func _physics_process(delta: float) -> void:
 	aim_point = _cast(origin, direction)
 
 
-## View movement toward the kicked mech aim closes the gap by the same angle, so the mech aim
-## stays still in the world while the crosshair moves onto it.
-func _mouse_recenter() -> void:
+## View movement in the opposite direction of the kick closes the gap by realign_rate x that
+## movement (like pulling a gun back down after its recoil).
+func _mouse_realign() -> void:
 	var view := Vector2(mech.get_aim_yaw(), camera_rig.pitch if camera_rig != null else 0.0)
 	var moved := Vector2(rad_to_deg(wrapf(view.x - _last_view.x, -PI, PI)), rad_to_deg(view.y - _last_view.y))
 	_last_view = view
 	var gap := shot_offset.length()
-	if not mouse_recenter or gap < 0.0001:
+	if gap < 0.0001:
 		return
-	var toward := moved.dot(shot_offset / gap)
-	if toward > 0.0:
-		shot_offset -= shot_offset / gap * minf(toward, gap)
+	var against := -moved.dot(shot_offset / gap)
+	if against > 0.0:
+		shot_offset -= shot_offset / gap * minf(against * realign_rate, gap)
 
 
 ## Moves the mech aim shot_kick_deg off the crosshair in a random direction. WeaponFire calls it

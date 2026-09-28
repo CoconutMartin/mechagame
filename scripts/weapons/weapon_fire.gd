@@ -24,8 +24,8 @@ signal fired
 @export var bullet_speed: float = 400.0
 ## The weapon fires only when it is raised this much (0 = rest, 1 = aimed).
 @export_range(0.0, 1.0) var raise_needed: float = 0.9
-@export var shake_trauma: float = 0.04
-@export var shake_kick: float = 0.06
+@export var shake_trauma: float = 0.052
+@export var shake_kick: float = 0.078
 
 var _cooldown: float = 0.0
 

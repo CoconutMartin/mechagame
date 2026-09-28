@@ -23,7 +23,6 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 |---|---|---|
 | W / S | Walk forward / back along the legs (MechWarrior style) | `move_forward`, `move_back` |
 | A / D | Turn the legs at a steady speed (60°/s moving, 30°/s standing). The legs turn only with A / D and keep their heading when the mech stops | `move_left`, `move_right` |
-| Middle mouse / X (hold) | Re-center: moves the mech aim (blue ring) back onto the camera crosshair after shot kicks, at 4°/s | `recenter_aim` |
 | V (hold) | Front view: the camera swings around to the front of the mech (about 0.33 s). The mech aim stays on the torso direction and the crosshair hides | `front_view` |
 | Mouse | Aim. Sets the torso target (up to 52° left and 64° right of the legs). The torso turns at its turn speed and the camera always stays behind the torso | |
 | Space | Hold on the ground to charge the jump jets, release to jump. No plain jump | `jump` |
@@ -121,7 +120,7 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 
 - One-hand weapons: RMB uses the right arm weapon, LMB uses the left arm weapon.
 - Two-hand firearm: RMB aims down sight, LMB shoots.
-- Now (revision 47): the Warden rifle is a one-hand weapon. Hold RMB: hip fire, 1 shot every 2 seconds, no zoom (one-hand weapons never zoom). Each shot moves the mech aim (blue ring) 1.5° off the crosshair in a random direction. It stays there until the next shot (no automatic return). Re-center with the mouse: the blue ring stays still in the world, so moving the view toward it brings the crosshair onto it. Moves in other directions move both together. Or hold the re-center key (middle mouse button or X): the ring moves back onto the crosshair at 4°/s. Hold LMB: the shield on the left arm lifts in front of the chest. Two-hand weapons keep the ADS zoom on RMB.
+- Now (revision 47): the Warden rifle is a one-hand weapon. Hold RMB: hip fire, 1 shot every 2 seconds, no zoom (one-hand weapons never zoom). Each shot moves the mech aim (blue ring) 2° off the crosshair in a random direction. It stays off (no automatic return). Re-align by moving the mouse in the opposite direction of the kick: the gap closes by half of that view movement (`MechAim.realign_rate` 0.5). Moves in other directions move both together. Camera shake per shot: trauma 0.052, kick 0.078 (30% more since revision 51). Hold LMB: the shield on the left arm lifts in front of the chest. Two-hand weapons keep the ADS zoom on RMB.
 - "Use" means fire for guns and activate for shields and melee weapons.
 
 ## Mech parts (all interchangeable)
@@ -174,6 +173,7 @@ All of this logic lives in one function so it is easy to tune.
   - `WeaponRecoil`: each shot kicks the rifle 0.7 m back, 10° up and up to 3° to the side, on a spring (5 Hz, damping 0.55). The hand IK follows the grip.
   - `BoosterFlames`: fire and an orange light from the two backpack thrusters while boosting (80% length on the ground), air boosting, rising on the jump jets and during a dodge hop (burst at the start).
   - Dodge hop ending (revision 46): at the landing a short skid starts (feet slide with dust, body turns) from 10 m/s down to 4 m/s in about 1.8 m (60% shorter than the boost skid), then 2 heavy steps (1.5 m each) to a stop.
+  - Dodge slide (revision 51, `DodgeSlidePose`): the mech slides in a deep crouch (front leg hip 40° knee 75°, back leg knee 85°, body 1.5 m lower). Akira slide end (`SkidBodyTurn`): from 50% to 90% of the slide the whole body swings until the legs are sideways (90°) to the slide, toward the skid side, and leans 14° back against the motion (the `Visual/Roll` node). The lead leg braces out 22° to the side, the other leg folds (knee 105°). The pose holds 0.4 s after the slide, then turns back during the steps.
   - After the dodge skid the torso sways exactly 8° forward (the push is solved from the lean at the skid end), then settles on the skid spring (`TorsoPose.dodge_exit_forward_sway_deg`).
   - `BrakeThrusters`: two small thruster pods on the pelvis sides fire during the dodge skid. The fire points the way the mech slides (a stabilizer and brake against the momentum). The legs face the body front in the air and turn toward the slide after the landing.
   - Shield up (LMB): top move speed = 6 m/s x 13.6 m² / shield area (`MechShield`). The Warden shield is 10.9 m² since revision 48 (20% narrower), so 7.5 m/s. A bigger shield is slower (limits 2 to 9.1 m/s).
@@ -231,7 +231,7 @@ scenes/props/       greybox_block, car, lamppost, person, box_truck (8 m), semi_
 scenes/ui/          debug_hud.tscn.
 scripts/mech/       mech.gd (movement), mech_shield.gd (shield lift and speed limit), mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd,
                     mech_jump_charge.gd, mech_air_steer.gd, mech_landing_recovery.gd, mech_aim.gd (camera target and real mech aim with jitter).
-scripts/animation/  shield_pose.gd, shield_mount.gd, mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd, torso_pose.gd,
+scripts/animation/  shield_pose.gd, shield_mount.gd, dodge_slide_pose.gd, mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd, torso_pose.gd,
                     inertia_sway.gd, skid_body_turn.gd, skirt_follow.gd (placeholder animation).
 scripts/weapons/    weapon_fire.gd, weapon_recoil.gd, bullet.gd. Scenes: scenes/weapons/bullet.tscn, scenes/effects/impact_spark.tscn.
 scenes/weapons/     heavy_rifle.tscn (Warden), beam_rifle.tscn (Granpa Gundam), long_rifle.tscn (old box rifle). Markers: GripRight, GripLeft, GripLeftRest, GripLeftAim, Muzzle.
@@ -302,6 +302,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 39: dodge recovery fix: smooth height plan (no pop and drop), inertia sway paused during the dodge, recovery crouch and lean with one spring back to upright.
 - Phase 1 revision 40: dodge roll replaced by a directional dodge hop (11.9 m, 50% of the roll).
 - Phase 1 revision 41: player mech model replaced with an RX-78-2 Gundam style placeholder (same skeleton, same animation). Beam rifle and shield. Waist skirts follow the thighs.
+- Phase 1 revision 51: dodge slide in a deep crouch with an Akira slide end. Shot kick 2°, re-align by moving the mouse opposite to the kick (half rate). Re-center key removed. Shot camera shake +30%.
 - Phase 1 revision 50: torso twist 20% less (52° left, 64° right). Boost dodge skid 28 m in 2.25 s. Mouse re-center of the mech aim.
 - Phase 1 revision 49: re-center key for the mech aim (middle mouse or X, hold). Dodge skid 5.3 m (+200%), 32 m after a boost dodge (+500%). Forward sway after the dodge 8°.
 - Phase 1 revision 48: mech aim stays 1.5° off the crosshair after a shot. Shield 20% narrower (shield-up speed 7.5 m/s). Stronger forward sway after the dodge. Bullet tracers 75% bigger.

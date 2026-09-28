@@ -159,6 +159,7 @@ var _airborne: bool = false
 var _in_exit_leap: bool = false
 var _skid_stop_plan: PackedFloat32Array = PackedFloat32Array()
 var _skid_slowdown: float = 9.4
+var _skid_start_speed: float = 0.0
 ## World yaw where the torso (and the mech aim) points.
 var _aim_yaw: float = 0.0
 var _previous_aim_yaw: float = 0.0
@@ -225,11 +226,20 @@ func start_skid(stop_strides: PackedFloat32Array = PackedFloat32Array(), slowdow
 	_skid_stop_plan = stop_strides if not stop_strides.is_empty() else skid_stop_strides
 	_skid_slowdown = slowdown if slowdown > 0.0 else skid_deceleration
 	is_brake_skidding = boost_brake
+	_skid_start_speed = get_horizontal_speed()
 	is_exiting_boost = true
 	_exit_deceleration = 0.0
 	_stop_deceleration = 0.0
 	is_skidding = true
 	skid_side = 1.0 if randf() < 0.5 else -1.0
+
+
+## 0 at the skid start, 1 at the skid end (by speed).
+func get_skid_progress() -> float:
+	var span := _skid_start_speed - skid_end_speed
+	if span <= 0.01:
+		return 1.0
+	return clampf((_skid_start_speed - get_horizontal_speed()) / span, 0.0, 1.0)
 
 
 func get_boost_speed() -> float:

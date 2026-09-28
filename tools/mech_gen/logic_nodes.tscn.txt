@@ -41,9 +41,8 @@ energy = NodePath("../MechEnergy")
 landing_recovery = NodePath("../MechLandingRecovery")
 kneel = NodePath("../MechKneel")
 
-[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin", "input")]
+[node name="MechAim" type="Node" parent="." node_paths=PackedStringArray("mech", "camera", "aim_origin")]
 script = ExtResource("aim")
-input = NodePath("../MechInput")
 mech = NodePath("..")
 camera = NodePath("../CameraRig/Pitch/SpringArm/Camera")
 aim_origin = NodePath("../Visual/Roll/Upper/Torso/AimAnchor")
@@ -98,10 +97,22 @@ kneel = NodePath("../../MechKneel")
 inertia = NodePath("../InertiaSway")
 dodge = NodePath("../../MechDodge")
 
-[node name="SkidBodyTurn" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "body")]
+[node name="SkidBodyTurn" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "body", "lean_node", "lower_body")]
 script = ExtResource("skidturn")
 mech = NodePath("../..")
 body = NodePath("../../Visual")
+lean_node = NodePath("../../Visual/Roll")
+lower_body = NodePath("../../Visual/Roll/Upper/Lower")
+
+[node name="DodgeSlidePose" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "hip_left", "hip_right", "knee_left", "knee_right", "upper_body", "skid_turn")]
+script = ExtResource("dodgeslide")
+mech = NodePath("../..")
+hip_left = NodePath("../../Visual/Roll/Upper/Lower/HipL")
+hip_right = NodePath("../../Visual/Roll/Upper/Lower/HipR")
+knee_left = NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL")
+knee_right = NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR")
+upper_body = NodePath("../../Visual/Roll/Upper")
+skid_turn = NodePath("../SkidBodyTurn")
 
 [node name="SkidDust" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "feet")]
 script = ExtResource("skiddust")
