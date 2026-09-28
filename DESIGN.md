@@ -120,7 +120,7 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 
 - One-hand weapons: RMB uses the right arm weapon, LMB uses the left arm weapon.
 - Two-hand firearm: RMB aims down sight, LMB shoots.
-- Now (revision 47): the Warden rifle is a one-hand weapon. Hold RMB: hip fire, 1 shot every 2 seconds, no zoom (one-hand weapons never zoom). Free aim with a dead zone (revision 55, `FreeAim` under the camera rig): the mouse moves the mech aim (blue ring) 1:1 inside a box around the camera crosshair (±3° left and right, ±2° up and down). Only the mouse movement past the box edge turns the camera (and the torso target). Each shot kicks the ring 1.8° up and up to 0.8° to the side (muzzle climb), inside the box; the camera does not move. The player pulls the ring back onto the target. No automatic return. Moves in other directions move both together. Camera shake per shot: trauma 0.052, kick 0.078 (30% more since revision 51). Hold LMB: the shield on the left arm lifts in front of the chest. Two-hand weapons keep the ADS zoom on RMB.
+- Now (revision 47): the Warden rifle is a one-hand weapon. Hold RMB: hip fire, 1 shot every 2 seconds, no zoom (one-hand weapons never zoom). Free aim with a dead zone (revision 55, `FreeAim` under the camera rig): the mouse moves the mech aim (blue ring) inside a box around the camera crosshair (±4° left and right, ±3° up and down since revision 56). Only the mouse movement past the box edge turns the camera (and the torso target). Each shot kicks the ring 2° up and up to 1° to the side (muzzle climb), inside the box; the camera does not move. Smooth since revision 56: the kick rises in about 0.1 s, the ring follows the mouse and kicks at 14/s, and each shot adds 0.9° of jitter (noise, fades at 1°/s, up to 1.2°). The player pulls the ring back onto the target. No automatic return. Moves in other directions move both together. Camera shake per shot: trauma 0.052, kick 0.078 (30% more since revision 51). Hold LMB: the shield on the left arm lifts in front of the chest. Two-hand weapons keep the ADS zoom on RMB.
 - "Use" means fire for guns and activate for shields and melee weapons.
 
 ## Mech parts (all interchangeable)
@@ -305,6 +305,7 @@ scripts/core/       mouse_capture.gd.
 - Phase 1 revision 39: dodge recovery fix: smooth height plan (no pop and drop), inertia sway paused during the dodge, recovery crouch and lean with one spring back to upright.
 - Phase 1 revision 40: dodge roll replaced by a directional dodge hop (11.9 m, 50% of the roll).
 - Phase 1 revision 41: player mech model replaced with an RX-78-2 Gundam style placeholder (same skeleton, same animation). Beam rifle and shield. Waist skirts follow the thighs.
+- Phase 1 revision 56: free aim smoothing and recoil jitter. Box ±4° x ±3°. Recoil 2° up, up to 1° side.
 - Phase 1 revision 55: targeting option 1 chosen: free aim with a dead zone (box 6° x 4°), recoil kicks the ring up, the player corrects it 1:1. The kick-line re-align is removed.
 - Phase 1 revision 54: mech aim follows the body turn in slides. Camera 8.5 m, above the head, FOV 70°.
 - Phase 1 revision 53: camera zoom undone (10.3 m, pivot 11.5 m, FOV 70°). Akira slide milder (55°, lean 8°). Mech aim re-align can overshoot the crosshair; the player lines them up along the kick line.

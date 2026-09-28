@@ -72,7 +72,7 @@ func _physics_process(delta: float) -> void:
 	direction = direction.rotated(Vector3.UP, body_error + get_body_turn())
 
 	# Free aim: the mech aim sits at the free aim offset from the crosshair (mouse and recoil).
-	shot_offset = camera_rig.free_aim.offset if camera_rig != null and camera_rig.free_aim != null else Vector2.ZERO
+	shot_offset = camera_rig.free_aim.aim_offset if camera_rig != null and camera_rig.free_aim != null else Vector2.ZERO
 	var kick_right := direction.cross(Vector3.UP).normalized()
 	direction = direction.rotated(Vector3.UP, deg_to_rad(shot_offset.x))
 	direction = direction.rotated(kick_right, deg_to_rad(shot_offset.y)).normalized()
