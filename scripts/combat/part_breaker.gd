@@ -10,7 +10,8 @@ extends Node
 ##        with short limping steps; boost speed stays and the jump jets still work; the mech falls
 ##        over after a ground boost (MechFall).
 ##   Shield, back unit: falls off, that weapon is lost.
-##   Booster (backpack): explodes, no more boost; the fuel blast damages the torso parts.
+##   Booster (backpack): explodes, no more boost; the fuel blast damages the torso parts
+##        (fuel_damage x the mech's total max HP, split over center, left and right torso).
 
 const EXPLOSION := preload("res://scenes/effects/explosion.tscn")
 const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
@@ -26,8 +27,9 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export_range(0.0, 1.0) var smoke_below: float = 0.5
 ## One leg destroyed: walk (and boost) speed x this value.
 @export var one_leg_speed_scale: float = 0.4
-## Booster explosion damage to each torso part, as a part of the mech's max energy.
-@export var fuel_damage: float = 0.05
+## Booster explosion damage, as a part of the mech's total max HP (all parts). It is split evenly
+## over the center, left and right torso.
+@export var fuel_damage: float = 0.2
 ## Kick of a falling part, m/s (sideways and up).
 @export var drop_push: float = 5.0
 
@@ -146,15 +148,21 @@ func _fall_after_leg_loss() -> void:
 
 
 ## The booster (backpack) explodes: no more boost. Its fuel blast damages the torso: fuel_damage x
-## the mech's max energy (a bigger fuel store = a bigger blast).
+## the mech's total max HP, split over the torso parts.
 func _break_booster() -> void:
 	blow_away("Booster", 0.8)
 	mech.can_boost = false
 	var flames := mech.find_child("BoosterFlames", true, false) as BoosterFlames
 	if flames != null:
 		flames.disable()
-	var blast := mech.energy.capacity * fuel_damage
-	for key in ["Torso C", "Torso L", "Torso R"]:
+	var total := 0.0
+	for key: String in health.max_hp:
+		total += health.max_hp[key]
+	var torso := ["Torso C", "Torso L", "Torso R"].filter(func(key: String) -> bool: return health.max_hp.has(key))
+	if torso.is_empty():
+		return
+	var blast := total * fuel_damage / torso.size()
+	for key: String in torso:
 		health.damage.call_deferred(key, blast)
 
 
