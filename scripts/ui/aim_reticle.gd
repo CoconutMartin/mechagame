@@ -108,20 +108,20 @@ func _draw_locks() -> void:
 			_draw_target(camera, pod.locking, closing, locking_color, 2.0)
 
 
-func _draw_target(camera: Camera3D, target: Node3D, half: float, color: Color, width: float) -> void:
+func _draw_target(camera: Camera3D, target: Node3D, half: float, tint: Color, width: float) -> void:
 	if not is_instance_valid(target):
 		return
 	var point: Vector3 = target.get_lock_point() if target.has_method(&"get_lock_point") else target.global_position
 	if camera.is_position_behind(point):
 		return
-	_draw_corners(camera.unproject_position(point), half, color, width)
+	_draw_corners(camera.unproject_position(point), half, tint, width)
 
 
 ## Four corner brackets of a square.
-func _draw_corners(center: Vector2, half: float, color: Color, width: float) -> void:
+func _draw_corners(center: Vector2, half: float, tint: Color, width: float) -> void:
 	var arm := half * 0.4
 	for sx in [-1.0, 1.0]:
 		for sy in [-1.0, 1.0]:
 			var corner := center + Vector2(sx * half, sy * half)
-			draw_line(corner, corner - Vector2(sx * arm, 0.0), color, width)
-			draw_line(corner, corner - Vector2(0.0, sy * arm), color, width)
+			draw_line(corner, corner - Vector2(sx * arm, 0.0), tint, width)
+			draw_line(corner, corner - Vector2(0.0, sy * arm), tint, width)

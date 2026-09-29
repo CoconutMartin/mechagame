@@ -5,6 +5,8 @@ extends Node
 ##   One-hand gun: RMB raises and fires (hip fire). Blade: RMB lunge slash.
 ##   Two-hand weapon: RMB aims down sight (zoom), LMB fires. The left hand holds the weapon.
 ## Left arm: a shield (LMB lifts it). Back units: missile pods, Q = left, E = right.
+## Left arm lost with a two-hand weapon: the right hand holds it alone, low at the hip like the
+## one-hand rifle, and the aim ring is unsteady (FreeAim.unsteady). The keys stay the same.
 ## Only one weapon works at a time: the first one whose button is pressed stays active until it is
 ## done (trigger released, missiles launched). The blade is the exception: it works any time.
 ## MechAssembler calls mount() before the other nodes start.
@@ -26,6 +28,22 @@ extends Node
 @export var torso: Node3D
 ## Left hand target when the left hand holds no weapon (moved by ShieldPose).
 @export var left_hand: Node3D
+## Optional. Made unsteady when a two-hand weapon is held in one hand.
+@export var free_aim: FreeAim
+
+@export_group("One-hand hold")
+## Right hand (GripRight) place in the aim pose, torso space. The one-hand rifle hip hold.
+@export var one_hand_grip_aim: Vector3 = Vector3(2.38, 0.6, -1.84)
+## Right hand place in the rest pose, torso space.
+@export var one_hand_grip_rest: Vector3 = Vector3(2.38, 0.65, -1.69)
+## Weapon turn in the rest pose (muzzle a little down), in degrees.
+@export var one_hand_rest_pitch_deg: float = -4.6
+## Elbow direction of the right arm (out and down).
+@export var one_hand_pole: Vector3 = Vector3(0.4, -1.0, 0.5)
+@export_group("")
+
+## True when a two-hand weapon is held in the right hand alone.
+var one_hand_hold: bool = false
 
 var right_weapon: MechWeapon
 var back_left: MechWeapon
@@ -119,6 +137,9 @@ func lose_right_weapon() -> void:
 	right_data = null
 	weapon_pose.aim_amount = 0.0
 	weapon_pose.wants_raise = false
+	one_hand_hold = false
+	if free_aim != null:
+		free_aim.unsteady = 0.0
 	for node: Node in [weapon_pose, weapon_recoil, arm_ik_right]:
 		node.process_mode = Node.PROCESS_MODE_DISABLED
 	torso_pose.aim_twist_deg = 0.0
@@ -146,6 +167,25 @@ func lose_shield() -> void:
 func lose_left_arm() -> void:
 	lose_shield()
 	arm_ik_left.process_mode = Node.PROCESS_MODE_DISABLED
+	if _two_handed() and right_weapon != null:
+		_hold_one_hand()
+
+
+## The right hand holds the two-hand weapon alone: the weapon moves so its right grip sits where
+## the one-hand rifle grip sits (the stock slides back under the arm), and the aim swings.
+func _hold_one_hand() -> void:
+	one_hand_hold = true
+	var grip := (right_weapon.get_node("GripRight") as Node3D).position
+	var rest_basis := Basis(Vector3.RIGHT, deg_to_rad(one_hand_rest_pitch_deg))
+	weapon_pose.left_grip_target = null
+	weapon_pose.aim_origin = one_hand_grip_aim - grip
+	weapon_pose.rest_transform = Transform3D(rest_basis, one_hand_grip_rest - rest_basis * grip)
+	weapon_pose.right_pole_rest = one_hand_pole
+	weapon_pose.right_pole_aim = one_hand_pole
+	torso_pose.aim_twist_deg = 0.0
+	torso_pose.aim_tilt_deg = 0.0
+	if free_aim != null:
+		free_aim.unsteady = 1.0
 
 
 ## A back unit is gone.

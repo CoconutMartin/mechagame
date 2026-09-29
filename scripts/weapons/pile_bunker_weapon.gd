@@ -327,9 +327,9 @@ func get_pose(rest: Transform3D, aim: Transform3D, t: float) -> Transform3D:
 
 
 ## Transform whose -Z (stake direction) points along direction, at position.
-func _pose_from(position: Vector3, direction: Vector3) -> Transform3D:
+func _pose_from(point: Vector3, direction: Vector3) -> Transform3D:
 	var up := Vector3.UP if absf(direction.normalized().y) < 0.95 else Vector3.BACK
-	return Transform3D(Basis.looking_at(direction.normalized(), up), position)
+	return Transform3D(Basis.looking_at(direction.normalized(), up), point)
 
 
 func get_status_text() -> String:

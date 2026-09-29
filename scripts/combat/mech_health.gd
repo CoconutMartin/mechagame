@@ -123,8 +123,11 @@ func get_fraction(key: String) -> float:
 
 ## Model nodes of a key.
 func get_nodes(key: String) -> Array[Node3D]:
+	# Freed nodes (debris that is gone) are skipped: a typed array cannot hold them.
 	var nodes: Array[Node3D] = []
-	nodes.assign(segment_nodes.get(key, []))
+	for node: Variant in segment_nodes.get(key, []):
+		if is_instance_valid(node):
+			nodes.append(node as Node3D)
 	return nodes
 
 
@@ -132,9 +135,9 @@ func get_nodes(key: String) -> Array[Node3D]:
 func get_hitbox_rids() -> Array[RID]:
 	var rids: Array[RID] = []
 	for key: String in hitboxes:
-		for hitbox: PartHitbox in hitboxes[key]:
+		for hitbox: Variant in hitboxes[key]:
 			if is_instance_valid(hitbox):
-				rids.append(hitbox.get_rid())
+				rids.append((hitbox as PartHitbox).get_rid())
 	return rids
 
 

@@ -7,6 +7,8 @@ extends Node
 ## little (jitter). The kick rises over a short time and the ring follows smoothly, so nothing snaps.
 ## The aim also shakes while the boosters fire.
 ## The camera does not move. The player pulls the aim back onto the target. No automatic return.
+## Unsteady (a two-hand weapon held in one hand, set by WeaponController): the ring follows on a
+## soft spring (it swings past and comes back), sways slowly, and the recoil is bigger.
 
 ## Half width of the box (left and right of the crosshair), in degrees.
 @export var box_half_yaw_deg: float = 4.0
@@ -46,6 +48,22 @@ extends Node
 ## How fast the ring follows the mouse and the kicks (1 / seconds). Lower = smoother, slower.
 @export var follow_speed: float = 14.0
 
+@export_group("Unsteady (one hand)")
+## Ring spring speed when unsteady, in swings per second. Lower = heavier, slower swing.
+@export var unsteady_frequency: float = 1.6
+## Ring spring damping when unsteady. Lower = more swing past the target (1 = no swing).
+@export var unsteady_damping: float = 0.3
+## Slow sway of the ring when unsteady, in degrees.
+@export var unsteady_sway_deg: float = 0.9
+## How fast the sway moves (waves per second).
+@export var unsteady_sway_speed: float = 0.45
+## Recoil and jitter when unsteady = normal x this value.
+@export var unsteady_recoil_multiplier: float = 1.6
+@export_group("")
+
+## 0 = steady, 1 = unsteady (a two-hand weapon in one hand). Set by WeaponController.
+var unsteady: float = 0.0
+
 ## Recoil multiplier from the arm (ArmPart.recoil_control) and mods. Set by MechStatApplier.
 var recoil_multiplier: float = 1.0
 
@@ -60,6 +78,9 @@ var _smoothed: Vector2 = Vector2.ZERO
 var _jitter: float = 0.0
 var _time: float = 0.0
 var _noise := FastNoiseLite.new()
+var _spring_x := AimSpring.new(0.0)
+var _spring_y := AimSpring.new(0.0)
+var _sway_time: float = 0.0
 
 
 func _ready() -> void:
@@ -80,7 +101,19 @@ func _physics_process(delta: float) -> void:
 	var amount := _jitter + _get_booster_jitter()
 	var shake := Vector2(_noise.get_noise_2d(_time, 0.0), _noise.get_noise_2d(_time, 50.0)) * 2.0 * amount
 	_smoothed = _smoothed.lerp(offset, 1.0 - exp(-follow_speed * delta))
-	aim_offset = _smoothed + shake
+	if unsteady <= 0.0:
+		_spring_x = AimSpring.new(_smoothed.x)
+		_spring_y = AimSpring.new(_smoothed.y)
+		aim_offset = _smoothed + shake
+		return
+	# Heavy one-hand hold: a soft spring that swings past the target, plus a slow sway.
+	var limit := deg_to_rad(maxf(box_half_yaw_deg, box_half_pitch_deg) * 2.0)
+	_spring_x.update(deg_to_rad(offset.x), unsteady_frequency, unsteady_damping, limit, delta)
+	_spring_y.update(deg_to_rad(offset.y), unsteady_frequency, unsteady_damping, limit, delta)
+	_sway_time += delta * unsteady_sway_speed
+	var sway := Vector2(_noise.get_noise_2d(_sway_time, 100.0), _noise.get_noise_2d(_sway_time, 150.0)) * 2.0 * unsteady_sway_deg
+	var swing := Vector2(rad_to_deg(_spring_x.value), rad_to_deg(_spring_y.value))
+	aim_offset = _smoothed.lerp(swing + sway, unsteady) + shake
 
 
 ## Moves the mech aim by a mouse movement (degrees, same signs as offset).
@@ -111,7 +144,7 @@ func _get_booster_jitter() -> float:
 
 ## Recoil and jitter multiplier from the stance: less while kneeling, more with the shield up.
 func get_recoil_scale() -> float:
-	var scale := recoil_multiplier
+	var scale := recoil_multiplier * lerpf(1.0, unsteady_recoil_multiplier, unsteady)
 	if kneel != null:
 		scale *= lerpf(1.0, kneel_multiplier, kneel.amount)
 	if shield != null:

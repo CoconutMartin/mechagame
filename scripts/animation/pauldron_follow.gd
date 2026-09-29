@@ -26,10 +26,12 @@ func _physics_process(_delta: float) -> void:
 	if _pivots.is_empty():
 		_find_pivots()
 	for shoulder: Node3D in _pivots:
-		var pivot: Node3D = _pivots[shoulder]
-		# A pauldron that fell off with its arm is no longer on this mech.
-		if is_instance_valid(pivot) and mech.is_ancestor_of(pivot):
-			pivot.basis = _get_turn(shoulder, pivot.get_parent_node_3d())
+		# A pauldron that fell off with its arm is no longer on this mech (or it is freed). The value
+		# is read untyped: a typed read of a freed node is an error.
+		var pivot: Variant = _pivots[shoulder]
+		if is_instance_valid(pivot) and is_instance_valid(shoulder) and mech.is_ancestor_of(pivot):
+			var node := pivot as Node3D
+			node.basis = _get_turn(shoulder, node.get_parent_node_3d())
 
 
 func _find_pivots() -> void:

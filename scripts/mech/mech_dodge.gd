@@ -191,8 +191,8 @@ func _on_landed(_fall_speed: float) -> void:
 	mech.velocity.z = keep.z
 	# Slowdown that ends the skid (at the Mech skid end speed) after the skid distance.
 	var end_speed := mech.skid_end_speed
-	var distance := boost_skid_distance if _from_boost else skid_distance
-	var slowdown := maxf((speed * speed - end_speed * end_speed) / (2.0 * distance), 0.5)
+	var skid_length := boost_skid_distance if _from_boost else skid_distance
+	var slowdown := maxf((speed * speed - end_speed * end_speed) / (2.0 * skid_length), 0.5)
 	mech.cancel_landing_steps()
 	# Only a forward dodge ends with the Akira slide (not back, left or right).
 	mech.start_skid(stop_strides, slowdown, true, _local_direction.z < -0.5)

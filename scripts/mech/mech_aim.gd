@@ -4,6 +4,8 @@ extends Node
 ## camera_target: where the camera crosshair points (a little above the screen center).
 ## aim_point: where the mech really aims: the crosshair direction plus the free aim offset (FreeAim),
 ## turned with the body in slides.
+## While the mech is down (fall, get-up) or in an Akira slide, the ring stays at its neutral place
+## (the crosshair plus the free aim offset) and does not follow the torso or the body turn.
 
 @export var mech: Mech
 @export var camera: Camera3D
@@ -21,6 +23,10 @@ extends Node
 @export var screen_offset_up: float = 0.3
 ## Layers the aim ray hits: 1 world, 3 props, 4 hitboxes (mech parts and dummies). The own mech is skipped.
 @export_flags_3d_physics var collision_mask: int = 13
+## How fast the ring moves to and from its neutral place (1 / seconds).
+@export var neutral_blend_speed: float = 4.0
+## After an Akira slide the ring follows the torso again when the body turn is below this, in degrees.
+@export var akira_release_deg: float = 3.0
 
 @export_group("Jitter")
 ## Aim shake at full walk speed, in degrees.
@@ -47,6 +53,9 @@ var shot_offset: Vector2 = Vector2.ZERO
 var use_ai_target: bool = false
 var ai_target: Vector3 = Vector3.ZERO
 
+## 0 = the ring follows the torso, 1 = the ring stays at its neutral place.
+var neutral_amount: float = 0.0
+
 var _noise := FastNoiseLite.new()
 var _time: float = 0.0
 
@@ -59,6 +68,10 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_time += delta * jitter_speed
+	# Akira slide: from the skid start until the body has turned back after it.
+	var akira := mech.skid_akira and (mech.is_skidding or absf(get_body_turn()) > deg_to_rad(akira_release_deg))
+	var neutral := mech.is_fallen or mech.is_wrecked or akira
+	neutral_amount = move_toward(neutral_amount, 1.0 if neutral else 0.0, neutral_blend_speed * delta)
 	var origin := aim_origin.global_position
 	if use_ai_target:
 		camera_target = ai_target
@@ -102,10 +115,12 @@ func get_ring_screen_point() -> Vector2:
 
 
 ## Yaw gap between the torso aim (with the slide body turn) and the camera view, in radians.
+## 0 while the ring is at its neutral place (neutral_amount).
 func get_ring_gap() -> float:
 	var forward := -camera.get_parent_node_3d().global_basis.z
 	var camera_yaw := atan2(-forward.x, -forward.z)
-	return wrapf(mech.get_aim_yaw_interpolated() + get_body_turn() - camera_yaw, -PI, PI)
+	var gap := wrapf(mech.get_aim_yaw_interpolated() + get_body_turn() - camera_yaw, -PI, PI)
+	return gap * (1.0 - smoothstep(0.0, 1.0, neutral_amount))
 
 
 ## Whole-body turn from a slide (radians, positive = left). The mech aim turns with the body.

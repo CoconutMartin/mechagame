@@ -137,8 +137,8 @@ func _process(delta: float) -> void:
 
 
 func _on_footstep(strength: float) -> void:
-	var size := mech.height_m / footstep_reference_height
-	add_shake(footstep_trauma * strength * size, footstep_kick * strength * size)
+	var height_scale := mech.height_m / footstep_reference_height
+	add_shake(footstep_trauma * strength * height_scale, footstep_kick * strength * height_scale)
 
 
 func _on_bumped(strength: float) -> void:

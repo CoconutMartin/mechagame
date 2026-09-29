@@ -212,11 +212,11 @@ func _physics_process(delta: float) -> void:
 			if state_time >= reposition_time:
 				_set_state(State.GET_UP)
 		State.LIE:
-			var ready := state_time >= lie_time
+			var can_rise := state_time >= lie_time
 			if not _face_down:
 				# Get up once the slide ends.
-				ready = Vector2(mech.velocity.x, mech.velocity.z).length() < stopped_speed and state_time >= 0.2
-			if _get_up and not mech.is_wrecked and ready:
+				can_rise = Vector2(mech.velocity.x, mech.velocity.z).length() < stopped_speed and state_time >= 0.2
+			if _get_up and not mech.is_wrecked and can_rise:
 				_set_state(State.REPOSITION)
 		State.GET_UP:
 			if mech.is_wrecked:

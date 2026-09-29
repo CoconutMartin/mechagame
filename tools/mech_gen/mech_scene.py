@@ -379,7 +379,7 @@ def _weapons_by_controller(text, one_hand):
     if one_hand:
         text = _strip(text, "ShieldMount", ["shield_node", "rest_mount", "cover"])
     text += f'''
-[node name="WeaponController" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "mech_aim", "weapon_pose", "weapon_recoil", "arm_ik_left", "arm_ik_right", "camera_ads", "torso_pose", "camera_shake", "mech_shield", "shield_pose", "shield_mount", "torso", "left_hand")]
+[node name="WeaponController" type="Node" parent="." node_paths=PackedStringArray("mech", "input", "mech_aim", "weapon_pose", "weapon_recoil", "arm_ik_left", "arm_ik_right", "camera_ads", "torso_pose", "camera_shake", "mech_shield", "shield_pose", "shield_mount", "torso", "left_hand", "free_aim")]
 script = ExtResource("weaponctl")
 mech = NodePath("..")
 input = NodePath("../MechInput")
@@ -396,6 +396,7 @@ shield_pose = NodePath("../Animation/ShieldPose")
 shield_mount = NodePath("../Animation/ShieldMount")
 torso = NodePath("../{TO}")
 left_hand = NodePath("../{TO}/LeftHand")
+free_aim = NodePath("../CameraRig/FreeAim")
 
 [node name="MechHealth" type="Node" parent="." node_paths=PackedStringArray("mech", "assembler", "weapons")]
 script = ExtResource("health")
