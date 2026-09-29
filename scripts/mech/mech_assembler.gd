@@ -4,7 +4,8 @@ extends Node
 ## 1. Each part model is a scene. Its child groups have the names of frame nodes (the sockets,
 ##    for example Torso, ShoulderL, ElbowL, Lower, HipL, KneeL). The children of each group move
 ##    to the frame node with the same name, with their local transforms.
-## 2. StatCalculator computes the final stats and MechStatApplier sets them on the mech.
+## 2. Part variants get their look (PartLook) and the armor plates are added (PlateMounter).
+## 3. StatCalculator computes the final stats and MechStatApplier sets them on the mech.
 ## Keep this node before Visual and the logic nodes, so the parts exist before the others start.
 
 @export var loadout: Loadout
@@ -26,9 +27,17 @@ func _ready() -> void:
 		var key: String = pair[0]
 		var part: PartData = pair[1]
 		if part.scene != null:
+			var added := attach(part.scene)
+			PartLook.apply(added, part.model_scale, part.armor_tint)
 			var nodes: Array[Node3D] = part_nodes.get(key, [] as Array[Node3D])
-			nodes.append_array(attach(part.scene))
+			nodes.append_array(added)
 			part_nodes[key] = nodes
+	# Armor plates (Phase 5): slabs on the parts. They break and fall with their part.
+	var plates := PlateMounter.mount(frame, loadout)
+	for key: String in plates:
+		var nodes: Array[Node3D] = part_nodes.get(key, [] as Array[Node3D])
+		nodes.append_array(plates[key])
+		part_nodes[key] = nodes
 	if weapon_controller != null:
 		weapon_controller.mount(loadout, self)
 	var stats := StatCalculator.compute(loadout)

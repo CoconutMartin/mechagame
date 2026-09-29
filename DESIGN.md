@@ -12,7 +12,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | 2 | Part resources, sockets, assembler, stat calculator, weight-to-speed formula, debug HUD | Done |
 | 3 | Weapons: guns, lock-on missiles, sniper zoom, melee blade, energy use | Done |
 | 4 | Per-part HP, hitboxes, destruction, target dummies, enemy AI, greybox urban map with destructible props | Done: 4a (part HP, hitboxes, part breaks, respawn), 4b (enemy AI gunner), 4c (destructible buildings and props) |
-| 5 | Garage screen: swap parts, add plates, live stat preview. Graphics settings menu (low, medium, high) | Not started |
+| 5 | Garage screen: swap parts, add plates, live stat preview. Graphics settings menu (low, medium, high) | Done |
 | 6 | Pilot creation and skill tree | Not started |
 | 7 | Save/load builds (JSON) and 4 preset archetype loadouts | Not started |
 | 8 | Realistic graphics pass and complete mech animation | Not started |
@@ -134,7 +134,8 @@ Phase 3 decisions (user):
 - A missile volley at locked targets entrenches the mech (it stops and crouches during the volley and 0.6 s after). A free shot (quick press, no lock) does not.
 - Missile pods reload one missile at a time (1.5 s each), so they can lock and fire with the missiles they have.
 - Beam sniper: hold LMB to charge (3 s to full), release to fire. The shot is a sustained beam (like a kamehameha): 2 s at full charge (shorter for a partial charge, at least 0.15 s). It follows the aim and hits every 0.1 s with a small kick and shake. The torso and shoulders shake while it fires (`TorsoPose.action_shake`). The torso and shoulder shake while the beam fires is 40% less since revision 66 (`torso_shake` 0.6, about 0.5° at full charge). The shake when the charge is released is small: `release_shake` 0.075 (50% less in revision 64, then 85% less in revision 65). The barrel lights up with the charge (`ChargeGlow`): the 3 coils light one after another from the back, then the flat emitter lens in the barrel face and a small muzzle light; fully lit at full charge and while the beam fires, then it fades. Since revision 63 all shake while it fires (screen, aim, torso) is 30% less (`BeamRifleWeapon.discharge_shake` 0.7, torso about 0.84° at full charge). Rate of fire: 1 shot per 2.5 s. A tap is a 25% shot. Damage, beam width, screen shake and aim jitter grow with the charge. While charging, the camera shakes a little (trauma 0.08 at the start to 0.22 at full charge, `CameraShake.hold_shake`). RMB zooms to FOV 52.6° (70% less zoom than before) at 8 m behind the pivot, so the head, weapon arm and gun stay in view (no scope overlay).
-- Keys 1 to 4 switch test loadouts (until the garage in Phase 5): 1 Gunner (heavy rifle + shield), 2 Sniper (beam sniper, two hands), 3 Melee (pile bunker + shield), 4 Missile (heavy rifle + shield + two missile pods).
+- G opens and closes the garage (Phase 5; Esc also closes it).
+- Keys 1 to 4 switch test loadouts: 1 Gunner (heavy rifle + shield), 2 Sniper (beam sniper, two hands), 3 Melee (pile bunker + shield), 4 Missile (heavy rifle + shield + two missile pods).
 
 Weapons:
 | Weapon | Slot | Keys | Values |
@@ -270,6 +271,43 @@ Phase 4a (user choices: parts fall off, respawn), revised in 4a.2 (user rules):
 - Test keys (`DebugDamage`): F1 head, F2 center torso, F3 left torso, F4 right torso, F5 left arm, F6 right arm, F7 groin, F8 left leg, F9 right leg, F10 shield, F11 back units, F12 booster. Each press takes 30% of max HP; Shift + key destroys the part at once.
 - Debug HUD: current / max HP of each part, DESTROYED, MECH DESTROYED.
 
+## Garage (Phase 5)
+
+User choices: G key in the level, light / medium / heavy part variants, 0 to 3 plates per part with visuals, weapons and mods in the garage.
+- `Garage` (CanvasLayer in the test map): G opens it. The game pauses, the other screen layers (HUD, reticle) hide, and `GarageCamera` circles the player mech (8°/s; right drag turns it, the wheel zooms 10 to 32 m). Every change rebuilds the player mech at its place with full HP (`LoadoutSwitcher.rebuild`), so the look and the stats show the new build. "Undo changes" goes back to the build the garage opened with. The new build stays after respawns.
+- Left panel: frame (head, core, arm L, arm R, legs, booster, generator, FCS), weapons (right arm: heavy rifle, beam sniper, pile bunker; left arm: shield or none, forced none with a two-hand weapon; back L and R: missile pod or none), plates (3 pickers per part: none, light, heavy), mods (3 pickers).
+- `GarageStatPanel`: weight, load capacity, load, walk and boost speed, boost acceleration and energy, torso and leg turn, jump, energy, recharge and delay, recoil, lock range, max locks, lock speed, and the HP of each part. Next to each value, the change from the opening build: green = better, red = worse. A warning shows when the mech is overloaded.
+- `GarageCatalog` (`data/garage_catalog.tres`) lists what each slot offers. `tools/data_gen/garage_data.py` writes the catalog, the part variants, the plates and the mods.
+- Part variants: medium = Warden. Light = Kestrel (sand color, thinner), heavy = Bulwark (olive, bulkier). They use the Warden models with `PartData.model_scale` and `armor_tint` (`PartLook`: each piece scales in place and moves out by 60% of the scale; armor materials get a tinted copy; frame and joint materials stay).
+
+| Part | Kestrel (light) | Warden (medium) | Bulwark (heavy) |
+|---|---|---|---|
+| Head | 2.5 t, 280 HP, sensor 700 m, lock speed x1.25 | 4 t, 400 HP, 600 m, x1.0 | 6 t, 560 HP, 500 m, x0.85 |
+| Core | 13 t, 1200 HP, energy 90, torso turn 100°/s | 18 t, 1600 HP, 100, 85.35°/s | 24 t, 2100 HP, 120, 70°/s |
+| Arm (each) | 3.5 t, 450 HP, recoil x1.2, melee x0.9 | 5 t, 600 HP, x1.0, x1.0 | 7 t, 800 HP, x0.8, x1.25 |
+| Legs | 11 t, 1000 HP, load 65 t, speed 13.5, jump 11 m, turn 135 / 67.5°/s | 16 t, 1400 HP, 80 t, 11.742, 9 m, 116.1 / 58.05 | 22 t, 1900 HP, 105 t, 10.2, 7 m, 95 / 47.5 |
+| Booster | 2 t, 150 HP, thrust 1000, boost x1.6, 26 energy/s | 3 t, 200 HP, 1200, x1.5, 30 | 4.5 t, 280 HP, 1600, x1.45, 38 |
+| Generator | 2 t, output 14/s, delay 1.6 s | 3 t, 17.5/s, 2.0 s | 4.5 t, 22/s, 2.4 s |
+| FCS | 0.5 t, lock range 400 m, 3 locks | 1 t, 500 m, 4 | 2 t, 650 m, 6 |
+
+- Plates (`PlateData`, light / heavy): head 80 HP 0.5 t / 150 HP 1 t; core 300 HP 2 t / 550 HP 4 t; each arm 120 HP 0.8 t / 220 HP 1.5 t; legs 250 HP 2 t / 450 HP 3.5 t. `PlateMounter` adds each plate as an armor slab (0.16 to 0.32 m thick) at one of three places per part: head top, left and right cheek; belly, left and right chest; upper arm outside, forearm outside, forearm front; shin front, thigh front, shin outside (legs plates cover both legs). The slabs belong to their part: they have hitboxes and fall off with it.
+- Mods (`ModData`): boost tuning +10% thrust, lightweight frame -5% weight, reinforced frame +8% part HP, capacitor bank +15% energy, overclocked generator +15% recharge, servo tuning +10% turn speed, recoil dampers -15% recoil, jump jet tuning +15% jump.
+
+## Graphics settings (Phase 5)
+
+`GraphicsSettings` (autoload) with presets Low, Medium and High, set in the garage (`GraphicsMenu`). Saved in `user://settings.cfg`, applied at start and to each level that loads.
+
+| Setting | Low | Medium | High |
+|---|---|---|---|
+| SDFGI (global light) | off | off | on |
+| SSR (reflections) | off | off | on |
+| SSAO (ambient shadows) | off | on | on |
+| Volumetric fog | off | on | on |
+| Glow | on | on | on |
+| Anti-aliasing | FXAA | TAA | TAA |
+| Render scale | 75% (FSR) | 100% | 100% |
+| Directional shadow map | 1024, hard | 2048, soft low | 4096, soft high |
+
 ## Archetypes (preset loadouts; player can mix any parts)
 
 - Melee: light, fast, blade arms, strong boost
@@ -318,13 +356,13 @@ One active skill slot (example: Overdrive, +30% speed for 8 seconds).
 - Small scripts, one job per script.
 - Debug HUD: total weight, load ratio, speed, HP of each part.
 - Rendering: Forward+ renderer. PBR StandardMaterial3D, SDFGI, SSAO, SSR, volumetric fog, glow, AgX tonemap, TAA.
-- Graphics settings menu (low, medium, high). Built in Phase 5.
+- Graphics settings menu (low, medium, high). Built in Phase 5 (see Garage).
 - After each phase, explain in plain English what was built.
 
 ## Project layout
 
 ```
-data/               Part, weapon, mod, plate and loadout resources (.tres): parts/warden, weapons, plates, mods, loadouts.
+data/               Part, weapon, mod, plate and loadout resources (.tres): parts/warden, parts/kestrel, parts/bulwark, weapons, plates, mods, loadouts, garage_catalog.tres.
 materials/          Shared materials. warden/ and rx78/ hold the mech colors.
 shaders/            greybox_grid.gdshader (1 m and 10 m grid lines).
 scenes/levels/      test_map.tscn (main scene).
@@ -333,8 +371,8 @@ scenes/mech/        player_mech.tscn (Warden frame, weapons and logic), granpa_g
 tools/mech_gen/     Python generators for the mech models and rifles (Godot ignores this folder).
 scenes/props/       greybox_block, car, lamppost, person, box_truck (8 m), semi_truck (16.5 m).
 scenes/ui/          debug_hud.tscn.
-scripts/data/       Part, plate, mod, loadout resource classes, mech_stats.gd, stat_calculator.gd.
-scripts/mech/       mech.gd (movement), mech_shield.gd (shield lift and speed limit), mech_assembler.gd, mech_stat_applier.gd, mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd,
+scripts/data/       Part, plate, mod, loadout resource classes, garage_catalog.gd, mech_stats.gd, stat_calculator.gd.
+scripts/mech/       part_look.gd and plate_mounter.gd (Phase 5), mech.gd (movement), mech_shield.gd (shield lift and speed limit), mech_assembler.gd, mech_stat_applier.gd, mech_input.gd (player input), mech_energy.gd, mech_footsteps.gd,
                     mech_jump_charge.gd, mech_air_steer.gd, mech_landing_recovery.gd, mech_aim.gd (camera target and real mech aim with jitter).
 scripts/animation/  shield_pose.gd, shield_mount.gd, dodge_slide_pose.gd, mech_leg_swing.gd, mech_leg_twist.gd, two_bone_ik.gd, weapon_pose.gd, torso_pose.gd,
                     inertia_sway.gd, skid_body_turn.gd, skirt_follow.gd (placeholder animation).
@@ -342,10 +380,10 @@ scripts/weapons/    weapon_controller.gd, mech_weapon.gd, gun_weapon.gd, beam_ri
 scenes/weapons/     heavy_rifle.tscn (Warden), beam_rifle.tscn (Granpa Gundam), long_rifle.tscn (old box rifle). Markers: GripRight, GripLeft, GripLeftRest, GripLeftAim, Muzzle.
 scripts/camera/     mech_camera_rig.gd (follow and mouse look), free_aim.gd (free aim box), aim_spring.gd (aim overshoot), camera_shake.gd, camera_ads.gd (aim down sight zoom).
 scripts/world/      greybox_block.gd (box with collision, set size in Inspector), mech_spawner.gd (dummy and enemy mechs), destructible_building.gd, building_chunk.gd, falling_chunk.gd, rubble.gd, grid_materials.gd, destructible_prop.gd (4c).
-scripts/ui/         debug_hud.gd, aim_reticle.gd.
+scripts/ui/         debug_hud.gd, aim_reticle.gd, garage.gd, garage_camera.gd, garage_stat_panel.gd, graphics_menu.gd (Phase 5).
 scripts/effects/    skid_dust.gd (dust while skidding), brake_thrusters.gd, booster_flames.gd, muzzle_flash.gd, impact_spark.gd, dust_burst.gd (4c).
 scripts/ai/         ai_pilot.gd (Phase 4b).
-scripts/core/       mouse_capture.gd, group_nodes.gd, loadout_switcher.gd, player_respawner.gd, debug_damage.gd.
+scripts/core/       mouse_capture.gd, group_nodes.gd, loadout_switcher.gd, player_respawner.gd, debug_damage.gd, graphics_settings.gd (autoload, Phase 5).
 scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.gd, blast.gd (Phase 4). Animation: power_down_pose.gd, mech_fall.gd.
 ```
 
@@ -370,7 +408,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Phase 1: Space was a jump plus hold-in-air jets. Replaced in revision 5 by charged jump jets.
 - Phase 1: test map ground is 400 x 400 m with invisible walls at the edge. Distance fog hides the edge.
 - Phase 1: the camera follows the mouse on a damped spring, so fast aim moves overshoot a little.
-- Graphics settings menu goes in Phase 5.
+- Graphics settings menu goes in Phase 5 (done).
 - Phase 1: walk speed 9.1 m/s, boost 1.5x walk, hop and 2 steps when boost stops, 4 s energy recharge delay, body turn overshoot 10°.
 - Phase 1: weapon is a 9 m long rifle held with two hands in high ready. RMB raises it to the shoulder (aim down sight).
 - Phase 1 revision 4: walk accel for 2.25 s to top speed, strafe 90%, turn 84°/s, jets about 9 m, 2 s recharge delay at 17.5 per second, boost only after 2 steps, stop in 2 steps (walk) or 4 steps (boost), landing recovery by height and weight.
@@ -431,6 +469,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Phase 4b.1: booster fuel blast = 20% of total max HP over the torso. Hit marker (red X): where a shot from the right weapon muzzle really hits (removed in 4c, user request).
 - Phase 4b.2: fixed the error after a pauldron fell off (a freed node was read, 20 s after the arm dropped) and the GDScript warnings. A two-hand weapon is held in one hand when the left arm is lost, with an unsteady ring. The ring stays neutral while the mech is down and during the Akira slide.
 - Phase 4c: destructible city. Buildings made of blocks (1000 HP) that break into rubble and dust; blocks with no support fall, break and hurt mechs below. Vehicles explode into burnt wrecks, lampposts snap, mechs kick props away or wreck them at boost speed. Backspace reloads the level. Also: hit marker removed, yellow crosshair dot hidden, start camera pitch -24°.
+- Phase 5: garage (G): light / medium / heavy part variants (Kestrel, Warden, Bulwark), plates 0 to 3 per part with armor slabs, weapons, up to 3 mods, live stats with the change from the opening build. Graphics presets Low / Medium / High (autoload, saved).
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ArmPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/arm_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/parts/warden/warden_arm_r.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Bulwark Arm R"
+weight_t = 7.0
+hp = 800.0
+recoil_control = 0.8
+melee_bonus = 1.25
+model_scale = Vector3(1.18, 1.0, 1.18)
+armor_tint = Color(0.66, 0.74, 0.64, 1.0)
+scene = ExtResource("scene")

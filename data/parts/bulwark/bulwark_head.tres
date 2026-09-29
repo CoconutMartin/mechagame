@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="HeadPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/head_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/parts/warden/warden_head.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Bulwark Head"
+weight_t = 6.0
+hp = 560.0
+sensor_range = 500.0
+lock_on_speed = 0.85
+model_scale = Vector3(1.15, 1.1, 1.15)
+armor_tint = Color(0.66, 0.74, 0.64, 1.0)
+scene = ExtResource("scene")

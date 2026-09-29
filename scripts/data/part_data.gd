@@ -10,3 +10,9 @@ extends Resource
 @export var hp: float = 100.0
 ## Part model. Optional (a generator or FCS has no model).
 @export var scene: PackedScene
+
+@export_group("Look")
+## Model size change (Phase 5 light and heavy variants). Each piece grows or shrinks in place.
+@export var model_scale: Vector3 = Vector3.ONE
+## Armor color multiplier (white = the model colors).
+@export var armor_tint: Color = Color.WHITE

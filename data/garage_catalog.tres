@@ -1,0 +1,68 @@
+[gd_resource type="Resource" script_class="GarageCatalog" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/garage_catalog.gd" id="script"]
+[ext_resource type="Resource" path="res://data/parts/warden/warden_head.tres" id="r0"]
+[ext_resource type="Resource" path="res://data/parts/kestrel/kestrel_head.tres" id="r1"]
+[ext_resource type="Resource" path="res://data/parts/bulwark/bulwark_head.tres" id="r2"]
+[ext_resource type="Resource" path="res://data/parts/warden/warden_core.tres" id="r3"]
+[ext_resource type="Resource" path="res://data/parts/kestrel/kestrel_core.tres" id="r4"]
+[ext_resource type="Resource" path="res://data/parts/bulwark/bulwark_core.tres" id="r5"]
+[ext_resource type="Resource" path="res://data/parts/warden/warden_arm_l.tres" id="r6"]
+[ext_resource type="Resource" path="res://data/parts/kestrel/kestrel_arm_l.tres" id="r7"]
+[ext_resource type="Resource" path="res://data/parts/bulwark/bulwark_arm_l.tres" id="r8"]
+[ext_resource type="Resource" path="res://data/parts/warden/warden_arm_r.tres" id="r9"]
+[ext_resource type="Resource" path="res://data/parts/kestrel/kestrel_arm_r.tres" id="r10"]
+[ext_resource type="Resource" path="res://data/parts/bulwark/bulwark_arm_r.tres" id="r11"]
+[ext_resource type="Resource" path="res://data/parts/warden/warden_legs.tres" id="r12"]
+[ext_resource type="Resource" path="res://data/parts/kestrel/kestrel_legs.tres" id="r13"]
+[ext_resource type="Resource" path="res://data/parts/bulwark/bulwark_legs.tres" id="r14"]
+[ext_resource type="Resource" path="res://data/parts/warden/warden_booster.tres" id="r15"]
+[ext_resource type="Resource" path="res://data/parts/kestrel/kestrel_booster.tres" id="r16"]
+[ext_resource type="Resource" path="res://data/parts/bulwark/bulwark_booster.tres" id="r17"]
+[ext_resource type="Resource" path="res://data/parts/warden/warden_generator.tres" id="r18"]
+[ext_resource type="Resource" path="res://data/parts/kestrel/kestrel_generator.tres" id="r19"]
+[ext_resource type="Resource" path="res://data/parts/bulwark/bulwark_generator.tres" id="r20"]
+[ext_resource type="Resource" path="res://data/parts/warden/warden_fcs.tres" id="r21"]
+[ext_resource type="Resource" path="res://data/parts/kestrel/kestrel_fcs.tres" id="r22"]
+[ext_resource type="Resource" path="res://data/parts/bulwark/bulwark_fcs.tres" id="r23"]
+[ext_resource type="Resource" path="res://data/weapons/heavy_rifle.tres" id="r24"]
+[ext_resource type="Resource" path="res://data/weapons/beam_sniper.tres" id="r25"]
+[ext_resource type="Resource" path="res://data/weapons/pile_bunker.tres" id="r26"]
+[ext_resource type="Resource" path="res://data/weapons/warden_shield.tres" id="r27"]
+[ext_resource type="Resource" path="res://data/weapons/missile_pod_l.tres" id="r28"]
+[ext_resource type="Resource" path="res://data/weapons/missile_pod_r.tres" id="r29"]
+[ext_resource type="Resource" path="res://data/plates/head_plate_light.tres" id="r30"]
+[ext_resource type="Resource" path="res://data/plates/head_plate_heavy.tres" id="r31"]
+[ext_resource type="Resource" path="res://data/plates/core_plate_light.tres" id="r32"]
+[ext_resource type="Resource" path="res://data/plates/core_plate_heavy.tres" id="r33"]
+[ext_resource type="Resource" path="res://data/plates/arm_l_plate_light.tres" id="r34"]
+[ext_resource type="Resource" path="res://data/plates/arm_l_plate_heavy.tres" id="r35"]
+[ext_resource type="Resource" path="res://data/plates/arm_r_plate_light.tres" id="r36"]
+[ext_resource type="Resource" path="res://data/plates/arm_r_plate_heavy.tres" id="r37"]
+[ext_resource type="Resource" path="res://data/plates/leg_plate_light.tres" id="r38"]
+[ext_resource type="Resource" path="res://data/plates/leg_plate_heavy.tres" id="r39"]
+[ext_resource type="Resource" path="res://data/mods/boost_tuning.tres" id="r40"]
+[ext_resource type="Resource" path="res://data/mods/lightweight_frame.tres" id="r41"]
+[ext_resource type="Resource" path="res://data/mods/reinforced_frame.tres" id="r42"]
+[ext_resource type="Resource" path="res://data/mods/capacitor_bank.tres" id="r43"]
+[ext_resource type="Resource" path="res://data/mods/overclocked_generator.tres" id="r44"]
+[ext_resource type="Resource" path="res://data/mods/servo_tuning.tres" id="r45"]
+[ext_resource type="Resource" path="res://data/mods/recoil_dampers.tres" id="r46"]
+[ext_resource type="Resource" path="res://data/mods/jump_jet_tuning.tres" id="r47"]
+
+[resource]
+script = ExtResource("script")
+heads = Array[HeadPart]([ExtResource("r0"), ExtResource("r1"), ExtResource("r2")])
+cores = Array[CorePart]([ExtResource("r3"), ExtResource("r4"), ExtResource("r5")])
+arms_left = Array[ArmPart]([ExtResource("r6"), ExtResource("r7"), ExtResource("r8")])
+arms_right = Array[ArmPart]([ExtResource("r9"), ExtResource("r10"), ExtResource("r11")])
+legs = Array[LegPart]([ExtResource("r12"), ExtResource("r13"), ExtResource("r14")])
+boosters = Array[BoosterPart]([ExtResource("r15"), ExtResource("r16"), ExtResource("r17")])
+generators = Array[GeneratorPart]([ExtResource("r18"), ExtResource("r19"), ExtResource("r20")])
+fcs = Array[FcsPart]([ExtResource("r21"), ExtResource("r22"), ExtResource("r23")])
+weapons_right = Array[WeaponData]([ExtResource("r24"), ExtResource("r25"), ExtResource("r26")])
+weapons_left = Array[WeaponData]([ExtResource("r27")])
+backs_left = Array[WeaponData]([ExtResource("r28")])
+backs_right = Array[WeaponData]([ExtResource("r29")])
+plates = Array[PlateData]([ExtResource("r30"), ExtResource("r31"), ExtResource("r32"), ExtResource("r33"), ExtResource("r34"), ExtResource("r35"), ExtResource("r36"), ExtResource("r37"), ExtResource("r38"), ExtResource("r39")])
+mods = Array[ModData]([ExtResource("r40"), ExtResource("r41"), ExtResource("r42"), ExtResource("r43"), ExtResource("r44"), ExtResource("r45"), ExtResource("r46"), ExtResource("r47")])

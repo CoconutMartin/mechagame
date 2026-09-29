@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="FcsPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/fcs_part.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Bulwark FCS"
+weight_t = 2.0
+hp = 150.0
+lock_range = 650.0
+max_locks = 6
+aim_assist = 0.0

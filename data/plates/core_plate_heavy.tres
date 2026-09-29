@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("script")
-display_name = "Core Plate (light)"
+display_name = "Core Plate (heavy)"
 slot = 1
-hp = 300.0
-weight_t = 2.0
-thickness = 0.18
+hp = 550.0
+weight_t = 4.0
+thickness = 0.32

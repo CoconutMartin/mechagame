@@ -8,3 +8,4 @@ display_name = "Leg Plate (light)"
 slot = 4
 hp = 250.0
 weight_t = 2.0
+thickness = 0.18

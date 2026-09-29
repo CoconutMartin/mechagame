@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="LegPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/leg_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/parts/warden/warden_legs.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Bulwark Legs"
+weight_t = 22.0
+hp = 1900.0
+leg_type = 0
+load_capacity_t = 105.0
+base_speed = 10.2
+jump_height = 7.0
+turn_speed_deg = 95.0
+turn_speed_standing_deg = 47.5
+model_scale = Vector3(1.15, 1.0, 1.15)
+armor_tint = Color(0.66, 0.74, 0.64, 1.0)
+scene = ExtResource("scene")

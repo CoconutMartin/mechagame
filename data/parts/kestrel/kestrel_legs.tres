@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="LegPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/leg_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/parts/warden/warden_legs.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Kestrel Legs"
+weight_t = 11.0
+hp = 1000.0
+leg_type = 0
+load_capacity_t = 65.0
+base_speed = 13.5
+jump_height = 11.0
+turn_speed_deg = 135.0
+turn_speed_standing_deg = 67.5
+model_scale = Vector3(0.85, 1.0, 0.85)
+armor_tint = Color(1.18, 1.06, 0.82, 1.0)
+scene = ExtResource("scene")

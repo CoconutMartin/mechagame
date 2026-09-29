@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CorePart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/core_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/parts/warden/warden_core.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Bulwark Core"
+weight_t = 24.0
+hp = 2100.0
+energy_capacity = 120.0
+torso_turn_speed_deg = 70.0
+model_scale = Vector3(1.12, 1.0, 1.12)
+armor_tint = Color(0.66, 0.74, 0.64, 1.0)
+scene = ExtResource("scene")
