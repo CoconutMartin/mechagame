@@ -1,13 +1,19 @@
-class_name DummyMech
+class_name MechSpawner
 extends Node3D
-## A target dummy that is a real mech (the current player mech model and parts), standing still
-## at this node's place and facing this node's front (-Z). It has the full part damage (hitboxes,
-## parts that break, falls, death), missiles can lock it, and a label shows the HP of its parts.
-## When it is destroyed it is built again after respawn_time.
+## Places a mech (the current player mech model and parts) at this node's place, facing this
+## node's front (-Z). It has the full part damage (hitboxes, parts that break, falls, death),
+## missiles can lock it, and a label above it shows the HP of its parts. When it is destroyed it is
+## built again after respawn_time, and it is built again when the player respawns (reset).
+## Pilot NONE: a target dummy that stands still. Pilot AI: an enemy flown by AIPilot.
+
+enum Pilot { NONE, AI }
 
 @export var mech_scene: PackedScene
 @export var loadout: Loadout
-## Seconds from the death to the new dummy.
+@export var pilot: Pilot = Pilot.NONE
+## Optional. When the player respawns, this mech is built again too.
+@export var player_respawner: PlayerRespawner
+## Seconds from the death to the new mech.
 @export var respawn_time: float = 6.0
 ## Height of the label bottom above the ground, in meters.
 @export var label_height: float = 12.5
@@ -27,17 +33,27 @@ func _ready() -> void:
 	_label.outline_size = 10
 	_label.no_depth_test = true
 	add_child(_label)
+	if player_respawner != null:
+		player_respawner.respawned.connect(_reset)
 	_spawn.call_deferred()
+
+
+## Builds the mech again at the start place with full HP.
+func _reset() -> void:
+	_respawn_left = 0.0
+	if is_instance_valid(mech):
+		mech.queue_free()
+	_spawn()
 
 
 func _spawn() -> void:
 	mech = mech_scene.instantiate() as Mech
 	if loadout != null:
 		(mech.get_node("MechAssembler") as MechAssembler).loadout = loadout
-	# No pilot: no keyboard or mouse, no camera of its own.
+	# No keyboard, mouse or camera of its own.
 	var camera := mech.get_node("CameraRig/Pitch/SpringArm/Camera") as Camera3D
 	camera.current = false
-	mech.name = "DummyMechBody"
+	mech.name = "EnemyMechBody" if pilot == Pilot.AI else "DummyMechBody"
 	# Placed before it enters the scene, so it starts with its torso and legs facing forward.
 	mech.transform = transform
 	get_parent().add_child(mech)
@@ -47,6 +63,13 @@ func _spawn() -> void:
 	mech.get_node("CameraRig").process_mode = Node.PROCESS_MODE_DISABLED
 	mech.add_to_group(&"lockable")
 	mech.health.destroyed.connect(_on_destroyed)
+	if pilot == Pilot.AI:
+		var ai := AIPilot.new()
+		ai.name = "AIPilot"
+		ai.mech = mech
+		ai.input = input
+		ai.mech_aim = mech.get_node("MechAim") as MechAim
+		mech.add_child(ai)
 
 
 func _on_destroyed(_cause: String) -> void:
@@ -75,11 +98,11 @@ func _update_label() -> void:
 		_label.text = "DESTROYED"
 		_label.modulate = Color(1.0, 0.3, 0.25)
 		return
+	_label.modulate = Color(1.0, 0.55, 0.45) if pilot == Pilot.AI else Color.WHITE
 	_label.text = "Head %s   Booster %s\nTorso L %s  C %s  R %s\nArm L %s  R %s   Shield %s\nGroin %s   Leg L %s  R %s" % [
 		_hp(health, "Head"), _hp(health, "Booster"), _hp(health, "Torso L"), _hp(health, "Torso C"),
 		_hp(health, "Torso R"), _hp(health, "Arm L"), _hp(health, "Arm R"), _hp(health, "Shield"),
 		_hp(health, "Groin"), _hp(health, "Leg L"), _hp(health, "Leg R")]
-	_label.modulate = Color.WHITE
 
 
 ## HP of a part as text ("--" when destroyed, "" when the mech has no such part).

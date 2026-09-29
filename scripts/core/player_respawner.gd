@@ -1,7 +1,9 @@
 class_name PlayerRespawner
 extends Node
 ## When the player mech is destroyed (dead), waits respawn_time, then builds it again with full HP at the
-## start point (same loadout).
+## start point (same loadout). The enemies reset too (MechSpawner listens to respawned).
+
+signal respawned
 
 @export var switcher: LoadoutSwitcher
 ## Seconds from the explosion to the new mech.
@@ -32,3 +34,4 @@ func _process(delta: float) -> void:
 	_left -= delta
 	if _left <= 0.0:
 		switcher.rebuild(switcher.current_loadout, _start)
+		respawned.emit()

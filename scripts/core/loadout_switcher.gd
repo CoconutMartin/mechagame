@@ -17,6 +17,13 @@ var current_loadout: Loadout
 
 func _ready() -> void:
 	current_loadout = (mech.get_node("MechAssembler") as MechAssembler).loadout
+	_mark_player(mech)
+
+
+## The player mech: enemies look for it (group "player"), and enemy missiles can lock it.
+func _mark_player(player: Mech) -> void:
+	player.add_to_group(&"player")
+	player.add_to_group(&"lockable")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -42,6 +49,7 @@ func rebuild(loadout: Loadout, place: Transform3D) -> void:
 	parent.move_child(new_mech, index)
 	new_mech.global_transform = place
 	mech = new_mech
+	_mark_player(new_mech)
 	current_loadout = loadout
 	if hud != null and hud.has_method(&"set_mech"):
 		hud.set_mech(new_mech)

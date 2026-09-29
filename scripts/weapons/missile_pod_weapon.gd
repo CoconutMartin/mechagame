@@ -133,7 +133,7 @@ func _find_candidate() -> Node3D:
 
 
 func _can_lock(target: Node3D) -> bool:
-	if not is_instance_valid(target) or not _in_range(target):
+	if not is_instance_valid(target) or target == controller.mech or not _in_range(target):
 		return false
 	if _angle_from_aim(target) > data.lock_box_deg:
 		return false

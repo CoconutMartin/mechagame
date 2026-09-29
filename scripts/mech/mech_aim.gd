@@ -43,6 +43,10 @@ var aim_direction: Vector3 = Vector3.FORWARD
 ## Free aim offset of the mech aim from the crosshair, in degrees: x = yaw (left), y = pitch (up).
 var shot_offset: Vector2 = Vector2.ZERO
 
+## AI pilots aim here instead of through the camera (AIPilot sets it every frame).
+var use_ai_target: bool = false
+var ai_target: Vector3 = Vector3.ZERO
+
 var _noise := FastNoiseLite.new()
 var _time: float = 0.0
 
@@ -56,6 +60,12 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_time += delta * jitter_speed
 	var origin := aim_origin.global_position
+	if use_ai_target:
+		camera_target = ai_target
+		shot_offset = Vector2.ZERO
+		aim_direction = (ai_target - origin).normalized()
+		aim_point = _cast(origin, aim_direction)
+		return
 	if camera_rig != null and camera_rig.front_view_amount > 0.0:
 		var flat_yaw := atan2(-aim_direction.x, -aim_direction.z)
 		aim_direction = aim_direction.rotated(Vector3.UP, wrapf(mech.get_aim_yaw() - flat_yaw, -PI, PI))

@@ -9,7 +9,7 @@
 [ext_resource type="Script" path="res://scripts/core/loadout_switcher.gd" id="switcher"]
 [ext_resource type="Script" path="res://scripts/core/player_respawner.gd" id="respawner"]
 [ext_resource type="Script" path="res://scripts/core/debug_damage.gd" id="debug_damage"]
-[ext_resource type="Script" path="res://scripts/world/dummy_mech.gd" id="dummy_mech"]
+[ext_resource type="Script" path="res://scripts/world/mech_spawner.gd" id="mech_spawner"]
 [ext_resource type="Resource" path="res://data/loadouts/warden.tres" id="loadout_gunner"]
 [ext_resource type="Resource" path="res://data/loadouts/warden_sniper.tres" id="loadout_sniper"]
 [ext_resource type="Resource" path="res://data/loadouts/warden_melee.tres" id="loadout_melee"]
@@ -113,11 +113,20 @@ shape = SubResource("wall_ew")
 
 [node name="Targets" type="Node3D" parent="."]
 
-[node name="DummyMech" type="Node3D" parent="Targets"]
+[node name="DummyMech" type="Node3D" parent="Targets" node_paths=PackedStringArray("player_respawner")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, -40)
-script = ExtResource("dummy_mech")
+script = ExtResource("mech_spawner")
 mech_scene = ExtResource("mech")
 loadout = ExtResource("loadout_gunner")
+player_respawner = NodePath("../../PlayerRespawner")
+
+[node name="Enemy1" type="Node3D" parent="Targets" node_paths=PackedStringArray("player_respawner")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 12, 0, -90)
+script = ExtResource("mech_spawner")
+mech_scene = ExtResource("mech")
+loadout = ExtResource("loadout_gunner")
+pilot = 1
+player_respawner = NodePath("../../PlayerRespawner")
 
 [node name="PlayerMech" parent="." instance=ExtResource("mech")]
 

@@ -11,7 +11,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | 1 | Mech controller and third-person camera on a test map | Done |
 | 2 | Part resources, sockets, assembler, stat calculator, weight-to-speed formula, debug HUD | Done |
 | 3 | Weapons: guns, lock-on missiles, sniper zoom, melee blade, energy use | Done |
-| 4 | Per-part HP, hitboxes, destruction, target dummies, enemy AI, greybox urban map with destructible props | In progress: 4a done (part HP, hitboxes, part breaks, respawn). Next 4b enemy AI, then 4c destructible city |
+| 4 | Per-part HP, hitboxes, destruction, target dummies, enemy AI, greybox urban map with destructible props | In progress: 4a done (part HP, hitboxes, part breaks, respawn), 4b done (enemy AI gunner). Next 4c destructible city |
 | 5 | Garage screen: swap parts, add plates, live stat preview. Graphics settings menu (low, medium, high) | Not started |
 | 6 | Pilot creation and skill tree | Not started |
 | 7 | Save/load builds (JSON) and 4 preset archetype loadouts | Not started |
@@ -43,7 +43,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 - 1 unit = 1 meter. Mech height is about 10 m.
 - Speed, jump, boost, and camera are tuned for this size.
 - Maps: small to medium urban arenas.
-- Test map (cleared in 4a.10, user request): 206 x 206 m ground with walls at ±102.6 m. The player starts at the center facing north (-Z). Content: 1 tall building (18 x 40 x 18 m, 38 m left and 75 m ahead), 1 medium building (18 x 16 x 15 m, 34 m right and 60 m ahead), 1 semi truck (18 m left, 28 m ahead), 1 car (16 m right, 22 m ahead), and 1 dummy mech 40 m ahead facing the player. (Before 4a.10: 13 buildings, platforms, lampposts, 7 cars, 4 trucks, 7 people and 6 box dummies.)
+- Test map (cleared in 4a.10, user request): 206 x 206 m ground with walls at ±102.6 m. The player starts at the center facing north (-Z). Content: 1 tall building (18 x 40 x 18 m, 38 m left and 75 m ahead), 1 medium building (18 x 16 x 15 m, 34 m right and 60 m ahead), 1 semi truck (18 m left, 28 m ahead), 1 car (16 m right, 22 m ahead), 1 dummy mech 40 m ahead facing the player, and 1 enemy mech (4b) 90 m ahead and 12 m right. Keep spawn points inside ±100 m, or the mech falls off the ground. (Before 4a.10: 13 buildings, platforms, lampposts, 7 cars, 4 trucks, 7 people and 6 box dummies.)
 - Greybox all maps with simple shapes. Include human-scale props: cars (4.5 m), doors (2 m), lampposts (6 m), people (1.8 m).
 - Camera: over-the-shoulder, low height, small shake on each heavy footstep.
 - Movement has weight: gradual acceleration and deceleration.
@@ -257,7 +257,8 @@ Phase 4a (user choices: parts fall off, respawn), revised in 4a.2 (user rules):
 - Player death: `PlayerRespawner` rebuilds the mech 3 s after death, at the start point with full HP and the same loadout (`LoadoutSwitcher.rebuild()`).
 - Target dummies: 3000 HP with a label above them, explode at 0 HP and come back after 6 s.
 - Dummy mech (4a.10, `DummyMech` in the test map): a real mech built from the current player mech scene and the gunner loadout, standing still with no pilot (no input, no camera), facing the player. It has the full part damage (hitboxes, breaking parts, falls, death), missiles can lock it (`Mech.get_lock_point`, 7.5 m up), and a label above its head shows the HP of each part. It is built again 6 s after it dies.
-- Test keys (`DebugDamage`, until enemies shoot back): F1 head, F2 center torso, F3 left torso, F4 right torso, F5 left arm, F6 right arm, F7 groin, F8 left leg, F9 right leg, F10 shield, F11 back units, F12 booster. Each press takes 30% of max HP; Shift + key destroys the part at once.
+- Enemy AI (4b, user choice "simple gunner"): `MechSpawner` (was `DummyMech`) builds a mech with `pilot` NONE (dummy) or AI. `AIPilot` disables `MechInput` and fills the same input values, so the enemy uses the same movement, boost, dodge, shield and weapon rules as the player. It targets the nearest living mech in group "player" (the player mech, set by `LoadoutSwitcher`). It needs a clear line of sight (ray on layer 1) for 0.8 s before it acts. It walks in when farther than 80 m (boosts past 130 m), backs off when nearer than 40 m, and strafes left or right between (side changes every 2 to 4.5 s). It fires when the target is within 180 m and its torso is within 6° of it; the aim point wanders up to 2.2 m around the target lock point (`MechAim.use_ai_target`). It lifts the shield now and then (0.12 per second, more when the center torso is hurt, 1.6 s) and does a dodge hop now and then (0.06 per second). Enemy missile pods skip their own mech. The enemy label is red. When the player respawns (`PlayerRespawner.respawned`), all spawners build their mech again with full HP.
+- Test keys (`DebugDamage`): F1 head, F2 center torso, F3 left torso, F4 right torso, F5 left arm, F6 right arm, F7 groin, F8 left leg, F9 right leg, F10 shield, F11 back units, F12 booster. Each press takes 30% of max HP; Shift + key destroys the part at once.
 - Debug HUD: current / max HP of each part, DESTROYED, MECH DESTROYED.
 
 ## Archetypes (preset loadouts; player can mix any parts)
@@ -331,9 +332,10 @@ scripts/animation/  shield_pose.gd, shield_mount.gd, dodge_slide_pose.gd, mech_l
 scripts/weapons/    weapon_controller.gd, mech_weapon.gd, gun_weapon.gd, beam_rifle_weapon.gd, blade_weapon.gd, pile_bunker_weapon.gd, missile_pod_weapon.gd, missile.gd, bullet.gd, weapon_recoil.gd, weapon_fire.gd (Granpa Gundam only). Scenes: scenes/weapons/bullet.tscn, scenes/effects/impact_spark.tscn.
 scenes/weapons/     heavy_rifle.tscn (Warden), beam_rifle.tscn (Granpa Gundam), long_rifle.tscn (old box rifle). Markers: GripRight, GripLeft, GripLeftRest, GripLeftAim, Muzzle.
 scripts/camera/     mech_camera_rig.gd (follow and mouse look), free_aim.gd (free aim box), aim_spring.gd (aim overshoot), camera_shake.gd, camera_ads.gd (aim down sight zoom).
-scripts/world/      greybox_block.gd (box with collision, set size in Inspector).
+scripts/world/      greybox_block.gd (box with collision, set size in Inspector), mech_spawner.gd (dummy and enemy mechs).
 scripts/ui/         debug_hud.gd, aim_reticle.gd.
 scripts/effects/    skid_dust.gd (dust while skidding), brake_thrusters.gd, booster_flames.gd, muzzle_flash.gd, impact_spark.gd.
+scripts/ai/         ai_pilot.gd (Phase 4b).
 scripts/core/       mouse_capture.gd, group_nodes.gd, loadout_switcher.gd, player_respawner.gd, debug_damage.gd.
 scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.gd, blast.gd (Phase 4). Animation: power_down_pose.gd, mech_fall.gd.
 ```
@@ -341,7 +343,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 ### Phase 1 structure
 
 - `Mech` (CharacterBody3D) does physics movement only. It reads intent from `MechInput`.
-- `MechInput` reads keyboard and mouse. An AI input node can replace it in Phase 4.
+- `MechInput` reads keyboard and mouse. `AIPilot` (Phase 4b) disables it and fills the same values.
 - `MechEnergy` stores energy. Boost uses it now. Weapons use it in Phase 3.
 - Mech visual tree: `Visual > Upper` (torso, head, arms, rifle) `> Lower` (pelvis, legs). Upper faces the aim. Lower twists toward the move direction.
 - `MechLegSwing` is placeholder walk animation: hip swing, knee bend, body bob, and sway. Legs trail back while boosting and bend in the air. It reads the walk cycle from `MechFootsteps`, so each foot strike matches a footstep shake.
@@ -416,6 +418,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Phase 4a.8: one leg: every landing from the air ends in a fall toward the broken leg. The pile bunker charge and punch go for the blue ring (locked at release); the stake hits the ring point.
 - Phase 4a.9: boost lock after the get-up removed. Shots aim at what the camera sees under the blue ring (`MechAim.get_ring_screen_point`, a camera ray through the ring), so bullets land on the ring on dummies and target edges too (before: a ray from the torso, which missed thin targets such as the dummy head when the ring was off the crosshair). If the ring is over empty space just past a target, the line of fire from the muzzle (lower than the camera) can still hit that target.
 - Phase 4a.10: test map cleared: 1 tall and 1 medium building, 1 truck, 1 car, and a dummy mech (the current mech with no pilot, full part damage, HP label, respawns after 6 s).
+- Phase 4b: enemy AI (simple gunner): keeps 40 to 80 m, strafes, fires the rifle with aim error, lifts the shield and dodges now and then. Same mech and rules as the player. Enemies reset when the player respawns.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).
