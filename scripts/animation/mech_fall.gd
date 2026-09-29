@@ -65,6 +65,8 @@ enum State { IDLE, STEPS, FALL, IMPACT, SETTLE, ROLL, REPOSITION, LIE, GET_UP }
 @export var get_up_time: float = 2.4
 ## A fall that waits for the slide to end (the boost fall) gets up when the speed is below this (m/s).
 @export var stopped_speed: float = 0.3
+## One leg left: a landing this fast or faster (m/s down) makes the mech fall toward the broken leg.
+@export var landing_fall_speed: float = 2.0
 ## Moving slower than this (m/s) counts as standing still (neutral fall).
 @export var neutral_speed: float = 1.5
 
@@ -362,12 +364,23 @@ func _right_weapon() -> Node3D:
 	return controller.right_weapon if controller != null else null
 
 
-func _on_mech_landed(_fall_speed: float) -> void:
-	if not _pending_landing:
+## Landing: a mech whose legs broke in the air falls over; a living mech with one leg left falls
+## toward the broken leg after any real landing (a dodge hop lands in its own fall).
+func _on_mech_landed(fall_speed: float) -> void:
+	if state != State.IDLE or (dodge != null and dodge.is_dodging):
+		_pending_landing = false
+		return
+	if mech.is_wrecked:
+		if _pending_landing:
+			_pending_landing = false
+			fall(get_motion_direction(_pending_back_if_still), Vector3.ZERO, false)
+		return
+	if not mech.one_leg or (not _pending_landing and fall_speed < landing_fall_speed):
+		_pending_landing = false
 		return
 	_pending_landing = false
-	var dead := mech.is_wrecked
-	fall(get_motion_direction(_pending_back_if_still), Vector3.ZERO, not dead)
+	var broken_side := mech.global_basis.x * signf(mech.broken_leg_side)
+	fall(broken_side)
 
 
 ## One leg left: a dodge hop ends in a fall (in the hop direction).

@@ -76,10 +76,13 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export var power_shake_max: float = 0.12
 
 @export_group("Charge")
-## Stop this far in front of the target (target center), in meters.
-@export var stop_distance: float = 8.0
-## Targets inside this cone around the aim can pull the charge, in degrees.
-@export var target_cone_deg: float = 20.0
+## The charge goes toward the mech aim point (the blue ring) and stops this far from it (flat
+## distance from the mech center), so the punch reaches it. In meters.
+@export var stop_distance: float = 7.0
+## The punch goes at the aim point: hand distance from the shoulder (the arm is 5.7 m long), and
+## the widest angle from straight ahead, in degrees.
+@export var punch_reach: float = 4.9
+@export var punch_cone_deg: float = 60.0
 
 enum State { IDLE, POWER, CHARGE, WINDUP, PUNCH, HOLD, RECOVER }
 
@@ -101,6 +104,8 @@ var _pose_weight: float = 0.0
 var _action := Transform3D.IDENTITY
 var _twist: float = 0.0
 var _stake_rest := Vector3.ZERO
+## The point the charge and the punch go for (world): the blue ring when the attack starts.
+var _aim_point := Vector3.ZERO
 
 @onready var _mount: Node3D = $Mount
 @onready var _stake: Node3D = $Mount/Stake
@@ -174,6 +179,7 @@ func _update(delta: float) -> void:
 		State.PUNCH:
 			# Fast punch: speeds up to the end.
 			var t := pow(clampf(_time / punch_time, 0.0, 1.0), 1.5)
+			_punch = _aimed_punch()
 			_action = _windup.interpolate_with(_punch, t)
 			_twist = lerpf(windup_twist_deg, punch_twist_deg, t)
 			if not has_fired:
@@ -186,6 +192,7 @@ func _update(delta: float) -> void:
 					cancel()
 					controller.mech.fall_control.fall()
 		State.HOLD:
+			_punch = _aimed_punch()
 			_action = _punch
 			_twist = punch_twist_deg
 			if not has_fired:
@@ -236,15 +243,14 @@ func _update_stake(delta: float) -> void:
 
 func _start() -> void:
 	var mech := controller.mech
-	var aim := controller.mech_aim.aim_direction
-	var direction := Vector3(aim.x, 0.0, aim.z).normalized()
-	var distance := data.lunge_distance
-	var target := _find_target()
-	if target != null:
-		var to_target := target.global_position - mech.global_position
-		to_target.y = 0.0
-		direction = to_target.normalized()
-		distance = clampf(to_target.length() - stop_distance, 0.0, data.lunge_distance)
+	_aim_point = controller.mech_aim.aim_point
+	var to_point := _aim_point - mech.global_position
+	to_point.y = 0.0
+	var direction := to_point.normalized()
+	if direction.is_zero_approx():
+		var aim := controller.mech_aim.aim_direction
+		direction = Vector3(aim.x, 0.0, aim.z).normalized()
+	var distance := clampf(to_point.length() - stop_distance, 0.0, data.lunge_distance)
 	mech.start_lunge(direction, data.lunge_speed, distance)
 	# One punch per fire_rate wait, hit or miss.
 	_cooldown = 1.0 / maxf(data.fire_rate, 0.01)
@@ -252,12 +258,18 @@ func _start() -> void:
 	_next(State.CHARGE)
 
 
-## Fires the stake when the nose touches something: a ray along the stake from behind the grip
-## (so a target already inside the arm's reach still counts) to contact_reach past the nose.
+## Fires the stake when the nose touches something: a ray along the punch line (fist toward the
+## aim point) from behind the fist (so a target already inside the arm's reach still counts) to
+## contact_reach past the nose.
 func _check_contact() -> void:
-	var forward := -_nose.global_basis.z.normalized()
+	# Along the punch line: from the fist toward the aim point (the blue ring), as far as the nose
+	# plus contact_reach.
+	var forward := (_aim_point - global_position).normalized()
+	if forward.is_zero_approx():
+		forward = -_nose.global_basis.z.normalized()
+	var reach := global_position.distance_to(_nose.global_position) + contact_reach
 	var start := global_position - forward * contact_back
-	var query := PhysicsRayQueryParameters3D.create(start, _nose.global_position + forward * contact_reach,
+	var query := PhysicsRayQueryParameters3D.create(start, global_position + forward * reach,
 			collision_mask, controller.mech.get_hit_exclude())
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if hit.is_empty():
@@ -293,23 +305,20 @@ func _fire_stake(point: Vector3, normal: Vector3, body: Object, forward: Vector3
 	fired.emit()
 
 
-## The nearest lockable target in the aim cone within the charge reach.
-func _find_target() -> Node3D:
-	var best: Node3D = null
-	var best_distance := data.lunge_distance + stop_distance + 2.0
-	var origin := controller.mech.global_position
-	var aim := controller.mech_aim.aim_direction
-	for node in get_tree().get_nodes_in_group(&"lockable"):
-		var target := node as Node3D
-		var to_target := target.global_position - origin
-		var distance := to_target.length()
-		if distance > best_distance:
-			continue
-		if rad_to_deg(aim.angle_to(to_target.normalized())) > target_cone_deg:
-			continue
-		best = target
-		best_distance = distance
-	return best
+## Punch pose (torso space) with the fist toward the aim point: along the line from the right
+## shoulder, inside a cone around straight ahead. The torso turns during the attack, so this is
+## worked out again each frame.
+func _aimed_punch() -> Transform3D:
+	var torso := controller.torso
+	var shoulder := controller.arm_ik_right.root_joint.position
+	var local := torso.global_transform.affine_inverse() * _aim_point
+	var direction := (local - shoulder).normalized()
+	var ahead := punch_direction.normalized()
+	var angle := ahead.angle_to(direction)
+	var limit := deg_to_rad(punch_cone_deg)
+	if angle > limit:
+		direction = ahead.slerp(direction, limit / angle).normalized()
+	return _pose_from(shoulder + direction * punch_reach, direction)
 
 
 func get_pose(rest: Transform3D, aim: Transform3D, t: float) -> Transform3D:
