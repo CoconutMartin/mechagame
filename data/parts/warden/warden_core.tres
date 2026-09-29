@@ -9,5 +9,5 @@ display_name = "Warden Core"
 weight_t = 18.0
 hp = 1600.0
 energy_capacity = 100.0
-torso_turn_speed_deg = 56.9
+torso_turn_speed_deg = 85.35
 scene = ExtResource("scene")

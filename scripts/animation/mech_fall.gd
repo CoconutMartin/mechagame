@@ -74,6 +74,11 @@ var _step_side := Vector3.ZERO
 var _rolls: int = 0
 ## +1 or -1: the roll turns the way the body slides sideways (like a log rolling on the ground).
 var _roll_sign: float = 1.0
+## Roll to do after the impact (full rolls plus the turn to face down), in radians.
+var _roll_total: float = 0.0
+## True when the roll ends face down: the mech is then turned to face its head direction, so the
+## get-up always starts from a front fall.
+var _face_down_roll: bool = false
 var _get_up: bool = false
 var _sway: float = 0.0
 var _base := Transform3D.IDENTITY
@@ -138,6 +143,11 @@ func get_motion_direction(back_if_still: bool = false) -> Vector3:
 	return -front if back_if_still else front
 
 
+## Fall direction in the world (flat).
+func get_world_direction() -> Vector3:
+	return _direction
+
+
 func is_down() -> bool:
 	return state != State.IDLE
 
@@ -181,14 +191,13 @@ func _physics_process(delta: float) -> void:
 			angle = PI * 0.5 - deg_to_rad(bounce_deg) * sin(t * PI) * (1.0 - t)
 			if t >= 1.0:
 				angle = PI * 0.5
-				_set_state(State.ROLL if _rolls > 0 else State.LIE)
+				_plan_roll()
+				_set_state(State.ROLL if absf(_roll_total) > 0.02 else State.LIE)
 		State.ROLL:
-			var total := TAU * _rolls
-			var turned := minf(state_time * deg_to_rad(roll_speed_deg), total)
-			roll = turned * _roll_sign
-			if turned >= total:
-				roll = 0.0
-				_set_state(State.LIE)
+			var turned := minf(state_time * deg_to_rad(roll_speed_deg), absf(_roll_total))
+			roll = turned * signf(_roll_total)
+			if turned >= absf(_roll_total):
+				_end_roll()
 		State.LIE:
 			if _get_up and not mech.is_wrecked and state_time >= lie_time:
 				_set_state(State.GET_UP)
@@ -201,6 +210,37 @@ func _physics_process(delta: float) -> void:
 					_finish()
 					return
 	visual.transform = _get_transform() * _base
+
+
+## After the impact: the full rolls (after a full boost), then (for a mech that gets up) the turn
+## along the body that brings its front to the ground.
+func _plan_roll() -> void:
+	_roll_total = _roll_sign * TAU * _rolls
+	_face_down_roll = _get_up and not mech.is_wrecked
+	if not _face_down_roll:
+		return
+	var axis := _direction
+	var front := -visual.global_basis.z.normalized()
+	var across := front - axis * front.dot(axis)
+	if across.length_squared() < 0.0001:
+		return
+	across = across.normalized()
+	_roll_total += atan2(across.cross(Vector3.DOWN).dot(axis), across.dot(Vector3.DOWN))
+
+
+## The roll is done. Face down: the mech turns to face its head direction and the pose becomes a
+## plain front fall (it looks the same), so the get-up works the same way after any fall.
+func _end_roll() -> void:
+	roll = 0.0
+	if _face_down_roll:
+		var head := visual.global_basis.y
+		head.y = 0.0
+		if head.length_squared() > 0.0001:
+			head = head.normalized()
+			mech.set_heading(atan2(-head.x, -head.z))
+			_direction = head
+			_base = Transform3D.IDENTITY
+	_set_state(State.LIE)
 
 
 ## A body on the ground slows down fast (the Mech adds its own slide slowdown).

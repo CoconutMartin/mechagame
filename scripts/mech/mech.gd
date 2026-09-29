@@ -259,6 +259,13 @@ func start_fall() -> void:
 	is_lunging = false
 
 
+## MechFall: turns the whole mech (legs and torso) to face this yaw, with no turn animation.
+func set_heading(yaw: float) -> void:
+	rotation.y = yaw
+	_aim_yaw = yaw
+	_previous_aim_yaw = yaw
+
+
 ## MechFall: the mech is up again.
 func end_fall() -> void:
 	is_fallen = false

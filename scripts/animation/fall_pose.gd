@@ -1,11 +1,15 @@
 class_name FallPose
 extends Node
-## Arm and leg pose while a living mech falls over and gets up (MechFall runs the body tilt).
-##   Fall: the knees buckle, the arms reach out toward the ground to break the fall.
-##   Impact: the elbows give to take the hit.
-##   Roll: arms back to a standby pose close to the body, legs straight and together.
-##   Get up: arms push the body up, one knee comes under the body, then the legs straighten.
-## Joints move toward their targets on a smooth spring, so the pose changes look soft.
+## Arm and leg pose while a living mech falls over and gets up (MechFall tilts the body).
+## The hands go to points in the world (two-bone IK), so they meet the ground like real hands:
+##   Fall: the knees buckle. As the body passes about 15°, the arms reach for the ground ahead of the
+##         fall, a little wider than the shoulders. Side fall: the arm on that side reaches out and
+##         the other arm comes in to the chest. Back fall: both hands reach back for the ground.
+##   Impact: the hands stay where they touched the ground and the elbows bend as the chest comes down.
+##   Roll: the hands fold in front of the chest.
+##   Lying face down: the hands are flat on the ground beside the chest, elbows back (push-up).
+##   Get up: the hands stay on the ground and the arms push the body up; one knee comes under the
+##         body; then the hands leave the ground and go back to the sides as the mech stands.
 ## A dead mech uses PowerDownPose instead.
 
 @export var mech: Mech
@@ -22,14 +26,28 @@ extends Node
 ## Holds the torso and the legs. It drops when the legs bend.
 @export var upper_body: Node3D
 
-## How fast the joints follow their targets (1 / seconds).
-@export var follow_speed: float = 7.0
-## Arms reaching out: how far down from straight ahead, in degrees; elbow bend.
-@export var reach_down_deg: float = 20.0
-@export var reach_elbow_deg: float = 15.0
-## Elbow bend when the arms take the hit, and in the standby pose, in degrees.
-@export var impact_elbow_deg: float = 70.0
-@export var standby_elbow_deg: float = 35.0
+@export_group("Arms")
+## Upper and lower arm length (shoulder to elbow, elbow to hand), in meters.
+@export var upper_arm: float = 2.7
+@export var lower_arm: float = 3.0
+## How fast the hands move to their targets (1 / seconds).
+@export var hand_speed: float = 9.0
+## Fall: how far ahead of the shoulders the hands reach for the ground, and how wide, in meters.
+@export var reach_ahead: float = 3.2
+@export var reach_wide: float = 0.9
+## Hand height above the ground (the palm), in meters.
+@export var palm_height: float = 0.35
+## Lying: hands beside the chest (out from the shoulder, and toward the head), in meters.
+@export var push_wide: float = 1.0
+@export var push_forward: float = 0.4
+## Standby (arms at the sides) and folded (in front of the chest) hand places in torso space,
+## for the right hand (the left hand is mirrored).
+@export var standby_hand := Vector3(2.9, -1.4, -1.3)
+@export var folded_hand := Vector3(0.7, 1.4, -2.3)
+
+@export_group("Legs")
+## How fast the leg joints follow their targets (1 / seconds).
+@export var leg_speed: float = 7.0
 ## Knee buckle at the start of the fall, in degrees (hip, knee).
 @export var buckle_hip_deg: float = 15.0
 @export var buckle_knee_deg: float = 30.0
@@ -42,6 +60,10 @@ extends Node
 @export var shin_length: float = 2.6
 
 var _active: bool = false
+## Hand positions now (world) and planted hand positions (world), by side (-1 left, +1 right).
+var _hands := {}
+var _planted := {}
+var _last_state: int = -1
 
 
 func _ready() -> void:
@@ -52,82 +74,157 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	var down := mech_fall.is_down() and not mech.is_wrecked
 	if not down:
-		if _active:
-			_active = false
+		_active = false
+		_hands.clear()
+		_planted.clear()
+		_last_state = -1
 		return
-	_active = true
-	var weight := 1.0 - exp(-follow_speed * delta)
-	var targets := _targets()
-	for joint: Node3D in targets:
-		if joint != null and is_instance_valid(joint):
-			var target: Quaternion = (targets[joint] as Basis).get_rotation_quaternion()
-			var now := joint.basis.orthonormalized().get_rotation_quaternion()
-			joint.basis = Basis(now.slerp(target, weight))
-	var drop := _leg_drop(targets)
-	upper_body.position.y = lerpf(upper_body.position.y, -drop, weight)
+	if not _active:
+		_active = true
+		for side in [-1.0, 1.0]:
+			_hands[side] = _hand_now(side)
+	var state := mech_fall.state
+	if state != _last_state:
+		_on_state_changed(state)
+		_last_state = state
+	var weight := 1.0 - exp(-hand_speed * delta)
+	for side: float in [-1.0, 1.0]:
+		var target := _hand_target(side)
+		_hands[side] = (_hands[side] as Vector3).lerp(target, weight)
+		_solve_arm(side, _hands[side])
+	_update_legs(delta)
 
 
-## Target rotations for the joints now, by MechFall state.
-func _targets() -> Dictionary:
+func _on_state_changed(state: int) -> void:
+	match state:
+		MechFall.State.IMPACT:
+			# The hands stay where they touch the ground.
+			for side: float in [-1.0, 1.0]:
+				_planted[side] = _on_ground(_hands[side])
+		MechFall.State.LIE, MechFall.State.ROLL:
+			_planted.clear()
+		MechFall.State.GET_UP:
+			for side: float in [-1.0, 1.0]:
+				_planted[side] = _push_point(side)
+
+
+## Where one hand goes now (world).
+func _hand_target(side: float) -> Vector3:
 	var state := mech_fall.state
 	var t := mech_fall.state_time
-	var reach := _reach_basis()
-	var standby := Basis(Vector3.RIGHT, deg_to_rad(10.0))
-	var elbow_standby := Basis(Vector3.RIGHT, deg_to_rad(standby_elbow_deg))
-	var straight := Basis.IDENTITY
-	var result := {torso: Basis.IDENTITY}
 	match state:
-		MechFall.State.STEPS, MechFall.State.FALL:
-			# Knees buckle first, then the arms reach out as the body goes over.
-			var reach_amount := clampf(t / (mech_fall.fall_time * 0.6), 0.0, 1.0) if state == MechFall.State.FALL else 0.0
-			var arm := standby.slerp(reach, reach_amount)
-			var elbow := Basis(Vector3.RIGHT, deg_to_rad(reach_elbow_deg))
-			_set_arms(result, arm, elbow)
-			_set_legs(result, buckle_hip_deg, buckle_knee_deg, buckle_hip_deg, buckle_knee_deg)
-		MechFall.State.IMPACT, MechFall.State.LIE:
-			var elbow := Basis(Vector3.RIGHT, deg_to_rad(impact_elbow_deg if state == MechFall.State.IMPACT else reach_elbow_deg + 20.0))
-			_set_arms(result, reach, elbow)
-			_set_legs(result, 0.0, 5.0, 0.0, 5.0)
+		MechFall.State.STEPS:
+			return _torso_point(standby_hand, side)
+		MechFall.State.FALL:
+			var reach := smoothstep(0.25, 0.65, t / mech_fall.fall_time)
+			return _torso_point(standby_hand, side).lerp(_reach_point(side), reach)
+		MechFall.State.IMPACT:
+			return _planted.get(side, _reach_point(side))
 		MechFall.State.ROLL:
-			_set_arms(result, standby, elbow_standby)
-			_set_legs(result, 0.0, 0.0, 0.0, 0.0)
+			return _torso_point(folded_hand, side)
+		MechFall.State.LIE:
+			return _push_point(side)
 		MechFall.State.GET_UP:
 			var p := t / mech_fall.get_up_time
+			var lift := smoothstep(0.55, 0.9, p)
+			var planted: Vector3 = _planted.get(side, _push_point(side))
+			return planted.lerp(_torso_point(standby_hand, side), lift)
+	return _torso_point(standby_hand, side)
+
+
+## Fall: the point on the ground this hand reaches for.
+func _reach_point(side: float) -> Vector3:
+	var shoulder := _shoulder(side).global_position
+	var fall := mech_fall.get_world_direction()
+	var out := torso.global_basis.x.normalized() * side
+	out.y = 0.0
+	out = out.normalized()
+	var sideways := fall.dot(out)
+	var point: Vector3
+	if sideways > 0.6:
+		# Side fall toward this arm: it reaches out to that side.
+		point = shoulder + fall * reach_ahead * 1.1
+	elif sideways < -0.6:
+		# Side fall away from this arm: it comes in to the chest.
+		return _torso_point(folded_hand, side)
+	else:
+		point = shoulder + fall * reach_ahead + out * reach_wide
+	return _on_ground(point)
+
+
+## Lying face down: a hand flat on the ground beside the chest.
+func _push_point(side: float) -> Vector3:
+	var shoulder := _shoulder(side).global_position
+	var out := torso.global_basis.x.normalized() * side
+	out.y = 0.0
+	var head := torso.global_basis.y
+	head.y = 0.0
+	return _on_ground(shoulder + out.normalized() * push_wide + head.normalized() * push_forward)
+
+
+func _solve_arm(side: float, hand: Vector3) -> void:
+	var shoulder := _shoulder(side)
+	var elbow := elbow_right if side > 0.0 else elbow_left
+	if shoulder == null or elbow == null:
+		return
+	# Elbows point back along the body and out to the side.
+	var body_down := -torso.global_basis.y
+	var out := torso.global_basis.x * side
+	var pole := (body_down * 0.7 + out * 0.6 + torso.global_basis.z * 0.4).normalized()
+	TwoBoneIK.solve_to(shoulder, elbow, hand, pole, upper_arm, lower_arm)
+
+
+func _hand_now(side: float) -> Vector3:
+	var elbow := elbow_right if side > 0.0 else elbow_left
+	return elbow.global_transform * Vector3(0.0, -lower_arm, 0.0)
+
+
+func _shoulder(side: float) -> Node3D:
+	return shoulder_right if side > 0.0 else shoulder_left
+
+
+## A point in torso space for the right hand, mirrored for the left hand (world).
+func _torso_point(right_point: Vector3, side: float) -> Vector3:
+	return torso.global_transform * Vector3(right_point.x * side, right_point.y, right_point.z)
+
+
+## The same point at palm height on the ground.
+func _on_ground(point: Vector3) -> Vector3:
+	return Vector3(point.x, mech.global_position.y + palm_height, point.z)
+
+
+func _update_legs(delta: float) -> void:
+	var weight := 1.0 - exp(-leg_speed * delta)
+	var targets := _leg_targets()
+	for joint: Node3D in targets:
+		var target: Quaternion = (targets[joint] as Basis).get_rotation_quaternion()
+		var now := joint.basis.orthonormalized().get_rotation_quaternion()
+		joint.basis = Basis(now.slerp(target, weight))
+	torso.basis = Basis(torso.basis.orthonormalized().get_rotation_quaternion().slerp(Quaternion.IDENTITY, weight))
+	upper_body.position.y = lerpf(upper_body.position.y, -_leg_drop(targets), weight)
+
+
+## Hip and knee targets by MechFall state.
+func _leg_targets() -> Dictionary:
+	var result := {}
+	match mech_fall.state:
+		MechFall.State.STEPS, MechFall.State.FALL:
+			_set_legs(result, buckle_hip_deg, buckle_knee_deg, buckle_hip_deg, buckle_knee_deg)
+		MechFall.State.IMPACT, MechFall.State.LIE:
+			_set_legs(result, 0.0, 5.0, 0.0, 5.0)
+		MechFall.State.ROLL:
+			_set_legs(result, 0.0, 0.0, 0.0, 0.0)
+		MechFall.State.GET_UP:
+			var p := mech_fall.state_time / mech_fall.get_up_time
 			if p < 0.3:
-				# Push up: arms under the chest straighten.
-				_set_arms(result, reach, Basis(Vector3.RIGHT, deg_to_rad(lerpf(impact_elbow_deg, 5.0, p / 0.3))))
 				_set_legs(result, 0.0, 5.0, 0.0, 5.0)
 			elif p < 0.5:
-				# One knee comes under the body.
-				_set_arms(result, reach, straight)
 				_set_legs(result, kneel_front_hip_deg, kneel_front_knee_deg, kneel_back_hip_deg, kneel_back_knee_deg)
 			else:
-				# Rise: the legs straighten, the arms come back to the sides.
 				var rise := smoothstep(0.5, 1.0, p)
-				_set_arms(result, reach.slerp(standby, rise), elbow_standby)
 				_set_legs(result, lerpf(kneel_front_hip_deg, 0.0, rise), lerpf(kneel_front_knee_deg, 0.0, rise),
 						lerpf(kneel_back_hip_deg, 0.0, rise), lerpf(kneel_back_knee_deg, 0.0, rise))
 	return result
-
-
-## Arm rotation (shoulder space: the arm hangs along -Y) that points the arm toward the fall
-## direction and a bit down.
-func _reach_basis() -> Basis:
-	var fall := mech_fall.local_direction
-	# The fall direction in torso space (the torso may be turned on the legs).
-	var torso_dir := (torso.basis.inverse() * fall) if torso != null else fall
-	torso_dir.y = 0.0
-	torso_dir = torso_dir.normalized() if torso_dir.length_squared() > 0.001 else Vector3.FORWARD
-	var down := deg_to_rad(reach_down_deg)
-	var aim := (torso_dir * cos(down) + Vector3.DOWN * sin(down)).normalized()
-	return Basis(Quaternion(Vector3.DOWN, aim))
-
-
-func _set_arms(result: Dictionary, arm: Basis, elbow: Basis) -> void:
-	result[shoulder_left] = arm
-	result[shoulder_right] = arm
-	result[elbow_left] = elbow
-	result[elbow_right] = elbow
 
 
 ## Hip and knee bends in degrees. The left leg is the front leg when kneeling.
@@ -142,12 +239,8 @@ func _set_legs(result: Dictionary, left_hip: float, left_knee: float, right_hip:
 func _leg_drop(targets: Dictionary) -> float:
 	var drops: Array[float] = []
 	for pair in [[hip_left, knee_left], [hip_right, knee_right]]:
-		var hip := _bend(targets.get(pair[0], Basis.IDENTITY))
-		var knee := _bend(targets.get(pair[1], Basis.IDENTITY))
+		var hip: float = (targets.get(pair[0], Basis.IDENTITY) as Basis).get_euler().x
+		var knee: float = (targets.get(pair[1], Basis.IDENTITY) as Basis).get_euler().x
 		var height := thigh_length * cos(hip) + shin_length * cos(hip + knee)
 		drops.append(thigh_length + shin_length - height)
 	return minf(drops[0], drops[1])
-
-
-static func _bend(basis: Basis) -> float:
-	return basis.get_euler().x

@@ -412,8 +412,9 @@ jump_charge = NodePath("../MechJumpCharge")
 camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
 frame = NodePath("../Visual")
 
-[node name="PowerDownPose" type="Node" parent="." node_paths=PackedStringArray("shoulder_left", "shoulder_right", "elbow_left", "elbow_right", "hip_left", "hip_right", "knee_left", "knee_right", "torso", "upper_body")]
+[node name="PowerDownPose" type="Node" parent="." node_paths=PackedStringArray("mech", "shoulder_left", "shoulder_right", "elbow_left", "elbow_right", "hip_left", "hip_right", "knee_left", "knee_right", "torso", "upper_body")]
 script = ExtResource("powerdown")
+mech = NodePath("..")
 shoulder_left = NodePath("../{TO}/ShoulderL")
 shoulder_right = NodePath("../{TO}/ShoulderR")
 elbow_left = NodePath("../{TO}/ShoulderL/ElbowL")

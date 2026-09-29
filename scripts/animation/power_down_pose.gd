@@ -1,9 +1,12 @@
 class_name PowerDownPose
 extends Node
-## The "power down" pose of a dead mech: both arms hang straight down, both legs crouch, the torso
-## sags forward. start() blends to it from the pose the mech has now. The normal animation nodes
-## must be off (MechDeath turns them off). Missing parts (fallen arms) are skipped.
+## The "power down" pose of a dead mech: the legs crouch, the torso sags forward, and the arms go
+## limp. Limp arms hang toward the ground with gravity (the hands on a soft spring, so they swing
+## a little when the body moves or falls), with the elbows a little bent. A hand that would go into
+## the ground rests on it and the elbow bends (two-bone IK). start() blends from the pose the mech
+## has now. The normal animation nodes must be off (MechDeath turns them off).
 
+@export var mech: Mech
 @export var shoulder_left: Node3D
 @export var shoulder_right: Node3D
 @export var elbow_left: Node3D
@@ -24,8 +27,20 @@ extends Node
 @export var shin_length: float = 2.6
 ## Torso sag forward, in degrees.
 @export var torso_sag_deg: float = 10.0
-## Seconds to reach the pose.
+## Seconds to reach the leg and torso pose.
 @export var blend_time: float = 1.0
+
+@export_group("Limp arms")
+## Upper and lower arm length, in meters.
+@export var upper_arm: float = 2.7
+@export var lower_arm: float = 3.0
+## Hanging hand distance from the shoulder, as a part of the full arm length (less = more elbow bend).
+@export_range(0.5, 1.0) var hang_reach: float = 0.93
+## Hand swing spring: oscillations per second and damping (low damping = more swing).
+@export var swing_frequency: float = 1.1
+@export_range(0.05, 1.0) var swing_damping: float = 0.35
+## Hand height above the ground when it rests on it, in meters.
+@export var palm_height: float = 0.35
 
 var active: bool = false
 
@@ -34,11 +49,13 @@ var _start := {}
 var _target := {}
 var _upper_start_y: float = 0.0
 var _upper_target_y: float = 0.0
+var _hands := {}
+var _hand_speeds := {}
 
 
 func _ready() -> void:
-	# After the other pose nodes, if some still run.
-	process_physics_priority = 12
+	# After MechFall moves the body, and after the other pose nodes.
+	process_physics_priority = 13
 
 
 ## Starts the blend to the power down pose.
@@ -50,8 +67,6 @@ func start() -> void:
 	var hip := deg_to_rad(hip_deg)
 	var knee := deg_to_rad(knee_deg)
 	var targets := {
-		shoulder_left: Basis.IDENTITY, shoulder_right: Basis.IDENTITY,
-		elbow_left: Basis.IDENTITY, elbow_right: Basis.IDENTITY,
 		hip_left: Basis(Vector3.RIGHT, hip), hip_right: Basis(Vector3.RIGHT, hip),
 		knee_left: Basis(Vector3.RIGHT, -knee), knee_right: Basis(Vector3.RIGHT, -knee),
 		torso: Basis(Vector3.RIGHT, -deg_to_rad(torso_sag_deg)),
@@ -61,10 +76,15 @@ func start() -> void:
 			_start[joint] = joint.basis.orthonormalized().get_rotation_quaternion()
 			_target[joint] = targets[joint].get_rotation_quaternion()
 	# Feet stay on the ground: the hips drop by how much shorter the bent legs are.
-	var shin_angle := hip - knee
-	var height := thigh_length * cos(hip) + shin_length * cos(shin_angle)
+	var height := thigh_length * cos(hip) + shin_length * cos(hip - knee)
 	_upper_start_y = upper_body.position.y
 	_upper_target_y = -(thigh_length + shin_length - height)
+	# The hands start where they are and have no speed.
+	for side: float in [-1.0, 1.0]:
+		var elbow := elbow_right if side > 0.0 else elbow_left
+		if elbow != null:
+			_hands[side] = elbow.global_transform * Vector3(0.0, -lower_arm, 0.0)
+			_hand_speeds[side] = Vector3.ZERO
 
 
 func _physics_process(delta: float) -> void:
@@ -77,3 +97,28 @@ func _physics_process(delta: float) -> void:
 			var rotation: Quaternion = (_start[joint] as Quaternion).slerp(_target[joint], t)
 			joint.basis = Basis(rotation)
 	upper_body.position.y = lerpf(_upper_start_y, _upper_target_y, t)
+	_limp_arms(delta)
+
+
+## Each hand swings on a spring toward the hanging point below its shoulder (never into the ground).
+func _limp_arms(delta: float) -> void:
+	var stiffness := pow(TAU * swing_frequency, 2.0)
+	var damping := 2.0 * swing_damping * TAU * swing_frequency
+	var ground := mech.global_position.y + palm_height
+	for side: float in _hands:
+		var shoulder := shoulder_right if side > 0.0 else shoulder_left
+		var elbow := elbow_right if side > 0.0 else elbow_left
+		if not is_instance_valid(shoulder) or not is_instance_valid(elbow):
+			continue
+		var target := shoulder.global_position + Vector3.DOWN * (upper_arm + lower_arm) * hang_reach
+		target.y = maxf(target.y, ground)
+		var hand: Vector3 = _hands[side]
+		var speed: Vector3 = _hand_speeds[side]
+		speed += ((target - hand) * stiffness - speed * damping) * delta
+		hand += speed * delta
+		hand.y = maxf(hand.y, ground)
+		_hands[side] = hand
+		_hand_speeds[side] = speed
+		# The elbow points back, the natural way a hanging arm bends.
+		var pole := (torso.global_basis.z + torso.global_basis.x * side * 0.3).normalized()
+		TwoBoneIK.solve_to(shoulder, elbow, hand, pole, upper_arm, lower_arm)

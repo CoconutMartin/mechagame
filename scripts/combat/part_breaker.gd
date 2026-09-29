@@ -177,11 +177,11 @@ func blow_away(key: String, size: float = 1.0) -> void:
 func explode_at(point: Vector3, size: float = 7.0) -> void:
 	var effect := EXPLOSION.instantiate() as Explosion
 	effect.flash_size = size
-	_world().add_child(effect)
+	world().add_child(effect)
 	effect.global_position = point
 	for i in 3:
 		var spark := IMPACT.instantiate() as Node3D
-		_world().add_child(spark)
+		world().add_child(spark)
 		spark.global_position = point + Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), randf_range(-1.0, 1.0))
 
 
@@ -192,7 +192,7 @@ func drop(nodes: Array[Node3D], away: Vector3) -> Debris:
 		if is_instance_valid(node) and not unique.has(node):
 			unique.append(node)
 	var push := mech.velocity + (away.normalized() + Vector3.UP * 0.8) * drop_push
-	return Debris.drop(unique, _world(), push)
+	return Debris.drop(unique, world(), push)
 
 
 ## Keeps only the inner frame and joints of a part visible.
@@ -254,5 +254,6 @@ func center_of(nodes: Array[Node3D]) -> Vector3:
 	return sum / count if count > 0 else mech.global_position + Vector3.UP * 7.0
 
 
-func _world() -> Node:
+## The node that holds effects and debris (the level).
+func world() -> Node:
 	return get_tree().current_scene if get_tree().current_scene != null else mech.get_parent()

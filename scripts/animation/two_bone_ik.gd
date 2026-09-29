@@ -30,30 +30,35 @@ func solve() -> void:
 	if target == null:
 		return
 	var parent_basis := root_joint.get_parent_node_3d().global_basis
-	var shoulder := root_joint.global_position
-	var to_target := target.global_position - shoulder
-	var reach := upper_length + lower_length
+	solve_to(root_joint, mid_joint, target.global_position, parent_basis * pole_direction, upper_length, lower_length)
+
+
+## Bends root_joint and mid_joint so the hand reaches target (world position), with the elbow
+## toward pole (world direction). Out of reach: the arm points straight at the target.
+static func solve_to(root: Node3D, mid: Node3D, target_position: Vector3, pole: Vector3, upper: float, lower: float) -> void:
+	var shoulder := root.global_position
+	var to_target := target_position - shoulder
+	var reach := upper + lower
 	var distance := clampf(to_target.length(), 0.01, reach - 0.001)
 	var direction := to_target.normalized()
 
 	# Law of cosines: angle at the shoulder between the target line and the upper bone.
-	var cos_angle := (upper_length * upper_length + distance * distance - lower_length * lower_length) / (2.0 * upper_length * distance)
+	var cos_angle := (upper * upper + distance * distance - lower * lower) / (2.0 * upper * distance)
 	var angle := acos(clampf(cos_angle, -1.0, 1.0))
 
-	var pole := (parent_basis * pole_direction).normalized()
-	var bend := (pole - direction * pole.dot(direction)).normalized()
+	var bend := (pole.normalized() - direction * pole.normalized().dot(direction)).normalized()
 	if bend.is_zero_approx():
-		bend = parent_basis.x
-	var elbow := shoulder + (direction * cos(angle) + bend * sin(angle)) * upper_length
+		bend = root.get_parent_node_3d().global_basis.x
+	var elbow := shoulder + (direction * cos(angle) + bend * sin(angle)) * upper
 	var hand := shoulder + direction * distance
 	var side := direction.cross(bend).normalized()
 
-	root_joint.global_basis = _bone_basis(shoulder, elbow, side)
-	mid_joint.global_basis = _bone_basis(elbow, hand, side)
+	root.global_basis = _bone_basis(shoulder, elbow, side)
+	mid.global_basis = _bone_basis(elbow, hand, side)
 
 
 ## Basis whose -Y points from start to end.
-func _bone_basis(start: Vector3, end: Vector3, side: Vector3) -> Basis:
+static func _bone_basis(start: Vector3, end: Vector3, side: Vector3) -> Basis:
 	var y := (start - end).normalized()
 	var x := (side - y * side.dot(y)).normalized()
 	return Basis(x, y, x.cross(y))
