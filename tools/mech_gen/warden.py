@@ -206,6 +206,7 @@ def build(m):
         part(f"ThighPlate{s}", HP, "armor", "box", (1.7, 1.7, 1.7), (sign * 0.1, -0.55, 0))
         part(f"ThighPlateFace{s}", HP, "armor_dark", "box", (1.3, 1.3, 0.1), (sign * 0.1, -0.55, -0.88))
         part(f"ThighFrame{s}", HP, "frame", "cyl", (0.5, 0.5, 1.2), (0, -1.6, 0))
+        part(f"ThighStrut{s}", HP, "frame", "box", (0.18, 2.0, 0.18), (sign * -0.35, -1.2, 0.3))
         part(f"Thigh{s}", HP, "armor", "box", (1.3, 1.1, 1.4), (0, -1.95, 0))
         # Knee: round joint and a front cap.
         part(f"KneeJoint{s}", KN, "joint", "cyl", (0.6, 0.6, 1.3), (0, 0, 0), X())
@@ -215,6 +216,10 @@ def build(m):
         part(f"ShinFront{s}", KN, "armor", "box", (1.15, 1.7, 0.3), (0, -1.1, -0.85), (-6, 0, 0))
         part(f"ShinSide{s}", KN, "armor_dark", "box", (0.2, 1.2, 1.2), (sign * 0.8, -1.2, 0.05))
         part(f"Ankle{s}", KN, "joint", "cyl", (0.4, 0.4, 1.2), (0, -2.05, 0), X())
+        # Inner frame (hidden by the armor; it shows when the leg is blown apart).
+        part(f"ShinFrame{s}", KN, "frame", "cyl", (0.32, 0.32, 2.0), (0, -1.05, 0))
+        part(f"ShinStrut{s}", KN, "frame", "box", (0.18, 1.8, 0.18), (sign * 0.35, -1.1, 0.3))
+        part(f"FootFrame{s}", KN, "frame", "box", (0.8, 0.25, 1.9), (0, -2.35, -0.45))
         # Claw foot: base, three front toes, one heel toe. Bottom at y -2.6 (ground).
         part(f"Foot{s}", KN, "armor", "box", (1.4, 0.55, 1.5), (0, -2.3, -0.15), groups=["foot"])
         for i, (x, yaw, length) in enumerate(((-0.5, 18, 1.2), (0, 0, 1.4), (0.5, -18, 1.2))):

@@ -1,6 +1,6 @@
 class_name PlayerRespawner
 extends Node
-## When the player mech is destroyed, waits respawn_time, then builds it again with full HP at the
+## When the player mech is destroyed (dead), waits respawn_time, then builds it again with full HP at the
 ## start point (same loadout).
 
 @export var switcher: LoadoutSwitcher
@@ -22,7 +22,7 @@ func _watch(mech: Mech) -> void:
 		mech.health.destroyed.connect(_on_destroyed)
 
 
-func _on_destroyed() -> void:
+func _on_destroyed(_cause: String) -> void:
 	_left = respawn_time
 
 

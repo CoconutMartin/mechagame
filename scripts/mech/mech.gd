@@ -94,6 +94,8 @@ enum BoostExit { SKID, LEAP }
 @export var boost_exit_style: BoostExit = BoostExit.SKID
 ## SKID: slowdown while the feet slide (m/s per second).
 @export var skid_deceleration: float = 6.7
+## A fallen or wrecked mech slides to a stop with this slowdown, in m/s².
+@export var fallen_slide_deceleration: float = 6.0
 ## SKID: the slide ends at this speed (m/s). Then the heavy steps start, or the walk with a move key.
 @export var skid_end_speed: float = 4.0
 ## SKID: stride lengths (meters) of the heavy steps to a stop after the slide, when no move key is held.
@@ -135,8 +137,14 @@ enum BoostExit { SKID, LEAP }
 var stats: MechStats
 ## Part HP and hitboxes (Phase 4). MechHealth sets it.
 var health: MechHealth
-## True after the core is destroyed: no control, the wreck slows down and falls.
+## True after the mech is destroyed: no control, the wreck slides to a stop.
 var is_wrecked: bool = false
+## True while the mech lies on the ground after a fall (MechFall). No control until it gets up.
+var is_fallen: bool = false
+## One leg destroyed (PartBreaker): slower, no jump, falls over after a boost.
+var one_leg: bool = false
+## Side of the destroyed leg: -1 left, +1 right.
+var broken_leg_side: float = 0.0
 var is_boosting: bool = false
 ## True while the mech runs between the walk steps and the boost (Shift held).
 var is_running: bool = false
@@ -192,7 +200,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if is_wrecked:
+	if is_wrecked or is_fallen:
 		_update_wreck(delta)
 		return
 	_previous_aim_yaw = _aim_yaw
@@ -219,13 +227,32 @@ func get_hit_exclude() -> Array[RID]:
 	return rids
 
 
+## A fallen or wrecked mech slides to a stop and falls with gravity.
 func _update_wreck(delta: float) -> void:
 	is_boosting = false
 	is_lunging = false
-	velocity.x = move_toward(velocity.x, 0.0, 12.0 * delta)
-	velocity.z = move_toward(velocity.z, 0.0, 12.0 * delta)
+	var slide := Vector2(velocity.x, velocity.z).move_toward(Vector2.ZERO, fallen_slide_deceleration * delta)
+	velocity.x = slide.x
+	velocity.z = slide.y
 	velocity.y = maxf(velocity.y - _gravity * gravity_scale * delta, -max_fall_speed)
 	move_and_slide()
+
+
+## MechFall: the mech falls over (it keeps its speed and slides).
+func start_fall() -> void:
+	is_fallen = true
+	is_boosting = false
+	is_running = false
+	is_skidding = false
+	is_brake_skidding = false
+	is_exiting_boost = false
+	is_lunging = false
+
+
+## MechFall: the mech is up again.
+func end_fall() -> void:
+	is_fallen = false
+	velocity = Vector3.ZERO
 
 
 func get_horizontal_speed() -> float:

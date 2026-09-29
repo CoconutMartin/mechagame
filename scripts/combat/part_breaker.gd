@@ -1,20 +1,22 @@
 class_name PartBreaker
 extends Node
-## What happens when a part is damaged or destroyed (MechHealth signals).
+## What happens to a part when it is damaged or destroyed (MechHealth signals). MechDeath handles
+## the death of the whole mech and uses the helpers here.
 ## Below half HP a part smokes. Destroyed parts:
-##   Head: falls off. Lock-on range and speed drop, the aim shakes more.
+##   Head: falls off (the mech dies).
 ##   Arm: falls off with its weapon (right) or its shield (left). That weapon is lost.
-##   Legs: stay on, smoke and sparks. Speed drops 60%, no jump.
+##   Side torso: its armor is blown away, and its arm (and back unit on that side) falls off.
+##   Leg: explodes, the armor is gone and the inner frame shows. One leg left: walks 60% slower
+##        with short limping steps, no jump, boost speed stays, and the mech falls over after a
+##        boost (MechFall).
 ##   Shield, back unit: falls off, that weapon is lost.
-##   Core: the mech explodes (MechHealth.destroyed).
 
 const EXPLOSION := preload("res://scenes/effects/explosion.tscn")
+const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 
 @export var mech: Mech
 @export var health: MechHealth
-@export var assembler: MechAssembler
 @export var weapons: WeaponController
-@export var mech_aim: MechAim
 @export var jump_charge: MechJumpCharge
 @export var camera_shake: CameraShake
 ## The frame (Visual). Its socket nodes stay; the part nodes on them fall off.
@@ -22,11 +24,8 @@ const EXPLOSION := preload("res://scenes/effects/explosion.tscn")
 
 ## Part HP fraction where smoke starts.
 @export_range(0.0, 1.0) var smoke_below: float = 0.5
-## Head destroyed: lock-on range and speed x this value, extra aim shake in degrees.
-@export var head_lock_scale: float = 0.5
-@export var head_jitter_deg: float = 0.6
-## Legs destroyed: walk (and boost) speed x this value.
-@export var legs_speed_scale: float = 0.4
+## One leg destroyed: walk (and boost) speed x this value.
+@export var one_leg_speed_scale: float = 0.4
 ## Kick of a falling part, m/s (sideways and up).
 @export var drop_push: float = 5.0
 
@@ -52,83 +51,130 @@ func _on_part_destroyed(key: String) -> void:
 		camera_shake.add_shake(0.25, 0.3)
 	match key:
 		"Head":
-			_drop(_nodes(key), Vector3.UP)
-			mech.stats.lock_range *= head_lock_scale
-			mech.stats.lock_on_speed *= head_lock_scale
-			mech_aim.idle_jitter_deg += head_jitter_deg
-			mech_aim.walk_jitter_deg += head_jitter_deg
-		"Arm L":
-			_break_left_arm(-mech.global_basis.x)
-		"Arm R":
-			_break_right_arm(mech.global_basis.x)
-		"Legs":
-			for hip in ["HipL", "HipR"]:
-				var socket := frame.find_child(hip, true, false) as Node3D
-				if socket != null:
-					DamageSmoke.create(socket, Vector3.ZERO, true)
-			mech.walk_speed *= legs_speed_scale
-			jump_charge.process_mode = Node.PROCESS_MODE_DISABLED
+			drop(health.get_nodes(key), Vector3.UP)
+		"Arm L", "Arm R":
+			break_arm(key, _side_out(key))
+		"Torso L", "Torso R":
+			_break_side_torso(key)
+		"Leg L", "Leg R":
+			_break_leg(key)
 		"Shield":
 			var nodes := weapons.shield_nodes.duplicate()
 			weapons.lose_shield()
-			_drop(nodes, -mech.global_basis.x)
+			drop(nodes, -mech.global_basis.x)
 		"Back L", "Back R":
-			var pod := weapons.back_left if key == "Back L" else weapons.back_right
-			weapons.lose_back_weapon(pod)
-			if pod != null:
-				_drop([pod] as Array[Node3D], Vector3.UP - mech.global_basis.z)
-		"Core":
-			_destroy_mech()
+			break_back(key, Vector3.UP - mech.global_basis.z)
 
 
-## The whole mech explodes: arms and head fly off, the rest goes dark, input stops.
-func _destroy_mech() -> void:
-	var world := _world()
+## An arm falls off (no explosion) with its weapon or shield.
+func break_arm(key: String, away: Vector3) -> void:
+	var left := key == "Arm L"
+	var nodes := health.get_nodes(key) + _loose_children(["ShoulderL", "ElbowL"] if left else ["ShoulderR", "ElbowR"])
+	if left:
+		nodes += weapons.shield_nodes
+		if health.is_part_alive("Shield"):
+			health.remove_part("Shield")
+		weapons.lose_left_arm()
+	else:
+		if weapons.right_weapon != null:
+			nodes.append(weapons.right_weapon)
+		weapons.lose_right_weapon()
+	drop(nodes, away)
+	_socket_smoke("ShoulderL" if left else "ShoulderR")
+
+
+## A back unit falls off.
+func break_back(key: String, away: Vector3) -> void:
+	var pod := weapons.back_left if key == "Back L" else weapons.back_right
+	if pod == null:
+		return
+	if health.is_part_alive(key):
+		health.remove_part(key)
+	weapons.lose_back_weapon(pod)
+	drop([pod] as Array[Node3D], away)
+
+
+## Side torso destroyed: armor blown away, the arm and the back unit on that side fall off.
+func _break_side_torso(key: String) -> void:
+	var left := key == "Torso L"
+	blow_away(key, 0.5)
+	var arm := "Arm L" if left else "Arm R"
+	if health.is_part_alive(arm):
+		health.remove_part(arm)
+		break_arm(arm, _side_out(arm))
+	var back := "Back L" if left else "Back R"
+	if health.is_part_alive(back):
+		break_back(back, _side_out(arm) + Vector3.UP)
+
+
+## A leg explodes: its armor is gone and the inner frame shows.
+func _break_leg(key: String) -> void:
+	var left := key == "Leg L"
+	var knee := frame.find_child("KneeL" if left else "KneeR", true, false) as Node3D
+	if knee != null:
+		explode_at(knee.global_position, 3.0)
+		DamageSmoke.create(knee, Vector3.ZERO, true)
+	for node in health.get_nodes(key):
+		_strip_armor(node)
+	if health.is_alive():
+		mech.one_leg = true
+		mech.broken_leg_side = -1.0 if left else 1.0
+		mech.walk_speed *= one_leg_speed_scale
+		# The boosters still work: boost speed stays the same. The limping steps are shorter.
+		mech.boost_speed_multiplier /= one_leg_speed_scale
+		mech.footsteps.stride_length *= one_leg_speed_scale
+		jump_charge.process_mode = Node.PROCESS_MODE_DISABLED
+
+
+## Hides the armor of a part with an explosion and sparks (the part is blown away).
+func blow_away(key: String, size: float = 1.0) -> void:
+	var nodes := health.get_nodes(key)
+	var center := center_of(nodes)
+	explode_at(center, 7.0 * size)
+	for node in nodes:
+		if is_instance_valid(node):
+			node.visible = false
+	var place := _part_place(key)
+	if not place.is_empty():
+		DamageSmoke.create(place[0], place[1], true)
+
+
+## An explosion effect. size = flash size in meters.
+func explode_at(point: Vector3, size: float = 7.0) -> void:
+	var effect := EXPLOSION.instantiate() as Explosion
+	effect.flash_size = size
+	_world().add_child(effect)
+	effect.global_position = point
 	for i in 3:
-		var effect := EXPLOSION.instantiate() as Node3D
-		world.add_child(effect)
-		effect.global_position = mech.global_position + Vector3(randf_range(-2.0, 2.0), 4.0 + i * 2.5, randf_range(-2.0, 2.0))
-	if camera_shake != null:
-		camera_shake.add_shake(0.8, 1.0)
-	if health.is_part_alive("Head"):
-		health.remove_part("Head")
-		_drop(_nodes("Head"), Vector3.UP * 2.0)
-	if health.is_part_alive("Arm L"):
-		health.remove_part("Arm L")
-		_break_left_arm(-mech.global_basis.x + Vector3.UP)
-	if health.is_part_alive("Arm R"):
-		health.remove_part("Arm R")
-		_break_right_arm(mech.global_basis.x + Vector3.UP)
-	for pod in [weapons.back_left, weapons.back_right]:
-		weapons.lose_back_weapon(pod)
-	DamageSmoke.create(frame, Vector3.UP * 6.0, true)
-	mech.is_wrecked = true
+		var spark := IMPACT.instantiate() as Node3D
+		_world().add_child(spark)
+		spark.global_position = point + Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), randf_range(-1.0, 1.0))
 
 
-## The left arm falls off with its shield.
-func _break_left_arm(away: Vector3) -> void:
-	var nodes := _nodes("Arm L") + weapons.shield_nodes + _loose_children(["ShoulderL", "ElbowL"])
-	if health.is_part_alive("Shield"):
-		health.remove_part("Shield")
-	weapons.lose_left_arm()
-	_drop(nodes, away)
-	_stump_smoke("ShoulderL")
+## Moves nodes into a falling debris body.
+func drop(nodes: Array[Node3D], away: Vector3) -> Debris:
+	var unique: Array[Node3D] = []
+	for node in nodes:
+		if is_instance_valid(node) and not unique.has(node):
+			unique.append(node)
+	var push := mech.velocity + (away.normalized() + Vector3.UP * 0.8) * drop_push
+	return Debris.drop(unique, _world(), push)
 
 
-## The right arm falls off with its weapon.
-func _break_right_arm(away: Vector3) -> void:
-	var nodes := _nodes("Arm R") + _loose_children(["ShoulderR", "ElbowR"])
-	if weapons.right_weapon != null:
-		nodes.append(weapons.right_weapon)
-	weapons.lose_right_weapon()
-	_drop(nodes, away)
-	_stump_smoke("ShoulderR")
+## Keeps only the inner frame and joints of a part visible.
+func _strip_armor(root: Node) -> void:
+	if root is MeshInstance3D:
+		var mesh := root as MeshInstance3D
+		var material := mesh.get_active_material(0)
+		var path := material.resource_path if material != null else ""
+		if not (path.ends_with("frame.tres") or path.ends_with("joint.tres")):
+			mesh.visible = false
+	for child in root.get_children():
+		_strip_armor(child)
 
 
-func _nodes(key: String) -> Array[Node3D]:
-	var nodes: Array[Node3D] = []
-	nodes.assign(assembler.part_nodes.get(key, []))
-	return nodes
+func _side_out(arm_key: String) -> Vector3:
+	return -mech.global_basis.x if arm_key == "Arm L" else mech.global_basis.x
 
 
 ## Children of these frame sockets that are not frame sockets, hitboxes or smoke (for example the
@@ -146,27 +192,32 @@ func _loose_children(socket_names: Array) -> Array[Node3D]:
 	return found
 
 
-func _drop(nodes: Array[Node3D], away: Vector3) -> void:
-	var unique: Array[Node3D] = []
-	for node in nodes:
-		if is_instance_valid(node) and not unique.has(node):
-			unique.append(node)
-	var push := mech.velocity + (away.normalized() + Vector3.UP * 0.8) * drop_push
-	Debris.drop(unique, _world(), push)
-
-
-func _stump_smoke(socket_name: String) -> void:
+func _socket_smoke(socket_name: String) -> void:
 	var socket := frame.find_child(socket_name, true, false) as Node3D
 	if socket != null:
 		DamageSmoke.create(socket, Vector3.ZERO, true)
 
 
-## Where a part's smoke goes: [parent, offset] from its first hitbox.
+## Where a part's smoke goes: [parent, offset] from its first hitbox or its first node.
 func _part_place(key: String) -> Array:
 	for hitbox in health.hitboxes.get(key, []):
 		if is_instance_valid(hitbox) and hitbox.get_child_count() > 0:
 			return [hitbox.get_parent(), hitbox.position + (hitbox.get_child(0) as Node3D).position]
+	for node in health.get_nodes(key):
+		if is_instance_valid(node) and node.get_parent() is Node3D:
+			return [node.get_parent(), node.position]
 	return []
+
+
+## Middle point of nodes (a point in front of the torso if none are left).
+func center_of(nodes: Array[Node3D]) -> Vector3:
+	var sum := Vector3.ZERO
+	var count := 0
+	for node in nodes:
+		if is_instance_valid(node):
+			sum += node.global_position
+			count += 1
+	return sum / count if count > 0 else mech.global_position + Vector3.UP * 7.0
 
 
 func _world() -> Node:

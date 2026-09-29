@@ -31,7 +31,8 @@ SCRIPTS = [("mech/mech","mech"),("mech/mech_input","input"),("mech/mech_energy",
  ("mech/mech_shield","shield"),("effects/brake_thrusters","brakes"),("animation/shield_mount","shieldmount"),
  ("animation/dodge_slide_pose","dodgeslide"),("animation/pauldron_follow","pauldron"),
  ("camera/free_aim","freeaim"),("mech/mech_assembler","assembler"),("weapons/weapon_controller","weaponctl"),
- ("combat/mech_health","health"),("combat/part_breaker","breaker")]
+ ("combat/mech_health","health"),("combat/part_breaker","breaker"),
+ ("animation/power_down_pose","powerdown"),("animation/mech_fall","fall"),("combat/mech_death","death")]
 
 
 # Frame nodes that part groups attach to, with their paths in the mech scene.
@@ -402,15 +403,46 @@ mech = NodePath("..")
 assembler = NodePath("../MechAssembler")
 weapons = NodePath("../WeaponController")
 
-[node name="PartBreaker" type="Node" parent="." node_paths=PackedStringArray("mech", "health", "assembler", "weapons", "mech_aim", "jump_charge", "camera_shake", "frame")]
+[node name="PartBreaker" type="Node" parent="." node_paths=PackedStringArray("mech", "health", "weapons", "jump_charge", "camera_shake", "frame")]
 script = ExtResource("breaker")
 mech = NodePath("..")
 health = NodePath("../MechHealth")
-assembler = NodePath("../MechAssembler")
 weapons = NodePath("../WeaponController")
-mech_aim = NodePath("../MechAim")
 jump_charge = NodePath("../MechJumpCharge")
 camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
 frame = NodePath("../Visual")
+
+[node name="PowerDownPose" type="Node" parent="." node_paths=PackedStringArray("shoulder_left", "shoulder_right", "elbow_left", "elbow_right", "hip_left", "hip_right", "knee_left", "knee_right", "torso", "upper_body")]
+script = ExtResource("powerdown")
+shoulder_left = NodePath("../{TO}/ShoulderL")
+shoulder_right = NodePath("../{TO}/ShoulderR")
+elbow_left = NodePath("../{TO}/ShoulderL/ElbowL")
+elbow_right = NodePath("../{TO}/ShoulderR/ElbowR")
+hip_left = NodePath("../{L}/HipL")
+hip_right = NodePath("../{L}/HipR")
+knee_left = NodePath("../{L}/HipL/KneeL")
+knee_right = NodePath("../{L}/HipR/KneeR")
+torso = NodePath("../{TO}")
+upper_body = NodePath("../{U}")
+
+[node name="MechFall" type="Node" parent="." node_paths=PackedStringArray("mech", "visual", "animation", "camera_shake")]
+script = ExtResource("fall")
+mech = NodePath("..")
+visual = NodePath("../Visual")
+animation = NodePath("../Animation")
+camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
+
+[node name="MechDeath" type="Node" parent="." node_paths=PackedStringArray("mech", "health", "breaker", "weapons", "power_down", "mech_fall", "animation", "camera_shake", "torso", "elbow_right")]
+script = ExtResource("death")
+mech = NodePath("..")
+health = NodePath("../MechHealth")
+breaker = NodePath("../PartBreaker")
+weapons = NodePath("../WeaponController")
+power_down = NodePath("../PowerDownPose")
+mech_fall = NodePath("../MechFall")
+animation = NodePath("../Animation")
+camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
+torso = NodePath("../{TO}")
+elbow_right = NodePath("../{TO}/ShoulderR/ElbowR")
 '''
     return text

@@ -1,14 +1,16 @@
 class_name DebugDamage
 extends Node
 ## Test keys (until enemies shoot back in Phase 4b): damage the player's own parts.
-## F1 head, F2 core, F3 left arm, F4 right arm, F5 legs, F6 shield, F7 back units.
-## Each press takes damage_fraction of the part's max HP. F8 destroys the core.
+## F1 head, F2 center torso, F3 left torso, F4 right torso, F5 left arm, F6 right arm, F7 groin,
+## F8 left leg, F9 right leg, F10 shield, F11 back units.
+## Each press takes damage_fraction of the part's max HP. Hold Shift to destroy the part at once.
 
 @export var switcher: LoadoutSwitcher
 @export_range(0.0, 1.0) var damage_fraction: float = 0.3
 
-const KEYS := {KEY_F1: ["Head"], KEY_F2: ["Core"], KEY_F3: ["Arm L"], KEY_F4: ["Arm R"],
-		KEY_F5: ["Legs"], KEY_F6: ["Shield"], KEY_F7: ["Back L", "Back R"]}
+const KEYS := {KEY_F1: ["Head"], KEY_F2: ["Torso C"], KEY_F3: ["Torso L"], KEY_F4: ["Torso R"],
+		KEY_F5: ["Arm L"], KEY_F6: ["Arm R"], KEY_F7: ["Groin"], KEY_F8: ["Leg L"], KEY_F9: ["Leg R"],
+		KEY_F10: ["Shield"], KEY_F11: ["Back L", "Back R"]}
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -18,8 +20,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	var health := switcher.mech.health
 	if health == null:
 		return
-	if key_event.keycode == KEY_F8:
-		health.damage("Core", health.hp.get("Core", 0.0))
-		return
 	for part_key: String in KEYS.get(key_event.keycode, []):
-		health.damage(part_key, health.max_hp.get(part_key, 0.0) * damage_fraction)
+		var amount: float = health.max_hp.get(part_key, 0.0) * damage_fraction
+		if key_event.shift_pressed:
+			amount = health.hp.get(part_key, 0.0)
+		health.damage(part_key, amount)

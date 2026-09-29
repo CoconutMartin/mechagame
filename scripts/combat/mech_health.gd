@@ -1,17 +1,31 @@
 class_name MechHealth
 extends Node
 ## HP of each mech part (Phase 4). Builds a hitbox for each part from the part models, takes the
-## damage that hitboxes and blasts send, and tells PartBreaker when a part is destroyed.
-## Keys: "Head", "Core", "Arm L", "Arm R", "Legs", "Shield", "Back L", "Back R".
-## Hits on the held weapon count for the arm that holds it. Core destroyed = mech destroyed.
+## damage that hitboxes and blasts send, and tells PartBreaker and MechDeath what broke.
+## Keys: "Head", "Torso C", "Torso L", "Torso R", "Arm L", "Arm R", "Groin", "Leg L", "Leg R",
+## "Shield", "Back L", "Back R".
+## The core part is split by position into center, left and right torso; the legs part into
+## groin (pelvis) and the two legs. Hits on the held weapon count for the arm that holds it.
+## The mech is alive while the head, the center torso, the groin and at least one leg are intact.
 
 signal damaged(key: String, amount: float)
 signal part_destroyed(key: String)
-signal destroyed
+## The mech is dead. cause = the part whose loss killed it.
+signal destroyed(cause: String)
 
 @export var mech: Mech
 @export var assembler: MechAssembler
 @export var weapons: WeaponController
+
+@export_group("Split")
+## Core part HP given to the center torso and to each side torso.
+@export var center_torso_share: float = 0.6
+@export var side_torso_share: float = 0.4
+## Core part meshes farther than this from the middle (meters, torso space) are side torso.
+@export var side_torso_x: float = 0.9
+## Legs part HP given to the groin and to each leg.
+@export var groin_share: float = 0.4
+@export var leg_share: float = 0.6
 
 ## Max and current HP by key.
 var max_hp: Dictionary = {}
@@ -19,13 +33,25 @@ var hp: Dictionary = {}
 var is_destroyed: bool = false
 ## Hitboxes by key.
 var hitboxes: Dictionary = {}
+## Model nodes of each key after the split (PartBreaker and MechDeath hide or drop them).
+var segment_nodes: Dictionary = {}
 
 
 func _ready() -> void:
 	mech.health = self
 	if mech.stats != null:
-		for key: String in mech.stats.part_hp:
-			max_hp[key] = mech.stats.part_hp[key]
+		var part_hp := mech.stats.part_hp
+		for key in ["Head", "Arm L", "Arm R"]:
+			if part_hp.has(key):
+				max_hp[key] = part_hp[key]
+		if part_hp.has("Core"):
+			max_hp["Torso C"] = part_hp["Core"] * center_torso_share
+			max_hp["Torso L"] = part_hp["Core"] * side_torso_share
+			max_hp["Torso R"] = part_hp["Core"] * side_torso_share
+		if part_hp.has("Legs"):
+			max_hp["Groin"] = part_hp["Legs"] * groin_share
+			max_hp["Leg L"] = part_hp["Legs"] * leg_share
+			max_hp["Leg R"] = part_hp["Legs"] * leg_share
 	if weapons != null:
 		if weapons.left_data != null and not weapons.shield_nodes.is_empty():
 			max_hp["Shield"] = weapons.left_data.hp
@@ -34,7 +60,9 @@ func _ready() -> void:
 		if weapons.back_right != null:
 			max_hp["Back R"] = weapons.back_right.data.hp
 	hp = max_hp.duplicate()
-	_build_hitboxes()
+	_split_segments()
+	for key: String in segment_nodes:
+		_add_hitboxes(key, segment_nodes[key])
 
 
 ## Sends damage to a part. Parts with no HP left take no more damage.
@@ -45,17 +73,30 @@ func damage(key: String, amount: float) -> void:
 	damaged.emit(key, amount)
 	if hp[key] <= 0.0:
 		_remove_hitboxes(key)
-		part_destroyed.emit(key)
-		if key == "Core":
+		var dies := not is_alive()
+		if dies:
 			is_destroyed = true
-			destroyed.emit()
+		part_destroyed.emit(key)
+		if dies:
+			destroyed.emit(key)
 
 
-## Takes a part away with no signals (it went with another part, for example the shield with the
-## left arm).
+## Takes a part away with no signals (it went with another part, for example the arm with its side
+## torso).
 func remove_part(key: String) -> void:
-	hp[key] = 0.0
+	if hp.has(key):
+		hp[key] = 0.0
 	_remove_hitboxes(key)
+
+
+## Head, center torso, groin and at least one leg intact.
+func is_alive() -> bool:
+	for key in ["Head", "Torso C", "Groin"]:
+		if hp.has(key) and hp[key] <= 0.0:
+			return false
+	if hp.has("Leg L") and hp.has("Leg R"):
+		return hp["Leg L"] > 0.0 or hp["Leg R"] > 0.0
+	return true
 
 
 func is_part_alive(key: String) -> bool:
@@ -68,6 +109,13 @@ func get_fraction(key: String) -> float:
 	return hp.get(key, 0.0) / top if top > 0.0 else 0.0
 
 
+## Model nodes of a key.
+func get_nodes(key: String) -> Array[Node3D]:
+	var nodes: Array[Node3D] = []
+	nodes.assign(segment_nodes.get(key, []))
+	return nodes
+
+
 ## RIDs of this mech's hitboxes (own weapons skip them).
 func get_hitbox_rids() -> Array[RID]:
 	var rids: Array[RID] = []
@@ -78,31 +126,57 @@ func get_hitbox_rids() -> Array[RID]:
 	return rids
 
 
-func _build_hitboxes() -> void:
-	for key: String in assembler.part_nodes:
-		_add_hitboxes(key, assembler.part_nodes[key])
+## Sorts the part nodes into the hit keys.
+func _split_segments() -> void:
+	for part_key: String in assembler.part_nodes:
+		for node: Node3D in assembler.part_nodes[part_key]:
+			_add_node(_segment_key(part_key, node), node)
 	if weapons == null:
 		return
 	if hp.has("Shield"):
-		_add_hitboxes("Shield", weapons.shield_nodes)
+		for node in weapons.shield_nodes:
+			_add_node("Shield", node)
 	if weapons.right_weapon != null:
-		_add_hitboxes("Arm R", [weapons.right_weapon] as Array[Node3D])
+		_add_node("Arm R", weapons.right_weapon)
 		# Weapon parts mounted on the forearm (the pile bunker).
-		var forearm := weapons.arm_ik_right.mid_joint
-		for child in forearm.get_children():
-			if child is Node3D and _has_mesh(child) and not assembler.part_nodes.get("Arm R", []).has(child):
-				_add_hitboxes("Arm R", [child] as Array[Node3D])
+		for child in weapons.arm_ik_right.mid_joint.get_children():
+			if child is Node3D and _has_mesh(child) and not get_nodes("Arm R").has(child):
+				_add_node("Arm R", child)
 	if weapons.back_left != null:
-		_add_hitboxes("Back L", [weapons.back_left] as Array[Node3D])
+		_add_node("Back L", weapons.back_left)
 	if weapons.back_right != null:
-		_add_hitboxes("Back R", [weapons.back_right] as Array[Node3D])
+		_add_node("Back R", weapons.back_right)
+
+
+func _add_node(key: String, node: Node3D) -> void:
+	var list: Array = segment_nodes.get(key, [])
+	list.append(node)
+	segment_nodes[key] = list
+
+
+## Core parts (core, booster, generator, FCS) split by side; legs split by socket.
+func _segment_key(part_key: String, node: Node3D) -> String:
+	if part_key == "Core":
+		if node.position.x < -side_torso_x:
+			return "Torso L"
+		if node.position.x > side_torso_x:
+			return "Torso R"
+		return "Torso C"
+	if part_key == "Legs":
+		var socket := String(node.get_parent().name)
+		if socket in ["HipL", "KneeL"]:
+			return "Leg L"
+		if socket in ["HipR", "KneeR"]:
+			return "Leg R"
+		return "Groin"
+	return part_key
 
 
 ## One box per container node (a node that holds meshes, like a pivot or a weapon), and one box
-## per socket for the loose meshes of the part.
-func _add_hitboxes(key: String, nodes: Array[Node3D]) -> void:
+## per socket for the loose meshes.
+func _add_hitboxes(key: String, nodes: Array) -> void:
 	var loose := {}
-	for node in nodes:
+	for node: Node3D in nodes:
 		if node is MeshInstance3D:
 			var socket := node.get_parent_node_3d()
 			var list: Array = loose.get(socket, [])

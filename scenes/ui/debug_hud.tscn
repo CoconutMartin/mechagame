@@ -94,4 +94,4 @@ Shift + W: walk 2 steps, run 2 steps, then boost   Ctrl kneel
 Mouse moves the blue ring inside a small box; past the edge the camera turns
 Yellow dot = camera crosshair   Blue ring = mech aim
 Grid lines: thin = 1 m, thick = 10 m
-F1-F7 damage own head, core, arm L, arm R, legs, shield, back (test)   F8 destroy core"
+Test: F1 head, F2-F4 torso C/L/R, F5-F6 arm L/R, F7 groin, F8-F9 leg L/R, F10 shield, F11 back (Shift = destroy)"
