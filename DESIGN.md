@@ -88,12 +88,11 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 
 | Value | Current |
 |---|---|
-| Camera crosshair | yellow dot 13.5% of the screen height above the center (matches the reference screenshot). `MechAim.screen_offset_up` |
+| Camera crosshair | hidden since 4c (user request, `AimReticle.show_crosshair`); yellow dot 13.5% of the screen height above the center (matches the reference screenshot). `MechAim.screen_offset_up` |
 | Mech aim reticle | blue ring, placed from the torso angle (no shake, no jitter). The camera follows the torso, so it sits on the yellow dot |
 | Aim jitter | removed (0°). The code and exports stay in `MechAim` for later use |
 | Vertical aim | mouse pitch speed 30% of horizontal |
 | Ring while down or in an Akira slide (4b.2) | the ring stays at its neutral place (crosshair plus free aim offset) and does not follow the torso. It blends back in 0.25 s after the get-up, or when the body turn after an Akira slide is below 3°. `MechAim.neutral_amount` |
-| Hit marker (4b.1) | red X where a shot from the right weapon muzzle really hits |
 | Two-hand weapon in one hand (4b.2) | left arm lost: the right hand holds the weapon low at the hip, like the one-hand rifle (`WeaponController` one-hand hold). The ring is unsteady: soft spring (1.6 Hz, damping 0.3, it swings past and comes back), slow sway 0.9°, recoil x1.6 (`FreeAim.unsteady`) |
 | Aim down sight (RMB) | camera moves in along the aim line (to 8 m) and zooms from FOV 65° to the weapon zoom FOV (beam sniper 52.6°), same target, mouse sensitivity 50%. Rifle butt on the right shoulder, torso turns 30° right and tilts 6°, left hand under the handguard near the muzzle |
 
@@ -107,7 +106,7 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 | Shoulder offset | 3 m right (right side of the head) |
 | Crosshair height | 0.3 of the screen height above the center since revision 59 (was 0.135): the view is about 12° lower (more ground and the whole mech in view), as the user drew |
 | Pivot height | 11.5 m (above the head). The camera sits on the aim line behind the pivot, 3 m to the right, and tilts down by the crosshair angle (about 21° at FOV 65°, crosshair 0.3 above center), so it looks down over the head |
-| Start view | camera pitch -24.5°, FOV 65° (revision 61, set by the user): aim pitch starts at -3.6° and the crosshair tilt adds about 21°. `MechCameraRig.start_pitch_deg`. The debug HUD shows the camera angle: camera pitch, aim pitch, distance and FOV |
+| Start view | camera pitch -24°, FOV 65° (4c, set by the user; -24.5° in revision 61): aim pitch starts at -3.1° and the crosshair tilt adds about 21°. `MechCameraRig.start_pitch_deg`. The debug HUD shows the camera angle: camera pitch, aim pitch, distance and FOV |
 | Same target in ADS | the camera stays on the aim line and its tilt follows the FOV, so the crosshair points at the same spot with and without RMB |
 | Tilt limits | 27.5° down, 15° up |
 | Boost shake | steady shake while boosting (trauma 0.4) |
@@ -422,7 +421,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Phase 4a.9: boost lock after the get-up removed. Shots aim at what the camera sees under the blue ring (`MechAim.get_ring_screen_point`, a camera ray through the ring), so bullets land on the ring on dummies and target edges too (before: a ray from the torso, which missed thin targets such as the dummy head when the ring was off the crosshair). If the ring is over empty space just past a target, the line of fire from the muzzle (lower than the camera) can still hit that target.
 - Phase 4a.10: test map cleared: 1 tall and 1 medium building, 1 truck, 1 car, and a dummy mech (the current mech with no pilot, full part damage, HP label, respawns after 6 s).
 - Phase 4b: enemy AI (simple gunner): keeps 40 to 80 m, strafes, fires the rifle with aim error, lifts the shield and dodges now and then. Same mech and rules as the player. Enemies reset when the player respawns.
-- Phase 4b.1: booster fuel blast = 20% of total max HP over the torso. Hit marker (red X): where a shot from the right weapon muzzle really hits.
+- Phase 4b.1: booster fuel blast = 20% of total max HP over the torso. Hit marker (red X): where a shot from the right weapon muzzle really hits (removed in 4c, user request).
 - Phase 4b.2: fixed the error after a pauldron fell off (a freed node was read, 20 s after the arm dropped) and the GDScript warnings. A two-hand weapon is held in one hand when the left arm is lost, with an unsteady ring. The ring stays neutral while the mech is down and during the Akira slide.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).

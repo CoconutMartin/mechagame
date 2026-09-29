@@ -31,11 +31,6 @@ func is_melee() -> bool:
 	return false
 
 
-## Where the shots start (the "Muzzle" child). Null for weapons with no muzzle (melee).
-func get_muzzle() -> Node3D:
-	return get_node_or_null(^"Muzzle") as Node3D
-
-
 func setup(weapon_data: WeaponData, weapon_controller: WeaponController) -> void:
 	data = weapon_data
 	controller = weapon_controller
