@@ -12,7 +12,7 @@ extends Node
 signal landed
 signal finished
 
-enum State { IDLE, STEPS, FALL, IMPACT, ROLL, LIE, GET_UP }
+enum State { IDLE, STEPS, FALL, IMPACT, SETTLE, ROLL, REPOSITION, LIE, GET_UP }
 
 @export var mech: Mech
 @export var visual: Node3D
@@ -46,10 +46,21 @@ enum State { IDLE, STEPS, FALL, IMPACT, ROLL, LIE, GET_UP }
 @export var step_speed: float = 2.4
 @export var step_sway_deg: float = 5.0
 @export_group("Roll and get up")
-## Roll speed in degrees per second (180 = 75% slower than 720).
+## Average roll speed in degrees per second (180 = 75% slower than 720). The roll starts and ends
+## slowly (eased), and takes at least roll_min_time seconds.
 @export var roll_speed_deg: float = 180.0
-## Time on the ground before getting up, and the get-up time, in seconds.
-@export var lie_time: float = 1.5
+@export var roll_min_time: float = 0.9
+## The body rests this long after the impact before it rolls, in seconds.
+@export var settle_time: float = 0.4
+## Extra height of the body center when it lies on its side (wide shoulders) and on its back
+## (backpack), compared with lying face down, in meters. Keeps it on top of the ground while it rolls.
+@export var side_lift: float = 1.4
+@export var back_lift: float = 0.6
+## Face down, before the get-up: the hands come under the shoulders and the chest lifts a little.
+@export var reposition_time: float = 0.8
+@export var reposition_deg: float = 4.0
+## Time face down before getting up when there is no roll, and the get-up time, in seconds.
+@export var lie_time: float = 0.8
 @export var get_up_time: float = 2.4
 ## One leg left: a boost stop faster than this part of the boost speed is a "full boost" (1 roll).
 @export_range(0.0, 1.0) var full_boost_ratio: float = 0.85
@@ -192,15 +203,22 @@ func _physics_process(delta: float) -> void:
 			if t >= 1.0:
 				angle = PI * 0.5
 				_plan_roll()
-				_set_state(State.ROLL if absf(_roll_total) > 0.02 else State.LIE)
+				_set_state(State.SETTLE if absf(_roll_total) > 0.02 else State.LIE)
+		State.SETTLE:
+			if state_time >= settle_time:
+				_set_state(State.ROLL)
 		State.ROLL:
-			var turned := minf(state_time * deg_to_rad(roll_speed_deg), absf(_roll_total))
-			roll = turned * signf(_roll_total)
-			if turned >= absf(_roll_total):
+			var duration := get_roll_time()
+			roll = _roll_total * smoothstep(0.0, 1.0, clampf(state_time / duration, 0.0, 1.0))
+			if state_time >= duration:
 				_end_roll()
+		State.REPOSITION:
+			angle = PI * 0.5 - deg_to_rad(reposition_deg) * smoothstep(0.0, 1.0, clampf(state_time / reposition_time, 0.0, 1.0))
+			if state_time >= reposition_time:
+				_set_state(State.GET_UP)
 		State.LIE:
 			if _get_up and not mech.is_wrecked and state_time >= lie_time:
-				_set_state(State.GET_UP)
+				_set_state(State.REPOSITION)
 		State.GET_UP:
 			if mech.is_wrecked:
 				_set_state(State.LIE)
@@ -240,7 +258,12 @@ func _end_roll() -> void:
 			mech.set_heading(atan2(-head.x, -head.z))
 			_direction = head
 			_base = Transform3D.IDENTITY
-	_set_state(State.LIE)
+	_set_state(State.REPOSITION if _get_up and not mech.is_wrecked else State.LIE)
+
+
+## Length of the roll now, in seconds.
+func get_roll_time() -> float:
+	return maxf(roll_min_time, absf(_roll_total) / deg_to_rad(roll_speed_deg))
 
 
 ## A body on the ground slows down fast (the Mech adds its own slide slowdown).
@@ -249,7 +272,7 @@ func _scrape(delta: float) -> void:
 	match state:
 		State.IMPACT:
 			friction = roll_friction if _rolls > 0 else ground_friction
-		State.LIE, State.GET_UP:
+		State.SETTLE, State.REPOSITION, State.LIE, State.GET_UP:
 			friction = ground_friction
 		State.ROLL:
 			friction = roll_friction
@@ -266,7 +289,7 @@ static func get_up_angle(t: float) -> float:
 	t = clampf(t, 0.0, 1.0)
 	var deg: float
 	if t < 0.3:
-		deg = lerpf(90.0, 62.0, smoothstep(0.0, 1.0, t / 0.3))
+		deg = lerpf(86.0, 62.0, smoothstep(0.0, 1.0, t / 0.3))
 	elif t < 0.5:
 		deg = lerpf(62.0, 52.0, smoothstep(0.0, 1.0, (t - 0.3) / 0.2))
 	else:
@@ -290,6 +313,12 @@ func _get_transform() -> Transform3D:
 		var center := pivot + Vector3.UP * (pivot_distance + lie_lift)
 		result = Transform3D(Basis.IDENTITY, center) * Transform3D(Basis(local, roll), Vector3.ZERO) \
 				* Transform3D(Basis.IDENTITY, -center) * result
+	# The body is wider across the shoulders than it is deep, and deeper at the back (backpack):
+	# lying on its side or back, it rests higher.
+	var body := result.basis * _base.basis
+	var on_side := absf(body.x.normalized().y)
+	var on_back := maxf(-body.z.normalized().y, 0.0)
+	result = Transform3D(Basis.IDENTITY, Vector3.UP * (side_lift * on_side + back_lift * on_back)) * result
 	if _sway != 0.0:
 		var side := mech.global_basis.inverse() * _step_side
 		var sway_axis := Vector3.UP.cross(side.normalized()).normalized()

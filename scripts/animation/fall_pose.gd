@@ -30,8 +30,10 @@ extends Node
 ## Upper and lower arm length (shoulder to elbow, elbow to hand), in meters.
 @export var upper_arm: float = 2.7
 @export var lower_arm: float = 3.0
-## How fast the hands move to their targets (1 / seconds).
+## How fast the hands move to their targets (1 / seconds), and while they come under the shoulders
+## before the get-up.
 @export var hand_speed: float = 9.0
+@export var reposition_hand_speed: float = 4.5
 ## Fall: how far ahead of the shoulders the hands reach for the ground, and how wide, in meters.
 @export var reach_ahead: float = 3.2
 @export var reach_wide: float = 0.9
@@ -87,7 +89,9 @@ func _physics_process(delta: float) -> void:
 	if state != _last_state:
 		_on_state_changed(state)
 		_last_state = state
-	var weight := 1.0 - exp(-hand_speed * delta)
+	# Slower, careful hand moves while the mech gets ready to push up.
+	var speed := reposition_hand_speed if state == MechFall.State.REPOSITION else hand_speed
+	var weight := 1.0 - exp(-speed * delta)
 	for side: float in [-1.0, 1.0]:
 		var target := _hand_target(side)
 		_hands[side] = (_hands[side] as Vector3).lerp(target, weight)
@@ -101,11 +105,12 @@ func _on_state_changed(state: int) -> void:
 			# The hands stay where they touch the ground.
 			for side: float in [-1.0, 1.0]:
 				_planted[side] = _on_ground(_hands[side])
-		MechFall.State.LIE, MechFall.State.ROLL:
+		MechFall.State.ROLL, MechFall.State.REPOSITION, MechFall.State.LIE:
 			_planted.clear()
 		MechFall.State.GET_UP:
+			# The hands press down where they are now.
 			for side: float in [-1.0, 1.0]:
-				_planted[side] = _push_point(side)
+				_planted[side] = _on_ground(_hands[side])
 
 
 ## Where one hand goes now (world).
@@ -118,11 +123,11 @@ func _hand_target(side: float) -> Vector3:
 		MechFall.State.FALL:
 			var reach := smoothstep(0.25, 0.65, t / mech_fall.fall_time)
 			return _torso_point(standby_hand, side).lerp(_reach_point(side), reach)
-		MechFall.State.IMPACT:
+		MechFall.State.IMPACT, MechFall.State.SETTLE:
 			return _planted.get(side, _reach_point(side))
 		MechFall.State.ROLL:
 			return _torso_point(folded_hand, side)
-		MechFall.State.LIE:
+		MechFall.State.REPOSITION, MechFall.State.LIE:
 			return _push_point(side)
 		MechFall.State.GET_UP:
 			var p := t / mech_fall.get_up_time
@@ -210,20 +215,20 @@ func _leg_targets() -> Dictionary:
 	match mech_fall.state:
 		MechFall.State.STEPS, MechFall.State.FALL:
 			_set_legs(result, buckle_hip_deg, buckle_knee_deg, buckle_hip_deg, buckle_knee_deg)
-		MechFall.State.IMPACT, MechFall.State.LIE:
+		MechFall.State.IMPACT, MechFall.State.SETTLE, MechFall.State.LIE:
 			_set_legs(result, 0.0, 5.0, 0.0, 5.0)
 		MechFall.State.ROLL:
 			_set_legs(result, 0.0, 0.0, 0.0, 0.0)
+		MechFall.State.REPOSITION:
+			# The knees start to bend, ready to come under the body.
+			_set_legs(result, 5.0, 15.0, 0.0, 10.0)
 		MechFall.State.GET_UP:
 			var p := mech_fall.state_time / mech_fall.get_up_time
-			if p < 0.3:
-				_set_legs(result, 0.0, 5.0, 0.0, 5.0)
-			elif p < 0.5:
-				_set_legs(result, kneel_front_hip_deg, kneel_front_knee_deg, kneel_back_hip_deg, kneel_back_knee_deg)
-			else:
-				var rise := smoothstep(0.5, 1.0, p)
-				_set_legs(result, lerpf(kneel_front_hip_deg, 0.0, rise), lerpf(kneel_front_knee_deg, 0.0, rise),
-						lerpf(kneel_back_hip_deg, 0.0, rise), lerpf(kneel_back_knee_deg, 0.0, rise))
+			# The front knee comes under the body while the arms push, then the legs straighten.
+			var kneel := smoothstep(0.2, 0.5, p) * (1.0 - smoothstep(0.5, 1.0, p))
+			var early := 1.0 - smoothstep(0.0, 0.3, p)
+			_set_legs(result, lerpf(5.0 * early, kneel_front_hip_deg, kneel), lerpf(15.0 * early, kneel_front_knee_deg, kneel),
+					lerpf(0.0, kneel_back_hip_deg, kneel), lerpf(10.0 * early, kneel_back_knee_deg, kneel))
 	return result
 
 

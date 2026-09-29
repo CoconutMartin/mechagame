@@ -83,8 +83,10 @@ signal landed(fall_speed: float)
 @export var boost_speed_multiplier: float = 1.5
 ## Walking steps before the mech can start to run. Skipped if the mech already walked this many steps.
 @export var boost_start_steps: int = 2
-## Running steps before boost starts. Always taken, every time.
+## Running steps before boost starts from a standstill.
 @export var run_steps: int = 2
+## Moving at least this fast (m/s), boost starts at once with no walk or run steps.
+@export var boost_ready_speed: float = 1.5
 ## Run top speed = walk speed x this value.
 @export var run_speed_multiplier: float = 1.25
 ## Speed gain while boosting (m/s per second).
@@ -353,12 +355,16 @@ func get_boost_speed() -> float:
 
 
 ## True after the run steps, so boost can start.
+## Boost can start: at once when the mech already moves (since 4a.6), or after the walk and run
+## steps from a standstill.
 func is_boost_ready() -> bool:
-	return _run_steps_done >= run_steps
+	return get_horizontal_speed() >= boost_ready_speed or _run_steps_done >= run_steps
 
 
 ## Steps left before boost can start (walk steps if needed, plus run steps).
 func get_walk_steps_left() -> int:
+	if is_boost_ready():
+		return 0
 	var walk_left := maxi(boost_start_steps - _walk_steps, 0)
 	return walk_left + maxi(run_steps - _run_steps_done, 0)
 
