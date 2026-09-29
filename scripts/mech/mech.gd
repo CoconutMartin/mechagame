@@ -145,6 +145,10 @@ var is_fallen: bool = false
 var one_leg: bool = false
 ## Side of the destroyed leg: -1 left, +1 right.
 var broken_leg_side: float = 0.0
+## False when the booster (backpack) is destroyed: no boost.
+var can_boost: bool = true
+## MechFall sets it (falls over, for example after a pile bunker miss on one leg).
+var fall_control: MechFall
 var is_boosting: bool = false
 ## True while the mech runs between the walk steps and the boost (Shift held).
 var is_running: bool = false
@@ -235,7 +239,13 @@ func _update_wreck(delta: float) -> void:
 	velocity.x = slide.x
 	velocity.z = slide.y
 	velocity.y = maxf(velocity.y - _gravity * gravity_scale * delta, -max_fall_speed)
+	var fall_speed := -velocity.y
 	move_and_slide()
+	# A wreck or fallen mech in the air still tells when it lands (MechFall waits for it).
+	var on_floor := is_on_floor()
+	if on_floor and not _was_on_floor:
+		landed.emit(fall_speed)
+	_was_on_floor = on_floor
 
 
 ## MechFall: the mech falls over (it keeps its speed and slides).
@@ -364,7 +374,7 @@ func _update_boost(delta: float) -> void:
 		# Shift + a move key fires the boosters in the air. A move key alone uses free steering.
 		wants_boost = input.boost_held and has_input
 	var energy_rate := boost_energy_per_second if is_on_floor() else boost_energy_per_second * air_boost_energy_multiplier
-	is_boosting = wants_boost and energy.try_drain(energy_rate * delta)
+	is_boosting = wants_boost and can_boost and energy.try_drain(energy_rate * delta)
 	# Shift held after the walk steps: run until boost is ready.
 	is_running = is_on_floor() and not is_boosting and input.boost_held and has_input \
 			and _walk_steps >= boost_start_steps and not landing_recovery.is_recovering() \

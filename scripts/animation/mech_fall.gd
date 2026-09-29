@@ -1,124 +1,206 @@
 class_name MechFall
 extends Node
-## Makes the mech fall over: optional side steps first, then it tips over a foot edge onto the
-## ground, slides, can roll over along its length, and (if it is still alive) gets up again.
-## It turns the Visual node only; the Mech body slides on the ground (Mech.is_fallen or wrecked).
-## A mech with one leg left falls over when it stops boosting (rolls twice after a full boost).
+## Makes the mech fall over: optional side steps first, then it topples over a foot edge (slow at
+## first, then faster), hits the ground with a small bounce, slides, can roll over along its length,
+## and (if it is still alive) pushes itself up and stands again. It turns the Visual node; the
+## FallPose node moves the arms and legs, and the Mech body slides (Mech.is_fallen or wrecked).
+## Every fall damages all parts by fall_damage of their max HP when the mech hits the ground.
+## Fall direction: the way the mech moves, or its front when it stands still.
+## A mech with one leg left falls over when it stops boosting (one roll after a full boost), after
+## a dodge hop, when it lands after a jump, and when a pile bunker punch hits nothing.
 
 signal landed
 signal finished
 
-enum State { IDLE, STEPS, FALL, ROLL, LIE, GET_UP }
+enum State { IDLE, STEPS, FALL, IMPACT, ROLL, LIE, GET_UP }
 
 @export var mech: Mech
 @export var visual: Node3D
 ## The normal animation nodes. They stop while the mech is down.
 @export var animation: Node
 @export var camera_shake: CameraShake
+@export var dodge: MechDodge
+## The right arm lower bone: the held weapon hangs from it while the mech is down.
+@export var elbow_right: Node3D
+@export var torso: Node3D
 
+@export_group("Fall")
 ## Distance from the mech center to the foot edge it tips over, and the lift that keeps the body
 ## on top of the ground when it lies down, in meters.
 @export var pivot_distance: float = 1.5
 @export var lie_lift: float = 0.4
-## Tip-over time in seconds (it speeds up as it goes).
-@export var fall_time: float = 0.9
+## Topple time in seconds (slow at first, then faster, like a falling pole).
+@export var fall_time: float = 1.0
+## Bounce when the body hits the ground: rebound in degrees and time in seconds.
+@export var bounce_deg: float = 4.0
+@export var impact_time: float = 0.45
+## Damage to every part when the mech hits the ground, as a part of its max HP.
+@export_range(0.0, 1.0) var fall_damage: float = 0.05
+@export_group("Steps")
 ## Side steps before a fall: step count, time for each step, side speed (m/s), sway in degrees.
 @export var step_count: int = 2
 @export var step_time: float = 0.5
 @export var step_speed: float = 2.4
 @export var step_sway_deg: float = 5.0
+@export_group("Roll and get up")
 ## Roll speed in degrees per second (180 = 75% slower than 720).
 @export var roll_speed_deg: float = 180.0
 ## Time on the ground before getting up, and the get-up time, in seconds.
 @export var lie_time: float = 1.5
-@export var get_up_time: float = 1.5
-## One leg left: a boost stop faster than this part of the boost speed is a "full boost" (2 rolls).
+@export var get_up_time: float = 2.4
+## One leg left: a boost stop faster than this part of the boost speed is a "full boost" (1 roll).
 @export_range(0.0, 1.0) var full_boost_ratio: float = 0.85
-## One leg left: the fall after a boost leans this much toward the broken leg (0 = straight ahead).
-@export var broken_side_lean: float = 0.6
+@export var full_boost_rolls: int = 1
+## Moving slower than this (m/s) counts as standing still (neutral fall).
+@export var neutral_speed: float = 1.5
 
 var state: State = State.IDLE
+## Fall direction in the mech's own space (flat).
+var local_direction := Vector3.FORWARD
+## Tilt now (0 = standing, PI/2 = lying) and roll now, in radians.
+var angle: float = 0.0
+var roll: float = 0.0
+## Time in the current state and its length (FallPose reads them).
+var state_time: float = 0.0
 
-var _time: float = 0.0
 var _direction := Vector3.FORWARD
 var _step_side := Vector3.ZERO
 var _rolls: int = 0
 var _get_up: bool = false
-var _angle: float = 0.0
-var _roll: float = 0.0
 var _sway: float = 0.0
 var _base := Transform3D.IDENTITY
 var _was_boosting: bool = false
+var _pending_landing: bool = false
+var _pending_back_if_still: bool = false
 
 
 func _ready() -> void:
 	# Before the Mech moves (0), so the side step speed is used this frame.
 	process_physics_priority = -1
+	mech.fall_control = self
+	mech.landed.connect(_on_mech_landed)
+	if dodge != null:
+		dodge.dodge_ended.connect(_on_dodge_ended)
 
 
-## Starts a fall toward direction (world, flat). steps: world side direction for the side steps
-## (zero = no steps). rolls: full rolls after the fall. get_up: stand up at the end (alive).
-func fall(direction: Vector3, steps: Vector3 = Vector3.ZERO, rolls: int = 0, get_up: bool = false) -> void:
+## Starts a fall toward direction (world, flat; zero = the way the mech moves, or its front).
+## steps: world side direction for the side steps (zero = no steps). rolls: full rolls after the
+## fall. get_up: stand up at the end (the mech is alive).
+func fall(direction: Vector3 = Vector3.ZERO, steps: Vector3 = Vector3.ZERO, rolls: int = 0, get_up: bool = true) -> void:
 	if state != State.IDLE:
 		return
+	_pending_landing = false
+	if direction.is_zero_approx():
+		direction = get_motion_direction()
 	_direction = Vector3(direction.x, 0.0, direction.z).normalized()
 	_step_side = Vector3(steps.x, 0.0, steps.z).normalized()
 	_rolls = rolls
 	_get_up = get_up
 	_base = visual.transform
-	_angle = 0.0
-	_roll = 0.0
+	angle = 0.0
+	roll = 0.0
 	_sway = 0.0
 	if not mech.is_wrecked:
 		mech.start_fall()
-	if animation != null:
-		animation.process_mode = Node.PROCESS_MODE_DISABLED
+		# The held weapon hangs from the hand while the mech is down.
+		var weapon := _right_weapon()
+		if weapon != null and elbow_right != null:
+			weapon.reparent(elbow_right, true)
+	freeze_animation()
 	_set_state(State.STEPS if _step_side != Vector3.ZERO and step_count > 0 else State.FALL)
+
+
+## Falls over when the mech lands (a leg broke in the air). back_if_still: with no speed, fall
+## backwards instead of forwards.
+func fall_on_landing(back_if_still: bool = false) -> void:
+	_pending_landing = true
+	_pending_back_if_still = back_if_still
+
+
+## The way the mech moves (flat), or its front when it stands still.
+func get_motion_direction(back_if_still: bool = false) -> Vector3:
+	var velocity := Vector3(mech.velocity.x, 0.0, mech.velocity.z)
+	if velocity.length() >= neutral_speed:
+		return velocity.normalized()
+	var front := -mech.global_basis.z
+	return -front if back_if_still else front
 
 
 func is_down() -> bool:
 	return state != State.IDLE
 
 
+## Stops the normal animation nodes (flames off first).
+func freeze_animation() -> void:
+	if animation == null or animation.process_mode == Node.PROCESS_MODE_DISABLED:
+		return
+	for child in animation.get_children():
+		if child.has_method(&"cut"):
+			child.cut()
+	animation.process_mode = Node.PROCESS_MODE_DISABLED
+
+
 func _physics_process(delta: float) -> void:
 	_watch_boost()
 	if state == State.IDLE:
 		return
-	_time += delta
+	state_time += delta
 	match state:
 		State.STEPS:
 			var total := step_time * step_count
 			mech.velocity.x = _step_side.x * step_speed
 			mech.velocity.z = _step_side.z * step_speed
 			# A small sway to the side with each step.
-			_sway = sin(_time / step_time * PI) * deg_to_rad(step_sway_deg)
-			if _time >= total:
+			_sway = sin(state_time / step_time * PI) * deg_to_rad(step_sway_deg)
+			if state_time >= total:
 				_sway = 0.0
 				_set_state(State.FALL)
 		State.FALL:
-			var t := clampf(_time / fall_time, 0.0, 1.0)
-			_angle = PI * 0.5 * t * t
+			var t := clampf(state_time / fall_time, 0.0, 1.0)
+			# A falling pole: slow at first, then faster.
+			angle = PI * 0.5 * (1.0 - cos(t * PI * 0.5))
 			if t >= 1.0:
-				landed.emit()
-				if camera_shake != null:
-					camera_shake.add_shake(0.5, 0.6)
+				_on_impact()
+				_set_state(State.IMPACT)
+		State.IMPACT:
+			var t := clampf(state_time / impact_time, 0.0, 1.0)
+			# One small rebound, then the body settles.
+			angle = PI * 0.5 - deg_to_rad(bounce_deg) * sin(t * PI) * (1.0 - t)
+			if t >= 1.0:
+				angle = PI * 0.5
 				_set_state(State.ROLL if _rolls > 0 else State.LIE)
 		State.ROLL:
 			var total := TAU * _rolls
-			_roll = minf(_time * deg_to_rad(roll_speed_deg), total)
-			if _roll >= total:
-				_roll = 0.0
+			roll = minf(state_time * deg_to_rad(roll_speed_deg), total)
+			if roll >= total:
+				roll = 0.0
 				_set_state(State.LIE)
 		State.LIE:
-			if _get_up and not mech.is_wrecked and _time >= lie_time:
+			if _get_up and not mech.is_wrecked and state_time >= lie_time:
 				_set_state(State.GET_UP)
 		State.GET_UP:
-			var t := smoothstep(0.0, 1.0, clampf(_time / get_up_time, 0.0, 1.0))
-			_angle = PI * 0.5 * (1.0 - t)
-			if t >= 1.0:
-				_finish()
-				return
+			if mech.is_wrecked:
+				_set_state(State.LIE)
+			else:
+				angle = get_up_angle(state_time / get_up_time)
+				if state_time >= get_up_time:
+					_finish()
+					return
 	visual.transform = _get_transform() * _base
+
+
+## Tilt during the get-up (t = 0 to 1): push up on the arms, pause while the knee comes under the
+## body, then rise.
+static func get_up_angle(t: float) -> float:
+	t = clampf(t, 0.0, 1.0)
+	var deg: float
+	if t < 0.3:
+		deg = lerpf(90.0, 62.0, smoothstep(0.0, 1.0, t / 0.3))
+	elif t < 0.5:
+		deg = lerpf(62.0, 52.0, smoothstep(0.0, 1.0, (t - 0.3) / 0.2))
+	else:
+		deg = lerpf(52.0, 0.0, smoothstep(0.0, 1.0, (t - 0.5) / 0.5))
+	return deg_to_rad(deg)
 
 
 ## Tip over a foot edge, lift onto the body surface, roll along the body, sway for the steps.
@@ -126,15 +208,16 @@ func _get_transform() -> Transform3D:
 	var local := (mech.global_basis.inverse() * _direction)
 	local.y = 0.0
 	local = local.normalized() if local.length_squared() > 0.001 else Vector3.FORWARD
+	local_direction = local
 	var pivot := local * pivot_distance
 	var axis := Vector3.UP.cross(local).normalized()
-	var tip := Transform3D(Basis(axis, _angle), Vector3.ZERO)
+	var tip := Transform3D(Basis(axis, angle), Vector3.ZERO)
 	var result := Transform3D(Basis.IDENTITY, pivot) * tip * Transform3D(Basis.IDENTITY, -pivot)
-	var lift := Vector3.UP * lie_lift * sin(_angle)
+	var lift := Vector3.UP * lie_lift * sin(angle)
 	result = Transform3D(Basis.IDENTITY, lift) * result
-	if _roll != 0.0:
+	if roll != 0.0:
 		var center := pivot + Vector3.UP * (pivot_distance + lie_lift)
-		result = Transform3D(Basis.IDENTITY, center) * Transform3D(Basis(local, _roll), Vector3.ZERO) \
+		result = Transform3D(Basis.IDENTITY, center) * Transform3D(Basis(local, roll), Vector3.ZERO) \
 				* Transform3D(Basis.IDENTITY, -center) * result
 	if _sway != 0.0:
 		var side := mech.global_basis.inverse() * _step_side
@@ -143,10 +226,27 @@ func _get_transform() -> Transform3D:
 	return result
 
 
+## The body hits the ground: shake, and every part takes fall damage.
+func _on_impact() -> void:
+	landed.emit()
+	if camera_shake != null:
+		camera_shake.add_shake(0.5, 0.6)
+	var health := mech.health
+	if health == null or fall_damage <= 0.0:
+		return
+	for key: String in health.max_hp.keys():
+		if health.is_part_alive(key):
+			health.damage(key, health.max_hp[key] * fall_damage)
+
+
 func _finish() -> void:
 	visual.transform = _base
+	angle = 0.0
 	state = State.IDLE
 	mech.end_fall()
+	var weapon := _right_weapon()
+	if weapon != null and torso != null and weapon.get_parent() != torso:
+		weapon.reparent(torso, true)
 	if animation != null:
 		animation.process_mode = Node.PROCESS_MODE_INHERIT
 	finished.emit()
@@ -154,16 +254,34 @@ func _finish() -> void:
 
 func _set_state(next: State) -> void:
 	state = next
-	_time = 0.0
+	state_time = 0.0
+
+
+func _right_weapon() -> Node3D:
+	var controller := mech.get_node_or_null("WeaponController") as WeaponController
+	return controller.right_weapon if controller != null else null
+
+
+func _on_mech_landed(_fall_speed: float) -> void:
+	if not _pending_landing:
+		return
+	_pending_landing = false
+	var dead := mech.is_wrecked
+	fall(get_motion_direction(_pending_back_if_still), Vector3.ZERO, 0, not dead)
+
+
+## One leg left: a dodge hop ends in a fall (in the hop direction).
+func _on_dodge_ended() -> void:
+	if mech.one_leg and not mech.is_wrecked and state == State.IDLE:
+		fall(dodge.direction)
 
 
 ## One leg left: the mech falls over when the boost stops.
 func _watch_boost() -> void:
 	var boosting := mech.is_boosting
-	if _was_boosting and not boosting and mech.one_leg and not mech.is_wrecked and state == State.IDLE:
-		var velocity := Vector3(mech.velocity.x, 0.0, mech.velocity.z)
-		var forward := velocity.normalized() if velocity.length() > 0.5 else -mech.global_basis.z
-		var broken_side := mech.global_basis.x * (1.0 if mech.broken_leg_side > 0.0 else -1.0)
-		var full := velocity.length() >= mech.get_boost_speed() * full_boost_ratio
-		fall(forward + broken_side * broken_side_lean, Vector3.ZERO, 2 if full else 0, true)
+	if _was_boosting and not boosting and mech.one_leg and not mech.is_wrecked and state == State.IDLE \
+			and mech.is_on_floor():
+		var speed := Vector2(mech.velocity.x, mech.velocity.z).length()
+		var full := speed >= mech.get_boost_speed() * full_boost_ratio
+		fall(Vector3.ZERO, Vector3.ZERO, full_boost_rolls if full else 0, true)
 	_was_boosting = boosting

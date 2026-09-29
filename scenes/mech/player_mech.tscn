@@ -38,6 +38,7 @@
 [ext_resource type="Script" path="res://scripts/combat/part_breaker.gd" id="breaker"]
 [ext_resource type="Script" path="res://scripts/animation/power_down_pose.gd" id="powerdown"]
 [ext_resource type="Script" path="res://scripts/animation/mech_fall.gd" id="fall"]
+[ext_resource type="Script" path="res://scripts/animation/fall_pose.gd" id="fallpose"]
 [ext_resource type="Script" path="res://scripts/combat/mech_death.gd" id="death"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/heavy_rifle.tscn" id="rifle"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/bullet.tscn" id="bullet"]
@@ -400,12 +401,30 @@ knee_right = NodePath("../Visual/Roll/Upper/Lower/HipR/KneeR")
 torso = NodePath("../Visual/Roll/Upper/Torso")
 upper_body = NodePath("../Visual/Roll/Upper")
 
-[node name="MechFall" type="Node" parent="." node_paths=PackedStringArray("mech", "visual", "animation", "camera_shake")]
+[node name="MechFall" type="Node" parent="." node_paths=PackedStringArray("mech", "visual", "animation", "camera_shake", "dodge", "elbow_right", "torso")]
 script = ExtResource("fall")
 mech = NodePath("..")
 visual = NodePath("../Visual")
 animation = NodePath("../Animation")
 camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
+dodge = NodePath("../MechDodge")
+elbow_right = NodePath("../Visual/Roll/Upper/Torso/ShoulderR/ElbowR")
+torso = NodePath("../Visual/Roll/Upper/Torso")
+
+[node name="FallPose" type="Node" parent="." node_paths=PackedStringArray("mech", "mech_fall", "shoulder_left", "shoulder_right", "elbow_left", "elbow_right", "hip_left", "hip_right", "knee_left", "knee_right", "torso", "upper_body")]
+script = ExtResource("fallpose")
+mech = NodePath("..")
+mech_fall = NodePath("../MechFall")
+shoulder_left = NodePath("../Visual/Roll/Upper/Torso/ShoulderL")
+shoulder_right = NodePath("../Visual/Roll/Upper/Torso/ShoulderR")
+elbow_left = NodePath("../Visual/Roll/Upper/Torso/ShoulderL/ElbowL")
+elbow_right = NodePath("../Visual/Roll/Upper/Torso/ShoulderR/ElbowR")
+hip_left = NodePath("../Visual/Roll/Upper/Lower/HipL")
+hip_right = NodePath("../Visual/Roll/Upper/Lower/HipR")
+knee_left = NodePath("../Visual/Roll/Upper/Lower/HipL/KneeL")
+knee_right = NodePath("../Visual/Roll/Upper/Lower/HipR/KneeR")
+torso = NodePath("../Visual/Roll/Upper/Torso")
+upper_body = NodePath("../Visual/Roll/Upper")
 
 [node name="MechDeath" type="Node" parent="." node_paths=PackedStringArray("mech", "health", "breaker", "weapons", "power_down", "mech_fall", "animation", "camera_shake", "torso", "elbow_right")]
 script = ExtResource("death")

@@ -106,6 +106,15 @@ func is_busy() -> bool:
 	return state != State.IDLE
 
 
+## Stops the attack (the mech falls over): no more charge or punch, the arm goes back to rest.
+func cancel() -> void:
+	if state == State.IDLE:
+		return
+	controller.mech.is_lunging = false
+	controller.mech_shield.force_up = false
+	_next(State.RECOVER)
+
+
 ## Moves the model onto the right forearm (once, after WeaponController has wired the arm IK).
 func _attach_to_forearm() -> void:
 	var forearm := controller.arm_ik_right.mid_joint
@@ -145,6 +154,11 @@ func _update(delta: float) -> void:
 				_check_contact()
 			if _time >= punch_time:
 				_next(State.HOLD)
+				# One leg left: a punch into nothing throws the mech off balance, the moment the arm
+				# is fully out.
+				if not has_fired and controller.mech.one_leg and controller.mech.fall_control != null:
+					cancel()
+					controller.mech.fall_control.fall()
 		State.HOLD:
 			_action = _punch
 			_twist = punch_twist_deg

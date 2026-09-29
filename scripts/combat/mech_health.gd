@@ -3,7 +3,7 @@ extends Node
 ## HP of each mech part (Phase 4). Builds a hitbox for each part from the part models, takes the
 ## damage that hitboxes and blasts send, and tells PartBreaker and MechDeath what broke.
 ## Keys: "Head", "Torso C", "Torso L", "Torso R", "Arm L", "Arm R", "Groin", "Leg L", "Leg R",
-## "Shield", "Back L", "Back R".
+## "Booster" (backpack), "Shield", "Back L", "Back R".
 ## The core part is split by position into center, left and right torso; the legs part into
 ## groin (pelvis) and the two legs. Hits on the held weapon count for the arm that holds it.
 ## The mech is alive while the head, the center torso, the groin and at least one leg are intact.
@@ -52,6 +52,9 @@ func _ready() -> void:
 			max_hp["Groin"] = part_hp["Legs"] * groin_share
 			max_hp["Leg L"] = part_hp["Legs"] * leg_share
 			max_hp["Leg R"] = part_hp["Legs"] * leg_share
+	var booster := assembler.loadout.booster if assembler.loadout != null else null
+	if booster != null and booster.scene != null:
+		max_hp["Booster"] = booster.hp
 	if weapons != null:
 		if weapons.left_data != null and not weapons.shield_nodes.is_empty():
 			max_hp["Shield"] = weapons.left_data.hp
@@ -79,6 +82,15 @@ func damage(key: String, amount: float) -> void:
 		part_destroyed.emit(key)
 		if dies:
 			destroyed.emit(key)
+
+
+## Destroys a part with its effects (part_destroyed) even on a dead mech, with no death check.
+func break_part(key: String) -> void:
+	if not is_part_alive(key):
+		return
+	hp[key] = 0.0
+	_remove_hitboxes(key)
+	part_destroyed.emit(key)
 
 
 ## Takes a part away with no signals (it went with another part, for example the arm with its side
@@ -156,6 +168,8 @@ func _add_node(key: String, node: Node3D) -> void:
 
 ## Core parts (core, booster, generator, FCS) split by side; legs split by socket.
 func _segment_key(part_key: String, node: Node3D) -> String:
+	if part_key == "Booster":
+		return "Booster"
 	if part_key == "Core":
 		if node.position.x < -side_torso_x:
 			return "Torso L"

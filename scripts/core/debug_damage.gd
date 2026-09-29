@@ -2,7 +2,7 @@ class_name DebugDamage
 extends Node
 ## Test keys (until enemies shoot back in Phase 4b): damage the player's own parts.
 ## F1 head, F2 center torso, F3 left torso, F4 right torso, F5 left arm, F6 right arm, F7 groin,
-## F8 left leg, F9 right leg, F10 shield, F11 back units.
+## F8 left leg, F9 right leg, F10 shield, F11 back units, F12 booster (backpack).
 ## Each press takes damage_fraction of the part's max HP. Hold Shift to destroy the part at once.
 
 @export var switcher: LoadoutSwitcher
@@ -10,7 +10,7 @@ extends Node
 
 const KEYS := {KEY_F1: ["Head"], KEY_F2: ["Torso C"], KEY_F3: ["Torso L"], KEY_F4: ["Torso R"],
 		KEY_F5: ["Arm L"], KEY_F6: ["Arm R"], KEY_F7: ["Groin"], KEY_F8: ["Leg L"], KEY_F9: ["Leg R"],
-		KEY_F10: ["Shield"], KEY_F11: ["Back L", "Back R"]}
+		KEY_F10: ["Shield"], KEY_F11: ["Back L", "Back R"], KEY_F12: ["Booster"]}
 
 
 func _unhandled_input(event: InputEvent) -> void:

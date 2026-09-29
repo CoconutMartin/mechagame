@@ -174,7 +174,7 @@ func _two_handed() -> bool:
 
 
 func _physics_process(_delta: float) -> void:
-	if mech.is_wrecked:
+	if mech.is_wrecked or mech.is_fallen:
 		return
 	var wants := {}
 	if right_weapon != null:

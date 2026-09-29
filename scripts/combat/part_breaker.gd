@@ -10,6 +10,7 @@ extends Node
 ##        with short limping steps, no jump, boost speed stays, and the mech falls over after a
 ##        boost (MechFall).
 ##   Shield, back unit: falls off, that weapon is lost.
+##   Booster (backpack): explodes, no more boost; the fuel blast damages the torso parts.
 
 const EXPLOSION := preload("res://scenes/effects/explosion.tscn")
 const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
@@ -26,6 +27,8 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export_range(0.0, 1.0) var smoke_below: float = 0.5
 ## One leg destroyed: walk (and boost) speed x this value.
 @export var one_leg_speed_scale: float = 0.4
+## Booster explosion damage to each torso part, as a part of the mech's max energy.
+@export var fuel_damage: float = 0.05
 ## Kick of a falling part, m/s (sideways and up).
 @export var drop_push: float = 5.0
 
@@ -64,6 +67,8 @@ func _on_part_destroyed(key: String) -> void:
 			drop(nodes, -mech.global_basis.x)
 		"Back L", "Back R":
 			break_back(key, Vector3.UP - mech.global_basis.z)
+		"Booster":
+			_break_booster()
 
 
 ## An arm falls off (no explosion) with its weapon or shield.
@@ -124,6 +129,35 @@ func _break_leg(key: String) -> void:
 		mech.boost_speed_multiplier /= one_leg_speed_scale
 		mech.footsteps.stride_length *= one_leg_speed_scale
 		jump_charge.process_mode = Node.PROCESS_MODE_DISABLED
+		_fall_after_leg_loss()
+
+
+## A leg broke on a living mech: in the air it falls over after landing; during a pile bunker
+## attack it falls over now.
+func _fall_after_leg_loss() -> void:
+	var fall := mech.fall_control
+	if fall == null:
+		return
+	if not mech.is_on_floor():
+		fall.fall_on_landing()
+		return
+	var bunker := weapons.right_weapon as PileBunkerWeapon
+	if bunker != null and bunker.is_busy():
+		bunker.cancel()
+		fall.fall()
+
+
+## The booster (backpack) explodes: no more boost. Its fuel blast damages the torso: fuel_damage x
+## the mech's max energy (a bigger fuel store = a bigger blast).
+func _break_booster() -> void:
+	blow_away("Booster", 0.8)
+	mech.can_boost = false
+	var flames := mech.find_child("BoosterFlames", true, false) as BoosterFlames
+	if flames != null:
+		flames.disable()
+	var blast := mech.energy.capacity * fuel_damage
+	for key in ["Torso C", "Torso L", "Torso R"]:
+		health.damage.call_deferred(key, blast)
 
 
 ## Hides the armor of a part with an explosion and sparks (the part is blown away).

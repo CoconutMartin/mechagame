@@ -38,6 +38,7 @@
 [ext_resource type="Script" path="res://scripts/combat/part_breaker.gd" id="breaker"]
 [ext_resource type="Script" path="res://scripts/animation/power_down_pose.gd" id="powerdown"]
 [ext_resource type="Script" path="res://scripts/animation/mech_fall.gd" id="fall"]
+[ext_resource type="Script" path="res://scripts/animation/fall_pose.gd" id="fallpose"]
 [ext_resource type="Script" path="res://scripts/combat/mech_death.gd" id="death"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/beam_rifle.tscn" id="rifle"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/bullet.tscn" id="bullet"]

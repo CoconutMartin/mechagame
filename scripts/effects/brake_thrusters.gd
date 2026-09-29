@@ -26,6 +26,13 @@ func _ready() -> void:
 		flames = GroupNodes.find(mech, &"brake_flame")  # Flames from the leg part model.
 
 
+## Flames off at once (before the animation nodes stop, for a fall or death).
+func cut() -> void:
+	_amount = 0.0
+	for flame in flames:
+		flame.visible = false
+
+
 func _physics_process(delta: float) -> void:
 	var target := thrust if mech.is_brake_skidding else 0.0
 	_amount = move_toward(_amount, target, (ignite_speed if target > _amount else fade_speed) * delta)

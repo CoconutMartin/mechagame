@@ -40,7 +40,7 @@ func _ready() -> void:
 
 func _on_destroyed(cause: String) -> void:
 	mech.is_wrecked = true
-	animation.process_mode = Node.PROCESS_MODE_DISABLED
+	mech_fall.freeze_animation()
 	# The held weapon hangs from the right hand.
 	if weapons.right_weapon != null and is_instance_valid(elbow_right):
 		weapons.right_weapon.reparent(elbow_right, true)
@@ -52,8 +52,13 @@ func _on_destroyed(cause: String) -> void:
 		"Groin":
 			_groin()
 		"Leg L", "Leg R":
-			mech_fall.fall(-mech.global_basis.z)
-			mech_fall.landed.connect(_crush_head, CONNECT_ONE_SHOT)
+			# The fall goes the way the mech moves. In the air it falls after landing: the way it
+			# moves, or backwards if it has no speed.
+			mech_fall.landed.connect(_crush, CONNECT_ONE_SHOT)
+			if mech.is_on_floor():
+				mech_fall.fall(Vector3.ZERO, Vector3.ZERO, 0, false)
+			else:
+				mech_fall.fall_on_landing(true)
 	power_down.start()
 
 
@@ -113,7 +118,15 @@ func _physics_process(delta: float) -> void:
 				(child as Node3D).visible = false
 
 
-## Both legs gone: the fall lands on the head and crushes it.
+## Both legs gone: a fall to the front lands on the head and crushes it; a fall to the back lands
+## on the backpack and it explodes.
+func _crush() -> void:
+	if mech_fall.local_direction.z > 0.3 and health.is_part_alive("Booster"):
+		health.break_part("Booster")
+		return
+	_crush_head()
+
+
 func _crush_head() -> void:
 	var nodes := health.get_nodes("Head")
 	if nodes.is_empty() or not is_instance_valid(nodes[0]) or not nodes[0].visible:

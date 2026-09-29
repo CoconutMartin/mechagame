@@ -41,6 +41,22 @@ func _physics_process(delta: float) -> void:
 	thrust = move_toward(thrust, target, speed * delta)
 
 
+## Flames off at once (before the animation nodes stop, for a fall or death).
+func cut() -> void:
+	thrust = 0.0
+	_process(0.0)
+
+
+## The booster is destroyed: no more flames or light.
+func disable() -> void:
+	for flame in flames:
+		flame.visible = false
+	flames.clear()
+	if light != null:
+		light.visible = false
+	light = null
+
+
 ## Starts a short burst, for example at the dodge start.
 func burst() -> void:
 	thrust = maxf(thrust, dodge_burst)
