@@ -218,7 +218,7 @@ Each part has its own HP and its own hitbox. Damage goes to the part that is hit
 
 - Head destroyed: lock-on range and HUD accuracy drop
 - Arm destroyed: weapon on that arm is lost
-- Legs destroyed: speed drops 60%, no jump
+- One leg destroyed: speed drops 60% (jump jets still work since 4a.7); both legs destroyed: the mech falls and dies
 - Back unit destroyed: that weapon is lost
 - Core destroyed: mech is destroyed
 
