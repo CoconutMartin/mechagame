@@ -34,6 +34,9 @@ enum State { IDLE, STEPS, FALL, IMPACT, ROLL, LIE, GET_UP }
 ## Bounce when the body hits the ground: rebound in degrees and time in seconds.
 @export var bounce_deg: float = 4.0
 @export var impact_time: float = 0.45
+## Extra slowdown (m/s²) while the body scrapes along the ground, and while it rolls.
+@export var ground_friction: float = 14.0
+@export var roll_friction: float = 2.0
 ## Damage to every part when the mech hits the ground, as a part of its max HP.
 @export_range(0.0, 1.0) var fall_damage: float = 0.05
 @export_group("Steps")
@@ -51,6 +54,9 @@ enum State { IDLE, STEPS, FALL, IMPACT, ROLL, LIE, GET_UP }
 ## One leg left: a boost stop faster than this part of the boost speed is a "full boost" (1 roll).
 @export_range(0.0, 1.0) var full_boost_ratio: float = 0.85
 @export var full_boost_rolls: int = 1
+## A full boost fall leans this much toward the broken leg (0 = straight along the motion), so the
+## body lies across the motion and rolls along it.
+@export var roll_side_lean: float = 0.7
 ## Moving slower than this (m/s) counts as standing still (neutral fall).
 @export var neutral_speed: float = 1.5
 
@@ -66,6 +72,8 @@ var state_time: float = 0.0
 var _direction := Vector3.FORWARD
 var _step_side := Vector3.ZERO
 var _rolls: int = 0
+## +1 or -1: the roll turns the way the body slides sideways (like a log rolling on the ground).
+var _roll_sign: float = 1.0
 var _get_up: bool = false
 var _sway: float = 0.0
 var _base := Transform3D.IDENTITY
@@ -95,6 +103,10 @@ func fall(direction: Vector3 = Vector3.ZERO, steps: Vector3 = Vector3.ZERO, roll
 	_direction = Vector3(direction.x, 0.0, direction.z).normalized()
 	_step_side = Vector3(steps.x, 0.0, steps.z).normalized()
 	_rolls = rolls
+	var velocity := Vector3(mech.velocity.x, 0.0, mech.velocity.z)
+	var across := velocity - _direction * velocity.dot(_direction)
+	var turn := Vector3.UP.cross(across).dot(_direction)
+	_roll_sign = signf(turn) if absf(turn) > 0.01 else 1.0
 	_get_up = get_up
 	_base = visual.transform
 	angle = 0.0
@@ -145,6 +157,7 @@ func _physics_process(delta: float) -> void:
 	if state == State.IDLE:
 		return
 	state_time += delta
+	_scrape(delta)
 	match state:
 		State.STEPS:
 			var total := step_time * step_count
@@ -171,8 +184,9 @@ func _physics_process(delta: float) -> void:
 				_set_state(State.ROLL if _rolls > 0 else State.LIE)
 		State.ROLL:
 			var total := TAU * _rolls
-			roll = minf(state_time * deg_to_rad(roll_speed_deg), total)
-			if roll >= total:
+			var turned := minf(state_time * deg_to_rad(roll_speed_deg), total)
+			roll = turned * _roll_sign
+			if turned >= total:
 				roll = 0.0
 				_set_state(State.LIE)
 		State.LIE:
@@ -187,6 +201,23 @@ func _physics_process(delta: float) -> void:
 					_finish()
 					return
 	visual.transform = _get_transform() * _base
+
+
+## A body on the ground slows down fast (the Mech adds its own slide slowdown).
+func _scrape(delta: float) -> void:
+	var friction := 0.0
+	match state:
+		State.IMPACT:
+			friction = roll_friction if _rolls > 0 else ground_friction
+		State.LIE, State.GET_UP:
+			friction = ground_friction
+		State.ROLL:
+			friction = roll_friction
+	if friction <= 0.0:
+		return
+	var slide := Vector2(mech.velocity.x, mech.velocity.z).move_toward(Vector2.ZERO, friction * delta)
+	mech.velocity.x = slide.x
+	mech.velocity.z = slide.y
 
 
 ## Tilt during the get-up (t = 0 to 1): push up on the arms, pause while the knee comes under the
@@ -283,5 +314,8 @@ func _watch_boost() -> void:
 			and mech.is_on_floor():
 		var speed := Vector2(mech.velocity.x, mech.velocity.z).length()
 		var full := speed >= mech.get_boost_speed() * full_boost_ratio
-		fall(Vector3.ZERO, Vector3.ZERO, full_boost_rolls if full else 0, true)
+		var direction := get_motion_direction()
+		if full:
+			direction += mech.global_basis.x * signf(mech.broken_leg_side) * roll_side_lean
+		fall(direction, Vector3.ZERO, full_boost_rolls if full else 0, true)
 	_was_boosting = boosting

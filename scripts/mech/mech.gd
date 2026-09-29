@@ -95,7 +95,7 @@ enum BoostExit { SKID, LEAP }
 ## SKID: slowdown while the feet slide (m/s per second).
 @export var skid_deceleration: float = 6.7
 ## A fallen or wrecked mech slides to a stop with this slowdown, in m/s².
-@export var fallen_slide_deceleration: float = 6.0
+@export var fallen_slide_deceleration: float = 3.0
 ## SKID: the slide ends at this speed (m/s). Then the heavy steps start, or the walk with a move key.
 @export var skid_end_speed: float = 4.0
 ## SKID: stride lengths (meters) of the heavy steps to a stop after the slide, when no move key is held.

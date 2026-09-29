@@ -26,7 +26,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | Q / E (hold, release) | Missile pods: hold to lock targets, release to fire | `fire_back_left`, `fire_back_right` |
 | R | Reload guns and missile pods | `reload` |
 | 1 to 4 | Test loadouts: Gunner, Sniper, Melee, Missile | `loadout_1` to `loadout_4` |
-| V (hold) | Front view: the camera swings around to the front of the mech (about 0.33 s). The mech aim stays on the torso direction and the crosshair hides | `front_view` |
+| V (toggle since 4a.3) | Front view: press V once the camera swings around to the front of the mech (about 0.33 s); press V again to go back. The mech aim stays on the torso direction and the crosshair hides | `front_view` |
 | Mouse | Aim. Sets the torso target (up to 52° left and 64° right of the legs). The torso turns at its turn speed and the camera always stays behind the torso | |
 | Space | Hold on the ground to charge the jump jets, release to jump. No plain jump | `jump` |
 | Space x2 | Double tap (within 0.3 s): dodge hop. A / D = side, W = forward, S or no key = back | `jump` |
@@ -223,15 +223,23 @@ Each part has its own HP and its own hitbox. Damage goes to the part that is hit
 - Core destroyed: mech is destroyed
 
 Phase 4a (user choices: parts fall off, respawn), revised in 4a.2 (user rules):
-- Hit keys (`MechHealth`): Head, Torso C, Torso L, Torso R, Arm L, Arm R, Groin, Leg L, Leg R, Shield, Back L, Back R. The core part HP is split: center torso 60%, each side torso 40% (Warden: 960 / 640 / 640). The legs part HP is split: groin 40%, each leg 60% (560 / 840 / 840). Core meshes more than 0.9 m from the middle are side torso; leg meshes on HipL/KneeL are the left leg, on HipR/KneeR the right leg, on Lower the groin. Booster, generator and FCS count as center torso. Hits on the held weapon damage the arm that holds it.
+- Hit keys (`MechHealth`): Head, Torso C, Torso L, Torso R, Arm L, Arm R, Groin, Leg L, Leg R, Shield, Back L, Back R. The core part HP is split: center torso 60%, each side torso 40% (Warden: 960 / 640 / 640). The legs part HP is split: groin 40%, each leg 60% (560 / 840 / 840). Core meshes more than 0.9 m from the middle are side torso; leg meshes on HipL/KneeL are the left leg, on HipR/KneeR the right leg, on Lower the groin. The generator and FCS count as center torso. The booster (backpack) has its own HP (Warden 200) since 4a.3. Hits on the held weapon damage the arm that holds it.
 - Alive while the head, the center torso, the groin and at least one leg are intact.
 - Hitboxes: box `PartHitbox` bodies (layer 4) built from the part models: one box per container node (pauldron pivot, shield, weapon, pod, pile bunker mount) and one per socket and key for loose meshes. They move with the parts.
 - Below 50% HP a part smokes (`DamageSmoke`).
 - `PartBreaker` (part effects):
   - Arm destroyed: falls off (no explosion) with its weapon or shield.
   - Side torso destroyed: its armor is blown away (small explosion, smoke), its arm and the back unit on that side fall off (no explosion). The mech lives.
-  - Leg destroyed: explodes at the knee, the armor is gone and the inner frame shows (thigh and shin frames, struts, foot frame, joints). One leg left: walk 60% slower with short limping steps (stride x0.4), no jump, boost speed stays the same. When the boost stops the mech falls over (forward, leaning to the broken leg), slides, lies 1.5 s and gets up (1.5 s). After a full boost (85% of boost speed or more) it rolls over twice along its length before it lies still (180°/s, 75% slower than 720°/s), face down at the end.
+  - Leg destroyed: explodes at the knee, the armor is gone and the inner frame shows (thigh and shin frames, struts, foot frame, joints). One leg left: walk 60% slower with short limping steps (stride x0.4), no jump, boost speed stays the same. When the boost stops the mech falls over (forward, leaning to the broken leg), slides, lies 1.5 s and gets up (1.5 s). After a full boost (85% of boost speed or more) it rolls over once along its length (180°/s, 75% slower than 720°/s), face down at the end (4a.3: was twice).
   - Shield, back unit destroyed: falls off.
+  - Booster (backpack) destroyed (4a.3): it explodes, no more boost, flames off. The fuel blast damages each torso part by 5% of the mech's max energy (`PartBreaker.fuel_damage`; Warden 100 energy = 5 HP, user to confirm).
+- Falls (4a.3, `MechFall` + `FallPose`):
+  - Direction: the way the mech moves, or its front when it stands still (slower than 1.5 m/s).
+  - One leg left, the mech falls over: when the boost stops (after a full boost it rolls once along its body and ends face down; the fall leans 35° toward the broken leg so the body rolls across the motion); after a dodge hop (in the hop direction); when it lands after the leg broke in the air; when a pile bunker punch hits nothing (the moment the arm is fully out); when the leg breaks during a pile bunker attack (the attack stops).
+  - Both legs broken in the air: the mech falls over when it lands, the way it moves, or backwards with no speed. A fall to the back crushes the backpack (it explodes); a fall to the front crushes the head.
+  - Every fall damages every part by 5% of its max HP when the body hits the ground.
+  - Motion: a topple like a falling pole (1 s, slow then fast), a 4° bounce at impact, the body scrapes to a stop (14 m/s² extra, 2 m/s² while rolling; the Mech slide slowdown is 3 m/s²), rolls at 180°/s.
+  - Arms and legs (living mech): the knees buckle, the arms reach out toward the ground to break the fall, the elbows give at impact; during a roll the arms come back to a standby pose near the body; get up (2.4 s): push up on the arms, one knee comes under the body, then rise. The held weapon hangs from the right hand while down. A dead mech goes limp (power down).
 - `MechDeath` (death, then `PowerDownPose`: both arms straight down, both legs crouched with hips 35° and knees 70°, torso sags 10°, blends in 1 s; the held weapon hangs from the right hand):
   - Head destroyed: the head falls off, power down, standing.
   - Center torso destroyed, both side torsos above 50%: power down, standing.
@@ -243,7 +251,7 @@ Phase 4a (user choices: parts fall off, respawn), revised in 4a.2 (user rules):
 - Weapon damage: rifle bullet = weapon damage (120), beam = ticks, pile bunker 900, missiles = `Blast` (radius 8 m, full damage at the center to 30% at the edge, by distance to the nearest box; each body once). A mech's own weapons and aim skip its own hitboxes (`Mech.get_hit_exclude()`).
 - Player death: `PlayerRespawner` rebuilds the mech 3 s after death, at the start point with full HP and the same loadout (`LoadoutSwitcher.rebuild()`).
 - Target dummies: 3000 HP with a label above them, explode at 0 HP and come back after 6 s.
-- Test keys (`DebugDamage`, until enemies shoot back): F1 head, F2 center torso, F3 left torso, F4 right torso, F5 left arm, F6 right arm, F7 groin, F8 left leg, F9 right leg, F10 shield, F11 back units. Each press takes 30% of max HP; Shift + key destroys the part at once.
+- Test keys (`DebugDamage`, until enemies shoot back): F1 head, F2 center torso, F3 left torso, F4 right torso, F5 left arm, F6 right arm, F7 groin, F8 left leg, F9 right leg, F10 shield, F11 back units, F12 booster. Each press takes 30% of max HP; Shift + key destroys the part at once.
 - Debug HUD: current / max HP of each part, DESTROYED, MECH DESTROYED.
 
 ## Archetypes (preset loadouts; player can mix any parts)
@@ -394,6 +402,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Phase 3 revision 66: pile bunker charge copies the boost pose (torso lean too). Beam sniper torso shake while firing 40% less.
 - Phase 4a: per-part HP and hitboxes, damage from all weapons, parts fall off (debris, smoke), legs slow, core destroyed = wreck, respawn after 3 s. Dummies with HP. Test keys F1 to F8.
 - Phase 4a.2: torso split (center, left, right) and legs split (groin, left, right). New death rules (head, center torso, groin, both legs) with power down pose, explosions, side steps and falls. One leg: exploded leg with the inner frame, limp, falls after a boost (rolls twice after a full boost), gets up. Test keys F1 to F11.
+- Phase 4a.3: 1 roll after a full boost. One-leg falls after a dodge, after landing, and on a pile bunker miss or leg loss during an attack. Both legs lost in the air: fall on landing (backwards with no speed). Booster HP (no boost, fuel blast). Fall damage 5%. Fall direction from motion. Arms break the fall, standby during the roll, staged get-up. V toggles the front view. Test key F12.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).
