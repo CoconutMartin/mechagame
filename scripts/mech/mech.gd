@@ -100,6 +100,8 @@ enum BoostExit { SKID, LEAP }
 @export var skid_deceleration: float = 6.7
 ## A fallen or wrecked mech slides to a stop with this slowdown, in m/s².
 @export var fallen_slide_deceleration: float = 3.0
+## Height of the lock-on point (missiles, lock boxes) above the feet, in meters.
+@export var lock_point_height: float = 7.5
 ## SKID: the slide ends at this speed (m/s). Then the heavy steps start, or the walk with a move key.
 @export var skid_end_speed: float = 4.0
 ## SKID: stride lengths (meters) of the heavy steps to a stop after the slide, when no move key is held.
@@ -227,6 +229,11 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_check_bump(velocity_before)
 	_check_landing(fall_speed)
+
+
+## Point that missiles and lock-on aim at (the chest).
+func get_lock_point() -> Vector3:
+	return global_position + Vector3.UP * lock_point_height
 
 
 ## Bodies this mech's own weapons and aim must not hit: its body and its hitboxes.

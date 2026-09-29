@@ -43,7 +43,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 - 1 unit = 1 meter. Mech height is about 10 m.
 - Speed, jump, boost, and camera are tuned for this size.
 - Maps: small to medium urban arenas.
-- Test map: 206 x 206 m (walls at ±102.6 m, 30% more area since revision 47). 5 small buildings (6 to 8 m), 5 medium (10 to 16 m), 3 tall (30, 34, 40 m). Platforms: steps 3, 6, 9, 12 m, a 15° ramp to a 13 m deck, a 2.5 m loading dock, a 5 m plaza, a 3 m wall. Main street about 68 m wide with lampposts.
+- Test map (cleared in 4a.10, user request): 206 x 206 m ground with walls at ±102.6 m. The player starts at the center facing north (-Z). Content: 1 tall building (18 x 40 x 18 m, 38 m left and 75 m ahead), 1 medium building (18 x 16 x 15 m, 34 m right and 60 m ahead), 1 semi truck (18 m left, 28 m ahead), 1 car (16 m right, 22 m ahead), and 1 dummy mech 40 m ahead facing the player. (Before 4a.10: 13 buildings, platforms, lampposts, 7 cars, 4 trucks, 7 people and 6 box dummies.)
 - Greybox all maps with simple shapes. Include human-scale props: cars (4.5 m), doors (2 m), lampposts (6 m), people (1.8 m).
 - Camera: over-the-shoulder, low height, small shake on each heavy footstep.
 - Movement has weight: gradual acceleration and deceleration.
@@ -256,6 +256,7 @@ Phase 4a (user choices: parts fall off, respawn), revised in 4a.2 (user rules):
 - Weapon damage: rifle bullet = weapon damage (120), beam = ticks, pile bunker 900, missiles = `Blast` (radius 8 m, full damage at the center to 30% at the edge, by distance to the nearest box; each body once). A mech's own weapons and aim skip its own hitboxes (`Mech.get_hit_exclude()`).
 - Player death: `PlayerRespawner` rebuilds the mech 3 s after death, at the start point with full HP and the same loadout (`LoadoutSwitcher.rebuild()`).
 - Target dummies: 3000 HP with a label above them, explode at 0 HP and come back after 6 s.
+- Dummy mech (4a.10, `DummyMech` in the test map): a real mech built from the current player mech scene and the gunner loadout, standing still with no pilot (no input, no camera), facing the player. It has the full part damage (hitboxes, breaking parts, falls, death), missiles can lock it (`Mech.get_lock_point`, 7.5 m up), and a label above its head shows the HP of each part. It is built again 6 s after it dies.
 - Test keys (`DebugDamage`, until enemies shoot back): F1 head, F2 center torso, F3 left torso, F4 right torso, F5 left arm, F6 right arm, F7 groin, F8 left leg, F9 right leg, F10 shield, F11 back units, F12 booster. Each press takes 30% of max HP; Shift + key destroys the part at once.
 - Debug HUD: current / max HP of each part, DESTROYED, MECH DESTROYED.
 
@@ -290,7 +291,7 @@ One active skill slot (example: Overdrive, +30% speed for 8 seconds).
 - Weapon models are scenes whose root has a `MechWeapon` script: `GunWeapon`, `BeamRifleWeapon`, `BladeWeapon`, `PileBunkerWeapon`, `MissilePodWeapon`. `MechWeapon.is_melee()` marks the melee weapons. The shield is a socket-group scene (`scenes/weapons/warden_shield.tscn`).
 - `WeaponController` (mech node): MechAssembler calls `mount()`. It adds the weapons from the loadout under the torso, wires WeaponPose, the arm IK targets, WeaponRecoil, CameraAds (zoom only for two-hand weapons with a zoom FOV), TorsoPose (aim twist), and the shield nodes (MechShield, ShieldPose, ShieldMount are off without a shield). Each physics frame it sends the buttons to the weapons.
 - Effects: `Missile` (homing, explodes on contact or near the target), `Explosion`, `BeamShot`, bullet `ImpactSpark` and `BulletMark`. Hits call `on_hit(damage)` on the target (Phase 4 adds HP).
-- `TargetDummy` (`scenes/world/target_dummy.tscn`): lockable (group "lockable"), flashes on hits. Six in the test map (two on raised platforms).
+- `TargetDummy` (`scenes/world/target_dummy.tscn`): lockable (group "lockable"), flashes on hits. Six in the test map (two on raised platforms). Not in the test map since 4a.10 (the dummy mech replaces them).
 - HUD: weapon panel at the bottom right (ammo, reload, heat, overheat, charge, lock count), lock box and target brackets.
 - The aim ray (MechAim) hits layer 2 too (mechs and dummies, not the own mech), so shots land on the dummy under the blue ring. Before, the ray passed through the dummy to the ground behind it and the shots from the lower muzzle landed low.
 - Target dummy collision: three boxes (legs, body, head) that match its mesh.
@@ -414,6 +415,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Phase 4a.7: the one-leg boost fall has no roll and no turn; the mech gets up as soon as the slide ends. Jump jets work on one leg.
 - Phase 4a.8: one leg: every landing from the air ends in a fall toward the broken leg. The pile bunker charge and punch go for the blue ring (locked at release); the stake hits the ring point.
 - Phase 4a.9: boost lock after the get-up removed. Shots aim at what the camera sees under the blue ring (`MechAim.get_ring_screen_point`, a camera ray through the ring), so bullets land on the ring on dummies and target edges too (before: a ray from the torso, which missed thin targets such as the dummy head when the ring was off the crosshair). If the ring is over empty space just past a target, the line of fire from the muzzle (lower than the camera) can still hit that target.
+- Phase 4a.10: test map cleared: 1 tall and 1 medium building, 1 truck, 1 car, and a dummy mech (the current mech with no pilot, full part damage, HP label, respawns after 6 s).
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).
