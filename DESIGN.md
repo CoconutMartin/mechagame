@@ -11,7 +11,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | 1 | Mech controller and third-person camera on a test map | Done |
 | 2 | Part resources, sockets, assembler, stat calculator, weight-to-speed formula, debug HUD | Done |
 | 3 | Weapons: guns, lock-on missiles, sniper zoom, melee blade, energy use | Done |
-| 4 | Per-part HP, hitboxes, destruction, target dummies, enemy AI, greybox urban map with destructible props | In progress: 4a done (part HP, hitboxes, part breaks, respawn), 4b done (enemy AI gunner). Next 4c destructible city |
+| 4 | Per-part HP, hitboxes, destruction, target dummies, enemy AI, greybox urban map with destructible props | Done: 4a (part HP, hitboxes, part breaks, respawn), 4b (enemy AI gunner), 4c (destructible buildings and props) |
 | 5 | Garage screen: swap parts, add plates, live stat preview. Graphics settings menu (low, medium, high) | Not started |
 | 6 | Pilot creation and skill tree | Not started |
 | 7 | Save/load builds (JSON) and 4 preset archetype loadouts | Not started |
@@ -118,9 +118,9 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 
 | Layer | Name | Used by |
 |---|---|---|
-| 1 | world | ground, buildings, platforms |
+| 1 | world | ground, buildings, platforms, building blocks (4c) |
 | 2 | mechs | mech bodies |
-| 3 | props | cars, lampposts, people (mechs pass through them until Phase 4 destruction) |
+| 3 | props | cars, trucks, lampposts, people. Mech bodies pass through them; a contact area on each `DestructibleProp` finds mechs (4c). Debris, rubble and wrecks have no layer (mask 1) |
 | 4 | hitboxes | mech part hitboxes (`PartHitbox`) and target dummies. Weapons, the aim ray and blasts hit layers 1, 3 and 4 (mask 13), not the mech bodies on layer 2 |
 
 ## Weapon controls (Phase 3)
@@ -260,6 +260,13 @@ Phase 4a (user choices: parts fall off, respawn), revised in 4a.2 (user rules):
 - Target dummies: 3000 HP with a label above them, explode at 0 HP and come back after 6 s.
 - Dummy mech (4a.10, `DummyMech` in the test map): a real mech built from the current player mech scene and the gunner loadout, standing still with no pilot (no input, no camera), facing the player. It has the full part damage (hitboxes, breaking parts, falls, death), missiles can lock it (`Mech.get_lock_point`, 7.5 m up), and a label above its head shows the HP of each part. It is built again 6 s after it dies.
 - Enemy AI (4b, user choice "simple gunner"): `MechSpawner` (was `DummyMech`) builds a mech with `pilot` NONE (dummy) or AI. `AIPilot` disables `MechInput` and fills the same input values, so the enemy uses the same movement, boost, dodge, shield and weapon rules as the player. It targets the nearest living mech in group "player" (the player mech, set by `LoadoutSwitcher`). It needs a clear line of sight (ray on layer 1) for 0.8 s before it acts. It walks in when farther than 80 m (boosts past 130 m), backs off when nearer than 40 m, and strafes left or right between (side changes every 2 to 4.5 s). It fires when the target is within 180 m and its torso is within 6° of it; the aim point wanders up to 2.2 m around the target lock point (`MechAim.use_ai_target`). It lifts the shield now and then (0.12 per second, more when the center torso is hurt, 1.6 s) and does a dodge hop now and then (0.06 per second). Enemy missile pods skip their own mech. The enemy label is red. When the player respawns (`PlayerRespawner.respawned`), all spawners build their mech again with full HP.
+- Destructible city (4c, user choice "props + building chunks"):
+  - `DestructibleBuilding` (replaces `GreyboxBlock` for buildings): a grid of `BuildingChunk` blocks (static bodies on layer 1, wanted size 6 x 5 x 6 m, set to divide the building evenly: tall building 3 x 8 x 3 = 72 blocks, medium 3 x 3 x 3 = 27). 1000 HP per block. A block darkens with damage (to 55% of its tint). At 0 HP it breaks into 5 rubble pieces with a dust cloud.
+  - Support: a block stands while it connects to a ground block through its faces. Blocks with no support fall (`FallingChunk`, a little smaller so they do not touch their old neighbors) and break into rubble when they hit the ground or the building. Each impact hurts mechs within 6 m (250 at the center, 30% at the edge; hitboxes only, so it does not break more blocks).
+  - `Rubble`: loose box pieces (no layer, mechs walk through), 14 s, then they sink into the ground in 1.5 s. At most 220 pieces; the oldest goes first. `DustBurst`: one grey dust cloud per block.
+  - Blocks and rubble use shared grid materials by tint (`GridMaterials`, shader `greybox_grid_tinted`), because per-object shader values have a small limit on some graphics cards.
+  - `DestructibleProp` on the car (400 HP, 1.5 t), box truck (900 HP, 7 t), semi truck (1500 HP, 15 t) and lamppost (120 HP, 0.3 t). At 0 HP a vehicle explodes (flash, burnt black wreck, blast 80 to 120 damage in 6 to 9 m on props and mech hitboxes, so vehicles can set off vehicles next to them); a lamppost snaps. A mech that walks into a prop kicks it away (kick speed = mech speed x 1.3 x 30 / (30 + mass in t)); a mech that boosts or moves at 12 m/s or more wrecks it. Wrecks and kicked props are `Debris` bodies that stay 45 s.
+  - Backspace loads the level again (test key, `DebugDamage`).
 - Test keys (`DebugDamage`): F1 head, F2 center torso, F3 left torso, F4 right torso, F5 left arm, F6 right arm, F7 groin, F8 left leg, F9 right leg, F10 shield, F11 back units, F12 booster. Each press takes 30% of max HP; Shift + key destroys the part at once.
 - Debug HUD: current / max HP of each part, DESTROYED, MECH DESTROYED.
 
@@ -334,9 +341,9 @@ scripts/animation/  shield_pose.gd, shield_mount.gd, dodge_slide_pose.gd, mech_l
 scripts/weapons/    weapon_controller.gd, mech_weapon.gd, gun_weapon.gd, beam_rifle_weapon.gd, blade_weapon.gd, pile_bunker_weapon.gd, missile_pod_weapon.gd, missile.gd, bullet.gd, weapon_recoil.gd, weapon_fire.gd (Granpa Gundam only). Scenes: scenes/weapons/bullet.tscn, scenes/effects/impact_spark.tscn.
 scenes/weapons/     heavy_rifle.tscn (Warden), beam_rifle.tscn (Granpa Gundam), long_rifle.tscn (old box rifle). Markers: GripRight, GripLeft, GripLeftRest, GripLeftAim, Muzzle.
 scripts/camera/     mech_camera_rig.gd (follow and mouse look), free_aim.gd (free aim box), aim_spring.gd (aim overshoot), camera_shake.gd, camera_ads.gd (aim down sight zoom).
-scripts/world/      greybox_block.gd (box with collision, set size in Inspector), mech_spawner.gd (dummy and enemy mechs).
+scripts/world/      greybox_block.gd (box with collision, set size in Inspector), mech_spawner.gd (dummy and enemy mechs), destructible_building.gd, building_chunk.gd, falling_chunk.gd, rubble.gd, grid_materials.gd, destructible_prop.gd (4c).
 scripts/ui/         debug_hud.gd, aim_reticle.gd.
-scripts/effects/    skid_dust.gd (dust while skidding), brake_thrusters.gd, booster_flames.gd, muzzle_flash.gd, impact_spark.gd.
+scripts/effects/    skid_dust.gd (dust while skidding), brake_thrusters.gd, booster_flames.gd, muzzle_flash.gd, impact_spark.gd, dust_burst.gd (4c).
 scripts/ai/         ai_pilot.gd (Phase 4b).
 scripts/core/       mouse_capture.gd, group_nodes.gd, loadout_switcher.gd, player_respawner.gd, debug_damage.gd.
 scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.gd, blast.gd (Phase 4). Animation: power_down_pose.gd, mech_fall.gd.
@@ -423,6 +430,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Phase 4b: enemy AI (simple gunner): keeps 40 to 80 m, strafes, fires the rifle with aim error, lifts the shield and dodges now and then. Same mech and rules as the player. Enemies reset when the player respawns.
 - Phase 4b.1: booster fuel blast = 20% of total max HP over the torso. Hit marker (red X): where a shot from the right weapon muzzle really hits (removed in 4c, user request).
 - Phase 4b.2: fixed the error after a pauldron fell off (a freed node was read, 20 s after the arm dropped) and the GDScript warnings. A two-hand weapon is held in one hand when the left arm is lost, with an unsteady ring. The ring stays neutral while the mech is down and during the Akira slide.
+- Phase 4c: destructible city. Buildings made of blocks (1000 HP) that break into rubble and dust; blocks with no support fall, break and hurt mechs below. Vehicles explode into burnt wrecks, lampposts snap, mechs kick props away or wreck them at boost speed. Backspace reloads the level. Also: hit marker removed, yellow crosshair dot hidden, start camera pitch -24°.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).

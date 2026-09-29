@@ -4,6 +4,7 @@ extends Node
 ## F1 head, F2 center torso, F3 left torso, F4 right torso, F5 left arm, F6 right arm, F7 groin,
 ## F8 left leg, F9 right leg, F10 shield, F11 back units, F12 booster (backpack).
 ## Each press takes damage_fraction of the part's max HP. Hold Shift to destroy the part at once.
+## Backspace (4c): loads the level again (buildings, props, mechs back to new).
 
 @export var switcher: LoadoutSwitcher
 @export_range(0.0, 1.0) var damage_fraction: float = 0.3
@@ -16,6 +17,9 @@ const KEYS := {KEY_F1: ["Head"], KEY_F2: ["Torso C"], KEY_F3: ["Torso L"], KEY_F
 func _unhandled_input(event: InputEvent) -> void:
 	var key_event := event as InputEventKey
 	if key_event == null or not key_event.pressed or key_event.echo:
+		return
+	if key_event.keycode == KEY_BACKSPACE:
+		get_tree().reload_current_scene.call_deferred()
 		return
 	var health := switcher.mech.health
 	if health == null:

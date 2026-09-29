@@ -8,13 +8,15 @@ extends RefCounted
 const MASK := 1 | 4 | 8
 
 
-static func apply(world: World3D, center: Vector3, radius: float, damage: float, exclude: Array[RID] = []) -> void:
+## mask: the layers it hits (default: world, props and hitboxes).
+static func apply(world: World3D, center: Vector3, radius: float, damage: float, exclude: Array[RID] = [],
+		mask: int = MASK) -> void:
 	var sphere := SphereShape3D.new()
 	sphere.radius = radius
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = sphere
 	query.transform = Transform3D(Basis.IDENTITY, center)
-	query.collision_mask = MASK
+	query.collision_mask = mask
 	query.exclude = exclude
 	# Nearest distance to each body (a body with many shapes is hit once).
 	var nearest := {}

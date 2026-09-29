@@ -42,6 +42,8 @@ func _ready() -> void:
 func _reset() -> void:
 	_respawn_left = 0.0
 	if is_instance_valid(mech):
+		# Free the name now, so the new mech gets it.
+		mech.name = "OldMech"
 		mech.queue_free()
 	_spawn()
 
@@ -84,6 +86,7 @@ func _process(delta: float) -> void:
 	_respawn_left -= delta
 	if _respawn_left <= 0.0:
 		if is_instance_valid(mech):
+			mech.name = "OldMech"
 			mech.queue_free()
 		_spawn()
 

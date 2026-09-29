@@ -11,7 +11,8 @@ var _age: float = 0.0
 
 ## Moves nodes into a new debris body in world. The nodes keep their place on screen.
 ## push: start velocity (the mech velocity plus a kick away from the mech).
-static func drop(nodes: Array[Node3D], world: Node, push: Vector3) -> Debris:
+## smoke: false for a part that is only knocked away (not broken).
+static func drop(nodes: Array[Node3D], world: Node, push: Vector3, smoke: bool = true) -> Debris:
 	var alive: Array[Node3D] = []
 	for node in nodes:
 		if is_instance_valid(node) and node.is_inside_tree():
@@ -46,7 +47,8 @@ static func drop(nodes: Array[Node3D], world: Node, push: Vector3) -> Debris:
 	debris.add_child(shape)
 	debris.linear_velocity = push
 	debris.angular_velocity = Vector3(randf_range(-3.0, 3.0), randf_range(-3.0, 3.0), randf_range(-3.0, 3.0))
-	DamageSmoke.create(debris, shape.position, true)
+	if smoke:
+		DamageSmoke.create(debris, shape.position, true)
 	return debris
 
 
