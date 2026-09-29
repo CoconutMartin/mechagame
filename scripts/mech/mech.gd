@@ -85,8 +85,6 @@ signal landed(fall_speed: float)
 @export var boost_start_steps: int = 2
 ## Running steps before boost starts from a standstill.
 @export var run_steps: int = 2
-## No boost for this many seconds after the mech gets up from a fall (it is still steadying).
-@export var boost_lock_after_fall: float = 1.0
 ## Moving at least this fast (m/s), boost starts at once with no walk or run steps.
 @export var boost_ready_speed: float = 1.5
 ## Run top speed = walk speed x this value.
@@ -196,8 +194,6 @@ var _skid_slowdown: float = 9.4
 var _skid_start_speed: float = 0.0
 ## World yaw where the torso (and the mech aim) points.
 var _aim_yaw: float = 0.0
-## Seconds left with no boost after a get-up.
-var _boost_lock_left: float = 0.0
 ## True while the legs turn to follow the torso (standing: until they face it).
 var _legs_following: bool = false
 var _previous_aim_yaw: float = 0.0
@@ -282,8 +278,6 @@ func set_heading(yaw: float) -> void:
 func end_fall() -> void:
 	is_fallen = false
 	velocity = Vector3.ZERO
-	# No boost right after getting up: the pilot must steady the mech first.
-	_boost_lock_left = boost_lock_after_fall
 
 
 func get_horizontal_speed() -> float:
@@ -399,8 +393,7 @@ func _update_boost(delta: float) -> void:
 		# Shift + a move key fires the boosters in the air. A move key alone uses free steering.
 		wants_boost = input.boost_held and has_input
 	var energy_rate := boost_energy_per_second if is_on_floor() else boost_energy_per_second * air_boost_energy_multiplier
-	_boost_lock_left = maxf(_boost_lock_left - delta, 0.0)
-	is_boosting = wants_boost and can_boost and _boost_lock_left <= 0.0 and energy.try_drain(energy_rate * delta)
+	is_boosting = wants_boost and can_boost and energy.try_drain(energy_rate * delta)
 	# Shift held after the walk steps: run until boost is ready.
 	is_running = is_on_floor() and not is_boosting and input.boost_held and has_input \
 			and _walk_steps >= boost_start_steps and not landing_recovery.is_recovering() \

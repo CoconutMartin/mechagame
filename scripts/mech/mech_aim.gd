@@ -63,27 +63,39 @@ func _physics_process(delta: float) -> void:
 		return
 	var screen_point := get_crosshair_screen_point()
 	camera_target = _cast(camera.project_ray_origin(screen_point), camera.project_ray_normal(screen_point))
-
-	# The mech aims at the camera target, corrected for any gap between the torso and the camera.
-	var direction := (camera_target - origin).normalized()
-	var forward := -camera.global_basis.z
-	var camera_yaw := atan2(-forward.x, -forward.z)
-	var body_error := wrapf(mech.get_aim_yaw() - camera_yaw, -PI, PI)
-	direction = direction.rotated(Vector3.UP, body_error + get_body_turn())
-
-	# Free aim: the mech aim sits at the free aim offset from the crosshair (mouse and recoil).
 	shot_offset = camera_rig.free_aim.aim_offset if camera_rig != null and camera_rig.free_aim != null else Vector2.ZERO
-	var kick_right := direction.cross(Vector3.UP).normalized()
-	direction = direction.rotated(Vector3.UP, deg_to_rad(shot_offset.x))
-	direction = direction.rotated(kick_right, deg_to_rad(shot_offset.y)).normalized()
+
+	# The mech aims at what the camera sees under the blue ring (a camera ray through the ring), so
+	# the shots land on the ring at any distance and on the edge of a target too.
+	var ring := get_ring_screen_point()
+	var ring_target := _cast(camera.project_ray_origin(ring), camera.project_ray_normal(ring))
+	var direction := (ring_target - origin).normalized()
 
 	var jitter := deg_to_rad(_get_jitter_deg())
+	if jitter <= 0.0:
+		aim_direction = direction
+		aim_point = ring_target
+		return
 	var right := direction.cross(Vector3.UP).normalized()
 	direction = direction.rotated(Vector3.UP, jitter * _noise.get_noise_2d(_time, 0.0))
 	direction = direction.rotated(right, jitter * _noise.get_noise_2d(_time, 50.0)).normalized()
-
 	aim_direction = direction
 	aim_point = _cast(origin, direction)
+
+
+## Screen position of the blue ring (the mech aim), in pixels: the crosshair, moved by the gap
+## between the torso aim and the camera view (and the slide body turn), and by the free aim offset.
+func get_ring_screen_point() -> Vector2:
+	var focal := camera.get_viewport().get_visible_rect().size.y * 0.5 / tan(deg_to_rad(camera.fov) * 0.5)
+	var point := get_crosshair_screen_point() + Vector2(-tan(get_ring_gap()) * focal, 0.0)
+	return point + Vector2(-tan(deg_to_rad(shot_offset.x)) * focal, -tan(deg_to_rad(shot_offset.y)) * focal)
+
+
+## Yaw gap between the torso aim (with the slide body turn) and the camera view, in radians.
+func get_ring_gap() -> float:
+	var forward := -camera.get_parent_node_3d().global_basis.z
+	var camera_yaw := atan2(-forward.x, -forward.z)
+	return wrapf(mech.get_aim_yaw_interpolated() + get_body_turn() - camera_yaw, -PI, PI)
 
 
 ## Whole-body turn from a slide (radians, positive = left). The mech aim turns with the body.
