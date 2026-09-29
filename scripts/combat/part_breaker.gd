@@ -7,8 +7,8 @@ extends Node
 ##   Arm: falls off with its weapon (right) or its shield (left). That weapon is lost.
 ##   Side torso: its armor is blown away, and its arm (and back unit on that side) falls off.
 ##   Leg: explodes, the armor is gone and the inner frame shows. One leg left: walks 60% slower
-##        with short limping steps, no jump, boost speed stays, and the mech falls over after a
-##        boost (MechFall).
+##        with short limping steps; boost speed stays and the jump jets still work; the mech falls
+##        over after a ground boost (MechFall).
 ##   Shield, back unit: falls off, that weapon is lost.
 ##   Booster (backpack): explodes, no more boost; the fuel blast damages the torso parts.
 
@@ -18,7 +18,6 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export var mech: Mech
 @export var health: MechHealth
 @export var weapons: WeaponController
-@export var jump_charge: MechJumpCharge
 @export var camera_shake: CameraShake
 ## The frame (Visual). Its socket nodes stay; the part nodes on them fall off.
 @export var frame: Node3D
@@ -128,7 +127,6 @@ func _break_leg(key: String) -> void:
 		# The boosters still work: boost speed stays the same. The limping steps are shorter.
 		mech.boost_speed_multiplier /= one_leg_speed_scale
 		mech.footsteps.stride_length *= one_leg_speed_scale
-		jump_charge.process_mode = Node.PROCESS_MODE_DISABLED
 		_fall_after_leg_loss()
 
 

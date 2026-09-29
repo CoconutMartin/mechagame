@@ -6,7 +6,8 @@ extends Node
 ## FallPose node moves the arms and legs, and the Mech body slides (Mech.is_fallen or wrecked).
 ## Every fall damages all parts by fall_damage of their max HP when the mech hits the ground.
 ## Fall direction: the way the mech moves, or its front when it stands still.
-## A mech with one leg left falls over when it stops boosting (one roll after a full boost), after
+## A mech with one leg left falls over when it stops boosting (no roll; it gets up once the slide
+## ends), after
 ## a dodge hop, when it lands after a jump, and when a pile bunker punch hits nothing.
 
 signal landed
@@ -62,12 +63,8 @@ enum State { IDLE, STEPS, FALL, IMPACT, SETTLE, ROLL, REPOSITION, LIE, GET_UP }
 ## Time face down before getting up when there is no roll, and the get-up time, in seconds.
 @export var lie_time: float = 0.8
 @export var get_up_time: float = 2.4
-## One leg left: a boost stop faster than this part of the boost speed is a "full boost" (1 roll).
-@export_range(0.0, 1.0) var full_boost_ratio: float = 0.85
-@export var full_boost_rolls: int = 1
-## A full boost fall leans this much toward the broken leg (0 = straight along the motion), so the
-## body lies across the motion and rolls along it.
-@export var roll_side_lean: float = 0.7
+## A fall that waits for the slide to end (the boost fall) gets up when the speed is below this (m/s).
+@export var stopped_speed: float = 0.3
 ## Moving slower than this (m/s) counts as standing still (neutral fall).
 @export var neutral_speed: float = 1.5
 
@@ -82,11 +79,10 @@ var state_time: float = 0.0
 
 var _direction := Vector3.FORWARD
 var _step_side := Vector3.ZERO
-var _rolls: int = 0
-## +1 or -1: the roll turns the way the body slides sideways (like a log rolling on the ground).
-var _roll_sign: float = 1.0
-## Roll to do after the impact (full rolls plus the turn to face down), in radians.
+## Roll to do after the impact (the turn to face down), in radians.
 var _roll_total: float = 0.0
+## Roll face down before the get-up (false for the boost fall).
+var _face_down: bool = true
 ## True when the roll ends face down: the mech is then turned to face its head direction, so the
 ## get-up always starts from a front fall.
 var _face_down_roll: bool = false
@@ -108,9 +104,10 @@ func _ready() -> void:
 
 
 ## Starts a fall toward direction (world, flat; zero = the way the mech moves, or its front).
-## steps: world side direction for the side steps (zero = no steps). rolls: full rolls after the
-## fall. get_up: stand up at the end (the mech is alive).
-func fall(direction: Vector3 = Vector3.ZERO, steps: Vector3 = Vector3.ZERO, rolls: int = 0, get_up: bool = true) -> void:
+## steps: world side direction for the side steps (zero = no steps). get_up: stand up at the end
+## (the mech is alive). face_down: roll face down before the get-up; false = no roll and no turn,
+## the mech gets up from the way it lies as soon as the slide ends (the boost fall).
+func fall(direction: Vector3 = Vector3.ZERO, steps: Vector3 = Vector3.ZERO, get_up: bool = true, face_down: bool = true) -> void:
 	if state != State.IDLE:
 		return
 	_pending_landing = false
@@ -118,12 +115,8 @@ func fall(direction: Vector3 = Vector3.ZERO, steps: Vector3 = Vector3.ZERO, roll
 		direction = get_motion_direction()
 	_direction = Vector3(direction.x, 0.0, direction.z).normalized()
 	_step_side = Vector3(steps.x, 0.0, steps.z).normalized()
-	_rolls = rolls
-	var velocity := Vector3(mech.velocity.x, 0.0, mech.velocity.z)
-	var across := velocity - _direction * velocity.dot(_direction)
-	var turn := Vector3.UP.cross(across).dot(_direction)
-	_roll_sign = signf(turn) if absf(turn) > 0.01 else 1.0
 	_get_up = get_up
+	_face_down = face_down
 	_base = visual.transform
 	angle = 0.0
 	roll = 0.0
@@ -217,7 +210,11 @@ func _physics_process(delta: float) -> void:
 			if state_time >= reposition_time:
 				_set_state(State.GET_UP)
 		State.LIE:
-			if _get_up and not mech.is_wrecked and state_time >= lie_time:
+			var ready := state_time >= lie_time
+			if not _face_down:
+				# Get up once the slide ends.
+				ready = Vector2(mech.velocity.x, mech.velocity.z).length() < stopped_speed and state_time >= 0.2
+			if _get_up and not mech.is_wrecked and ready:
 				_set_state(State.REPOSITION)
 		State.GET_UP:
 			if mech.is_wrecked:
@@ -230,11 +227,11 @@ func _physics_process(delta: float) -> void:
 	visual.transform = _get_transform() * _base
 
 
-## After the impact: the full rolls (after a full boost), then (for a mech that gets up) the turn
-## along the body that brings its front to the ground.
+## After the impact (for a mech that gets up and rolls face down): the turn along the body that
+## brings its front to the ground.
 func _plan_roll() -> void:
-	_roll_total = _roll_sign * TAU * _rolls
-	_face_down_roll = _get_up and not mech.is_wrecked
+	_roll_total = 0.0
+	_face_down_roll = _face_down and _get_up and not mech.is_wrecked
 	if not _face_down_roll:
 		return
 	var axis := _direction
@@ -271,7 +268,7 @@ func _scrape(delta: float) -> void:
 	var friction := 0.0
 	match state:
 		State.IMPACT:
-			friction = roll_friction if _rolls > 0 else ground_friction
+			friction = ground_friction
 		State.SETTLE, State.REPOSITION, State.LIE, State.GET_UP:
 			friction = ground_friction
 		State.ROLL:
@@ -370,7 +367,7 @@ func _on_mech_landed(_fall_speed: float) -> void:
 		return
 	_pending_landing = false
 	var dead := mech.is_wrecked
-	fall(get_motion_direction(_pending_back_if_still), Vector3.ZERO, 0, not dead)
+	fall(get_motion_direction(_pending_back_if_still), Vector3.ZERO, not dead)
 
 
 ## One leg left: a dodge hop ends in a fall (in the hop direction).
@@ -379,15 +376,11 @@ func _on_dodge_ended() -> void:
 		fall(dodge.direction)
 
 
-## One leg left: the mech falls over when the boost stops.
+## One leg left: the mech falls over when the boost stops (on the ground), slides, and gets up
+## as soon as the slide ends (no roll, no turn).
 func _watch_boost() -> void:
 	var boosting := mech.is_boosting
 	if _was_boosting and not boosting and mech.one_leg and not mech.is_wrecked and state == State.IDLE \
 			and mech.is_on_floor():
-		var speed := Vector2(mech.velocity.x, mech.velocity.z).length()
-		var full := speed >= mech.get_boost_speed() * full_boost_ratio
-		var direction := get_motion_direction()
-		if full:
-			direction += mech.global_basis.x * signf(mech.broken_leg_side) * roll_side_lean
-		fall(direction, Vector3.ZERO, full_boost_rolls if full else 0, true)
+		fall(Vector3.ZERO, Vector3.ZERO, true, false)
 	_was_boosting = boosting

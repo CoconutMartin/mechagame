@@ -379,12 +379,11 @@ mech = NodePath("..")
 assembler = NodePath("../MechAssembler")
 weapons = NodePath("../WeaponController")
 
-[node name="PartBreaker" type="Node" parent="." node_paths=PackedStringArray("mech", "health", "weapons", "jump_charge", "camera_shake", "frame")]
+[node name="PartBreaker" type="Node" parent="." node_paths=PackedStringArray("mech", "health", "weapons", "camera_shake", "frame")]
 script = ExtResource("breaker")
 mech = NodePath("..")
 health = NodePath("../MechHealth")
 weapons = NodePath("../WeaponController")
-jump_charge = NodePath("../MechJumpCharge")
 camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
 frame = NodePath("../Visual")
 

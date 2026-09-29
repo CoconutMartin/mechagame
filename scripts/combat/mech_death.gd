@@ -62,7 +62,7 @@ func _on_destroyed(cause: String) -> void:
 			# moves, or backwards if it has no speed.
 			mech_fall.landed.connect(_crush, CONNECT_ONE_SHOT)
 			if mech.is_on_floor():
-				mech_fall.fall(Vector3.ZERO, Vector3.ZERO, 0, false)
+				mech_fall.fall(Vector3.ZERO, Vector3.ZERO, false)
 			else:
 				mech_fall.fall_on_landing(true)
 	power_down.start()
@@ -94,7 +94,7 @@ func _center_torso() -> void:
 	# One side is left: two steps toward it, then fall over diagonally to that side.
 	var remaining_left := exploding[0] == "Torso R"
 	var side_dir := -mech.global_basis.x if remaining_left else mech.global_basis.x
-	mech_fall.fall(side_dir - mech.global_basis.z, side_dir)
+	mech_fall.fall(side_dir - mech.global_basis.z, side_dir, false)
 
 
 ## The upper body comes off the legs and falls, then explodes.
