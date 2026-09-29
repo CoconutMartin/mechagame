@@ -52,10 +52,12 @@ signal landed(fall_speed: float)
 @export var torso_twist_left_deg: float = 52.0
 ## Largest torso twist to the right of the legs, in degrees.
 @export var torso_twist_right_deg: float = 64.0
-## Leg turn speed (A / D) while moving, in degrees per second. Steady (no speed-up).
+## Leg turn speed (following the torso) while moving, in degrees per second. Steady (no speed-up).
 @export var leg_turn_speed_deg: float = 60.0
-## Leg turn speed (A / D) while standing still, in degrees per second.
+## Leg turn speed (following the torso) while standing still, in degrees per second.
 @export var leg_turn_speed_standing_deg: float = 30.0
+## Standing still, the legs start to follow the torso when it is more than this far off (degrees).
+@export var legs_follow_standing_deg: float = 25.0
 ## Top torso turn speed toward the camera direction (degrees per second).
 @export var turn_speed_deg: float = 44.1
 ## How fast the body gains turn speed (degrees per second per second).
@@ -190,6 +192,8 @@ var _skid_slowdown: float = 9.4
 var _skid_start_speed: float = 0.0
 ## World yaw where the torso (and the mech aim) points.
 var _aim_yaw: float = 0.0
+## True while the legs turn to follow the torso (standing: until they face it).
+var _legs_following: bool = false
 var _previous_aim_yaw: float = 0.0
 var _turn_velocity: float = 0.0
 var _turn_start_error: float = 0.0
@@ -260,6 +264,8 @@ func start_fall() -> void:
 
 
 ## MechFall: turns the whole mech (legs and torso) to face this yaw, with no turn animation.
+## The camera does not follow it (MechCameraRig free look while the mech is down); after the get-up
+## the torso and legs turn toward the camera aim.
 func set_heading(yaw: float) -> void:
 	rotation.y = yaw
 	_aim_yaw = yaw
@@ -637,16 +643,25 @@ func _update_settle(delta: float) -> void:
 	_aim_yaw = wrapf(input.aim_yaw + offset, -PI, PI)
 
 
-## Turns the legs (the mech root) with A / D at a steady speed, slower when standing still.
+## The legs (the mech root) turn to face where the torso faces, at a steady speed (slower when
+## standing still). Moving, they always follow. Standing, they start to turn when the torso is more
+## than legs_follow_standing_deg off, then turn all the way (steps in place).
 func _turn_legs(delta: float) -> void:
 	leg_turn_rate = 0.0
 	if landing_recovery.is_recovering() or kneel.is_kneeling or dodge.is_busy():
 		return
-	# A / D only, at a steady speed (no speed-up). The legs never follow the aim.
+	var error := wrapf(_aim_yaw - rotation.y, -PI, PI)
 	var moving := get_horizontal_speed() > footsteps.min_speed
-	var speed := leg_turn_speed_deg if moving else leg_turn_speed_standing_deg
-	leg_turn_rate = input.turn_input * deg_to_rad(speed)
-	rotation.y = wrapf(rotation.y + leg_turn_rate * delta, -PI, PI)
+	if moving or absf(error) > deg_to_rad(legs_follow_standing_deg):
+		_legs_following = true
+	if not _legs_following:
+		return
+	var speed := deg_to_rad(leg_turn_speed_deg if moving else leg_turn_speed_standing_deg)
+	var step := clampf(error, -speed * delta, speed * delta)
+	leg_turn_rate = step / delta
+	rotation.y = wrapf(rotation.y + step, -PI, PI)
+	if absf(error - step) < deg_to_rad(0.5):
+		_legs_following = moving
 
 
 ## Keeps the torso aim inside the twist limits of the current leg heading.

@@ -319,6 +319,9 @@ func _finish() -> void:
 	if weapon != null and torso != null and weapon.get_parent() != torso:
 		weapon.reparent(torso, true)
 	if animation != null:
+		for child in animation.get_children():
+			if child.has_method(&"reset_after_fall"):
+				child.reset_after_fall()
 		animation.process_mode = Node.PROCESS_MODE_INHERIT
 	finished.emit()
 

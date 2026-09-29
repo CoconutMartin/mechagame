@@ -1,16 +1,17 @@
 class_name MechInput
 extends Node
-## Turns keyboard and mouse into movement intent for a Mech (MechWarrior style).
-## W / S walk forward and back along the legs. A / D turn the legs. The mouse aims the camera and torso.
+## Turns keyboard and mouse into movement intent for a Mech.
+## W / S walk forward and back, A / D strafe left and right, both relative to where the torso faces.
+## The mouse aims the camera and torso; the legs follow the torso (Mech._turn_legs).
 ## An AI script can replace this node later and fill the same values.
 
 @export var camera_rig: MechCameraRig
 ## The mech.
 @export var mech: Node3D
 
-## World-space direction the pilot wants to move (along the legs). Length 0 to 1.
+## World-space direction the pilot wants to move (relative to the torso facing). Length 0 to 1.
 var move_direction: Vector3 = Vector3.ZERO
-## Leg turn input: +1 = turn left (A), -1 = turn right (D).
+## Side input: +1 = left (A), -1 = right (D). Strafe, dodge side and slide side use it.
 var turn_input: float = 0.0
 ## World yaw (radians) the mech body should face (camera yaw after the aim spring).
 var aim_yaw: float = 0.0
@@ -46,8 +47,12 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	aim_yaw = camera_rig.yaw
 	var throttle := Input.get_axis("move_back", "move_forward")
-	move_direction = Vector3(0.0, 0.0, -throttle).rotated(Vector3.UP, mech.rotation.y)
 	turn_input = Input.get_axis("move_right", "move_left")
+	var wish := Vector3(-turn_input, 0.0, -throttle)
+	if wish.length() > 1.0:
+		wish = wish.normalized()
+	var facing: float = (mech as Mech).get_aim_yaw() if mech is Mech else mech.rotation.y
+	move_direction = wish.rotated(Vector3.UP, facing)
 	boost_held = Input.is_action_pressed("boost")
 	# Pressed = held now but not in the last frame, so the two values always agree.
 	var was_held := jump_held

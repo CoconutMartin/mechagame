@@ -42,12 +42,18 @@ var sensitivity_scale: float = 1.0
 var _target_yaw: float = 0.0
 ## 0 = camera behind the mech, 1 = camera in front, looking at the mech.
 var front_view_amount: float = 0.0
+## 1 = the camera follows the mouse only (mech down), 0 = it stays behind the torso.
+var _free_look: float = 0.0
 ## V toggles the front view.
 var front_view_on: bool = false
 
 @export_group("Front View")
 ## How fast the camera swings to the front and back (1 / seconds).
 @export var front_view_speed: float = 3.0
+## After the mech gets up, the camera goes back behind the torso once the torso is this close to the
+## mouse aim (degrees), blending over 1 / free_look_blend_speed seconds.
+@export var free_look_release_deg: float = 3.0
+@export var free_look_blend_speed: float = 2.0
 @export_group("")
 
 @export_group("Mech Limits")
@@ -88,7 +94,6 @@ func apply_mouse_motion(relative: Vector2) -> void:
 
 
 func _process(delta: float) -> void:
-	_clamp_to_torso_limits()
 	var weight := 1.0 - exp(-follow_sharpness * delta)
 	global_position = global_position.lerp(_goal_position(), weight)
 	var max_lag := deg_to_rad(max_aim_lag_deg)
@@ -96,25 +101,23 @@ func _process(delta: float) -> void:
 	_pitch_spring.update(_target_pitch, aim_frequency, aim_damping, max_lag, delta)
 	yaw = _yaw_spring.value
 	pitch = _pitch_spring.value
-	# The camera stays behind the torso.
+	# The camera stays behind the torso. While the mech is down (fallen or wrecked) it follows the
+	# mouse instead, and it stays there until the torso has turned back to it.
 	var mech := target as Mech
-	var view_yaw := mech.get_aim_yaw_interpolated() if mech != null else yaw
+	var view_yaw := yaw
+	if mech != null:
+		var torso_yaw := mech.get_aim_yaw_interpolated()
+		if mech.is_fallen or mech.is_wrecked:
+			_free_look = 1.0
+		elif absf(wrapf(yaw - torso_yaw, -PI, PI)) < deg_to_rad(free_look_release_deg):
+			_free_look = move_toward(_free_look, 0.0, free_look_blend_speed * delta)
+		view_yaw = lerp_angle(torso_yaw, yaw, _free_look)
 	if Input.is_action_just_pressed("front_view"):
 		front_view_on = not front_view_on
 	front_view_amount = move_toward(front_view_amount, 1.0 if front_view_on else 0.0, front_view_speed * delta)
 	view_yaw += PI * smoothstep(0.0, 1.0, front_view_amount)
 	rotation = Vector3(0.0, view_yaw, 0.0)
 	_pitch_node.rotation = Vector3(pitch, 0.0, 0.0)
-
-
-## The camera cannot look past the mech torso twist limits.
-func _clamp_to_torso_limits() -> void:
-	var mech := target as Mech
-	if mech == null:
-		return
-	var offset := wrapf(_target_yaw - mech.rotation.y, -PI, PI)
-	var limited := clampf(offset, -deg_to_rad(mech.torso_twist_right_deg), deg_to_rad(mech.torso_twist_left_deg))
-	_target_yaw += limited - offset
 
 
 func _goal_position() -> Vector3:

@@ -54,6 +54,15 @@ var _slide_direction: Vector3 = Vector3.FORWARD
 var _hold_left: float = 0.0
 
 
+## After a fall (MechFall): no slide swing; the body turn eases back to straight from where it is.
+func reset_after_fall() -> void:
+	_turn = AimSpring.new(rad_to_deg(body.rotation.y))
+	_lean = AimSpring.new(0.0)
+	akira_amount = 0.0
+	_target = 0.0
+	_hold_left = 0.0
+
+
 func _ready() -> void:
 	# After the Mech moves, before the torso and arm poses.
 	process_physics_priority = 2

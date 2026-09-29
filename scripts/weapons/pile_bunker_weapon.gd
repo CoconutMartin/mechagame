@@ -1,6 +1,8 @@
 class_name PileBunkerWeapon
 extends MechWeapon
-## A pile bunker on the right forearm (like the shield on the left). RMB: a shield charge, then a punch.
+## A pile bunker on the right forearm (like the shield on the left). Hold RMB to power up the stake
+## (energy drains into it); release RMB, or run out of energy, to attack: a shield charge, then a
+## punch. More power = more damage and force.
 ## The weapon root is only the fist target for the arm IK; the model ("Mount") moves onto the forearm.
 ## The mech charges toward the target (or along the aim) with the shield up and the torso turned
 ## so the left shoulder (shield) leads. At the end of the charge the torso twists back and the right
@@ -60,19 +62,34 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 ## Layers the contact check hits: 1 world, 3 props, 4 hitboxes.
 @export_flags_3d_physics var collision_mask: int = 13
 
+@export_group("Power")
+## Hold RMB to power up the stake: seconds to full power, and energy use per second while holding.
+## Release RMB (or run out of energy) to attack. More power = more damage, push and shake.
+@export var power_time: float = 1.5
+@export var power_energy_per_second: float = 30.0
+## Damage and force of an attack with no power, as a part of a full one.
+@export_range(0.0, 1.0) var min_power: float = 0.5
+## The stake pulls back into the housing while powering up (cocking), in meters at full power.
+@export var cock_distance: float = 0.8
+## Camera shake while powering up: trauma at no power and at full power.
+@export var power_shake_min: float = 0.03
+@export var power_shake_max: float = 0.12
+
 @export_group("Charge")
 ## Stop this far in front of the target (target center), in meters.
 @export var stop_distance: float = 8.0
 ## Targets inside this cone around the aim can pull the charge, in degrees.
 @export var target_cone_deg: float = 20.0
 
-enum State { IDLE, CHARGE, WINDUP, PUNCH, HOLD, RECOVER }
+enum State { IDLE, POWER, CHARGE, WINDUP, PUNCH, HOLD, RECOVER }
 
 var state: State = State.IDLE
 ## 0 = stake in, 1 = stake fully out.
 var stake_out: float = 0.0
 ## True from the stake shot until the next charge.
 var has_fired: bool = false
+## 0 to 1: power stored while RMB is held.
+var power: float = 0.0
 
 var _time: float = 0.0
 var _guard := Transform3D.IDENTITY
@@ -88,6 +105,7 @@ var _stake_rest := Vector3.ZERO
 @onready var _mount: Node3D = $Mount
 @onready var _stake: Node3D = $Mount/Stake
 @onready var _nose: Node3D = $Mount/Nose
+@onready var _glow := ChargeGlow.new()
 
 
 func _ready() -> void:
@@ -96,6 +114,11 @@ func _ready() -> void:
 	_punch = _pose_from(punch_position, punch_direction)
 	_action = _guard
 	_stake_rest = _stake.position
+	# The drum and the nose ring glow with the stored power.
+	_glow.color = Color(1.0, 0.55, 0.2)
+	add_child(_glow)
+	var drum: Array[MeshInstance3D] = [$Mount/Drum as MeshInstance3D]
+	_glow.setup(drum, $Mount/NoseRing as MeshInstance3D, _nose)
 
 
 func is_melee() -> bool:
@@ -131,7 +154,10 @@ func _update(delta: float) -> void:
 			_pose_weight = move_toward(_pose_weight, 0.0, delta / recover_time)
 			_twist = move_toward(_twist, 0.0, absf(punch_twist_deg) * delta / recover_time)
 			if trigger_pressed() and can_use() and controller.mech.energy.current >= data.lunge_energy:
-				_start()
+				power = 0.0
+				_next(State.POWER)
+		State.POWER:
+			_update_power(delta)
 		State.CHARGE:
 			_pose_weight = move_toward(_pose_weight, 1.0, delta * guard_speed)
 			_action = _guard
@@ -182,16 +208,33 @@ func _next(next_state: State) -> void:
 	_time = 0.0
 
 
+## Holding RMB: the fist pulls back to a guard, the stake cocks back, energy drains into the stake.
+## Release RMB or run out of energy: the attack starts.
+func _update_power(delta: float) -> void:
+	var energy := controller.mech.energy
+	var has_energy := energy.try_drain(power_energy_per_second * delta)
+	if has_energy:
+		power = minf(power + delta / power_time, 1.0)
+	_pose_weight = move_toward(_pose_weight, 1.0, delta * guard_speed)
+	_action = _guard.interpolate_with(_windup, 0.35 * power)
+	_twist = lerpf(0.0, charge_twist_deg, smoothstep(0.0, 1.0, _pose_weight))
+	if controller.camera_shake != null:
+		controller.camera_shake.hold_shake(lerpf(power_shake_min, power_shake_max, power))
+	if not trigger_held or not has_energy:
+		_start()
+
+
 func _update_stake(delta: float) -> void:
 	if has_fired and (state == State.PUNCH or state == State.HOLD):
 		stake_out = move_toward(stake_out, 1.0, delta / stake_out_time)
 	else:
 		stake_out = move_toward(stake_out, 0.0, delta / stake_back_time)
-	_stake.position = _stake_rest + Vector3(0.0, 0.0, -stake_travel * stake_out)
+	var cocked := -cock_distance * power if state in [State.POWER, State.CHARGE, State.WINDUP] else 0.0
+	_stake.position = _stake_rest + Vector3(0.0, 0.0, -stake_travel * stake_out - cocked)
+	_glow.level = power if state in [State.POWER, State.CHARGE, State.WINDUP, State.PUNCH] else 0.0
 
 
 func _start() -> void:
-	controller.mech.energy.try_drain(data.lunge_energy)
 	var mech := controller.mech
 	var aim := controller.mech_aim.aim_direction
 	var direction := Vector3(aim.x, 0.0, aim.z).normalized()
@@ -231,21 +274,22 @@ func _fire_stake(point: Vector3, normal: Vector3, body: Object, forward: Vector3
 	# Back to the start of the punch pose hold, so the stake stays out for the full hold time.
 	if state == State.HOLD:
 		_time = 0.0
+	var force := lerpf(min_power, 1.0, power)
 	var effect := IMPACT.instantiate() as Node3D
 	controller.get_world().add_child(effect)
 	effect.global_position = point
 	effect.look_at(point + normal, Vector3.UP if absf(normal.y) < 0.99 else Vector3.FORWARD)
-	effect.scale = Vector3.ONE * 2.0
+	effect.scale = Vector3.ONE * 2.0 * force
 	if body != null and body.has_method(&"on_hit"):
-		body.on_hit(data.damage)
+		body.on_hit(data.damage * force)
 	# Strong force: the mech is pushed back, big screen shake and aim kick.
 	var mech := controller.mech
-	var back := Vector3(-forward.x, 0.0, -forward.z).normalized() * push_back_speed
+	var back := Vector3(-forward.x, 0.0, -forward.z).normalized() * push_back_speed * force
 	mech.velocity.x = back.x
 	mech.velocity.z = back.z
-	controller.mech_aim.kick_aim(data.recoil_up_deg, data.recoil_side_deg, 1.0)
+	controller.mech_aim.kick_aim(data.recoil_up_deg * force, data.recoil_side_deg * force, force)
 	if controller.camera_shake != null:
-		controller.camera_shake.add_shake(data.shake_trauma, data.shake_kick)
+		controller.camera_shake.add_shake(data.shake_trauma * force, data.shake_kick * force)
 	fired.emit()
 
 
@@ -282,6 +326,8 @@ func _pose_from(position: Vector3, direction: Vector3) -> Transform3D:
 func get_status_text() -> String:
 	var text := super.get_status_text()
 	match state:
+		State.POWER:
+			text += "  POWER %d%%" % roundi(power * 100.0)
 		State.CHARGE:
 			text += "  CHARGE"
 		State.WINDUP, State.PUNCH:
