@@ -12,14 +12,20 @@ This cloud session cannot reach your PC, so you run it there.
 2. Install **Claude Code** on your PC (recommended: it reads CLAUDE.md, runs scripts and commits).
    See https://code.claude.com/docs. Claude Desktop also works, but it cannot commit.
 3. Add the MCP server:
-   - Claude Code: open a terminal in the project folder and run `claude mcp add blender uvx blender-mcp`
-   - Claude Desktop: Settings > Developer > Edit Config, add:
+   The package is `mcp-for-blender` (its old name `blender-mcp` still works). Python 3.14 is too new
+   for it: `--python 3.12` makes uv download and use Python 3.12.
+   - Claude Code: open a terminal in the project folder and run
+     `claude mcp add blender -- uvx --python 3.12 mcp-for-blender`
+   - Claude Desktop: Settings > Developer > Edit Config, add (keep the other lines of the file; on
+     Windows use the full path of uvx.exe from `where.exe uvx`, with each \ doubled):
      ```json
-     { "mcpServers": { "blender": { "command": "uvx", "args": ["blender-mcp"] } } }
+     { "mcpServers": { "blender": { "command": "uvx", "args": ["--python", "3.12", "mcp-for-blender"] } } }
      ```
 4. Install the Blender add-on: download `addon.py` from https://github.com/ahujasid/blender-mcp.
    In Blender: Edit > Preferences > Add-ons > Install (Blender 4.2+: the arrow menu > Install from Disk),
-   select `addon.py`, then enable "Blender MCP".
+   select `addon.py`, then enable "Blender MCP". Or run `uvx --python 3.12 mcp-for-blender install-addon`.
+5. Test in PowerShell: `uvx --python 3.12 mcp-for-blender`. "Failed to connect to Blender" is
+   normal while Blender is not connected. Ctrl+C stops it.
 
 ## 2. Connect (each time)
 
@@ -29,7 +35,7 @@ This cloud session cannot reach your PC, so you run it there.
 3. In the 3D view, push N. Open the **BlenderMCP** tab.
 4. Tick "Use Hyper3D Rodin 3D model generation". Push "Set Free Trial API Key"
    (the trial has a daily limit; a paid key comes from hyper3d.ai).
-5. Push "Connect". Then start Claude Code in the project folder (or open Claude Desktop).
+5. Push "Connect". Settings > Developer in Claude Desktop shows blender as running. Then start Claude Code in the project folder (or open Claude Desktop).
    Use one Claude app at a time.
 
 The add-on runs any Python that Claude sends to Blender. Save your work before a big step.
