@@ -48,6 +48,19 @@ VARIANTS = {
 LABEL = {"head": "Head", "core": "Core", "arm_l": "Arm L", "arm_r": "Arm R", "legs": "Legs",
          "booster": "Booster", "generator": "Generator", "fcs": "FCS"}
 
+# Recon (custom Blender model, models/recon): slim sensor mech between Kestrel and Warden.
+# The generator and FCS have no model. The other parts use the .glb files and materials/recon.
+RECON = {
+    "head": dict(weight_t=3.0, hp=320, sensor_range=900, lock_on_speed=1.35),
+    "core": dict(weight_t=15.0, hp=1350, energy_capacity=105, torso_turn_speed_deg=95),
+    "arm_l": dict(weight_t=4.0, hp=500, recoil_control=1.0, melee_bonus=0.95),
+    "arm_r": dict(weight_t=4.0, hp=500, recoil_control=1.0, melee_bonus=0.95),
+    "legs": dict(weight_t=13.0, hp=1150, leg_type=0, load_capacity_t=72, base_speed=12.8,
+                 jump_height=10.5, turn_speed_deg=128, turn_speed_standing_deg=64),
+    "booster": dict(weight_t=2.5, hp=170, thrust=1150, boost_speed_multiplier=1.6, energy_per_second=28),
+    "fcs": dict(weight_t=1.0, hp=100, lock_range=620, max_locks=5, aim_assist=0.0),
+}
+
 # Plates: file, name, slot (0 head, 1 core, 2 arm L, 3 arm R, 4 legs), HP, weight, thickness.
 PLATES = [
     ("head_plate_light", "Head Plate (light)", 0, 80, 0.5, 0.16),
@@ -121,6 +134,16 @@ def main():
                 fields["model_scale"] = tuple(float(x) for x in v["scale"][group])
                 fields["armor_tint"] = v["tint"]
             parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
+    for part, stats in RECON.items():
+        cls, script = SCRIPT[part]
+        fields = {"display_name": f"Recon {LABEL[part]}"}
+        fields.update({k: (float(x) if isinstance(x, (int, float)) and k not in ("leg_type", "max_locks") else x)
+                       for k, x in stats.items()})
+        scene = None
+        if part in HAS_SCENE:
+            scene = f"res://models/recon/recon_{part}.glb"
+            fields["material_library"] = "res://materials/recon"
+        parts[part].append(write(f"data/parts/recon/recon_{part}.tres", cls, script, fields, scene))
     plates = [write(f"data/plates/{f}.tres", "PlateData", "plate_data",
                     {"display_name": n, "slot": s, "hp": float(hp), "weight_t": float(w), "thickness": float(t)})
               for f, n, s, hp, w, t in PLATES]
