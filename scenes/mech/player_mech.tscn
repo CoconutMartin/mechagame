@@ -44,6 +44,8 @@
 [ext_resource type="Script" path="res://scripts/animation/idle_motion.gd" id="idlemotion"]
 [ext_resource type="Script" path="res://scripts/animation/turn_stepper.gd" id="turnstepper"]
 [ext_resource type="Script" path="res://scripts/animation/foot_planter.gd" id="footplanter"]
+[ext_resource type="Script" path="res://scripts/animation/foot_leveler.gd" id="footleveler"]
+[ext_resource type="Script" path="res://scripts/animation/body_ground_clamp.gd" id="groundclamp"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/heavy_rifle.tscn" id="rifle"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/bullet.tscn" id="bullet"]
 [ext_resource type="Resource" path="res://data/loadouts/warden.tres" id="loadout"]
@@ -263,6 +265,11 @@ hip_right = NodePath("../../Visual/Roll/Upper/Lower/HipR")
 knee_left = NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL")
 knee_right = NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR")
 
+[node name="FootLeveler" type="Node" parent="." node_paths=PackedStringArray("mech", "upper_body")]
+script = ExtResource("footleveler")
+mech = NodePath("..")
+upper_body = NodePath("../Visual/Roll/Upper")
+
 [node name="InertiaSway" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "dodge")]
 script = ExtResource("inertia")
 mech = NodePath("../..")
@@ -453,6 +460,13 @@ camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
 dodge = NodePath("../MechDodge")
 elbow_right = NodePath("../Visual/Roll/Upper/Torso/ShoulderR/ElbowR")
 torso = NodePath("../Visual/Roll/Upper/Torso")
+
+[node name="BodyGroundClamp" type="Node" parent="." node_paths=PackedStringArray("mech", "fall", "body", "weapons")]
+script = ExtResource("groundclamp")
+mech = NodePath("..")
+fall = NodePath("../MechFall")
+body = NodePath("../Visual")
+weapons = NodePath("../WeaponController")
 
 [node name="FallPose" type="Node" parent="." node_paths=PackedStringArray("mech", "mech_fall", "shoulder_left", "shoulder_right", "elbow_left", "elbow_right", "hip_left", "hip_right", "knee_left", "knee_right", "torso", "upper_body")]
 script = ExtResource("fallpose")

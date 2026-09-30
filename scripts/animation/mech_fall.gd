@@ -78,6 +78,8 @@ var angle: float = 0.0
 var roll: float = 0.0
 ## Time in the current state and its length (FallPose reads them).
 var state_time: float = 0.0
+## Extra body height (meters) so no part is under the ground. Set by BodyGroundClamp.
+var ground_lift: float = 0.0
 
 var _direction := Vector3.FORWARD
 var _step_side := Vector3.ZERO
@@ -120,6 +122,7 @@ func fall(direction: Vector3 = Vector3.ZERO, steps: Vector3 = Vector3.ZERO, get_
 	_get_up = get_up
 	_face_down = face_down
 	_base = visual.transform
+	ground_lift = 0.0
 	angle = 0.0
 	roll = 0.0
 	_sway = 0.0
@@ -317,7 +320,7 @@ func _get_transform() -> Transform3D:
 	var body := result.basis * _base.basis
 	var on_side := absf(body.x.normalized().y)
 	var on_back := maxf(-body.z.normalized().y, 0.0)
-	result = Transform3D(Basis.IDENTITY, Vector3.UP * (side_lift * on_side + back_lift * on_back)) * result
+	result = Transform3D(Basis.IDENTITY, Vector3.UP * (side_lift * on_side + back_lift * on_back + ground_lift)) * result
 	if _sway != 0.0:
 		var side := mech.global_basis.inverse() * _step_side
 		var sway_axis := Vector3.UP.cross(side.normalized()).normalized()
@@ -340,6 +343,7 @@ func _on_impact() -> void:
 
 func _finish() -> void:
 	visual.transform = _base
+	ground_lift = 0.0
 	angle = 0.0
 	state = State.IDLE
 	mech.end_fall()

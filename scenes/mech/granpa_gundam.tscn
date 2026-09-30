@@ -44,6 +44,8 @@
 [ext_resource type="Script" path="res://scripts/animation/idle_motion.gd" id="idlemotion"]
 [ext_resource type="Script" path="res://scripts/animation/turn_stepper.gd" id="turnstepper"]
 [ext_resource type="Script" path="res://scripts/animation/foot_planter.gd" id="footplanter"]
+[ext_resource type="Script" path="res://scripts/animation/foot_leveler.gd" id="footleveler"]
+[ext_resource type="Script" path="res://scripts/animation/body_ground_clamp.gd" id="groundclamp"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/beam_rifle.tscn" id="rifle"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/bullet.tscn" id="bullet"]
 [ext_resource type="Material" path="res://materials/rx78/white.tres" id="white"]
@@ -1102,6 +1104,11 @@ hip_left = NodePath("../../Visual/Roll/Upper/Lower/HipL")
 hip_right = NodePath("../../Visual/Roll/Upper/Lower/HipR")
 knee_left = NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL")
 knee_right = NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR")
+
+[node name="FootLeveler" type="Node" parent="." node_paths=PackedStringArray("mech", "upper_body")]
+script = ExtResource("footleveler")
+mech = NodePath("..")
+upper_body = NodePath("../Visual/Roll/Upper")
 
 [node name="InertiaSway" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "dodge")]
 script = ExtResource("inertia")

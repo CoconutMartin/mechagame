@@ -118,6 +118,11 @@ hip_right = NodePath("../../Visual/Roll/Upper/Lower/HipR")
 knee_left = NodePath("../../Visual/Roll/Upper/Lower/HipL/KneeL")
 knee_right = NodePath("../../Visual/Roll/Upper/Lower/HipR/KneeR")
 
+[node name="FootLeveler" type="Node" parent="." node_paths=PackedStringArray("mech", "upper_body")]
+script = ExtResource("footleveler")
+mech = NodePath("..")
+upper_body = NodePath("../Visual/Roll/Upper")
+
 [node name="InertiaSway" type="Node" parent="Animation" node_paths=PackedStringArray("mech", "dodge")]
 script = ExtResource("inertia")
 mech = NodePath("../..")

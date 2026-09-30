@@ -48,6 +48,8 @@ ONE_HAND["shield_scale"] = SHIELD_SCALE
 # Shield up: center in front of the torso, face forward, top toward the right shoulder (40 degrees).
 SHIELD_COVER_POS = (-0.2, 7.2, -2.35)
 SHIELD_COVER_ROLL = -40.0
+# Ankle pivot height below the knee (the foot turns here). The sole is 0.55 m below it.
+ANKLE_Y = -2.05
 LEG_THICKNESS = 1.2  # Leg width and depth multiplier (revision 44: 20% thicker).
 HIP_X = 1.5
 SIDES = (("L", -1), ("R", 1))
@@ -215,20 +217,23 @@ def build(m):
         part(f"Shin{s}", KN, "armor", "box", (1.45, 1.8, 1.6), (0, -1.15, 0.05))
         part(f"ShinFront{s}", KN, "armor", "box", (1.15, 1.7, 0.3), (0, -1.1, -0.85), (-6, 0, 0))
         part(f"ShinSide{s}", KN, "armor_dark", "box", (0.2, 1.2, 1.2), (sign * 0.8, -1.2, 0.05))
-        part(f"Ankle{s}", KN, "joint", "cyl", (0.4, 0.4, 1.2), (0, -2.05, 0), X())
+        # Ankle pivot (Phase 8b fix): FootLeveler keeps the foot flat on the ground from here.
+        FP = f"{KN}/FootPivot{s}"
+        m.node(f"FootPivot{s}", KN, pos=(0, ANKLE_Y, 0), groups=[f"foot_pivot_{s.lower()}"])
+        part(f"Ankle{s}", FP, "joint", "cyl", (0.4, 0.4, 1.2), (0, 0, 0), X())
         # Inner frame (hidden by the armor; it shows when the leg is blown apart).
         part(f"ShinFrame{s}", KN, "frame", "cyl", (0.32, 0.32, 2.0), (0, -1.05, 0))
         part(f"ShinStrut{s}", KN, "frame", "box", (0.18, 1.8, 0.18), (sign * 0.35, -1.1, 0.3))
-        part(f"FootFrame{s}", KN, "frame", "box", (0.8, 0.25, 1.9), (0, -2.35, -0.45))
+        part(f"FootFrame{s}", FP, "frame", "box", (0.8, 0.25, 1.9), (0, -2.35 - ANKLE_Y, -0.45))
         # Claw foot: base, three front toes, one heel toe. Bottom at y -2.6 (ground).
-        part(f"Foot{s}", KN, "armor", "box", (1.4, 0.55, 1.5), (0, -2.3, -0.15), groups=["foot"])
+        part(f"Foot{s}", FP, "armor", "box", (1.4, 0.55, 1.5), (0, -2.3 - ANKLE_Y, -0.15), groups=["foot"])
         for i, (x, yaw, length) in enumerate(((-0.5, 18, 1.2), (0, 0, 1.4), (0.5, -18, 1.2))):
             z = -0.9 - length / 2 * 0.9
-            part(f"Toe{s}{i}", KN, "armor", "box", (0.42, 0.4, length), (x * 1.2, -2.4, z), (0, yaw, 0))
+            part(f"Toe{s}{i}", FP, "armor", "box", (0.42, 0.4, length), (x * 1.2, -2.4 - ANKLE_Y, z), (0, yaw, 0))
             reach = length / 2 + 0.15
-            tip = (x * 1.2 - math.sin(math.radians(yaw)) * reach, -2.45, z - math.cos(math.radians(yaw)) * reach)
-            part(f"ToeTip{s}{i}", KN, "armor_dark", "prism", (0.42, 0.3, 0.4, 0.5), tip, (-90, yaw, 0))
-        part(f"Heel{s}", KN, "armor", "box", (0.5, 0.4, 0.9), (0, -2.4, 0.95))
+            tip = (x * 1.2 - math.sin(math.radians(yaw)) * reach, -2.45 - ANKLE_Y, z - math.cos(math.radians(yaw)) * reach)
+            part(f"ToeTip{s}{i}", FP, "armor_dark", "prism", (0.42, 0.3, 0.4, 0.5), tip, (-90, yaw, 0))
+        part(f"Heel{s}", FP, "armor", "box", (0.5, 0.4, 0.9), (0, -2.4 - ANKLE_Y, 0.95))
     m.current_part = None
 
 

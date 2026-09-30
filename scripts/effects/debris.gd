@@ -55,7 +55,7 @@ static func drop(nodes: Array[Node3D], world: Node, push: Vector3, smoke: bool =
 ## Weapons and effects in the debris stop working.
 static func _stop_scripts(node: Node) -> void:
 	node.process_mode = Node.PROCESS_MODE_DISABLED
-	for group in [&"pauldron_l", &"pauldron_r", &"booster_flame", &"brake_flame", &"foot"]:
+	for group in [&"pauldron_l", &"pauldron_r", &"foot_pivot_l", &"foot_pivot_r", &"booster_flame", &"brake_flame", &"foot"]:
 		if node.is_in_group(group):
 			node.remove_from_group(group)
 	for child in node.get_children():

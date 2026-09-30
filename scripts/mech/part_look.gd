@@ -3,7 +3,7 @@ extends RefCounted
 ## Gives part variants their look (Phase 5): each model piece is scaled in place by the part's
 ## model_scale (its place moves out a little too), and the armor materials get the part's
 ## armor_tint. Frame and joint materials keep their colors, so a broken leg still shows the frame.
-## Pieces that other scripts move or scale every frame (pauldron pivots, flames, lights) are not
+## Pieces that other scripts move or scale every frame (pauldron and foot pivots, flames, lights) are not
 ## scaled themselves; the pieces inside a pauldron pivot are.
 
 ## How much of the scale moves the piece away from its socket (0 = stays, 1 = full scale).
@@ -23,7 +23,8 @@ static func apply(nodes: Array[Node3D], scale: Vector3, tint: Color) -> void:
 static func _scale_node(node: Node3D, scale: Vector3) -> void:
 	if scale == Vector3.ONE or _skipped(node):
 		return
-	if node.is_in_group(&"pauldron_l") or node.is_in_group(&"pauldron_r"):
+	if node.is_in_group(&"pauldron_l") or node.is_in_group(&"pauldron_r") \
+			or node.is_in_group(&"foot_pivot_l") or node.is_in_group(&"foot_pivot_r"):
 		for child in node.get_children():
 			if child is Node3D:
 				_scale_node(child, scale)

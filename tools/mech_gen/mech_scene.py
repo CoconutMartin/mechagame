@@ -34,7 +34,7 @@ SCRIPTS = [("mech/mech","mech"),("mech/mech_input","input"),("mech/mech_energy",
  ("combat/mech_health","health"),("combat/part_breaker","breaker"),
  ("animation/power_down_pose","powerdown"),("animation/mech_fall","fall"),("animation/fall_pose","fallpose"),("combat/mech_death","death"),
  ("animation/hit_reaction","hitreaction"),("animation/idle_motion","idlemotion"),("animation/turn_stepper","turnstepper"),
- ("animation/foot_planter","footplanter")]
+ ("animation/foot_planter","footplanter"),("animation/foot_leveler","footleveler"),("animation/body_ground_clamp","groundclamp")]
 
 
 # Frame nodes that part groups attach to, with their paths in the mech scene.
@@ -442,6 +442,13 @@ camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
 dodge = NodePath("../MechDodge")
 elbow_right = NodePath("../{TO}/ShoulderR/ElbowR")
 torso = NodePath("../{TO}")
+
+[node name="BodyGroundClamp" type="Node" parent="." node_paths=PackedStringArray("mech", "fall", "body", "weapons")]
+script = ExtResource("groundclamp")
+mech = NodePath("..")
+fall = NodePath("../MechFall")
+body = NodePath("../Visual")
+weapons = NodePath("../WeaponController")
 
 [node name="FallPose" type="Node" parent="." node_paths=PackedStringArray("mech", "mech_fall", "shoulder_left", "shoulder_right", "elbow_left", "elbow_right", "hip_left", "hip_right", "knee_left", "knee_right", "torso", "upper_body")]
 script = ExtResource("fallpose")

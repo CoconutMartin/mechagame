@@ -287,8 +287,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.96, -1.2, 0.06)
 mesh = SubResource("m20")
 surface_material_override/0 = ExtResource("armor_dark_panel")
 
-[node name="AnkleL" type="MeshInstance3D" parent="KneeL"]
-transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, -2.05, 0)
+[node name="FootPivotL" type="Node3D" parent="KneeL" groups=["foot_pivot_l"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.05, 0)
+
+[node name="AnkleL" type="MeshInstance3D" parent="KneeL/FootPivotL"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
 mesh = SubResource("m21")
 surface_material_override/0 = ExtResource("joint")
 
@@ -302,48 +305,48 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.42, -1.1, 0.36)
 mesh = SubResource("m23")
 surface_material_override/0 = ExtResource("frame")
 
-[node name="FootFrameL" type="MeshInstance3D" parent="KneeL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.35, -0.54)
+[node name="FootFrameL" type="MeshInstance3D" parent="KneeL/FootPivotL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, -0.54)
 mesh = SubResource("m24")
 surface_material_override/0 = ExtResource("frame")
 
-[node name="FootL" type="MeshInstance3D" parent="KneeL" groups=["foot"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.3, -0.18)
+[node name="FootL" type="MeshInstance3D" parent="KneeL/FootPivotL" groups=["foot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, -0.18)
 mesh = SubResource("m25")
 surface_material_override/0 = ExtResource("armor_panel")
 
-[node name="ToeL0" type="MeshInstance3D" parent="KneeL"]
-transform = Transform3D(0.95106, 0, 0.30902, 0, 1, 0, -0.30902, 0, 0.95106, -0.72, -2.4, -1.728)
+[node name="ToeL0" type="MeshInstance3D" parent="KneeL/FootPivotL"]
+transform = Transform3D(0.95106, 0, 0.30902, 0, 1, 0, -0.30902, 0, 0.95106, -0.72, -0.35, -1.728)
 mesh = SubResource("m26")
 surface_material_override/0 = ExtResource("armor_panel")
 
-[node name="ToeTipL0" type="MeshInstance3D" parent="KneeL"]
-transform = Transform3D(0.95106, -0.30902, 0, 0, 0, 1, -0.30902, -0.95106, 0, -0.99812, -2.45, -2.58395)
+[node name="ToeTipL0" type="MeshInstance3D" parent="KneeL/FootPivotL"]
+transform = Transform3D(0.95106, -0.30902, 0, 0, 0, 1, -0.30902, -0.95106, 0, -0.99812, -0.4, -2.58395)
 mesh = SubResource("m27")
 surface_material_override/0 = ExtResource("armor_dark")
 
-[node name="ToeL1" type="MeshInstance3D" parent="KneeL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.4, -1.836)
+[node name="ToeL1" type="MeshInstance3D" parent="KneeL/FootPivotL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.35, -1.836)
 mesh = SubResource("m28")
 surface_material_override/0 = ExtResource("armor_panel")
 
-[node name="ToeTipL1" type="MeshInstance3D" parent="KneeL"]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -2.45, -2.856)
+[node name="ToeTipL1" type="MeshInstance3D" parent="KneeL/FootPivotL"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -0.4, -2.856)
 mesh = SubResource("m27")
 surface_material_override/0 = ExtResource("armor_dark")
 
-[node name="ToeL2" type="MeshInstance3D" parent="KneeL"]
-transform = Transform3D(0.95106, 0, -0.30902, 0, 1, 0, 0.30902, 0, 0.95106, 0.72, -2.4, -1.728)
+[node name="ToeL2" type="MeshInstance3D" parent="KneeL/FootPivotL"]
+transform = Transform3D(0.95106, 0, -0.30902, 0, 1, 0, 0.30902, 0, 0.95106, 0.72, -0.35, -1.728)
 mesh = SubResource("m26")
 surface_material_override/0 = ExtResource("armor_panel")
 
-[node name="ToeTipL2" type="MeshInstance3D" parent="KneeL"]
-transform = Transform3D(0.95106, 0.30902, -0, 0, 0, 1, 0.30902, -0.95106, 0, 0.99812, -2.45, -2.58395)
+[node name="ToeTipL2" type="MeshInstance3D" parent="KneeL/FootPivotL"]
+transform = Transform3D(0.95106, 0.30902, -0, 0, 0, 1, 0.30902, -0.95106, 0, 0.99812, -0.4, -2.58395)
 mesh = SubResource("m27")
 surface_material_override/0 = ExtResource("armor_dark")
 
-[node name="HeelL" type="MeshInstance3D" parent="KneeL"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.4, 1.14)
+[node name="HeelL" type="MeshInstance3D" parent="KneeL/FootPivotL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.35, 1.14)
 mesh = SubResource("m29")
 surface_material_override/0 = ExtResource("armor_panel")
 
@@ -401,8 +404,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.96, -1.2, 0.06)
 mesh = SubResource("m20")
 surface_material_override/0 = ExtResource("armor_dark_panel")
 
-[node name="AnkleR" type="MeshInstance3D" parent="KneeR"]
-transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, -2.05, 0)
+[node name="FootPivotR" type="Node3D" parent="KneeR" groups=["foot_pivot_r"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.05, 0)
+
+[node name="AnkleR" type="MeshInstance3D" parent="KneeR/FootPivotR"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
 mesh = SubResource("m21")
 surface_material_override/0 = ExtResource("joint")
 
@@ -416,47 +422,47 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.42, -1.1, 0.36)
 mesh = SubResource("m23")
 surface_material_override/0 = ExtResource("frame")
 
-[node name="FootFrameR" type="MeshInstance3D" parent="KneeR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.35, -0.54)
+[node name="FootFrameR" type="MeshInstance3D" parent="KneeR/FootPivotR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, -0.54)
 mesh = SubResource("m24")
 surface_material_override/0 = ExtResource("frame")
 
-[node name="FootR" type="MeshInstance3D" parent="KneeR" groups=["foot"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.3, -0.18)
+[node name="FootR" type="MeshInstance3D" parent="KneeR/FootPivotR" groups=["foot"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, -0.18)
 mesh = SubResource("m25")
 surface_material_override/0 = ExtResource("armor_panel")
 
-[node name="ToeR0" type="MeshInstance3D" parent="KneeR"]
-transform = Transform3D(0.95106, 0, 0.30902, 0, 1, 0, -0.30902, 0, 0.95106, -0.72, -2.4, -1.728)
+[node name="ToeR0" type="MeshInstance3D" parent="KneeR/FootPivotR"]
+transform = Transform3D(0.95106, 0, 0.30902, 0, 1, 0, -0.30902, 0, 0.95106, -0.72, -0.35, -1.728)
 mesh = SubResource("m26")
 surface_material_override/0 = ExtResource("armor_panel")
 
-[node name="ToeTipR0" type="MeshInstance3D" parent="KneeR"]
-transform = Transform3D(0.95106, -0.30902, 0, 0, 0, 1, -0.30902, -0.95106, 0, -0.99812, -2.45, -2.58395)
+[node name="ToeTipR0" type="MeshInstance3D" parent="KneeR/FootPivotR"]
+transform = Transform3D(0.95106, -0.30902, 0, 0, 0, 1, -0.30902, -0.95106, 0, -0.99812, -0.4, -2.58395)
 mesh = SubResource("m27")
 surface_material_override/0 = ExtResource("armor_dark")
 
-[node name="ToeR1" type="MeshInstance3D" parent="KneeR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.4, -1.836)
+[node name="ToeR1" type="MeshInstance3D" parent="KneeR/FootPivotR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.35, -1.836)
 mesh = SubResource("m28")
 surface_material_override/0 = ExtResource("armor_panel")
 
-[node name="ToeTipR1" type="MeshInstance3D" parent="KneeR"]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -2.45, -2.856)
+[node name="ToeTipR1" type="MeshInstance3D" parent="KneeR/FootPivotR"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -0.4, -2.856)
 mesh = SubResource("m27")
 surface_material_override/0 = ExtResource("armor_dark")
 
-[node name="ToeR2" type="MeshInstance3D" parent="KneeR"]
-transform = Transform3D(0.95106, 0, -0.30902, 0, 1, 0, 0.30902, 0, 0.95106, 0.72, -2.4, -1.728)
+[node name="ToeR2" type="MeshInstance3D" parent="KneeR/FootPivotR"]
+transform = Transform3D(0.95106, 0, -0.30902, 0, 1, 0, 0.30902, 0, 0.95106, 0.72, -0.35, -1.728)
 mesh = SubResource("m26")
 surface_material_override/0 = ExtResource("armor_panel")
 
-[node name="ToeTipR2" type="MeshInstance3D" parent="KneeR"]
-transform = Transform3D(0.95106, 0.30902, -0, 0, 0, 1, 0.30902, -0.95106, 0, 0.99812, -2.45, -2.58395)
+[node name="ToeTipR2" type="MeshInstance3D" parent="KneeR/FootPivotR"]
+transform = Transform3D(0.95106, 0.30902, -0, 0, 0, 1, 0.30902, -0.95106, 0, 0.99812, -0.4, -2.58395)
 mesh = SubResource("m27")
 surface_material_override/0 = ExtResource("armor_dark")
 
-[node name="HeelR" type="MeshInstance3D" parent="KneeR"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.4, 1.14)
+[node name="HeelR" type="MeshInstance3D" parent="KneeR/FootPivotR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.35, 1.14)
 mesh = SubResource("m29")
 surface_material_override/0 = ExtResource("armor_panel")

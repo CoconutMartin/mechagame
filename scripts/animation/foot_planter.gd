@@ -3,7 +3,7 @@ extends Node
 ## Foot planting while walking and running (Phase 8b): the foot on the ground stays where it
 ## touched down while the body moves over it, instead of sliding with the swing animation.
 ## MechLegSwing swings the legs; the leg in its stance half (on the ground) is then solved with
-## two-bone IK in the leg plane (hip swing and knee bend) so its sole stays on the locked point.
+## two-bone IK in the leg plane (hip swing and knee bend) so its ankle stays on the locked point.
 ## A stride can be longer than the leg reaches: then the leg straightens toward the locked point and
 ## the heel lifts (like a toe-off) instead of the foot sliding. The IK blends out before the swing.
 ## Walk cycle: MechFootsteps phase. The left foot is down from phase 0 to PI, the right foot from
@@ -20,9 +20,11 @@ extends Node
 @export var hip_right: Node3D
 @export var knee_left: Node3D
 @export var knee_right: Node3D
-## Hip to knee and knee to sole, in meters.
+## Hip to knee and knee to ankle, in meters, and the ankle height above the ground (FootLeveler
+## keeps the foot flat under the ankle).
 @export var thigh_length: float = 2.6
-@export var shin_length: float = 2.6
+@export var shin_length: float = 2.05
+@export var ankle_height: float = 0.55
 ## Longest leg reach used, as a part of the full leg length (a little bend stays).
 @export_range(0.8, 1.0) var max_reach: float = 0.985
 ## Part of the stance where the IK blends in and out (0 to 0.5).
@@ -64,15 +66,15 @@ func _physics_process(delta: float) -> void:
 			_locked[side] = false
 			continue
 		if not _locked[side]:
-			# Touchdown: lock where the swing animation put the sole, on the ground.
-			var sole := knee.global_transform * Vector3(0.0, -shin_length, 0.0)
-			_lock[side] = Vector3(sole.x, ground, sole.z)
+			# Touchdown: lock where the swing animation put the ankle, at ankle height over the ground.
+			var ankle := knee.global_transform * Vector3(0.0, -shin_length, 0.0)
+			_lock[side] = Vector3(ankle.x, ground + ankle_height, ankle.z)
 			_locked[side] = true
 		var ramp := smoothstep(0.0, blend_in, stance) * (1.0 - smoothstep(1.0 - blend_out, 1.0, stance))
 		_solve(side, hip, knee, ramp * _weight)
 
 
-## Two-bone IK in the leg plane: hip swing and knee bend that put the sole on the locked point.
+## Two-bone IK in the leg plane: hip swing and knee bend that put the ankle on the locked point.
 func _solve(side: int, hip: Node3D, knee: Node3D, weight: float) -> void:
 	var reach := (thigh_length + shin_length) * max_reach
 	var target: Vector3 = _lock[side]
