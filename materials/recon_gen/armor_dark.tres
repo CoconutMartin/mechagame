@@ -5,9 +5,10 @@
 [ext_resource type="Texture2D" path="res://materials/textures/metal_normal.tres" id="normal"]
 
 [resource]
-albedo_color = Color(0.19, 0.2, 0.12, 1)
-metallic = 0.45
-roughness = 0.55
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.3, 0.31, 0.19, 1)
+metallic = 0.35
+roughness = 0.62
 albedo_texture = ExtResource("grime")
 roughness_texture = ExtResource("rough")
 normal_enabled = true
