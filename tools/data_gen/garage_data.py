@@ -148,7 +148,8 @@ def main():
             scene = None
             if part in HAS_SCENE:
                 scene = f"res://models/{folder}/{folder}_{part}.glb"
-                fields["material_library"] = "res://materials/recon"
+                # Recon Gen has its own olive colors (materials/recon_gen); the others use the Recon colors.
+                fields["material_library"] = "res://materials/recon_gen" if folder == "recon_gen" else "res://materials/recon"
             parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
     plates = [write(f"data/plates/{f}.tres", "PlateData", "plate_data",
                     {"display_name": n, "slot": s, "hp": float(hp), "weight_t": float(w), "thickness": float(t)})

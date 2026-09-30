@@ -10,5 +10,5 @@ weight_t = 15.0
 hp = 1350.0
 energy_capacity = 105.0
 torso_turn_speed_deg = 95.0
-material_library = "res://materials/recon"
+material_library = "res://materials/recon_gen"
 scene = ExtResource("scene")

@@ -14,5 +14,5 @@ base_speed = 12.8
 jump_height = 10.5
 turn_speed_deg = 128.0
 turn_speed_standing_deg = 64.0
-material_library = "res://materials/recon"
+material_library = "res://materials/recon_gen"
 scene = ExtResource("scene")

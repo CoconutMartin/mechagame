@@ -10,5 +10,5 @@ weight_t = 3.0
 hp = 320.0
 sensor_range = 900.0
 lock_on_speed = 1.35
-material_library = "res://materials/recon"
+material_library = "res://materials/recon_gen"
 scene = ExtResource("scene")

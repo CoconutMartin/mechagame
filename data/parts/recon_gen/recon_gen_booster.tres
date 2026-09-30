@@ -11,5 +11,5 @@ hp = 170.0
 thrust = 1150.0
 boost_speed_multiplier = 1.6
 energy_per_second = 28.0
-material_library = "res://materials/recon"
+material_library = "res://materials/recon_gen"
 scene = ExtResource("scene")
