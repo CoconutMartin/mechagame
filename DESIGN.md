@@ -340,6 +340,7 @@ User choice: models built in Blender in the cloud container (Blender 4.0.2 from 
 - Game side: PartData.scene = the .glb. `MechAssembler` finds the socket from the name before "_" ("Torso_core" -> Torso). `PartRigging` gives nodes their roles by name (pivots, FootL/R, BoosterFlame and BrakeFlame get flame meshes, a BoosterLight is added) and swaps library materials in; `PartLook` and `PartBreaker` read material names, so Blender materials work with tints and part breaking. Godot does not import .blend files (`filesystem/import/blender/enabled=false`); the .glb files are the game files.
 - Guide: `tools/godot/export_guide.gd` exports a built mech as `models/guides/og_guide.glb` (hitboxes, flames, lights and hidden nodes left out; the folder has .gdignore).
 - Test (pipeline): a box blockout made in the kit, exported and built in the game: all 11 hit keys and hitboxes, pivots, feet, flames and light found, game materials used, parts break off.
+- Blender MCP (user's PC, user choice): setup in `tools/blender/BLENDER_MCP.md`. Image-to-3D (Hyper3D Rodin) makes one fused mesh; `tools/blender/split_generated.py` fits it (height 10.6 m), cuts each face to the nearest body bone and puts the pieces under the kit sockets and pivots (core cut into center and side pieces). Tested with Recon Accurate fused into one mesh: parts, hit areas and animation work, no errors.
 - Round trip: the user pulls, opens `models/<name>/<name>.blend` in Blender (4.0 or newer), edits, saves, runs export_parts.py (or only saves; the cloud session can export), commits and pushes. Keep the collection, empty and pivot names. `*.blend1` backups are ignored by git.
 
 ## Recon (first custom Blender mech)
@@ -538,7 +539,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Custom mech pipeline: Blender kit, per-part .glb export, PartRigging for imported parts (tested with a box blockout).
 - Recon: first custom Blender mech (slim, blue and black, from the user's reference), key 5 and garage parts.
 - Recon Accurate: closer model of the same reference (shaped plates), key 6 and garage parts.
-- Recon Sleek: smooth, slim version of Recon Accurate, key 7 and garage parts.
+- Recon Sleek: smooth, slim version of Recon Accurate, key 7 and garage parts. The user did not like it: next step is Blender MCP on the user's PC with image-to-3D.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).
