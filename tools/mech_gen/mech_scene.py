@@ -32,7 +32,9 @@ SCRIPTS = [("mech/mech","mech"),("mech/mech_input","input"),("mech/mech_energy",
  ("animation/dodge_slide_pose","dodgeslide"),("animation/pauldron_follow","pauldron"),
  ("camera/free_aim","freeaim"),("mech/mech_assembler","assembler"),("weapons/weapon_controller","weaponctl"),
  ("combat/mech_health","health"),("combat/part_breaker","breaker"),
- ("animation/power_down_pose","powerdown"),("animation/mech_fall","fall"),("animation/fall_pose","fallpose"),("combat/mech_death","death")]
+ ("animation/power_down_pose","powerdown"),("animation/mech_fall","fall"),("animation/fall_pose","fallpose"),("combat/mech_death","death"),
+ ("animation/hit_reaction","hitreaction"),("animation/idle_motion","idlemotion"),("animation/turn_stepper","turnstepper"),
+ ("animation/foot_planter","footplanter")]
 
 
 # Frame nodes that part groups attach to, with their paths in the mech scene.

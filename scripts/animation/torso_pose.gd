@@ -13,6 +13,9 @@ extends Node
 @export var inertia: InertiaSway
 ## Dodge recovery pose (torso lean toward the dodge direction).
 @export var dodge: MechDodge
+## Optional (Phase 8b): hit flinch and idle motion (lean, roll, turn) added on top.
+@export var hit_reaction: HitReaction
+@export var idle_motion: IdleMotion
 ## Forward lean while boosting on the ground, in degrees.
 @export var boost_lean_deg: float = 21.0
 ## Torso turn to the right while aiming, in degrees. Brings the left shoulder forward.
@@ -100,13 +103,18 @@ func _physics_process(delta: float) -> void:
 	# Positive X leans back.
 	lean -= deg_to_rad(_skid_lean.value)
 	lean += deg_to_rad(inertia.lean_deg)
+	var extra := Vector3.ZERO  # lean, yaw, roll in degrees
+	for source: Node in [hit_reaction, idle_motion]:
+		if source != null:
+			extra += Vector3(source.lean_deg, source.yaw_deg, source.roll_deg)
+	lean += deg_to_rad(extra.x)
 	var recovery := dodge.get_recovery_lean()
 	lean += deg_to_rad(recovery.x)
 	var shake := _get_action_shake(delta)
 	torso.rotation = Vector3(
 		-lean + shake.x,
-		mech.get_torso_twist() - deg_to_rad(aim_twist_deg) * aim + deg_to_rad(inertia.yaw_deg) + deg_to_rad(action_twist_deg) + shake.y,
-		-deg_to_rad(aim_tilt_deg) * aim + deg_to_rad(_skid_roll.value) + deg_to_rad(inertia.roll_deg) + deg_to_rad(recovery.y) + shake.z)
+		mech.get_torso_twist() - deg_to_rad(aim_twist_deg) * aim + deg_to_rad(inertia.yaw_deg) + deg_to_rad(action_twist_deg) + deg_to_rad(extra.y) + shake.y,
+		-deg_to_rad(aim_tilt_deg) * aim + deg_to_rad(_skid_roll.value) + deg_to_rad(inertia.roll_deg) + deg_to_rad(recovery.y) + deg_to_rad(extra.z) + shake.z)
 
 
 ## Fast shake (radians on X, Y, Z) from action_shake. Sine waves at unrelated speeds look random.

@@ -15,7 +15,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | 5 | Garage screen: swap parts, add plates, live stat preview. Graphics settings menu (low, medium, high) | Done |
 | 6 | Pilot creation and skill tree | Skipped for now (user request, after Phase 5) |
 | 7 | Save/load builds (JSON) and 4 preset archetype loadouts | Skipped for now (user request, after Phase 5) |
-| 8 | Realistic graphics pass and complete mech animation | In progress: 8a graphics (materials) done. Next 8b animation (hit reactions, walk and run with foot IK, idle motion, turn in place) |
+| 8 | Realistic graphics pass and complete mech animation | Done: 8a graphics (materials, CC0 textures), 8b animation (hit reactions, foot planting, idle motion, turn steps) |
 
 ## Controls
 
@@ -213,7 +213,13 @@ All of this logic lives in one function so it is easy to tune.
   - `ShieldPose`: LMB moves the left hand from the side to a raised place in front of the left chest (forearm up, shield facing forward).
   - `SkirtFollow`: front waist plates turn with the thigh that swings forward (80%). The rear plate turns with the thigh that swings back.
 - Mech visual tree: `Visual > Roll > Upper` (Roll is free for future whole-body moves; the dodge roll was removed). `Visual > Roll > Upper > Torso` (pivot at the waist, 5.4 m) holds the core, head, arms, and rifle. `Upper > Lower` holds the pelvis and legs.
-- Phase 8: complete animation on rigged .glb models. Walk cycles for biped, reverse-joint, tank, and quad legs. Leg IK so feet stay on slopes and steps. Torso twist toward the aim. Weapon recoil. Boost and jump jet poses.
+- Phase 8b (user choices: hit reactions, better walk and run, idle motion, turn in place):
+  - `HitReaction`: every hit kicks the torso on springs (2.2 Hz, damping 0.4) and swings back. Head and center torso: lean back. Left side parts: turn left and roll right (right side: the mirror). Groin and legs: knee dip and roll toward that leg. Booster: lean forward. Push = damage / 150, up to 2.5. Per full push: 3.5° lean, 4.5° turn, 2° roll, 4° hip dip. Stagger: 450 damage within 0.35 s (a missile blast on several parts) adds 9° lean back and a 12° dip. Small camera shake per hit (0.0012 trauma per damage, up to 0.35).
+  - `FootPlanter`: while walking and running, the leg in its stance half (MechFootsteps phase: left 0 to PI, right PI to TAU) is solved with two-bone IK in the leg plane so the sole stays where it touched down. When the stride is longer than the leg reaches, the leg straightens toward the point and the heel lifts (no sliding). IK blends in over 8% and out over the last 25% of the stance. Walk knee bend 9° hip / 18° knee (run 13° / 26°) for a heavier stance. Test: ground foot slide 0.025 m per frame before, 0.009 after (the body moves 0.152).
+  - `TurnStepper` (turning in place): each foot keeps its world heading; the planted foot's leg turns at the hip against the body turn, the other foot lifts (knee up) and swings to lead the turn by 35% of a step. Feet swap every 22° of body turn. After the turn a foot that is still turned more than 4° takes a settling step (60°/s).
+  - `IdleMotion`: after 1.2 s of standing still (no move, aim, kneel or turn): breathing every 4.5 s (0.6° lean, 1° knee dip), scanning (torso turns to a random angle up to 7° every 3 to 6.5 s) and a weight shift (1.4° roll to one leg every 5 to 10 s). It fades in and out at 1.2 per second.
+  - `TorsoPose` adds the hit and idle lean, turn and roll. `MechLegSwing` adds the hit and idle knee dips and the turn step lifts.
+- Later: rigged .glb models. Walk cycles for biped, reverse-joint, tank, and quad legs. Leg IK so feet stay on slopes and steps. Torso twist toward the aim. Weapon recoil. Boost and jump jet poses.
 
 ## Destructible parts
 
@@ -482,6 +488,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Phase 4c: destructible city. Buildings made of blocks (1000 HP) that break into rubble and dust; blocks with no support fall, break and hurt mechs below. Vehicles explode into burnt wrecks, lampposts snap, mechs kick props away or wreck them at boost speed. Backspace reloads the level. Also: hit marker removed, yellow crosshair dot hidden, start camera pitch -24°.
 - Phase 5: garage (G): light / medium / heavy part variants (Kestrel, Warden, Bulwark), plates 0 to 3 per part with armor slabs, weapons, up to 3 mods, live stats with the change from the opening build. Graphics presets Low / Medium / High (autoload, saved).
 - Phases 6 and 7 skipped for now (user request). Phase 8a: mech metal textures (noise), panel grooves, bolts and worn edges on box armor, building facades with windows, asphalt ground.
+- Phase 8a.2: CC0 concrete and asphalt (Poly Haven), thinner fog. Phase 8b: hit reactions, foot planting IK while walking and running, idle motion, stepping when turning in place.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).

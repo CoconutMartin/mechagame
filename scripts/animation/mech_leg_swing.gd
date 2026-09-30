@@ -1,7 +1,7 @@
 class_name MechLegSwing
 extends Node
-## Placeholder walk animation for box mechs: hip swing, knee bend, body bob, and sway.
-## Phase 8 replaces it with full animation on rigged models.
+## Walk animation for box mechs: hip swing, knee bend, body bob, and sway.
+## Phase 8b: FootPlanter keeps the stance foot on the ground, TurnStepper steps in place.
 ## It reads the walk cycle from MechFootsteps, so each footstep shake matches a foot strike.
 
 @export var mech: Mech
@@ -11,6 +11,10 @@ extends Node
 @export var jump_charge: MechJumpCharge
 @export var kneel: MechKneel
 @export var dodge: MechDodge
+## Optional (Phase 8b): knee lift of the turning-in-place steps (per foot), hit and idle knee dips.
+@export var turn_stepper: TurnStepper
+@export var hit_reaction: HitReaction
+@export var idle_motion: IdleMotion
 ## Moves up and down with the walk. The hips must be inside this node.
 @export var upper_body: Node3D
 @export var hip_left: Node3D
@@ -78,6 +82,10 @@ extends Node
 @export var landing_crouch_full_height: float = 9.0
 ## Crouch while entrenched for a missile volley, in degrees of hip bend (knees bend twice as much).
 @export var brace_crouch_deg: float = 22.0
+## Knee bend while walking and running (Phase 8b: a heavier stance that leaves room for the foot
+## planting IK), in degrees of hip bend. Knees bend twice as much.
+@export var walk_crouch_deg: float = 9.0
+@export var run_crouch_deg: float = 13.0
 ## Crouch while boosting on the ground, in degrees of hip bend. Knees bend twice as much
 ## (20 = knee bent 40 degrees, an inside knee angle of 140 degrees).
 @export var boost_crouch_deg: float = 14.0
@@ -137,7 +145,9 @@ func _physics_process(delta: float) -> void:
 	# Steps in place while the legs turn and the mech stands still.
 	var standing := on_floor and mech.get_horizontal_speed() < footsteps.min_speed
 	var turn_ratio := clampf(absf(rad_to_deg(mech.leg_turn_rate)) / turn_step_full_rate_deg, 0.0, 1.0)
-	_turn_step = lerpf(_turn_step, turn_ratio * turn_step_amount if standing else 0.0, blend)
+	# With a TurnStepper the turning steps come from it (one foot at a time).
+	var turn_target := turn_ratio * turn_step_amount if standing and turn_stepper == null else 0.0
+	_turn_step = lerpf(_turn_step, turn_target, blend)
 	var lift_amount := maxf(_walk_amount, _turn_step)
 	_trail = lerpf(_trail, 1.0 if gliding else 0.0, blend)
 	_boost_crouch = lerpf(_boost_crouch, 1.0 if gliding and on_floor else 0.0, blend)
@@ -175,11 +185,25 @@ func _physics_process(delta: float) -> void:
 	_brace = lerpf(_brace, 1.0 if mech.is_bracing else 0.0, 1.0 - exp(-blend_speed * 1.5 * delta))
 	var brace_crouch := deg_to_rad(brace_crouch_deg) * _brace
 	var crouch := maxf(maxf(maxf(maxf(landing_crouch, charge_crouch), boost_crouch), dodge_tuck), brace_crouch)
+	crouch = maxf(crouch, deg_to_rad(lerpf(walk_crouch_deg, run_crouch_deg, _run)) * _walk_amount)
+	# Hit flinch and idle breathing dip the knees on top of the other poses.
+	if hit_reaction != null:
+		crouch += hit_reaction.crouch
+	if idle_motion != null:
+		crouch += idle_motion.crouch
 
 	hip_left.rotation.x = hip + knee_lift * maxf(0.0, -lift) + trail + air * 0.5 + crouch
 	hip_right.rotation.x = -hip + knee_lift * maxf(0.0, lift) + trail + air * 0.5 + crouch
 	knee_left.rotation.x = -knee * maxf(0.0, -lift) - air - crouch * 2.0
 	knee_right.rotation.x = -knee * maxf(0.0, lift) - air - crouch * 2.0
+	if turn_stepper != null:
+		# Turning in place: the stepping foot lifts (knee up, foot up).
+		var step_lift := deg_to_rad(knee_lift_deg) * turn_step_amount
+		var step_knee := deg_to_rad(knee_bend_deg) * turn_step_amount
+		hip_left.rotation.x += step_lift * turn_stepper.lift_left
+		hip_right.rotation.x += step_lift * turn_stepper.lift_right
+		knee_left.rotation.x -= step_knee * turn_stepper.lift_left
+		knee_right.rotation.x -= step_knee * turn_stepper.lift_right
 
 	# Lowest at foot strike (phase = 0, PI), highest between steps.
 	var bob := lerpf(bob_height, run_bob_height, _run) * _walk_amount * (cos(2.0 * phase) + 1.0) * 0.5
