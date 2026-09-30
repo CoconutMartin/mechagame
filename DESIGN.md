@@ -135,7 +135,7 @@ Phase 3 decisions (user):
 - Missile pods reload one missile at a time (1.5 s each), so they can lock and fire with the missiles they have.
 - Beam sniper: hold LMB to charge (3 s to full), release to fire. The shot is a sustained beam (like a kamehameha): 2 s at full charge (shorter for a partial charge, at least 0.15 s). It follows the aim and hits every 0.1 s with a small kick and shake. The torso and shoulders shake while it fires (`TorsoPose.action_shake`). The torso and shoulder shake while the beam fires is 40% less since revision 66 (`torso_shake` 0.6, about 0.5° at full charge). The shake when the charge is released is small: `release_shake` 0.075 (50% less in revision 64, then 85% less in revision 65). The barrel lights up with the charge (`ChargeGlow`): the 3 coils light one after another from the back, then the flat emitter lens in the barrel face and a small muzzle light; fully lit at full charge and while the beam fires, then it fades. Since revision 63 all shake while it fires (screen, aim, torso) is 30% less (`BeamRifleWeapon.discharge_shake` 0.7, torso about 0.84° at full charge). Rate of fire: 1 shot per 2.5 s. A tap is a 25% shot. Damage, beam width, screen shake and aim jitter grow with the charge. While charging, the camera shakes a little (trauma 0.08 at the start to 0.22 at full charge, `CameraShake.hold_shake`). RMB zooms to FOV 52.6° (70% less zoom than before) at 8 m behind the pivot, so the head, weapon arm and gun stay in view (no scope overlay).
 - G opens and closes the garage (Phase 5; Esc also closes it).
-- Keys 1 to 7 switch test loadouts (5 = Recon, 6 = Recon Accurate, 7 = Recon Sleek): 1 Gunner (heavy rifle + shield), 2 Sniper (beam sniper, two hands), 3 Melee (pile bunker + shield), 4 Missile (heavy rifle + shield + two missile pods).
+- Keys 1 to 8 switch test loadouts (5 = Recon, 6 = Recon Accurate, 7 = Recon Sleek, 8 = Recon Gen): 1 Gunner (heavy rifle + shield), 2 Sniper (beam sniper, two hands), 3 Melee (pile bunker + shield), 4 Missile (heavy rifle + shield + two missile pods).
 
 Weapons:
 | Weapon | Slot | Keys | Values |
@@ -370,6 +370,15 @@ User brief: a sleek version of Recon Accurate, name recon_sleek.
 - Colors, stats and data as Recon Accurate: `data/parts/recon_sleek/`, loadout `data/loadouts/recon_sleek.tres`, key 7, garage parts.
 - Test: walk, boost, jump, leg loss and death with no errors; no part under the ground; side torso hit areas found.
 
+## Recon Gen (first generated mech)
+
+User brief: the left mech of `models/guides/recon_ref.png`, made with Hunyuan3D (`models/guides/recon.glb`), fitted and split with Blender MCP (`blender_task.md` steps).
+- Model: `models/recon_gen/recon_gen.blend`. The generated mesh (10,100 faces, no texture) was bent to the OG guide joints (legs shortened: ankle 0.8 m, knee 2.6 m, hip 5.2 m; arms moved in and back), the four back antennas were removed, then `split_generated.py` cut it (FIT_HEIGHT None). Height 9.58 m. The feet are flatter than the picture.
+- Cut fixes by hand rules: head block from the core, crotch and waist to the pelvis, elbow cut at 5.75 m, thigh/shin cut at 3.35 m (the whole knee plate stays on the shin), foot/shin cut at 0.85 m, hip caps on the thighs.
+- One material, `armor` (Recon steel blue), on all pieces. Hidden `recon_hy` and `recon_hy_orig` (fitted and unfitted mesh) stay in the .blend outside the part collections.
+- Data: `data/parts/recon_gen/` (Recon stats, Recon FCS shared), loadout `data/loadouts/recon_gen.tres`, key 8, garage parts.
+- Test (headless): builds with no errors, 10 hit keys with side torso, all surfaces use the Recon armor, feet at the ground, arm and leg breaks work.
+
 ## Archetypes (preset loadouts; player can mix any parts)
 
 - Melee: light, fast, blade arms, strong boost
@@ -540,6 +549,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Recon: first custom Blender mech (slim, blue and black, from the user's reference), key 5 and garage parts.
 - Recon Accurate: closer model of the same reference (shaped plates), key 6 and garage parts.
 - Recon Sleek: smooth, slim version of Recon Accurate, key 7 and garage parts. The user did not like it: next step is Blender MCP on the user's PC with image-to-3D.
+- Recon Gen: first generated mech (Hunyuan3D model of the reference, fitted and split with Blender MCP), key 8 and garage parts.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).

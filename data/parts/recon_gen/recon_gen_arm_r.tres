@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ArmPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/arm_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/recon_gen/recon_gen_arm_r.glb" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Recon Gen Arm R"
+weight_t = 4.0
+hp = 500.0
+recoil_control = 1.0
+melee_bonus = 0.95
+material_library = "res://materials/recon"
+scene = ExtResource("scene")
