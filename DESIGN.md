@@ -476,7 +476,8 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 
 ## Reminders for the user
 
-- No open reminders. (Closed: "update the dodge hop animation", the user accepted the current hop at the start of Phase 3.)
+- Open: upload individual mech parts (head, torso, arm, leg, foot) made with Hunyuan3D from cropped pictures, to combine in Blender with proper joints. It may give better results than one fused model. (Added 2026-10-01, after the Recon Gen rebuild.)
+- Closed: "update the dodge hop animation", the user accepted the current hop at the start of Phase 3.
 
 ## Decisions log
 
