@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HeadPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/head_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/recon_accurate/recon_accurate_head.glb" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Recon Accurate Head"
+weight_t = 3.0
+hp = 320.0
+sensor_range = 900.0
+lock_on_speed = 1.35
+material_library = "res://materials/recon"
+scene = ExtResource("scene")

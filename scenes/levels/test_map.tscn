@@ -19,6 +19,7 @@
 [ext_resource type="Resource" path="res://data/garage_catalog.tres" id="catalog"]
 [ext_resource type="Material" path="res://materials/asphalt.tres" id="asphalt"]
 [ext_resource type="Resource" path="res://data/loadouts/recon.tres" id="loadout_recon"]
+[ext_resource type="Resource" path="res://data/loadouts/recon_accurate.tres" id="loadout_recon_accurate"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_top_color = Color(0.32, 0.45, 0.62, 1)
@@ -145,7 +146,7 @@ mech_aim = NodePath("../PlayerMech/MechAim")
 [node name="LoadoutSwitcher" type="Node" parent="." node_paths=PackedStringArray("mech", "hud")]
 script = ExtResource("switcher")
 mech_scene = ExtResource("mech")
-loadouts = Array[Resource]([ExtResource("loadout_gunner"), ExtResource("loadout_sniper"), ExtResource("loadout_melee"), ExtResource("loadout_missile"), ExtResource("loadout_recon")])
+loadouts = Array[Resource]([ExtResource("loadout_gunner"), ExtResource("loadout_sniper"), ExtResource("loadout_melee"), ExtResource("loadout_missile"), ExtResource("loadout_recon"), ExtResource("loadout_recon_accurate")])
 mech = NodePath("../PlayerMech")
 hud = NodePath("../DebugHud")
 

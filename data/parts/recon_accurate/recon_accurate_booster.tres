@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BoosterPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/booster_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/recon_accurate/recon_accurate_booster.glb" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Recon Accurate Booster"
+weight_t = 2.5
+hp = 170.0
+thrust = 1150.0
+boost_speed_multiplier = 1.6
+energy_per_second = 28.0
+material_library = "res://materials/recon"
+scene = ExtResource("scene")

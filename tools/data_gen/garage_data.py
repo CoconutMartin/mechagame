@@ -134,16 +134,20 @@ def main():
                 fields["model_scale"] = tuple(float(x) for x in v["scale"][group])
                 fields["armor_tint"] = v["tint"]
             parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
-    for part, stats in RECON.items():
-        cls, script = SCRIPT[part]
-        fields = {"display_name": f"Recon {LABEL[part]}"}
-        fields.update({k: (float(x) if isinstance(x, (int, float)) and k not in ("leg_type", "max_locks") else x)
-                       for k, x in stats.items()})
-        scene = None
-        if part in HAS_SCENE:
-            scene = f"res://models/recon/recon_{part}.glb"
-            fields["material_library"] = "res://materials/recon"
-        parts[part].append(write(f"data/parts/recon/recon_{part}.tres", cls, script, fields, scene))
+    # Recon (boxy first model) and Recon Accurate (closer to the reference): same stats and colors.
+    for folder, title in (("recon", "Recon"), ("recon_accurate", "Recon Accurate")):
+        for part, stats in RECON.items():
+            if folder == "recon_accurate" and part == "fcs":
+                continue  # The FCS has no model: Recon Accurate uses the Recon FCS.
+            cls, script = SCRIPT[part]
+            fields = {"display_name": f"{title} {LABEL[part]}"}
+            fields.update({k: (float(x) if isinstance(x, (int, float)) and k not in ("leg_type", "max_locks") else x)
+                           for k, x in stats.items()})
+            scene = None
+            if part in HAS_SCENE:
+                scene = f"res://models/{folder}/{folder}_{part}.glb"
+                fields["material_library"] = "res://materials/recon"
+            parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
     plates = [write(f"data/plates/{f}.tres", "PlateData", "plate_data",
                     {"display_name": n, "slot": s, "hp": float(hp), "weight_t": float(w), "thickness": float(t)})
               for f, n, s, hp, w, t in PLATES]

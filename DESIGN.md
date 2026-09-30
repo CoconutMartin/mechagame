@@ -135,7 +135,7 @@ Phase 3 decisions (user):
 - Missile pods reload one missile at a time (1.5 s each), so they can lock and fire with the missiles they have.
 - Beam sniper: hold LMB to charge (3 s to full), release to fire. The shot is a sustained beam (like a kamehameha): 2 s at full charge (shorter for a partial charge, at least 0.15 s). It follows the aim and hits every 0.1 s with a small kick and shake. The torso and shoulders shake while it fires (`TorsoPose.action_shake`). The torso and shoulder shake while the beam fires is 40% less since revision 66 (`torso_shake` 0.6, about 0.5° at full charge). The shake when the charge is released is small: `release_shake` 0.075 (50% less in revision 64, then 85% less in revision 65). The barrel lights up with the charge (`ChargeGlow`): the 3 coils light one after another from the back, then the flat emitter lens in the barrel face and a small muzzle light; fully lit at full charge and while the beam fires, then it fades. Since revision 63 all shake while it fires (screen, aim, torso) is 30% less (`BeamRifleWeapon.discharge_shake` 0.7, torso about 0.84° at full charge). Rate of fire: 1 shot per 2.5 s. A tap is a 25% shot. Damage, beam width, screen shake and aim jitter grow with the charge. While charging, the camera shakes a little (trauma 0.08 at the start to 0.22 at full charge, `CameraShake.hold_shake`). RMB zooms to FOV 52.6° (70% less zoom than before) at 8 m behind the pivot, so the head, weapon arm and gun stay in view (no scope overlay).
 - G opens and closes the garage (Phase 5; Esc also closes it).
-- Keys 1 to 5 switch test loadouts (5 = Recon): 1 Gunner (heavy rifle + shield), 2 Sniper (beam sniper, two hands), 3 Melee (pile bunker + shield), 4 Missile (heavy rifle + shield + two missile pods).
+- Keys 1 to 6 switch test loadouts (5 = Recon, 6 = Recon Accurate): 1 Gunner (heavy rifle + shield), 2 Sniper (beam sniper, two hands), 3 Melee (pile bunker + shield), 4 Missile (heavy rifle + shield + two missile pods).
 
 Weapons:
 | Weapon | Slot | Keys | Values |
@@ -351,6 +351,16 @@ User brief: name Recon, slim body, blue and black, from the user's reference pic
 - Test: builds with 10 hit keys and hitboxes; walk, boost, skid, fall, part breaks and death with no errors and at most 0.13 m under the ground (chamfer corners).
 - Known: armor plate slabs (PlateMounter) use the Warden plate places, so on Recon they do not sit on the armor yet. The left arm with no shield holds the shield rest pose.
 
+## Recon Accurate (second Blender mech)
+
+User brief: model the same reference picture closely (shaped plates, not boxes), name recon_accurate, Recon colors.
+- Model: `tools/blender/recon_accurate_build.py` builds `models/recon_accurate/recon_accurate.blend` and exports `recon_accurate_<part>.glb`. Plates are cut from outlines (side and front shapes, tapers, six-sided knee pads, wedge feet), then extruded and beveled, with inset panels and brass bolts. Build: `blender -b models/recon_accurate/recon_accurate.blend --python tools/blender/recon_accurate_build.py`. Rebuilding replaces hand edits.
+- Shapes: large chamfered pauldrons with square side vents and top plates, low wedge helmet with two red eyes and a crest, two stepped antennas on the backpack, wide chest with sloped upper plates, vents and belly plate, black frame limbs with ring joints, six-sided guards on the forearms, tapered shins with calf pistons, wedge feet with black toe caps.
+- Colors: the Recon materials (`materials/recon`) plus brass bolts (`bolt.tres`).
+- Data: `data/parts/recon_accurate/` (Recon stats, Recon FCS shared), loadout `data/loadouts/recon_accurate.tres`. Key 6; the garage lists the parts.
+- Test: walk, boost, jump, leg loss and death with no errors; no part under the ground.
+- Known: plate slabs (PlateMounter) use the Warden places. The left arm with no shield holds the shield rest pose.
+
 ## Archetypes (preset loadouts; player can mix any parts)
 
 - Melee: light, fast, blade arms, strong boost
@@ -519,6 +529,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - After 8b.1: enemy AI searches for a hidden target. The current Warden saved as OG Mech (scene and loadout).
 - Custom mech pipeline: Blender kit, per-part .glb export, PartRigging for imported parts (tested with a box blockout).
 - Recon: first custom Blender mech (slim, blue and black, from the user's reference), key 5 and garage parts.
+- Recon Accurate: closer model of the same reference (shaped plates), key 6 and garage parts.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).
