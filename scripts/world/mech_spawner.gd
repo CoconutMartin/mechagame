@@ -19,6 +19,8 @@ enum Pilot { NONE, AI }
 @export var label_height: float = 12.5
 
 var mech: Mech
+## False: no mech (the garage test buttons switch it). A reset or respawn does nothing then.
+var active: bool = true
 
 var _label: Label3D
 var _respawn_left: float = 0.0
@@ -33,19 +35,44 @@ func _ready() -> void:
 	_label.outline_size = 10
 	_label.no_depth_test = true
 	add_child(_label)
+	add_to_group(&"mech_spawner")
 	if player_respawner != null:
 		player_respawner.respawned.connect(_reset)
-	_spawn.call_deferred()
+	_spawn_if_active.call_deferred()
 
 
 ## Builds the mech again at the start place with full HP.
 func _reset() -> void:
 	_respawn_left = 0.0
+	_remove_mech()
+	if active:
+		_spawn()
+
+
+## Spawns (true) or removes (false) the mech.
+func set_active(value: bool) -> void:
+	if value == active:
+		return
+	active = value
+	_reset()
+
+
+## Name for the garage buttons.
+func get_label() -> String:
+	return "Enemy (AI)" if pilot == Pilot.AI else "Dummy"
+
+
+func _remove_mech() -> void:
 	if is_instance_valid(mech):
 		# Free the name now, so the new mech gets it.
 		mech.name = "OldMech"
 		mech.queue_free()
-	_spawn()
+	mech = null
+
+
+func _spawn_if_active() -> void:
+	if active:
+		_spawn()
 
 
 func _spawn() -> void:
@@ -85,10 +112,9 @@ func _process(delta: float) -> void:
 		return
 	_respawn_left -= delta
 	if _respawn_left <= 0.0:
-		if is_instance_valid(mech):
-			mech.name = "OldMech"
-			mech.queue_free()
-		_spawn()
+		_remove_mech()
+		if active:
+			_spawn()
 
 
 func _update_label() -> void:

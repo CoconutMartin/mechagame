@@ -13,8 +13,8 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | 3 | Weapons: guns, lock-on missiles, sniper zoom, melee blade, energy use | Done |
 | 4 | Per-part HP, hitboxes, destruction, target dummies, enemy AI, greybox urban map with destructible props | Done: 4a (part HP, hitboxes, part breaks, respawn), 4b (enemy AI gunner), 4c (destructible buildings and props) |
 | 5 | Garage screen: swap parts, add plates, live stat preview. Graphics settings menu (low, medium, high) | Done |
-| 6 | Pilot creation and skill tree | Not started |
-| 7 | Save/load builds (JSON) and 4 preset archetype loadouts | Not started |
+| 6 | Pilot creation and skill tree | Skipped for now (user request, after Phase 5) |
+| 7 | Save/load builds (JSON) and 4 preset archetype loadouts | Skipped for now (user request, after Phase 5) |
 | 8 | Realistic graphics pass and complete mech animation | Not started |
 
 ## Controls
@@ -291,6 +291,7 @@ User choices: G key in the level, light / medium / heavy part variants, 0 to 3 p
 | FCS | 0.5 t, lock range 400 m, 3 locks | 1 t, 500 m, 4 | 2 t, 650 m, 6 |
 
 - Plates (`PlateData`, light / heavy): head 80 HP 0.5 t / 150 HP 1 t; core 300 HP 2 t / 550 HP 4 t; each arm 120 HP 0.8 t / 220 HP 1.5 t; legs 250 HP 2 t / 450 HP 3.5 t. `PlateMounter` adds each plate as an armor slab (0.16 to 0.32 m thick) at one of three places per part: head top, left and right cheek; belly, left and right chest; upper arm outside, forearm outside, forearm front; shin front, thigh front, shin outside (legs plates cover both legs). The slabs belong to their part: they have hitboxes and fall off with it.
+- Test targets (5.2): switches in the garage spawn or remove the enemy (AI) and the dummy mech (`MechSpawner.set_active`). A removed mech stays away after a player respawn.
 - Mods (`ModData`): boost tuning +10% thrust, lightweight frame -5% weight, reinforced frame +8% part HP, capacitor bank +15% energy, overclocked generator +15% recharge, servo tuning +10% turn speed, recoil dampers -15% recoil, jump jet tuning +15% jump.
 
 ## Graphics settings (Phase 5)

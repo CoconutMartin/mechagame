@@ -7,6 +7,7 @@ extends CanvasLayer
 ##   Weapons: right arm, left arm (shield or none; none with a two-hand weapon), back units.
 ##   Plates: 0 to 3 per part (light or heavy), shown as armor slabs (PlateMounter).
 ##   Mods: up to max_mods.
+##   Test targets: spawn or remove the enemy (AI) and the dummy mech.
 ## Stats show the change from the build the garage opened with (GarageStatPanel).
 
 @export var catalog: GarageCatalog
@@ -236,6 +237,14 @@ func _build_ui() -> void:
 	var mods := _section(list, "MODS (up to %d)" % max_mods)
 	for i in max_mods:
 		_add_picker(mods, "mod_%d" % i, "Mod %d" % (i + 1), catalog.mods, true)
+	var targets := _section(list, "TEST TARGETS")
+	for node in get_tree().get_nodes_in_group(&"mech_spawner"):
+		var spawner := node as MechSpawner
+		var toggle := CheckButton.new()
+		toggle.text = spawner.get_label()
+		toggle.button_pressed = spawner.active
+		toggle.toggled.connect(spawner.set_active)
+		targets.add_child(toggle)
 
 	var right := VBoxContainer.new()
 	right.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
