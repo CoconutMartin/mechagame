@@ -9,6 +9,9 @@ extends Node
 ##         is turned to it. The aim point wanders around the target (it is not a perfect shot).
 ##   Shield: it lifts the shield now and then, more often when it is hurt.
 ##   Dodge: now and then a dodge hop to the side it strafes to.
+##   Search (user request): when it cannot see the target, it walks to where it last saw it (the
+##   target's place at that time), then on toward the target. It boosts when that is far. When it is
+##   stuck on a wall it steps sideways for a moment. It does not fire while searching.
 
 @export var mech: Mech
 @export var input: MechInput
@@ -42,6 +45,18 @@ extends Node
 @export var shield_chance: float = 0.12
 @export var shield_time: float = 1.6
 
+@export_group("Search")
+## It counts as arrived at the last seen place this close, in meters.
+@export var arrive_distance: float = 8.0
+## Slower than this (m/s) for stuck_time seconds while searching = stuck: it steps sideways.
+@export var stuck_speed: float = 1.0
+@export var stuck_time: float = 1.2
+## Seconds of the sideways step when stuck.
+@export var unstick_time: float = 1.5
+## After a search finds the target, it does not back off for this long (seconds), so it does not
+## step back out of sight at once.
+@export var hold_after_search: float = 4.0
+
 var target: Mech
 
 var _strafe_side: float = 1.0
@@ -53,6 +68,12 @@ var _aim_offset_left: float = 0.0
 var _shield_left: float = 0.0
 var _dodge_step: int = 0
 var _dodge_wait: float = 0.0
+var _last_seen := Vector3.ZERO
+var _has_last_seen: bool = false
+var _stuck_for: float = 0.0
+var _unstick_left: float = 0.0
+var _searching: bool = false
+var _hold_left: float = 0.0
 
 
 func _ready() -> void:
@@ -76,12 +97,23 @@ func _physics_process(delta: float) -> void:
 	var distance := flat.length()
 	var sees := distance < sight_range and _has_line_of_sight()
 	_seen_time = _seen_time + delta if sees else 0.0
+	if sees:
+		_last_seen = target.global_position
+		_has_last_seen = true
 
 	# Turn the torso (and so the legs) toward the target.
 	input.aim_yaw = atan2(-flat.x, -flat.z)
 	_update_aim(delta)
+	_hold_left = maxf(_hold_left - delta, 0.0)
 	if _seen_time < reaction_time:
+		if not sees:
+			_searching = true
+			_search(delta)
 		return
+	if _searching:
+		_searching = false
+		_hold_left = hold_after_search
+	_stuck_for = 0.0
 	_move(flat, distance, delta)
 	_fire(distance, sees)
 	_shield(delta)
@@ -146,13 +178,47 @@ func _move(flat: Vector3, distance: float, delta: float) -> void:
 	var wish := side * _strafe_side
 	if distance > far_range:
 		wish = forward * 1.0 + side * _strafe_side * 0.3
-	elif distance < near_range:
+	elif distance < near_range and _hold_left <= 0.0:
 		wish = -forward * 0.8 + side * _strafe_side * 0.6
 	input.move_direction = wish.normalized()
 	# A (+1) is left: the side vector points right.
 	input.turn_input = -_strafe_side
 	input.boost_held = distance > boost_range
 	input.forward_held = distance > far_range
+
+
+## The target is hidden: walk to where it was last seen, then toward the target itself.
+func _search(delta: float) -> void:
+	var goal := target.global_position
+	if _has_last_seen:
+		var to_last := _last_seen - mech.global_position
+		if Vector2(to_last.x, to_last.z).length() > arrive_distance:
+			goal = _last_seen
+		else:
+			_has_last_seen = false
+	var to_goal := goal - mech.global_position
+	var flat := Vector3(to_goal.x, 0.0, to_goal.z)
+	if flat.length() < 1.0:
+		return
+	var forward := flat.normalized()
+	# Face the way it walks (the legs follow the torso).
+	input.aim_yaw = atan2(-forward.x, -forward.z)
+	var wish := forward
+	# Stuck on a wall: step sideways for a moment.
+	if _unstick_left > 0.0:
+		_unstick_left -= delta
+		wish = (forward * 0.3 + forward.cross(Vector3.UP) * _strafe_side).normalized()
+	elif mech.get_horizontal_speed() < stuck_speed and mech.is_on_floor():
+		_stuck_for += delta
+		if _stuck_for >= stuck_time:
+			_stuck_for = 0.0
+			_unstick_left = unstick_time
+			_strafe_side = -_strafe_side
+	else:
+		_stuck_for = 0.0
+	input.move_direction = wish
+	input.forward_held = true
+	input.boost_held = flat.length() > boost_range
 
 
 func _fire(distance: float, sees: bool) -> void:
