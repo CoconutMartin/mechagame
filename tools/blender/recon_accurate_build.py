@@ -38,6 +38,8 @@ PREVIEW = {"armor": (0.23, 0.34, 0.5), "armor_dark": (0.1, 0.14, 0.22), "frame":
            "joint": (0.17, 0.17, 0.18), "eye": (0.9, 0.08, 0.04), "emblem": (0.95, 0.55, 0.12),
            "lens": (0.35, 0.4, 0.45), "bolt": (0.62, 0.48, 0.25)}
 
+# Bevel modifier segments (recon_sleek_build.py uses more for smoother edges).
+BEVEL_SEGMENTS = 2
 _holder = {}   # socket name -> Blender object that holds the pieces (empty for this part)
 _count = {}
 
@@ -102,7 +104,7 @@ def _finish(name, socket, bm, mats, bevel):
     if bevel > 0.0:
         mod = o.modifiers.new("Soft", "BEVEL")
         mod.width = bevel
-        mod.segments = 2
+        mod.segments = BEVEL_SEGMENTS
         mod.limit_method = "ANGLE"
         mod.angle_limit = math.radians(35)
         mod.harden_normals = False
@@ -375,4 +377,6 @@ def build():
     exec(bpy.data.texts["export_parts.py"].as_string())
 
 
-build()
+# Run by Blender (--python); recon_sleek_build.py imports this file for its helpers only.
+if __name__ == "__main__":
+    build()

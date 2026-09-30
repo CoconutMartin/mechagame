@@ -134,11 +134,12 @@ def main():
                 fields["model_scale"] = tuple(float(x) for x in v["scale"][group])
                 fields["armor_tint"] = v["tint"]
             parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
-    # Recon (boxy first model) and Recon Accurate (closer to the reference): same stats and colors.
-    for folder, title in (("recon", "Recon"), ("recon_accurate", "Recon Accurate")):
+    # Recon (boxy first model), Recon Accurate (closer to the reference) and Recon Sleek (smooth,
+    # slim version): same stats and colors.
+    for folder, title in (("recon", "Recon"), ("recon_accurate", "Recon Accurate"), ("recon_sleek", "Recon Sleek")):
         for part, stats in RECON.items():
-            if folder == "recon_accurate" and part == "fcs":
-                continue  # The FCS has no model: Recon Accurate uses the Recon FCS.
+            if folder != "recon" and part == "fcs":
+                continue  # The FCS has no model: the later Recons use the Recon FCS.
             cls, script = SCRIPT[part]
             fields = {"display_name": f"{title} {LABEL[part]}"}
             fields.update({k: (float(x) if isinstance(x, (int, float)) and k not in ("leg_type", "max_locks") else x)
