@@ -2,6 +2,8 @@
 
 [ext_resource type="Material" path="res://materials/warden/armor.tres" id="armor"]
 [ext_resource type="Material" path="res://materials/warden/armor_dark.tres" id="armor_dark"]
+[ext_resource type="Material" path="res://materials/warden/armor_panel.tres" id="armor_panel"]
+[ext_resource type="Material" path="res://materials/warden/armor_dark_panel.tres" id="armor_dark_panel"]
 [ext_resource type="Material" path="res://materials/warden/frame.tres" id="frame"]
 [ext_resource type="Material" path="res://materials/warden/joint.tres" id="joint"]
 [ext_resource type="Material" path="res://materials/warden/mark.tres" id="mark"]

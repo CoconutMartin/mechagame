@@ -1,7 +1,18 @@
 [gd_resource type="StandardMaterial3D" format=3]
 
+[ext_resource type="Texture2D" path="res://materials/textures/metal_grime.tres" id="grime"]
+[ext_resource type="Texture2D" path="res://materials/textures/metal_rough.tres" id="rough"]
+[ext_resource type="Texture2D" path="res://materials/textures/metal_normal.tres" id="normal"]
+
 [resource]
 albedo_color = Color(0.14, 0.14, 0.15, 1)
 metallic = 0.6
 roughness = 0.5
-
+albedo_texture = ExtResource("grime")
+roughness_texture = ExtResource("rough")
+normal_enabled = true
+normal_scale = 0.5
+normal_texture = ExtResource("normal")
+uv1_scale = Vector3(0.45, 0.45, 0.45)
+uv1_triplanar = true
+uv1_triplanar_sharpness = 4.0

@@ -15,7 +15,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | 5 | Garage screen: swap parts, add plates, live stat preview. Graphics settings menu (low, medium, high) | Done |
 | 6 | Pilot creation and skill tree | Skipped for now (user request, after Phase 5) |
 | 7 | Save/load builds (JSON) and 4 preset archetype loadouts | Skipped for now (user request, after Phase 5) |
-| 8 | Realistic graphics pass and complete mech animation | Not started |
+| 8 | Realistic graphics pass and complete mech animation | In progress: 8a graphics (materials) done. Next 8b animation (hit reactions, walk and run with foot IK, idle motion, turn in place) |
 
 ## Controls
 
@@ -309,6 +309,14 @@ User choices: G key in the level, light / medium / heavy part variants, 0 to 3 p
 | Render scale | 75% (FSR) | 100% | 100% |
 | Directional shadow map | 1024, hard | 2048, soft low | 4096, soft high |
 
+## Graphics pass (Phase 8a)
+
+User choices: graphics first, CC0 textures, detail the box models. The texture sites (ambientcg.com, polyhaven) are blocked by the cloud environment network policy, so the textures are made in the engine (noise) and in shaders for now. Real CC0 textures can replace them later without code changes (the material texture slots).
+- Mech materials: `materials/textures/` noise textures (grime, roughness, fine surface bumps; `NoiseTexture2D`, seamless 512 px) on the Warden materials (armor, armor dark, frame, joint, rifle), mapped in object space (triplanar), so they move with the parts.
+- Box armor pieces use `mech_panel.gdshader` (`armor_panel`, `armor_dark_panel`; the generator picks them for box pieces): a panel groove 0.16 m in from each face edge, bolts in the groove corners (faces larger than 0.75 m), and patchy worn bright edges. Face size in meters comes from screen derivatives, so every box gets the same groove width. Plates use it too. `PartLook` tints both material types.
+- Buildings: `building_facade.gdshader` in world space: concrete with stains, grain and rain streaks, a slab band every 4 m floor, glass windows (1.9 x 2.3 m every 3 m, dark reflective glass with a frame, 6% with a dim warm light) above the ground floor. Rubble uses it with no windows. The grid shader stays for the other greybox blocks.
+- Ground: `asphalt.gdshader` (dark asphalt with stains, grain, cracks, and faint 10 m lines to judge scale and speed). `GreyboxBlock.surface_material` sets it.
+
 ## Archetypes (preset loadouts; player can mix any parts)
 
 - Melee: light, fast, blade arms, strong boost
@@ -364,8 +372,8 @@ One active skill slot (example: Overdrive, +30% speed for 8 seconds).
 
 ```
 data/               Part, weapon, mod, plate and loadout resources (.tres): parts/warden, parts/kestrel, parts/bulwark, weapons, plates, mods, loadouts, garage_catalog.tres.
-materials/          Shared materials. warden/ and rx78/ hold the mech colors.
-shaders/            greybox_grid.gdshader (1 m and 10 m grid lines).
+materials/          Shared materials. warden/ and rx78/ hold the mech colors, textures/ the noise textures (Phase 8), asphalt.tres.
+shaders/            greybox_grid.gdshader (1 m and 10 m grid lines), mech_panel.gdshader, building_facade.gdshader, asphalt.gdshader (Phase 8).
 scenes/levels/      test_map.tscn (main scene).
 scenes/parts/warden/ Warden part models (head, core, arm_l, arm_r, legs, booster).
 scenes/mech/        player_mech.tscn (Warden frame, weapons and logic), granpa_gundam.tscn (saved RX-78-2 style model).
@@ -471,6 +479,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Phase 4b.2: fixed the error after a pauldron fell off (a freed node was read, 20 s after the arm dropped) and the GDScript warnings. A two-hand weapon is held in one hand when the left arm is lost, with an unsteady ring. The ring stays neutral while the mech is down and during the Akira slide.
 - Phase 4c: destructible city. Buildings made of blocks (1000 HP) that break into rubble and dust; blocks with no support fall, break and hurt mechs below. Vehicles explode into burnt wrecks, lampposts snap, mechs kick props away or wreck them at boost speed. Backspace reloads the level. Also: hit marker removed, yellow crosshair dot hidden, start camera pitch -24°.
 - Phase 5: garage (G): light / medium / heavy part variants (Kestrel, Warden, Bulwark), plates 0 to 3 per part with armor slabs, weapons, up to 3 mods, live stats with the change from the opening build. Graphics presets Low / Medium / High (autoload, saved).
+- Phases 6 and 7 skipped for now (user request). Phase 8a: mech metal textures (noise), panel grooves, bolts and worn edges on box armor, building facades with windows, asphalt ground.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).

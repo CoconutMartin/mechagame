@@ -17,6 +17,11 @@ const DOOR_SIZE := Vector3(1.2, 2.0, 0.2)
 	set(value):
 		tint = value
 		_rebuild()
+## Optional. Replaces the grid material (Phase 8: the ground uses asphalt).
+@export var surface_material: Material:
+	set(value):
+		surface_material = value
+		_rebuild()
 ## Adds a 2 m door on the +Z face, to show human scale.
 @export var add_door: bool = false:
 	set(value):
@@ -47,8 +52,11 @@ func _rebuild() -> void:
 	var box := BoxMesh.new()
 	box.size = size
 	_mesh.mesh = box
-	_mesh.material_override = GRID_MATERIAL
-	_mesh.set_instance_shader_parameter("tint", tint)
+	if surface_material != null:
+		_mesh.material_override = surface_material
+	else:
+		_mesh.material_override = GRID_MATERIAL
+		_mesh.set_instance_shader_parameter("tint", tint)
 	_mesh.position = Vector3(0.0, size.y * 0.5, 0.0)
 
 	var box_shape := BoxShape3D.new()

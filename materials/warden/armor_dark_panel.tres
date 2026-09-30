@@ -1,0 +1,15 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/mech_panel.gdshader" id="shader"]
+[ext_resource type="Texture2D" path="res://materials/textures/metal_grime.tres" id="grime"]
+[ext_resource type="Texture2D" path="res://materials/textures/metal_rough.tres" id="rough"]
+[ext_resource type="Texture2D" path="res://materials/textures/metal_normal.tres" id="normal"]
+
+[resource]
+shader = ExtResource("shader")
+shader_parameter/albedo = Color(0.5, 0.49, 0.47, 1)
+shader_parameter/metallic = 0.45
+shader_parameter/roughness = 0.6
+shader_parameter/grime_texture = ExtResource("grime")
+shader_parameter/roughness_texture = ExtResource("rough")
+shader_parameter/normal_texture = ExtResource("normal")

@@ -32,7 +32,7 @@ static func spawn(world: Node, point: Vector3, size: Vector3, tint: Color, veloc
 	var box := BoxMesh.new()
 	box.size = size
 	mesh.mesh = box
-	mesh.material_override = GridMaterials.get_material(tint)
+	mesh.material_override = GridMaterials.get_material(tint, false)
 	piece.add_child(mesh)
 	var shape := CollisionShape3D.new()
 	var box_shape := BoxShape3D.new()

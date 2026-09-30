@@ -22,7 +22,7 @@ from shapes import xf
 UPPER_BODY_SCALE = 0.85
 
 MATS = {m: f"res://materials/warden/{m}.tres" for m in
-        ["armor", "armor_dark", "frame", "joint", "mark", "emblem", "eye"]}
+        ["armor", "armor_dark", "armor_panel", "armor_dark_panel", "frame", "joint", "mark", "emblem", "eye"]}
 MATS["flame"] = "res://materials/effects/booster_flame.tres"
 MATS["flame_core"] = "res://materials/effects/booster_core.tres"
 SHIELD_SCALE = 1.2

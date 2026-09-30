@@ -2,6 +2,8 @@
 
 [ext_resource type="Material" path="res://materials/warden/armor.tres" id="armor"]
 [ext_resource type="Material" path="res://materials/warden/armor_dark.tres" id="armor_dark"]
+[ext_resource type="Material" path="res://materials/warden/armor_panel.tres" id="armor_panel"]
+[ext_resource type="Material" path="res://materials/warden/armor_dark_panel.tres" id="armor_dark_panel"]
 [ext_resource type="Material" path="res://materials/warden/frame.tres" id="frame"]
 [ext_resource type="Material" path="res://materials/warden/joint.tres" id="joint"]
 [ext_resource type="Material" path="res://materials/warden/mark.tres" id="mark"]
@@ -84,17 +86,17 @@ surface_material_override/0 = ExtResource("joint")
 [node name="Core" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.125, 0.085)
 mesh = SubResource("m2")
-surface_material_override/0 = ExtResource("armor_dark")
+surface_material_override/0 = ExtResource("armor_dark_panel")
 
 [node name="CenterColumn" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.87, -1.02)
 mesh = SubResource("m3")
-surface_material_override/0 = ExtResource("armor")
+surface_material_override/0 = ExtResource("armor_panel")
 
 [node name="PortPlate" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.615, -1.3175)
 mesh = SubResource("m4")
-surface_material_override/0 = ExtResource("armor_dark")
+surface_material_override/0 = ExtResource("armor_dark_panel")
 
 [node name="PortRing0" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 1.9125, -1.4025)
@@ -119,17 +121,17 @@ surface_material_override/0 = ExtResource("frame")
 [node name="ChinGuard" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 0.96593, 0.25882, 0, -0.25882, 0.96593, 0, 0.935, -0.8925)
 mesh = SubResource("m7")
-surface_material_override/0 = ExtResource("armor")
+surface_material_override/0 = ExtResource("armor_panel")
 
 [node name="TorsoR" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2325, 2.295, -0.0425)
 mesh = SubResource("m8")
-surface_material_override/0 = ExtResource("armor")
+surface_material_override/0 = ExtResource("armor_panel")
 
 [node name="TorsoRFront" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2325, 2.55, -1.0625)
 mesh = SubResource("m9")
-surface_material_override/0 = ExtResource("armor")
+surface_material_override/0 = ExtResource("armor_panel")
 
 [node name="Emblem" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(0.70711, -0.70711, 0, 0.70711, 0.70711, 0, 0, 0, 1, 1.2325, 2.5925, -1.1815)
@@ -139,34 +141,34 @@ surface_material_override/0 = ExtResource("emblem")
 [node name="TorsoRLower" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2325, 1.53, -1.02)
 mesh = SubResource("m11")
-surface_material_override/0 = ExtResource("armor_dark")
+surface_material_override/0 = ExtResource("armor_dark_panel")
 
 [node name="TorsoL" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2325, 2.295, -0.0425)
 mesh = SubResource("m8")
-surface_material_override/0 = ExtResource("armor")
+surface_material_override/0 = ExtResource("armor_panel")
 
 [node name="TorsoLFront" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2325, 2.55, -1.0625)
 mesh = SubResource("m9")
-surface_material_override/0 = ExtResource("armor")
+surface_material_override/0 = ExtResource("armor_panel")
 
 [node name="TorsoLLower" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2325, 1.53, -1.02)
 mesh = SubResource("m11")
-surface_material_override/0 = ExtResource("armor_dark")
+surface_material_override/0 = ExtResource("armor_dark_panel")
 
 [node name="Yoke" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.4425, 0.2975)
 mesh = SubResource("m12")
-surface_material_override/0 = ExtResource("armor")
+surface_material_override/0 = ExtResource("armor_panel")
 
 [node name="Back" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.21, 1.53)
 mesh = SubResource("m13")
-surface_material_override/0 = ExtResource("armor")
+surface_material_override/0 = ExtResource("armor_panel")
 
 [node name="BackPlate" type="MeshInstance3D" parent="Torso"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.125, 2.125)
 mesh = SubResource("m14")
-surface_material_override/0 = ExtResource("armor_dark")
+surface_material_override/0 = ExtResource("armor_dark_panel")

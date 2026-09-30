@@ -6,7 +6,7 @@ extends RefCounted
 ## A place: [socket, surface point, outward normal, face size (the normal axis is 0)], in the
 ## socket space of the Warden frame. "S" in a socket name is the side (L or R); x is mirrored.
 
-const MATERIAL := preload("res://materials/warden/armor_dark.tres")
+const MATERIAL := preload("res://materials/warden/armor_dark_panel.tres")
 const MAX_PLATES := 3
 
 const HEAD := [

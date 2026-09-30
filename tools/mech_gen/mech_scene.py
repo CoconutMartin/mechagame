@@ -79,6 +79,8 @@ class Model:
         self.torso_scale = 1.0  # Set by write_scene. Scales build() parts on the torso and arms.
         self.current_part = None  # Part id: the next nodes go to that part scene.
         self.parts = {}           # Part id -> PartScene.
+        # Phase 8: box pieces with these materials use "<mat>_panel" (grooves, bolts, worn edges).
+        self.panel_mats = set()
 
     def _target(self, parent):
         """(builder, node list, parent path) for a new node: the mech scene or the current part."""
@@ -132,6 +134,8 @@ class Model:
         nodes.append(self._with_groups(text, groups))
 
     def part(self, name, parent, mat, kind, params, pos=(0, 0, 0), rot=(0, 0, 0), groups=None):
+        if kind == "box" and mat in self.panel_mats:
+            mat = f"{mat}_panel"
         params, pos = self._scaled(parent, kind, params, pos)
         b, nodes, path = self._target(parent)
         b.nodes = []
@@ -170,6 +174,7 @@ def write_scene(out_path, rifle_scene, materials, build, shoulder_x=2.9, shoulde
     parts: {part id: (scene path, root name)} for the part scenes build() makes. loadout: res:// path
     of the Loadout that MechAssembler uses. With parts, the mech scene holds only the frame."""
     m = Model()
+    m.panel_mats = {k[:-len("_panel")] for k in materials if k.endswith("_panel")}
     m.nodes.append('''[node name="PlayerMech" type="CharacterBody3D" node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery", "jump_charge", "air_steer", "kneel", "dodge")]
 collision_layer = 2
 collision_mask = 1

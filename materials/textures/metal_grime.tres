@@ -1,0 +1,19 @@
+[gd_resource type="NoiseTexture2D" format=3]
+
+[sub_resource type="FastNoiseLite" id="noise"]
+noise_type = 3
+seed = 7
+frequency = 0.035
+fractal_octaves = 5
+fractal_gain = 0.6
+
+[sub_resource type="Gradient" id="ramp"]
+offsets = PackedFloat32Array(0, 0.4, 0.7, 1)
+colors = PackedColorArray(0.8, 0.78, 0.75, 1, 0.92, 0.91, 0.9, 1, 0.98, 0.98, 0.97, 1, 1, 1, 1, 1)
+
+[resource]
+width = 512
+height = 512
+seamless = true
+color_ramp = SubResource("ramp")
+noise = SubResource("noise")

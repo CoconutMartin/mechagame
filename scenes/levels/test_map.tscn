@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scripts/world/destructible_building.gd" id="building"]
 [ext_resource type="Script" path="res://scripts/ui/garage.gd" id="garage"]
 [ext_resource type="Resource" path="res://data/garage_catalog.tres" id="catalog"]
+[ext_resource type="Material" path="res://materials/asphalt.tres" id="asphalt"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_top_color = Color(0.32, 0.45, 0.62, 1)
@@ -72,6 +73,7 @@ script = ExtResource("mouse")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 size = Vector3(206, 1, 206)
 tint = Color(0.42, 0.42, 0.43, 1)
+surface_material = ExtResource("asphalt")
 
 [node name="Buildings" type="Node3D" parent="."]
 

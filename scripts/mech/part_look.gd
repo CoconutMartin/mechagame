@@ -43,17 +43,22 @@ static func _skipped(node: Node) -> bool:
 static func _tint(node: Node, tint: Color) -> void:
 	if node is MeshInstance3D:
 		var mesh := node as MeshInstance3D
-		var material := mesh.get_active_material(0) as StandardMaterial3D
+		var material := mesh.get_active_material(0)
 		if material != null and material.resource_path.get_file().begins_with("armor"):
 			mesh.material_override = _tinted_material(material, tint)
 	for child in node.get_children():
 		_tint(child, tint)
 
 
-static func _tinted_material(material: StandardMaterial3D, tint: Color) -> StandardMaterial3D:
+static func _tinted_material(material: Material, tint: Color) -> Material:
 	var key := [material.resource_path, tint]
 	if not _tinted.has(key):
-		var copy := material.duplicate() as StandardMaterial3D
-		copy.albedo_color = material.albedo_color * tint
+		var copy := material.duplicate() as Material
+		if copy is StandardMaterial3D:
+			(copy as StandardMaterial3D).albedo_color = (material as StandardMaterial3D).albedo_color * tint
+		elif copy is ShaderMaterial:
+			# The mech panel shader (Phase 8).
+			var shader_copy := copy as ShaderMaterial
+			shader_copy.set_shader_parameter("albedo", (material as ShaderMaterial).get_shader_parameter("albedo") * tint)
 		_tinted[key] = copy
 	return _tinted[key]
