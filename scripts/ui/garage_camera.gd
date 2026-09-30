@@ -1,6 +1,6 @@
 class_name GarageCamera
 extends Camera3D
-## Garage view (Phase 5): circles the mech slowly. Drag with the right mouse button to turn it,
+## Garage view (Phase 5): stands still in front of the mech. Drag with the right mouse button to turn it,
 ## the mouse wheel moves it in and out. It runs while the game is paused.
 
 ## Point to look at, above the mech feet, in meters.
@@ -11,8 +11,8 @@ extends Camera3D
 @export var max_distance: float = 32.0
 ## Camera height above the look point, in meters.
 @export var height: float = 2.5
-## Turn speed with no input, in degrees per second.
-@export var auto_turn_deg: float = 8.0
+## Turn speed with no input, in degrees per second (0 = still, user request).
+@export var auto_turn_deg: float = 0.0
 ## Turn per pixel of mouse drag, in degrees.
 @export var drag_deg_per_pixel: float = 0.3
 
