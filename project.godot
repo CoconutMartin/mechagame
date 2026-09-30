@@ -27,6 +27,10 @@ window/size/window_height_override=900
 
 GraphicsSettings="*res://scripts/core/graphics_settings.gd"
 
+[filesystem]
+
+import/blender/enabled=false
+
 [input]
 
 move_forward={

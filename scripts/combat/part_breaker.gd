@@ -206,8 +206,8 @@ func _strip_armor(root: Node) -> void:
 	if root is MeshInstance3D:
 		var mesh := root as MeshInstance3D
 		var material := mesh.get_active_material(0)
-		var path := material.resource_path if material != null else ""
-		if not (path.ends_with("frame.tres") or path.ends_with("joint.tres")):
+		var kind := PartLook.material_name(material) if material != null else ""
+		if not (kind.begins_with("frame") or kind.begins_with("joint")):
 			mesh.visible = false
 	for child in root.get_children():
 		_strip_armor(child)

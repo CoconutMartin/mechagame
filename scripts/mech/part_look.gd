@@ -45,14 +45,15 @@ static func _tint(node: Node, tint: Color) -> void:
 	if node is MeshInstance3D:
 		var mesh := node as MeshInstance3D
 		var material := mesh.get_active_material(0)
-		if material != null and material.resource_path.get_file().begins_with("armor"):
+		if material != null and material_name(material).begins_with("armor"):
 			mesh.material_override = _tinted_material(material, tint)
 	for child in node.get_children():
 		_tint(child, tint)
 
 
 static func _tinted_material(material: Material, tint: Color) -> Material:
-	var key := [material.resource_path, tint]
+	# A Blender material has no file: it is keyed by itself.
+	var key := [material.resource_path if has_own_file(material) else material.get_instance_id(), tint]
 	if not _tinted.has(key):
 		var copy := material.duplicate() as Material
 		if copy is StandardMaterial3D:
@@ -63,3 +64,16 @@ static func _tinted_material(material: Material, tint: Color) -> Material:
 			shader_copy.set_shader_parameter("albedo", (material as ShaderMaterial).get_shader_parameter("albedo") * tint)
 		_tinted[key] = copy
 	return _tinted[key]
+
+
+## The file name of a material, or its name for a material made in Blender ("armor", "frame"...).
+static func material_name(material: Material) -> String:
+	if has_own_file(material):
+		return material.resource_path.get_file().get_basename()
+	return material.resource_name.get_slice(".", 0)
+
+
+## True for a material saved as its own file; false for one made in code or inside a model file
+## (a path like "model.glb::StandardMaterial3D_x").
+static func has_own_file(material: Material) -> bool:
+	return not material.resource_path.is_empty() and not material.resource_path.contains("::")

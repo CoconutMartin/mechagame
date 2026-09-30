@@ -16,3 +16,6 @@ extends Resource
 @export var model_scale: Vector3 = Vector3.ONE
 ## Armor color multiplier (white = the model colors).
 @export var armor_tint: Color = Color.WHITE
+## Material files for imported models (.glb): a Blender material named like a file here ("armor",
+## "armor_dark", "frame", "joint", "eye"...) uses that file. Empty = keep the Blender materials.
+@export_dir var material_library: String = "res://materials/warden"

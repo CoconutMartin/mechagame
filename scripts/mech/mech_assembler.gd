@@ -1,9 +1,10 @@
 class_name MechAssembler
 extends Node
 ## Builds the mech from a Loadout when the mech starts.
-## 1. Each part model is a scene. Its child groups have the names of frame nodes (the sockets,
-##    for example Torso, ShoulderL, ElbowL, Lower, HipL, KneeL). The children of each group move
-##    to the frame node with the same name, with their local transforms.
+## 1. Each part model is a scene (a generated .tscn or a Blender .glb). Its child groups have the
+##    names of frame nodes (the sockets, for example Torso, ShoulderL, ElbowL, Lower, HipL, KneeL; a
+##    Blender model may add "_part" to the name). The children of each group move to the frame node
+##    with the same name, with their local transforms. PartRigging gives imported nodes their roles.
 ## 2. Part variants get their look (PartLook) and the armor plates are added (PlateMounter).
 ## 3. StatCalculator computes the final stats and MechStatApplier sets them on the mech.
 ## Keep this node before Visual and the logic nodes, so the parts exist before the others start.
@@ -28,6 +29,7 @@ func _ready() -> void:
 		var part: PartData = pair[1]
 		if part.scene != null:
 			var added := attach(part.scene)
+			PartRigging.rig(added, part.material_library)
 			PartLook.apply(added, part.model_scale, part.armor_tint)
 			var nodes: Array[Node3D] = part_nodes.get(key, [] as Array[Node3D])
 			nodes.append_array(added)
@@ -49,7 +51,10 @@ func attach(scene: PackedScene) -> Array[Node3D]:
 	var added: Array[Node3D] = []
 	var model := scene.instantiate()
 	for group in model.get_children():
-		var socket := frame.find_child(group.name, true, false) as Node3D
+		# A Blender model names its socket empties "Torso_head", "Torso_core"... (object names must be
+		# unique there): the socket is the name before the first "_" or ".".
+		var socket_name := String(group.name).get_slice("_", 0).get_slice(".", 0)
+		var socket := frame.find_child(socket_name, true, false) as Node3D
 		if socket == null:
 			push_warning("MechAssembler: no socket named %s for %s" % [group.name, scene.resource_path])
 			continue
