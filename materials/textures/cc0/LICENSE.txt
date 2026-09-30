@@ -1,0 +1,4 @@
+Textures in this folder are from Poly Haven (https://polyhaven.com), license CC0 (public domain).
+concrete_*.jpg: "Concrete Slab Wall" (concrete_slab_wall), 1k.
+asphalt_*.jpg: "Asphalt 02" (asphalt_02), 1k.
+Normal maps are the OpenGL versions (nor_gl), as Godot uses.

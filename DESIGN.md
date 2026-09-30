@@ -311,11 +311,13 @@ User choices: G key in the level, light / medium / heavy part variants, 0 to 3 p
 
 ## Graphics pass (Phase 8a)
 
-User choices: graphics first, CC0 textures, detail the box models. The texture sites (ambientcg.com, polyhaven) are blocked by the cloud environment network policy, so the textures are made in the engine (noise) and in shaders for now. Real CC0 textures can replace them later without code changes (the material texture slots).
+User choices: graphics first, CC0 textures, detail the box models. CC0 textures from Poly Haven (1k, `materials/textures/cc0`, see its LICENSE.txt): concrete slab wall (buildings, rubble) and asphalt 02 (ground). The Poly Haven metal sets have their own plate seams, so the mech keeps engine noise textures and the panel shader.
 - Mech materials: `materials/textures/` noise textures (grime, roughness, fine surface bumps; `NoiseTexture2D`, seamless 512 px) on the Warden materials (armor, armor dark, frame, joint, rifle), mapped in object space (triplanar), so they move with the parts.
 - Box armor pieces use `mech_panel.gdshader` (`armor_panel`, `armor_dark_panel`; the generator picks them for box pieces): a panel groove 0.16 m in from each face edge, bolts in the groove corners (faces larger than 0.75 m), and patchy worn bright edges. Face size in meters comes from screen derivatives, so every box gets the same groove width. Plates use it too. `PartLook` tints both material types.
-- Buildings: `building_facade.gdshader` in world space: concrete with stains, grain and rain streaks, a slab band every 4 m floor, glass windows (1.9 x 2.3 m every 3 m, dark reflective glass with a frame, 6% with a dim warm light) above the ground floor. Rubble uses it with no windows. The grid shader stays for the other greybox blocks.
-- Ground: `asphalt.gdshader` (dark asphalt with stains, grain, cracks, and faint 10 m lines to judge scale and speed). `GreyboxBlock.surface_material` sets it.
+- Buildings: `building_facade.gdshader` in world space: CC0 concrete (4 m repeat, color, normal and roughness; the tint sets the brightness) with large stains and rain streaks, a slab band every 4 m floor, glass windows (1.9 x 2.3 m every 3 m, dark reflective glass with a frame, 4% with a dim warm light) above the ground floor. Rubble uses it with no windows. The grid shader stays for the other greybox blocks.
+- Ground: `asphalt.gdshader` (CC0 asphalt, 3 m repeat, with large stains, and faint 10 m lines to judge scale and speed).
+- Fog thinner (8a.2): depth fog density 0.012 to 0.005, volumetric fog 0.003 to 0.0015 (the tall building faded at about 80 m in Forward+).
+- Test renders: the cloud container renders Forward+ with Vulkan on the CPU (Mesa lavapipe, `mesa-vulkan-drivers`, about 1 frame per second) or GL. `GreyboxBlock.surface_material` sets it.
 
 ## Archetypes (preset loadouts; player can mix any parts)
 

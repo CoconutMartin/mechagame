@@ -1,9 +1,15 @@
-// Ground (Phase 8): asphalt with stains, fine grain and cracks, plus faint 10 m lines
+// Ground (Phase 8): asphalt texture with large stains, plus faint 10 m lines
 // (they help to judge scale and speed).
 shader_type spatial;
 
 uniform vec4 base_color : source_color = vec4(0.11, 0.11, 0.115, 1.0);
-uniform float line_strength = 0.18;
+uniform float line_strength = 0.1;
+// CC0 Poly Haven asphalt (materials/textures/cc0). Meters per texture repeat.
+uniform sampler2D asphalt_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D asphalt_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D asphalt_rough : hint_roughness_r, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float texture_size = 3.0;
+uniform float texture_mean = 0.1;
 
 varying vec3 world_pos;
 
@@ -37,18 +43,15 @@ void vertex() {
 void fragment() {
 	vec2 p = world_pos.xz;
 	float stains = fbm(p * 0.05);
-	float grain = hash(floor(p * 40.0));
-	// Cracks: thin lines where a stretched noise crosses its middle.
-	float crack_field = fbm(p * 0.35 + vec2(fbm(p * 0.2) * 3.0));
-	float crack = (1.0 - smoothstep(0.0, 0.006, abs(crack_field - 0.5))) * step(0.55, fbm(p * 0.08));
-	vec3 color = base_color.rgb * (0.75 + 0.45 * stains) * (0.92 + 0.12 * grain);
-	color *= 1.0 - 0.5 * crack;
+	vec2 tex_uv = p / texture_size;
+	vec3 color = base_color.rgb * texture(asphalt_albedo, tex_uv).rgb / texture_mean * (0.75 + 0.45 * stains);
+	NORMAL_MAP = texture(asphalt_normal, tex_uv).rgb;
 	// Faint 10 m lines.
 	vec2 c = p / 10.0;
 	vec2 g = abs(fract(c - 0.5) - 0.5) / fwidth(c);
 	float line = 1.0 - min(min(g.x, g.y), 1.0);
-	color = mix(color, vec3(0.55, 0.55, 0.5), line * line_strength);
+	color = mix(color, vec3(0.3, 0.3, 0.28), line * line_strength);
 	ALBEDO = color;
-	ROUGHNESS = 0.88 - 0.1 * stains;
+	ROUGHNESS = texture(asphalt_rough, tex_uv).r * (0.95 - 0.1 * stains);
 	METALLIC = 0.0;
 }

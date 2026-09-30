@@ -1,6 +1,6 @@
 // Building facade (Phase 8): concrete with floor slabs and a grid of glass windows, in world
 // space, so the windows line up across the building blocks. Tops are plain concrete.
-// windows = 0: plain concrete (rubble).
+// windows = 0: plain concrete (rubble). Concrete: CC0 Poly Haven textures (materials/textures/cc0).
 shader_type spatial;
 
 uniform vec4 tint : source_color = vec4(0.55, 0.55, 0.56, 1.0);
@@ -14,7 +14,14 @@ uniform vec2 window_size = vec2(1.9, 2.3);
 uniform float slab_height = 0.45;
 uniform vec4 glass_color : source_color = vec4(0.07, 0.09, 0.11, 1.0);
 // Part of the windows with a warm light inside.
-uniform float lit_share = 0.06;
+uniform float lit_share = 0.04;
+uniform sampler2D concrete_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D concrete_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D concrete_rough : hint_roughness_r, filter_linear_mipmap_anisotropic, repeat_enable;
+// Meters per texture repeat.
+uniform float texture_size = 4.0;
+// Average brightness of the concrete texture (the tint sets the final brightness).
+uniform float texture_mean = 0.36;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -55,16 +62,19 @@ void fragment() {
 	vec2 top_uv = world_pos.xz;
 	vec2 uv = wall ? wall_uv : top_uv;
 
-	// Concrete: large stains and fine grain.
+	// Concrete texture, plus large stains so the repeats do not show.
+	vec2 tex_uv = uv / texture_size;
 	float stains = fbm(uv * 0.15);
-	float grain = value_noise(uv * 9.0);
-	vec3 color = tint.rgb * (0.78 + 0.3 * stains) * (0.93 + 0.07 * grain);
+	float grain = texture(concrete_rough, tex_uv).r;
+	vec3 concrete = texture(concrete_albedo, tex_uv).rgb / texture_mean;
+	vec3 color = tint.rgb * concrete * (0.8 + 0.3 * stains);
+	NORMAL_MAP = texture(concrete_normal, tex_uv).rgb;
 	// Rain streaks down the walls.
 	if (wall) {
 		float streak = value_noise(vec2(uv.x * 3.0, uv.y * 0.08));
 		color *= 1.0 - 0.12 * smoothstep(0.55, 0.95, streak);
 	}
-	float rough = 0.82 + 0.1 * grain;
+	float rough = mix(0.7, 0.95, grain);
 	float metal = 0.0;
 	vec3 glow = vec3(0.0);
 
@@ -93,7 +103,7 @@ void fragment() {
 				rough = 0.06;
 				metal = 0.85;
 				if (id < lit_share) {
-					glow = vec3(1.0, 0.8, 0.55) * 0.25;
+					glow = vec3(1.0, 0.8, 0.55) * 0.1;
 				}
 			}
 		}

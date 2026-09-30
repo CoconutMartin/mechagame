@@ -42,10 +42,10 @@ sdfgi_min_cell_size = 0.4
 glow_enabled = true
 fog_enabled = true
 fog_light_color = Color(0.62, 0.65, 0.7, 1)
-fog_density = 0.012
+fog_density = 0.005
 fog_sky_affect = 0.6
 volumetric_fog_enabled = true
-volumetric_fog_density = 0.003
+volumetric_fog_density = 0.0015
 volumetric_fog_albedo = Color(0.85, 0.87, 0.9, 1)
 volumetric_fog_length = 300.0
 
