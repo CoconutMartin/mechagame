@@ -402,6 +402,15 @@ User brief: first built from the user's part sheet; then rebuilt to look like th
 - Test: walk, boost, jump, leg loss and death with no errors; no part under the ground; side torso hit areas found; the rifle is held with the new shoulders.
 - Known: the three views do not agree fully (AI picture), so the side depth is a best fit. Arms and legs hang straight in the game rest pose (the picture arms spread out).
 
+## Recon Comfy (user model, Blender only so far)
+
+User brief: new textured model from the user (`models/recon_comfy/recon_comfy_full.glb`, 698,147 faces, own texture). Rig it, feet on the ground, walking animation.
+- File: `models/recon_comfy/recon_comfy.blend` (saved compressed, 60 MB; uncompressed it is over GitHub's 100 MB limit). Model scaled to 10.6 m, centered, feet on Z = 0 (lowest points 0.0005 and 0.003 m).
+- Rig `recon_comfy_rig`: root, pelvis (5.0 to 5.6 m), torso (to 8.6 m), head (9.2 m), upper_arm/forearm/hand .L/.R (shoulder 8.4 m at x ±2.85, elbow 6.6 m, wrist 4.6 m), thigh/shin/foot .L/.R (hip 5.0 m at x ±1.42, knee 3.6 m, ankle 1.2 m). Measured from the model silhouette; the mech faces -Y.
+- Rigid skin: each face belongs to one bone (pauldrons on the upper arms), and the mesh is split along the bone borders (8,564 edges), so blocks move as solid pieces with no stretched faces. Armature modifier, weight 1.0.
+- Action `walk`: 48 frames at 24 fps (two steps in 2 s): heel contact, stance, passing (swing foot up to 0.83 m), toe-off; arms swing ±12° opposite to the legs, small waist twist. The body height is keyed every 2 frames from the lower foot, so one foot is always on the ground (within 1 cm).
+- Not a game part yet: no MechFrame, kit sockets or part export.
+
 ## Archetypes (preset loadouts; player can mix any parts)
 
 - Melee: light, fast, blade arms, strong boost
