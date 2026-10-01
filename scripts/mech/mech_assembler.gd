@@ -24,8 +24,6 @@ var part_nodes: Dictionary = {}
 func _ready() -> void:
 	if loadout == null:
 		return
-	# Custom skeletons: the parts bring their joint places (before the parts are attached).
-	FrameLayout.apply(frame, loadout)
 	for pair in loadout.get_part_slots():
 		var key: String = pair[0]
 		var part: PartData = pair[1]

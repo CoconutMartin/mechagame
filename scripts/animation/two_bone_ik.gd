@@ -20,9 +20,6 @@ extends Node
 func _ready() -> void:
 	# Run after movement and walk animation, so the hand stays on the target.
 	process_physics_priority = 10
-	# Custom skeletons: upper length from the frame, lower length scaled the same way.
-	lower_length *= FrameMeasure.scale(mid_joint)
-	upper_length = FrameMeasure.upper_arm(mid_joint, upper_length)
 
 
 func _physics_process(_delta: float) -> void:

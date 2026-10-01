@@ -42,10 +42,6 @@ var _locked := [false, false]
 func _ready() -> void:
 	# After MechLegSwing (0) and DodgeSlidePose (3), with TurnStepper (4), before the arm IK (10).
 	process_physics_priority = 5
-	# Custom skeletons: lengths from the frame (the same values with the mech scene's places).
-	thigh_length = FrameMeasure.thigh(knee_left, thigh_length)
-	shin_length = FrameMeasure.shin(knee_left, shin_length)
-	ankle_height = FrameMeasure.height(knee_left, mech, ankle_height + shin_length) - shin_length
 
 
 func _physics_process(delta: float) -> void:

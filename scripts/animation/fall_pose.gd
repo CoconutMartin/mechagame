@@ -71,12 +71,6 @@ var _last_state: int = -1
 func _ready() -> void:
 	# After MechFall (-1) and the other poses.
 	process_physics_priority = 12
-	# Custom skeletons: leg lengths from the frame, arm reach scaled with the upper arm.
-	thigh_length = FrameMeasure.thigh(knee_left, thigh_length)
-	shin_length = FrameMeasure.height(knee_left, mech, shin_length)
-	var arm_scale: float = FrameMeasure.scale(elbow_left)
-	upper_arm *= arm_scale
-	lower_arm *= arm_scale
 
 
 func _physics_process(delta: float) -> void:
