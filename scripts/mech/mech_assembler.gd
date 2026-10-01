@@ -1,6 +1,7 @@
 class_name MechAssembler
 extends Node
 ## Builds the mech from a Loadout when the mech starts.
+## 0. MechFrameApplier moves the frame joints to the joint layout of the parts (MechFrame).
 ## 1. Each part model is a scene (a generated .tscn or a Blender .glb). Its child groups have the
 ##    names of frame nodes (the sockets, for example Torso, ShoulderL, ElbowL, Lower, HipL, KneeL; a
 ##    Blender model may add "_part" to the name). The children of each group move to the frame node
@@ -24,6 +25,7 @@ var part_nodes: Dictionary = {}
 func _ready() -> void:
 	if loadout == null:
 		return
+	MechFrameApplier.apply(mech, frame, loadout)
 	for pair in loadout.get_part_slots():
 		var key: String = pair[0]
 		var part: PartData = pair[1]

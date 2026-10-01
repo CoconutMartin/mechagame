@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="LegPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/leg_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/recon_sheet/recon_sheet_legs.glb" id="scene"]
+[ext_resource type="Resource" path="res://data/frames/recon_sheet_frame.tres" id="frame"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Recon Sheet Legs"
+weight_t = 13.0
+hp = 1150.0
+leg_type = 0
+load_capacity_t = 72.0
+base_speed = 12.8
+jump_height = 10.5
+turn_speed_deg = 128.0
+turn_speed_standing_deg = 64.0
+material_library = "res://materials/recon_sheet"
+frame = ExtResource("frame")
+scene = ExtResource("scene")
