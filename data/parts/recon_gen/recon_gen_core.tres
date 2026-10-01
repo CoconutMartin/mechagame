@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="CorePart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/core_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/recon_gen/recon_gen_core.glb" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Recon Gen Core"
+weight_t = 15.0
+hp = 1350.0
+energy_capacity = 105.0
+torso_turn_speed_deg = 95.0
+material_library = "res://materials/recon_gen"
+scene = ExtResource("scene")

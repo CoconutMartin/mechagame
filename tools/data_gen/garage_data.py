@@ -135,9 +135,10 @@ def main():
                 fields["armor_tint"] = v["tint"]
             parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
     # Recon (boxy first model), Recon Accurate (closer to the reference), Recon Sleek (smooth, slim
-    # version) and Recon Sheet (from the user's part sheet): same stats.
+    # version), Recon Gen (Hunyuan3D model split by split_generated.py) and Recon Sheet (from the
+    # user's part sheet): same stats.
     for folder, title in (("recon", "Recon"), ("recon_accurate", "Recon Accurate"), ("recon_sleek", "Recon Sleek"),
-                          ("recon_sheet", "Recon Sheet")):
+                          ("recon_gen", "Recon Gen"), ("recon_sheet", "Recon Sheet")):
         for part, stats in RECON.items():
             if folder != "recon" and part == "fcs":
                 continue  # The FCS has no model: the later Recons use the Recon FCS.
@@ -148,8 +149,9 @@ def main():
             scene = None
             if part in HAS_SCENE:
                 scene = f"res://models/{folder}/{folder}_{part}.glb"
-                # Recon Sheet has its own colors (olive, dark gray, red) from the user's part sheet.
-                fields["material_library"] = "res://materials/recon_sheet" if folder == "recon_sheet" else "res://materials/recon"
+                # Recon Gen and Recon Sheet have their own olive colors; the others use the Recon colors.
+                fields["material_library"] = {"recon_gen": "res://materials/recon_gen",
+                                              "recon_sheet": "res://materials/recon_sheet"}.get(folder, "res://materials/recon")
             parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
     plates = [write(f"data/plates/{f}.tres", "PlateData", "plate_data",
                     {"display_name": n, "slot": s, "hp": float(hp), "weight_t": float(w), "thickness": float(t)})
