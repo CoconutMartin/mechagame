@@ -134,9 +134,10 @@ def main():
                 fields["model_scale"] = tuple(float(x) for x in v["scale"][group])
                 fields["armor_tint"] = v["tint"]
             parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
-    # Recon (boxy first model), Recon Accurate (closer to the reference) and Recon Sleek (smooth,
-    # slim version): same stats and colors.
-    for folder, title in (("recon", "Recon"), ("recon_accurate", "Recon Accurate"), ("recon_sleek", "Recon Sleek")):
+    # Recon (boxy first model), Recon Accurate (closer to the reference), Recon Sleek (smooth, slim
+    # version) and Recon Sheet (from the user's part sheet): same stats.
+    for folder, title in (("recon", "Recon"), ("recon_accurate", "Recon Accurate"), ("recon_sleek", "Recon Sleek"),
+                          ("recon_sheet", "Recon Sheet")):
         for part, stats in RECON.items():
             if folder != "recon" and part == "fcs":
                 continue  # The FCS has no model: the later Recons use the Recon FCS.
@@ -147,7 +148,8 @@ def main():
             scene = None
             if part in HAS_SCENE:
                 scene = f"res://models/{folder}/{folder}_{part}.glb"
-                fields["material_library"] = "res://materials/recon"
+                # Recon Sheet has its own colors (olive, dark gray, red) from the user's part sheet.
+                fields["material_library"] = "res://materials/recon_sheet" if folder == "recon_sheet" else "res://materials/recon"
             parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
     plates = [write(f"data/plates/{f}.tres", "PlateData", "plate_data",
                     {"display_name": n, "slot": s, "hp": float(hp), "weight_t": float(w), "thickness": float(t)})

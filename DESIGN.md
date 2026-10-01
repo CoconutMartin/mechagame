@@ -135,7 +135,7 @@ Phase 3 decisions (user):
 - Missile pods reload one missile at a time (1.5 s each), so they can lock and fire with the missiles they have.
 - Beam sniper: hold LMB to charge (3 s to full), release to fire. The shot is a sustained beam (like a kamehameha): 2 s at full charge (shorter for a partial charge, at least 0.15 s). It follows the aim and hits every 0.1 s with a small kick and shake. The torso and shoulders shake while it fires (`TorsoPose.action_shake`). The torso and shoulder shake while the beam fires is 40% less since revision 66 (`torso_shake` 0.6, about 0.5° at full charge). The shake when the charge is released is small: `release_shake` 0.075 (50% less in revision 64, then 85% less in revision 65). The barrel lights up with the charge (`ChargeGlow`): the 3 coils light one after another from the back, then the flat emitter lens in the barrel face and a small muzzle light; fully lit at full charge and while the beam fires, then it fades. Since revision 63 all shake while it fires (screen, aim, torso) is 30% less (`BeamRifleWeapon.discharge_shake` 0.7, torso about 0.84° at full charge). Rate of fire: 1 shot per 2.5 s. A tap is a 25% shot. Damage, beam width, screen shake and aim jitter grow with the charge. While charging, the camera shakes a little (trauma 0.08 at the start to 0.22 at full charge, `CameraShake.hold_shake`). RMB zooms to FOV 52.6° (70% less zoom than before) at 8 m behind the pivot, so the head, weapon arm and gun stay in view (no scope overlay).
 - G opens and closes the garage (Phase 5; Esc also closes it).
-- Keys 1 to 7 switch test loadouts (5 = Recon, 6 = Recon Accurate, 7 = Recon Sleek): 1 Gunner (heavy rifle + shield), 2 Sniper (beam sniper, two hands), 3 Melee (pile bunker + shield), 4 Missile (heavy rifle + shield + two missile pods).
+- Keys 1 to 8 switch test loadouts (5 = Recon, 6 = Recon Accurate, 7 = Recon Sleek, 8 = Recon Sheet): 1 Gunner (heavy rifle + shield), 2 Sniper (beam sniper, two hands), 3 Melee (pile bunker + shield), 4 Missile (heavy rifle + shield + two missile pods).
 
 Weapons:
 | Weapon | Slot | Keys | Values |
@@ -370,6 +370,15 @@ User brief: a sleek version of Recon Accurate, name recon_sleek.
 - Colors, stats and data as Recon Accurate: `data/parts/recon_sleek/`, loadout `data/loadouts/recon_sleek.tres`, key 7, garage parts.
 - Test: walk, boost, jump, leg loss and death with no errors; no part under the ground; side torso hit areas found.
 
+## Recon Sheet (fourth Blender mech, from the user's part sheet)
+
+User brief: build each part from the user's part sheet (head, torso, backpack, arm, hand, leg, foot, joint views; olive armor, dark gray frame, red sensor), then assemble them in Blender.
+- Model: `tools/blender/recon_sheet_build.py` builds `models/recon_sheet/recon_sheet.blend` (kit file) and exports `recon_sheet_<part>.glb`. Soft blocks (cut-corner outlines, 3-segment bevels) on the OG skeleton: big helmet over a dark face with one red eye, olive chest block with front plates and a dark waist, backpack with two side boxes and two tall antennas, olive shoulder blocks with dark round caps, large forearms and fists, olive thigh, knee and shin blocks, wedge feet with dark toe caps.
+- Colors: `materials/recon_sheet` (olive armor 0.31/0.34/0.18, darker olive armor_dark, dark gray frame and joint, red eye).
+- Data: `data/parts/recon_sheet/` (Recon stats, Recon FCS), loadout `data/loadouts/recon_sheet.tres`, key 8, garage parts.
+- Test: walk, boost, jump, leg loss and death with no errors; no part under the ground; side torso hit areas found.
+- `models/recon_gen/` is an empty kit file for the Blender MCP image-to-3D work on the user's PC.
+
 ## Archetypes (preset loadouts; player can mix any parts)
 
 - Melee: light, fast, blade arms, strong boost
@@ -540,6 +549,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Recon: first custom Blender mech (slim, blue and black, from the user's reference), key 5 and garage parts.
 - Recon Accurate: closer model of the same reference (shaped plates), key 6 and garage parts.
 - Recon Sleek: smooth, slim version of Recon Accurate, key 7 and garage parts. The user did not like it: next step is Blender MCP on the user's PC with image-to-3D.
+- Blender MCP connected on the user's PC (Claude Desktop, mcp-for-blender with Python 3.12). Recon Sheet: built from the user's part sheet, key 8 and garage parts.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).

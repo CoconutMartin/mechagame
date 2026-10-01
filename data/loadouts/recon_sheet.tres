@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="Loadout" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/loadout.gd" id="script"]
+[ext_resource type="Resource" path="res://data/parts/recon_sheet/recon_sheet_head.tres" id="head"]
+[ext_resource type="Resource" path="res://data/parts/recon_sheet/recon_sheet_core.tres" id="core"]
+[ext_resource type="Resource" path="res://data/parts/recon_sheet/recon_sheet_arm_l.tres" id="arm_left"]
+[ext_resource type="Resource" path="res://data/parts/recon_sheet/recon_sheet_arm_r.tres" id="arm_right"]
+[ext_resource type="Resource" path="res://data/parts/recon_sheet/recon_sheet_legs.tres" id="legs"]
+[ext_resource type="Resource" path="res://data/parts/recon_sheet/recon_sheet_booster.tres" id="booster"]
+[ext_resource type="Resource" path="res://data/parts/warden/warden_generator.tres" id="generator"]
+[ext_resource type="Resource" path="res://data/parts/recon/recon_fcs.tres" id="fcs"]
+[ext_resource type="Resource" path="res://data/weapons/heavy_rifle.tres" id="weapon_right"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Recon Sheet"
+head = ExtResource("head")
+core = ExtResource("core")
+arm_left = ExtResource("arm_left")
+arm_right = ExtResource("arm_right")
+legs = ExtResource("legs")
+booster = ExtResource("booster")
+generator = ExtResource("generator")
+fcs = ExtResource("fcs")
+weapon_right = ExtResource("weapon_right")
