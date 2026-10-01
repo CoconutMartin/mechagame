@@ -131,6 +131,8 @@ var _upper_rest_y: float = 0.0
 func _ready() -> void:
 	_upper_rest_y = upper_body.position.y
 	_upper_rest_x = upper_body.position.x
+	# Custom skeletons: hip height from the frame.
+	leg_length = FrameMeasure.height(hip_left, mech, leg_length)
 
 
 # Runs in physics frames so it stays smooth with physics interpolation.
