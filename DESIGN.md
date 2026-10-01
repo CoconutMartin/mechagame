@@ -382,13 +382,24 @@ User brief: the left mech of `models/guides/recon_ref.png`, made with Hunyuan3D 
 - Rework (Blender, phases): 1. Skeleton: armature `recon_gen_skeleton` (collection `rig`, 8 m right of the model) with the game frame bones (Upper, Torso, Lower, Shoulder, Elbow, Hip, Knee, FootPivot, PauldronPivot, Head and Booster mounts) and colored joint balls (red joint, green pivot, blue mount). Joint limits (Limit Rotation, local): elbows and knees are hinges (elbow 0 to 145° forward, twist ±45°; knee 0 to 140° back), shoulder forward 150 / back 50 / out 100 / in 10 / twist ±70, hip forward 110 / back 40 / out 45 / in 15 / twist ±35, foot toe up 40 / down 60 / roll ±25, torso and lower twist ±90. 2. Clean mesh `recon_clean`: faces grouped into flat areas and vertices moved onto the area planes (flat plates, hard edges), mirrored left to right, closed. 3. Joints: `recon_clean` cut on planes (elbow 5.57 m, knee 3.35 m with the knee plate on the shin, ankle 0.85 m, waist 5.6 m, pelvis at |x| 0.7 above 4.0 m), open cuts filled, shins straightened (sheared so the shin center stays at |x| 1.47 m; feet moved under the ankle; the mech's left shin, ankle cap and foot turned 4° inward about the knee, foot kept flat), joint caps (material `joint`): hinge cylinders at elbows, knees and ankles, balls at shoulders and hips, a waist cylinder. 29 pieces, 9.40 m tall.
 - Preview (Blender only): collection `preview`, 16 m right: linked copies of the pieces on a copy of the skeleton (rig hidden, so no bones over the moving model). Action `run` (40 frames at 24 fps, 2 steps: contact, planted stance to mid-stance, push-off, one flight per step with the body 0.46 m up; small ±4° body twist, ±18° arm swing with the pauldrons turning the same as their shoulder, forearms swing with the arm: elbow 68° with the arm forward, 32° with the arm back) plays on both skeletons. The first, bouncier cycle is kept as action `dance_animation`. The game does not use it: game walking and running are the procedural LegSwing and FootPlanter.
 
-## Recon Sheet (fourth Blender mech, from the user's part sheet)
+## Mech frames (own joint layout per mech)
 
-User brief: build each part from the user's part sheet (head, torso, backpack, arm, hand, leg, foot, joint views; olive armor, dark gray frame, red sensor), then assemble them in Blender.
-- Model: `tools/blender/recon_sheet_build.py` builds `models/recon_sheet/recon_sheet.blend` (kit file) and exports `recon_sheet_<part>.glb`. Soft blocks (cut-corner outlines, 3-segment bevels) on the OG skeleton: big helmet over a dark face with one red eye, olive chest block with front plates and a dark waist, backpack with two side boxes and two tall antennas, olive shoulder blocks with dark round caps, large forearms and fists, olive thigh, knee and shin blocks, wedge feet with dark toe caps.
+User decision: a mech can have its own joint positions (asked for Recon Sheet, to match its picture).
+- `MechFrame` resource (`scripts/data/mech_frame.gd`, files in `data/frames/`): hip height and width, thigh and shin length (ankle height = what is left), waist joint above the hips, shoulder width and height above the waist, upper arm and forearm length. Defaults = the OG layout.
+- `PartData.frame`: the legs bring the leg values, the core the torso and shoulder values, each arm its arm lengths. No frame = OG layout, so all older parts are unchanged (tested: Warden joints and lengths the same).
+- `MechFrameApplier` (called first by MechAssembler): moves Lower, Torso, HipL/R, KneeL/R, ShoulderL/R, ElbowL/R; hand markers (AimAnchor, LeftHand, LeftHandRest, LeftHandRaised) keep their offset from their shoulder; sets the lengths in FootPlanter (thigh, shin, ankle), FootLeveler (sole depth = ankle height), MechLegSwing (leg length = hip height), FallPose and PowerDownPose (thigh, shin + ankle), the arm TwoBoneIK nodes.
+- Blender: `tools/blender/frame_io.py` reads a frame file; `mech_kit.py -- <name> <frame.tres>` makes a kit with those sockets and pivots (no OG guide).
+- Known: mixing parts of different frames in the garage works, but the models may not fit each other. Armor plate slabs (PlateMounter) still use the Warden places.
+
+## Recon Sheet (fourth Blender mech, from the user's views)
+
+User brief: first built from the user's part sheet; then rebuilt to look like the user's three views (`models/guides/recon_sheet_views.png`: front, left side, back) with its own joint layout.
+- Frame `data/frames/recon_sheet_frame.tres`, measured from the views at 0.0132 m per pixel (10 m to the helmet top): hips 5.95 m high and 1.6 m out, thigh 2.05, shin 2.95, ankle 0.95, waist 6.7, shoulders 2.6 out at 8.4 m, upper arm 1.45, forearm 2.5.
+- Model: `tools/blender/recon_sheet_build.py`. Each piece is a box or side outline given in picture pixels (front view x, rows, side view x for depth), with flat chamfers (one bevel segment). The chest juts about 2.3 m in front of the legs and the feet are about 4.3 m long, as in the side view. The lower legs, feet and forearms sit a little outward of their joints, as the picture legs and arms spread. The .blend has the views as reference images (`ref_front`, `ref_side`, not exported).
 - Colors: `materials/recon_sheet` (olive armor 0.31/0.34/0.18, darker olive armor_dark, dark gray frame and joint, red eye).
-- Data: `data/parts/recon_sheet/` (Recon stats, Recon FCS), loadout `data/loadouts/recon_sheet.tres`, key 9, garage parts.
-- Test: walk, boost, jump, leg loss and death with no errors; no part under the ground; side torso hit areas found.
+- Data: `data/parts/recon_sheet/` (Recon stats, Recon FCS, frame on core, arms and legs), loadout `data/loadouts/recon_sheet.tres`, key 9, garage parts.
+- Test: walk, boost, jump, leg loss and death with no errors; no part under the ground; side torso hit areas found; the rifle is held with the new shoulders.
+- Known: the three views do not agree fully (AI picture), so the side depth is a best fit. Arms and legs hang straight in the game rest pose (the picture arms spread out).
 
 ## Archetypes (preset loadouts; player can mix any parts)
 
@@ -562,6 +573,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Recon Sleek: smooth, slim version of Recon Accurate, key 7 and garage parts. The user did not like it: next step is Blender MCP on the user's PC with image-to-3D.
 - Recon Gen: first generated mech (Hunyuan3D model of the reference, fitted and split with Blender MCP), key 8 and garage parts.
 - Blender MCP connected on the user's PC (Claude Desktop, mcp-for-blender with Python 3.12). Recon Sheet: built from the user's part sheet, key 9 and garage parts.
+- Mech frames: each mech can have its own joint layout (MechFrame on legs, core and arms). Recon Sheet rebuilt from the user's three views on its own frame.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).
 - Phase 1 revision 58: aim shake while the boosters fire (0.7° at full thrust).

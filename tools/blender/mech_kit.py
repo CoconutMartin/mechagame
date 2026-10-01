@@ -1,7 +1,8 @@
 """Blender kit for custom mechs (Blender 4.x). Makes a .blend file to model a new mech in.
 
 Run (from the project root):
-    blender -b --python tools/blender/mech_kit.py -- <mech_name>
+    blender -b --python tools/blender/mech_kit.py -- <mech_name> [data/frames/<frame>.tres]
+With a MechFrame file the sockets and pivots use its joint layout (and the OG guide is left out).
 It writes models/<mech_name>/<mech_name>.blend with:
   - One collection per part: part_head, part_core, part_arm_l, part_arm_r, part_legs, part_booster.
   - In each, the socket empties the part attaches to (named <Socket>_<part>, for example
@@ -39,6 +40,8 @@ PIVOTS = {
     "booster": [("BoosterFlameL", "Torso", (-0.6375, 5.893, 1.887), 25.0),
                 ("BoosterFlameR", "Torso", (0.6375, 5.893, 1.887), 25.0)],
 }
+## The OG guide fits only the OG joint layout.
+USE_GUIDE = True
 MATERIALS = {"armor": (0.7, 0.69, 0.66), "armor_dark": (0.5, 0.49, 0.47), "frame": (0.14, 0.14, 0.15),
              "joint": (0.3, 0.3, 0.31), "eye": (0.9, 0.12, 0.04), "emblem": (0.8, 0.3, 0.25), "lens": (0.5, 0.4, 0.25)}
 
@@ -95,7 +98,7 @@ def build(name):
             empty(pivot, col, to_socket_local(offset), (math.radians(tilt), 0.0, 0.0), parent=made[socket],
                   size=0.5, kind="SINGLE_ARROW" if pivot.startswith("Booster") else "SPHERE")
     guide = os.path.join(ROOT, "models", "guides", "og_guide.glb")
-    if os.path.exists(guide):
+    if USE_GUIDE and os.path.exists(guide):
         import_guide(guide)
     text = bpy.data.texts.new("export_parts.py")
     text.from_string(open(os.path.join(ROOT, "tools", "blender", "export_parts.py")).read())
@@ -140,4 +143,9 @@ def import_guide(path):
 
 if __name__ == "__main__":
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    if len(argv) > 1:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import frame_io
+        SOCKETS, PIVOTS = frame_io.layout(frame_io.read(argv[1]))
+        USE_GUIDE = False
     build(argv[0] if argv else "new_mech")

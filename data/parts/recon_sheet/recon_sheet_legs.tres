@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/data/leg_part.gd" id="script"]
 [ext_resource type="PackedScene" path="res://models/recon_sheet/recon_sheet_legs.glb" id="scene"]
+[ext_resource type="Resource" path="res://data/frames/recon_sheet_frame.tres" id="frame"]
 
 [resource]
 script = ExtResource("script")
@@ -15,4 +16,5 @@ jump_height = 10.5
 turn_speed_deg = 128.0
 turn_speed_standing_deg = 64.0
 material_library = "res://materials/recon_sheet"
+frame = ExtResource("frame")
 scene = ExtResource("scene")

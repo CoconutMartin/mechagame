@@ -1,166 +1,217 @@
 """Builds the Recon Sheet mech in models/recon_sheet/recon_sheet.blend and exports the parts.
 
 Run (from the project root):
+    blender -b --python tools/blender/mech_kit.py -- recon_sheet data/frames/recon_sheet_frame.tres
     blender -b models/recon_sheet/recon_sheet.blend --python tools/blender/recon_sheet_build.py
-It removes the old model pieces (not the socket and pivot empties) and builds them again, so hand
-edits in the part collections are lost: after hand edits, export with export_parts.py only.
+(the first line makes a new kit file; only needed when the frame changes). The build removes the old
+model pieces (not the socket and pivot empties) and builds them again, so hand edits in the part
+collections are lost: after hand edits, export with export_parts.py only.
 
-Made from the user's part sheet (head, torso, backpack, arm, hand, leg, foot and joint views):
-soft chunky blocks with round edges, flat colors.
-  Head: big olive helmet that hangs over a dark gray face, one round red eye on the right side of
-        the face, one thin antenna at the back left.
-  Torso: olive chest block with front plates, dark gray waist, dark shoulder joint stubs.
-  Backpack: two olive side boxes beside a dark center block, two tall dark antennas.
-  Arm: olive shoulder block with a dark round cap on the outer face, dark joints, olive upper arm
-        and a larger olive forearm block, dark fist with fingers and thumb.
-  Leg: dark hip joint, olive thigh block, dark round knee with an olive knee block, olive shin
-        that is wider at the bottom, dark ankle, olive foot with a dark toe cap and dark sole.
-Colors: materials/recon_sheet (olive armor, darker olive armor_dark, dark gray frame and joint,
-red eye). The helpers come from recon_accurate_build.py.
-Sizes and places are in mech space (meters): x right, y up (feet at 0), -z forward.
+Traced from the user's three views, models/guides/recon_sheet_views.png (front, left side, back;
+ground line at pixel row 863). Every piece is a box or side outline given in picture pixels:
+  front view x (mech center at pixel 318, the mech's right side is on the left of the picture),
+  picture rows y (ground at 863), side view x for depth (pixel 885 = the leg line, front is left).
+One pixel = SCALE meters (the mech is 10 m tall to the helmet top). Hard chamfered edges (one bevel
+segment) like the picture. Own joint layout: data/frames/recon_sheet_frame.tres (measured from the
+same picture), read by frame_io.py. The helpers come from recon_accurate_build.py.
+Colors: materials/recon_sheet (olive armor, darker olive armor_dark, dark gray frame and joint, red eye).
 """
-import os, sys
+import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy
+import frame_io
 import recon_accurate_build as ra
 from recon_accurate_build import crect, cylinder
 
-ra.BEVEL_SEGMENTS = 3
-ra.PREVIEW.update({"armor": (0.42, 0.45, 0.26), "armor_dark": (0.35, 0.38, 0.21), "frame": (0.17, 0.17, 0.18),
-                   "joint": (0.24, 0.24, 0.25), "eye": (1.0, 0.05, 0.03)})
+SCALE = 0.0132
+FRONT_X, GROUND_Y, SIDE_Z = 318, 863, 885
+FRAME = "data/frames/recon_sheet_frame.tres"
+# Arms: the picture arms hang a little behind the leg line; the model keeps them on the joints.
+ARM_Z = -0.15
+
+ra.BEVEL_SEGMENTS = 1
+ra.PREVIEW.update({"armor": (0.31, 0.34, 0.18), "armor_dark": (0.25, 0.28, 0.14), "frame": (0.11, 0.11, 0.12),
+                   "joint": (0.2, 0.2, 0.21), "eye": (1.0, 0.05, 0.03)})
+_sockets, _pivots = frame_io.layout(frame_io.read(FRAME))
+ra.SOCKETS.update(_sockets)
+for _list in _pivots.values():
+    for _name, _socket, _pos, _tilt in _list:
+        ra.SOCKETS[_name] = _pos
+
+
+def X(px):
+    return (FRONT_X - px) * SCALE
+
+
+def Y(py):
+    return (GROUND_Y - py) * SCALE
+
+
+def Z(px):
+    return (px - SIDE_Z) * SCALE
 
 
 def hold(socket, obj):
     ra._holder[socket] = bpy.data.objects[obj]
 
 
-def block(name, socket, w, h, d, pos, mat="armor", c=0.14, taper=1.0, rot=(0, 0, 0), bevel=0.09):
-    """Soft box w (x) by h (y) by d (z), corners cut by c, front face (-z) scaled by taper."""
-    return ra.plate(name, socket, crect(w, h, c), d, pos, rot, "z", mat, taper, 1.0, None, bevel=bevel)
+def box(name, socket, fx, fy, sz, mat="armor", c=0.12, taper=1.0, rot=(0, 0, 0), bevel=0.05, k=1, x=None, z_shift=0.0):
+    """Box from picture ranges: fx front view x pixels (mech right side), fy rows, sz side view x
+    pixels. k = -1 mirrors it to the mech's left. x: center in meters instead of the fx center.
+    taper scales the front face (-z)."""
+    x0, x1 = sorted((X(fx[0]), X(fx[1])))
+    y0, y1 = sorted((Y(fy[0]), Y(fy[1])))
+    z0, z1 = Z(sz[0]), Z(sz[1])
+    cx = (x0 + x1) * 0.5 if x is None else x
+    pos = (k * cx, (y0 + y1) * 0.5, (z0 + z1) * 0.5 + z_shift)
+    r = (rot[0], rot[1], rot[2] * k)
+    return ra.plate(name, socket, crect(x1 - x0, y1 - y0, c), z1 - z0, pos, r, "z", mat, taper, 1.0, None, bevel=bevel)
 
 
-def side(name, socket, outline, w, pos, mat="armor", bevel=0.09, rot=(0, 0, 0)):
-    """Piece cut from a side outline (u = z back/forward, v = y up), w wide in x."""
-    return ra.plate(name, socket, outline, w, pos, rot, "x", mat, 1.0, 1.0, None, bevel=bevel)
+def side(name, socket, points, fx, mat="armor", bevel=0.05, k=1, x=None, z_shift=0.0, scale=1.0):
+    """Piece cut from a side view outline (side view pixels), as wide as the front view range fx.
+    scale shrinks the far side (back half) of the outline toward its center."""
+    x0, x1 = sorted((X(fx[0]), X(fx[1])))
+    pts = [(Z(px), Y(py)) for px, py in points]
+    cu = (min(u for u, v in pts) + max(u for u, v in pts)) * 0.5
+    cv = (min(v for u, v in pts) + max(v for u, v in pts)) * 0.5
+    outline = [(u - cu, v - cv) for u, v in pts]
+    cx = (x0 + x1) * 0.5 if x is None else x
+    return ra.plate(name, socket, outline, x1 - x0, (k * cx, cv, cu + z_shift), (0, 0, 0), "x", mat, scale, 1.0, None, bevel=bevel)
 
 
 def head():
     S = "Torso"
     hold(S, "Torso_head")
-    # Helmet: rounded top, long brim over the face (side outline, front is -z).
-    helmet = [(-0.95, -0.05), (-0.95, 0.25), (-0.7, 0.55), (0.35, 0.62), (0.7, 0.35), (0.7, -0.35), (0.35, -0.42), (-0.2, -0.2)]
-    side("Helmet", S, [(u * 1.12, v * 1.12) for u, v in helmet], 1.5, (0, 9.0, -0.3), bevel=0.15)
-    # Dark gray face under the brim and the jaw.
-    block("Face", S, 1.15, 0.7, 1.2, (0, 8.48, -0.45), "frame", c=0.12, taper=0.92, bevel=0.07)
-    block("Jaw", S, 0.8, 0.22, 0.5, (0, 8.18, -0.72), "frame", c=0.06, bevel=0.04)
-    # One round red eye on the right side of the face (game +x).
-    cylinder("EyeRim", S, 0.19, 0.12, (0.26, 8.52, -1.03), "z", "joint", 24, bevel=0.02)
-    cylinder("Eye", S, 0.14, 0.1, (0.26, 8.52, -1.08), "z", "eye", 24, bevel=0.0)
-    # Side cheek plates.
-    for k in (-1, 1):
-        block("Cheek", S, 0.5, 0.45, 0.14, (k * 0.68, 8.5, -0.3), "armor", c=0.08, rot=(0, 90, 0), bevel=0.04)
-    # Thin antenna at the back left.
-    cylinder("AntennaBase", S, 0.1, 0.25, (-0.5, 9.45, 0.25), "y", "frame", 12, bevel=0.02)
-    cylinder("Antenna", S, 0.045, 0.85, (-0.5, 9.95, 0.25), "y", "frame", 10, bevel=0.0)
-    block("Neck", S, 0.6, 0.45, 0.7, (0, 8.0, -0.2), "frame", c=0.08, bevel=0.04)
+    # Helmet: brim over the face, sloped top, from the side view.
+    helmet = [(732, 153), (752, 130), (800, 113), (885, 100), (896, 140), (884, 190), (805, 180), (765, 160)]
+    side("Helmet", S, helmet, (280, 356), bevel=0.12)
+    box("Face", S, (286, 350), (150, 216), (748, 878), "frame", c=0.1, taper=0.9)
+    box("Chin", S, (296, 340), (196, 214), (742, 790), "frame", c=0.04)
+    cylinder("EyeRing", S, 0.21, 0.08, (0.0, Y(173), Z(748) - 0.02), "z", "joint", 24, bevel=0.0)
+    cylinder("Eye", S, 0.16, 0.08, (0.0, Y(173), Z(748) - 0.06), "z", "eye", 24, bevel=0.0)
+    box("Neck", S, (292, 344), (205, 250), (790, 880), "frame", c=0.08)
 
 
 def core():
     S = "Torso"
     hold(S, "Torso_core")
-    # Chest block (rounded back, front sloped), front plates.
-    chest = [(-1.05, -0.75), (-1.05, 0.55), (-0.75, 0.95), (0.7, 0.95), (1.05, 0.6), (1.05, -0.55), (0.75, -0.95), (-0.75, -0.95)]
-    side("Chest", S, chest, 2.4, (0, 7.35, 0.05), bevel=0.15)
-    for k in (-1, 1):
-        block("ChestPlate", S, 1.0, 0.85, 0.22, (k * 0.55, 7.75, -1.05), "armor", c=(0.08, 0.2, 0.2, 0.08) if k > 0 else (0.2, 0.08, 0.08, 0.2),
-              taper=0.92, rot=(-10, 0, 0), bevel=0.06)
-    block("ChestLower", S, 1.5, 0.6, 0.25, (0, 6.85, -0.95), "armor_dark", c=0.18, taper=0.9, rot=(8, 0, 0), bevel=0.06)
-    block("Vent", S, 0.7, 0.18, 0.1, (0, 7.15, -1.12), "frame", c=0.05, bevel=0.02)
-    # Side blocks under the shoulders (side torso hit areas).
-    for k in (-1, 1):
-        block("ChestSide", S, 0.5, 1.4, 1.5, (k * 1.3, 7.3, 0.05), "armor_dark", c=0.15, bevel=0.08)
-    # Dark waist and the shoulder joint stubs.
-    block("Waist", S, 1.4, 0.75, 1.2, (0, 6.05, 0.05), "frame", c=0.15, bevel=0.07)
-    cylinder("WaistRing", S, 0.62, 0.3, (0, 5.7, 0.05), "y", "joint", 28, bevel=0.03)
-    block("Collar", S, 1.2, 0.3, 1.0, (0, 8.35, 0.2), "frame", c=0.08, bevel=0.04)
+    # Chest: deep block that bulges far forward (side view), olive.
+    chest = [(712, 245), (735, 205), (800, 188), (950, 185), (965, 240), (960, 320), (880, 345), (765, 342), (718, 300)]
+    side("Chest", S, chest, (216, 420), bevel=0.2)
+    # Front plates beside the head (side torso areas) and the center plate.
+    for k in (1, -1):
+        box("ChestBlock", S, (205, 272), (170, 326), (712, 900), c=0.14, taper=0.9, bevel=0.15, k=k)
+    box("ChestCenter", S, (276, 360), (225, 340), (700, 800), c=0.12, taper=0.88, bevel=0.15)
+    box("Collar", S, (255, 381), (165, 232), (760, 900), "frame", c=0.1)
+    box("Waist", S, (245, 391), (322, 368), (775, 905), "frame", c=0.1)
 
 
 def arm(s):
     k = -1 if s == "L" else 1
     part = f"arm_{s.lower()}"
     hold("Torso", f"Torso_{part}")
-    # Big dark shoulder joint (sheet: SHOULDER).
-    cylinder(f"ShoulderJoint{s}", "Torso", 0.5, 0.75, (k * 1.9, 7.865, 0), "x", "frame", 32,
-             rings=[(k * 0.15, 0.56, 0.14)], bevel=0.04)
-    # Olive shoulder block with a dark round cap on the outer face.
+    sx, sy = ra.SOCKETS[f"Shoulder{s}"][0] * k, ra.SOCKETS[f"Shoulder{s}"][1]
+    # Dark shoulder joint between the chest and the pauldron (front view x 160 to 210).
+    cylinder(f"ShoulderJoint{s}", "Torso", 0.7, 0.66, (k * X(185), sy, -0.4), "x", "frame", 24,
+             rings=[(k * 0.1, 0.76, 0.12)], bevel=0.03)
+    # Pauldron: big block, outer edge raised 16.5 degrees, square vent on the outer face.
     P = f"PauldronPivot{s}"
     hold(P, P)
-    block(f"Pauldron{s}", P, 1.15, 1.35, 1.45, (k * 2.8, 8.0, 0.0), "armor", c=0.22, bevel=0.14)
-    cylinder(f"ShoulderCap{s}", P, 0.45, 0.22, (k * 3.45, 7.95, 0.05), "x", "frame", 32, rings=[(k * 0.06, 0.32, 0.12)], bevel=0.04)
-    # Upper arm: dark joint, olive block.
+    box(f"Pauldron{s}", P, (15, 175), (118, 245), (820, 995), c=0.3, rot=(0, 0, 16.5), bevel=0.2, k=k, x=2.75, z_shift=ARM_Z)
+    a = math.radians(16.5)
+    reach = 1.07  # pauldron half width + vent half depth
+    cy = (Y(118) + Y(245)) * 0.5
+    ra.plate(f"PauldronVent{s}", P, crect(0.95, 0.79, 0.05), 0.1,
+             (k * (2.75 + reach * math.cos(a)), cy + reach * math.sin(a), Z(944) + ARM_Z), (0, 0, k * 16.5),
+             "x", "frame", 1.0, 1.0, None, bevel=0.01)
+    # Upper arm: short olive block under the pauldron.
     SH = f"Shoulder{s}"
     hold(SH, f"{SH}_{part}")
-    cylinder(f"UpperJoint{s}", SH, 0.3, 0.7, (k * 2.465, 7.0, 0), "y", "frame", 24, bevel=0.03)
-    block(f"UpperArm{s}", SH, 0.85, 1.05, 0.9, (k * 2.5, 6.3, 0.0), "armor", c=0.16, bevel=0.1)
-    # Elbow (sheet: ELBOW), big forearm block, wrist, fist.
+    cylinder(f"UpperJoint{s}", SH, 0.32, 0.6, (k * 2.75, Y(262), ARM_Z), "y", "frame", 20, bevel=0.02)
+    box(f"UpperArm{s}", SH, (80, 155), (255, 312), (880, 950), c=0.12, bevel=0.1, k=k, x=2.75, z_shift=ARM_Z - 0.3)
+    # Elbow, large forearm block, wrist, fist with fingers.
     EL = f"Elbow{s}"
     hold(EL, f"{EL}_{part}")
-    cylinder(f"Elbow{s}", EL, 0.33, 0.75, (k * 2.465, 5.57, 0), "x", "frame", 28, rings=[(0.0, 0.38, 0.2)], bevel=0.03)
-    block(f"Forearm{s}", EL, 1.0, 1.6, 1.05, (k * 2.5, 4.45, 0.0), "armor", c=0.18, bevel=0.12)
-    block(f"ForearmPlate{s}", EL, 0.7, 1.1, 0.15, (k * 2.5, 4.5, -0.58), "armor_dark", c=0.1, bevel=0.04)
-    cylinder(f"Wrist{s}", EL, 0.22, 0.3, (k * 2.465, 3.55, 0), "y", "joint", 20, bevel=0.02)
-    # Fist: palm block, four fingers curled at the front, thumb on the inner side.
-    block(f"Fist{s}", EL, 0.72, 0.62, 0.72, (k * 2.465, 3.15, 0.0), "frame", c=0.1, bevel=0.06)
+    cylinder(f"Elbow{s}", EL, 0.4, 0.9, (k * 2.85, ra.SOCKETS[EL][1], ARM_Z), "x", "frame", 24, rings=[(0.0, 0.46, 0.2)], bevel=0.02)
+    box(f"Forearm{s}", EL, (25, 140), (335, 480), (850, 970), c=0.3, taper=0.92, bevel=0.18, k=k, x=3.1, z_shift=ARM_Z - 0.33)
+    cylinder(f"Wrist{s}", EL, 0.3, 0.3, (k * 3.2, Y(488), ARM_Z), "y", "joint", 20, bevel=0.02)
+    box(f"Fist{s}", EL, (30, 105), (492, 545), (848, 922), "frame", c=0.12, k=k, x=3.25, z_shift=ARM_Z)
     for i in range(4):
-        block(f"Finger{s}", EL, 0.16, 0.42, 0.24, (k * 2.465 + (i - 1.5) * 0.175, 3.0, -0.44), "frame", c=0.04, bevel=0.03)
-    block(f"Thumb{s}", EL, 0.17, 0.36, 0.36, (k * 2.465 - k * 0.42, 3.12, -0.18), "frame", c=0.04, bevel=0.03)
+        box(f"Finger{s}", EL, (0, 13), (520, 560), (836, 866), "frame", c=0.05, bevel=0.02, k=k,
+            x=3.25 + (i - 1.5) * 0.21, z_shift=ARM_Z)
+    box(f"Thumb{s}", EL, (0, 14), (505, 540), (850, 900), "frame", c=0.05, bevel=0.02, k=k, x=3.25 - 0.6, z_shift=ARM_Z)
 
 
 def legs():
     L = "Lower"
     hold(L, "Lower_legs")
-    block("Pelvis", L, 1.6, 0.75, 1.2, (0, 5.25, 0.0), "frame", c=0.18, bevel=0.07)
-    block("Groin", L, 0.7, 0.6, 0.25, (0, 5.0, -0.65), "armor", c=0.12, taper=0.85, rot=(-8, 0, 0), bevel=0.06)
+    box("Pelvis", L, (235, 401), (360, 420), (780, 900), "frame", c=0.12)
+    box("SkirtTop", L, (220, 416), (362, 388), (745, 890), "armor_dark", c=0.08)
+    box("Groin", L, (282, 354), (365, 452), (740, 800), c=0.12, taper=0.88, bevel=0.12)
     for s, k in (("L", -1), ("R", 1)):
-        # Hip joint (sheet: HIP), thigh block.
-        block(f"HipJoint{s}", L, 0.55, 0.75, 0.85, (k * 1.05, 5.2, 0), "frame", c=0.12, bevel=0.06)
-        cylinder(f"HipCap{s}", L, 0.32, 0.12, (k * 1.33, 5.2, 0), "x", "joint", 24, bevel=0.02)
+        cylinder(f"HipJoint{s}", L, 0.48, 0.4, (k * 0.72, Y(437), -0.3), "x", "frame", 24, bevel=0.03)
         H = f"Hip{s}"
         hold(H, f"{H}_legs")
-        block(f"Thigh{s}", H, 1.05, 1.7, 1.15, (k * 1.5, 4.0, 0.0), "armor", c=0.2, bevel=0.13)
-        block(f"ThighPlate{s}", H, 0.75, 1.1, 0.15, (k * 1.5, 4.05, -0.62), "armor_dark", c=0.1, bevel=0.04)
-        cylinder(f"ThighJoint{s}", H, 0.28, 0.5, (k * 1.5, 3.0, 0.05), "y", "frame", 20, bevel=0.03)
-        # Knee (sheet: KNEE): dark round joint, olive knee block in front.
+        cylinder(f"ThighFrame{s}", H, 0.42, 1.7, (k * 1.6, 4.9, -0.1), "y", "frame", 20, bevel=0.02)
+        box(f"Thigh{s}", H, (150, 265), (378, 545), (790, 880), c=0.3, taper=0.9, bevel=0.2, k=k, x=1.55, z_shift=-0.25)
+        # Rear thigh plate (back view: olive behind the thigh frame).
+        box(f"ThighBack{s}", H, (160, 262), (395, 530), (880, 960), c=0.25, bevel=0.15, k=k, x=1.55)
         K = f"Knee{s}"
         hold(K, f"{K}_legs")
-        cylinder(f"KneeJoint{s}", K, 0.4, 0.95, (k * 1.5, 2.6, 0.05), "x", "frame", 32, rings=[(0.0, 0.45, 0.25)], bevel=0.03)
-        block(f"KneePad{s}", K, 0.85, 0.8, 0.45, (k * 1.5, 2.65, -0.45), "armor", c=0.16, taper=0.85, rot=(-8, 0, 0), bevel=0.09)
-        # Shin, wider at the bottom, with a front plate and calf block.
-        ra.plate(f"Shin{s}", K, [(-0.5, 0.85), (0.5, 0.85), (0.62, 0.55), (0.62, -0.75), (0.45, -0.95), (-0.45, -0.95), (-0.62, -0.75), (-0.62, 0.55)],
-                 1.2, (k * 1.5, 1.4, 0.0), (0, 0, 0), "z", "armor", 0.95, 1.0, None, bevel=0.13)
-        block(f"ShinPlate{s}", K, 0.7, 1.2, 0.15, (k * 1.5, 1.45, -0.64), "armor_dark", c=0.1, taper=0.95, bevel=0.04)
-        block(f"Calf{s}", K, 0.8, 1.2, 0.35, (k * 1.5, 1.5, 0.68), "armor_dark", c=0.12, bevel=0.06)
-        # Ankle (sheet: ANKLE), foot wedge, dark toe cap, sole.
+        cylinder(f"KneeJoint{s}", K, 0.55, 1.1, (k * 1.66, ra.SOCKETS[K][1], -0.3), "x", "frame", 28, rings=[(0.0, 0.6, 0.3)], bevel=0.03)
+        box(f"ShinFrame{s}", K, (0, 60), (600, 800), (855, 915), "frame", c=0.1, k=k, x=1.75)
+        # Knee pad (front), inner shin plate, calf block (back), lower shin.
+        box(f"KneePad{s}", K, (125, 225), (570, 690), (775, 860), c=0.3, taper=0.88, bevel=0.18, k=k, x=1.88)
+        box(f"ShinInner{s}", K, (200, 255), (590, 700), (800, 900), c=0.12, bevel=0.12, k=k, x=1.2)
+        box(f"Calf{s}", K, (0, 90), (575, 700), (855, 970), c=0.3, bevel=0.18, k=k, x=1.8)
+        box(f"Shin{s}", K, (0, 105), (688, 778), (825, 950), c=0.25, taper=0.92, bevel=0.15, k=k, x=1.95)
+        # Ankle, foot wedge, dark toe cap, heel block, inner ankle guard, sole.
         F = f"FootPivot{s}"
         hold(F, F)
-        cylinder(f"Ankle{s}", F, 0.32, 0.9, (k * 1.5, 0.55, 0.05), "x", "frame", 28, rings=[(0.0, 0.36, 0.2)], bevel=0.03)
-        foot = [(-1.3, 0.1), (-1.3, 0.35), (-0.6, 0.55), (0.0, 0.75), (0.75, 0.75), (0.95, 0.5), (0.95, 0.1)]
-        side(f"Foot{s}", F, foot, 1.15, (k * 1.5, 0.0, -0.2), bevel=0.1)
-        side(f"Toe{s}", F, [(-0.55, 0.0), (-0.55, 0.32), (-0.1, 0.42), (0.25, 0.42), (0.25, 0.0)], 1.05,
-             (k * 1.5, 0.08, -1.7), "frame", bevel=0.07)
-        block(f"Sole{s}", F, 1.15, 2.95, 0.12, (k * 1.5, 0.06, -0.72), "frame", c=0.35, rot=(90, 0, 0), bevel=0.03)
+        cylinder(f"Ankle{s}", F, 0.44, 1.0, (k * 1.85, ra.SOCKETS[F][1], 0.2), "x", "frame", 28, rings=[(0.0, 0.48, 0.25)], bevel=0.03)
+        foot = [(745, 858), (748, 812), (800, 786), (872, 768), (950, 776), (962, 858)]
+        side(f"Foot{s}", F, foot, (95, 250), bevel=0.12, k=k, x=2.0)
+        toe = [(683, 858), (690, 838), (745, 806), (770, 822), (770, 858)]
+        side(f"Toe{s}", F, toe, (82, 235), "frame", bevel=0.05, k=k, x=2.0)
+        heel = [(945, 858), (945, 792), (992, 780), (1008, 858)]
+        side(f"Heel{s}", F, heel, (0, 95), bevel=0.1, k=k, x=1.9)
+        box(f"AnkleGuard{s}", F, (0, 42), (732, 850), (850, 930), c=0.12, bevel=0.1, k=k, x=1.25)
+        box(f"Sole{s}", F, (85, 245), (850, 863), (686, 1006), "frame", c=0.04, bevel=0.02, k=k, x=2.0)
 
 
 def booster():
     S = "Torso"
     hold(S, "Torso_booster")
-    block("PackCenter", S, 0.55, 1.35, 0.9, (0, 7.35, 1.45), "frame", c=0.1, bevel=0.06)
-    for k in (-1, 1):
-        block("PackSide", S, 0.6, 1.2, 0.8, (k * 0.58, 7.3, 1.4), "armor", c=0.14, bevel=0.1)
-        # Tall antenna on a thick base.
-        cylinder("MastBase", S, 0.13, 0.55, (k * 0.58, 8.15, 1.4), "y", "frame", 16, bevel=0.02)
-        cylinder("Mast", S, 0.07, 1.6, (k * 0.58, 9.2, 1.4), "y", "frame", 12, bevel=0.0)
-        cylinder("Nozzle", S, 0.25, 0.4, (k * 0.62, 6.45, 1.75), "y", "joint", 24, rot=(25, 0, 0), bevel=0.02)
+    box("PackCenter", S, (285, 351), (160, 375), (960, 1010), "frame", c=0.1)
+    for k in (1, -1):
+        box("PackSide", S, (0, 80), (165, 378), (940, 990), c=0.14, bevel=0.12, k=k, x=0.85)
+        # Antennas: thick base, thin top (front view x 252 and 382).
+        cylinder("MastBase", S, 0.26, 1.34, (k * X(252), 9.27, Z(915)), "y", "frame", 16, bevel=0.03)
+        cylinder("Mast", S, 0.145, 1.12, (k * X(252), 10.5, Z(915)), "y", "frame", 12, bevel=0.03)
+        cylinder("Nozzle", S, 0.26, 0.4, (k * 0.64, ra.SOCKETS["Torso"][1] + 0.493, 1.75), "y", "joint", 20, rot=(25, 0, 0), bevel=0.02)
+
+
+def reference_images():
+    """The three views as reference images in the Blender front and side views (not exported)."""
+    path = os.path.join(frame_io.ROOT, "models", "guides", "recon_sheet_views.png")
+    if not os.path.exists(path) or bpy.data.objects.get("ref_front"):
+        return
+    image = bpy.data.images.load(path)
+    width = image.size[0] * SCALE
+    for name, rot, loc in (("ref_front", (1.5708, 0, 0), (0, 6.0, 0)), ("ref_side", (1.5708, 0, 1.5708), (-6.0, 0, 0))):
+        ref = bpy.data.objects.new(name, None)
+        ref.empty_display_type = "IMAGE"
+        ref.data = image
+        ref.empty_display_size = width
+        ref.rotation_euler = rot
+        ref.location = loc
+        ref.use_empty_image_alpha = True
+        ref.color = (1.0, 1.0, 1.0, 0.5)
+        bpy.context.scene.collection.objects.link(ref)
+        # Line up the picture: mech center, ground line.
+        offset_x = FRONT_X if name == "ref_front" else SIDE_Z
+        ref.empty_image_offset = (-offset_x / image.size[0], -(image.size[1] - GROUND_Y) / image.size[1])
 
 
 def build():
@@ -172,6 +223,7 @@ def build():
     arm("R")
     legs()
     booster()
+    reference_images()
     bpy.ops.wm.save_mainfile()
     exec(bpy.data.texts["export_parts.py"].as_string())
 

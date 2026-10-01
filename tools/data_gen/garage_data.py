@@ -106,8 +106,12 @@ def write(path, cls, script, fields, scene=None):
              f'[ext_resource type="Script" path="res://scripts/data/{script}.gd" id="script"]']
     if scene:
         lines.append(f'[ext_resource type="PackedScene" path="{scene}" id="scene"]')
+    # A ("resource", path) field is a link to another resource file.
+    links = {k: v[1] for k, v in fields.items() if isinstance(v, tuple) and v and v[0] == "resource"}
+    for k, link in links.items():
+        lines.append(f'[ext_resource type="Resource" path="{link}" id="{k}"]')
     lines += ["", "[resource]", 'script = ExtResource("script")']
-    lines += [f"{k} = {value(v)}" for k, v in fields.items()]
+    lines += [f'{k} = ExtResource("{k}")' if k in links else f"{k} = {value(v)}" for k, v in fields.items()]
     if scene:
         lines.append('scene = ExtResource("scene")')
     full = os.path.join(ROOT, path)
@@ -152,6 +156,9 @@ def main():
                 # Recon Gen and Recon Sheet have their own olive colors; the others use the Recon colors.
                 fields["material_library"] = {"recon_gen": "res://materials/recon_gen",
                                               "recon_sheet": "res://materials/recon_sheet"}.get(folder, "res://materials/recon")
+                # Recon Sheet has its own joint layout (measured from models/guides/recon_sheet_views.png).
+                if folder == "recon_sheet" and part in ("core", "arm_l", "arm_r", "legs"):
+                    fields["frame"] = ("resource", "res://data/frames/recon_sheet_frame.tres")
             parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
     plates = [write(f"data/plates/{f}.tres", "PlateData", "plate_data",
                     {"display_name": n, "slot": s, "hp": float(hp), "weight_t": float(w), "thickness": float(t)})

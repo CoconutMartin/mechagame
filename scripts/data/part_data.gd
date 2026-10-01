@@ -19,3 +19,8 @@ extends Resource
 ## Material files for imported models (.glb): a Blender material named like a file here ("armor",
 ## "armor_dark", "frame", "joint", "eye"...) uses that file. Empty = keep the Blender materials.
 @export_dir var material_library: String = "res://materials/warden"
+
+@export_group("Frame")
+## Joint layout this part model is made for (legs: hip and leg values, core: torso and shoulders,
+## arms: arm lengths). Empty = the OG layout. See MechFrame and MechFrameApplier.
+@export var frame: MechFrame
