@@ -402,6 +402,14 @@ User brief: first built from the user's part sheet; then rebuilt to look like th
 - Test: walk, boost, jump, leg loss and death with no errors; no part under the ground; side torso hit areas found; the rifle is held with the new shoulders.
 - Known: the three views do not agree fully (AI picture), so the side depth is a best fit. Arms and legs hang straight in the game rest pose (the picture arms spread out).
 
+## Medium1 (rigged fused model)
+
+- Source `models/medium1.glb` (one fused mesh, 3456 loose pieces, 39k vertices, 1 m tall). In `models/medium1_rig.blend` the mesh `medium1` is scaled to 10 m with the feet on the ground. The mech faces -Y.
+- Armature `MechRig` (same naming as Slim Base): Root > Pelvis (5.9 m) > Spine > Chest > Neck > Head; L_/R_ Shoulder (clavicle from 0.6 m to the shoulder at x ±2.2, 8.6 m), UpperArm, Forearm (elbow 6.9 m), Hand (wrist 5.3 m); L_/R_ Thigh (hip x ±1.05), Shin (knee 3.65 m), Foot (ankle 1.4 m), Toe. Joints read from the front and side silhouette.
+- Controls (no deform): L_/R_ FootIK and HandIK (2-bone IK, the foot and hand copy their rotation), KneePole (in front), ElbowPole (behind, on Chest). Rest pose does not move with IK on.
+- Weights: rigid. Each loose piece goes fully to the bone nearest to most of its vertices.
+- Known: a fused mesh has no cuts at the joints, so a small gap shows at the crotch when a leg lifts high.
+
 ## Archetypes (preset loadouts; player can mix any parts)
 
 - Melee: light, fast, blade arms, strong boost
