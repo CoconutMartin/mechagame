@@ -409,6 +409,7 @@ User brief: first built from the user's part sheet; then rebuilt to look like th
 - Controls (no deform): L_/R_ FootIK and HandIK (2-bone IK, the foot and hand copy their rotation), KneePole (in front), ElbowPole (behind, on Chest). Rest pose does not move with IK on.
 - Weights: rigid. Each loose piece goes fully to the bone nearest to most of its vertices.
 - Known: a fused mesh has no cuts at the joints, so a small gap shows at the crotch when a leg lifts high.
+- Action `walk` (frames 1 to 32 at 24 fps, 1.33 s for two steps, in place, loops): each foot is on the ground for 60% of the cycle and slides 1.0 m each way. The swing lifts it up to 0.7 m. Heel strike at 12° toe up (turns on the heel), toe-off at 20° heel up (turns on the toe tip). Pelvis 0.15 m low with a ±0.06 m bob, ±0.15 m sway toward the support foot, ±6° yaw. The chest turns against it and leans 5° forward. Arms swing ±18° opposite to the legs (HandIK keys, the forearm bends a little in front). Every frame has one foot at 0.00 m and nothing goes below the ground. Knees bend 29 to 48° on the support leg and 69° in the swing.
 
 ## Archetypes (preset loadouts; player can mix any parts)
 
