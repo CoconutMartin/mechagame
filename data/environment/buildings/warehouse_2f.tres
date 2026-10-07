@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BuildingDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/building_def.gd" id="script"]
+[ext_resource type="Resource" path="res://data/environment/materials/concrete.tres" id="wall_material"]
+[ext_resource type="Resource" path="res://data/environment/materials/steel_frame.tres" id="frame_material"]
+[ext_resource type="Resource" path="res://data/environment/materials/glass.tres" id="glass_material"]
+[ext_resource type="Resource" path="res://data/environment/materials/roof_gravel.tres" id="roof_material"]
+[ext_resource type="Resource" path="res://data/environment/materials/door.tres" id="door_material"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Warehouse (2 floors)"
+footprint_x = 24.0
+footprint_z = 18.0
+floor_count = 2
+ground_floor_height = 4.0
+window_ratio = 0.25
+window_height_ratio = 0.35
+shop_front = false
+roof_type = 0
+wall_material = ExtResource("wall_material")
+frame_material = ExtResource("frame_material")
+glass_material = ExtResource("glass_material")
+roof_material = ExtResource("roof_material")
+door_material = ExtResource("door_material")

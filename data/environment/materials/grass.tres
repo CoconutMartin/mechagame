@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="MaterialDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/material_def.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Grass"
+tint = Color(0.22, 0.32, 0.14, 1.0)
+roughness = 1.0

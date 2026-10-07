@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PropDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/prop_def.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Fence section"
+size = Vector3(2.0, 1.2, 0.1)
+hp = 30.0
+mass_t = 0.05
+reaction = 4
+debris_pieces = 3
+shake = 0.02

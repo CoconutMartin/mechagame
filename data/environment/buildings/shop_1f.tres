@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="BuildingDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/building_def.gd" id="script"]
+[ext_resource type="Resource" path="res://data/environment/materials/brick.tres" id="wall_material"]
+[ext_resource type="Resource" path="res://data/environment/materials/concrete.tres" id="frame_material"]
+[ext_resource type="Resource" path="res://data/environment/materials/glass.tres" id="glass_material"]
+[ext_resource type="Resource" path="res://data/environment/materials/roof_gravel.tres" id="roof_material"]
+[ext_resource type="Resource" path="res://data/environment/materials/door.tres" id="door_material"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Shop (1 floor)"
+footprint_x = 16.0
+footprint_z = 12.0
+floor_count = 1
+ground_floor_height = 4.0
+window_ratio = 0.55
+shop_front = true
+roof_type = 1
+wall_material = ExtResource("wall_material")
+frame_material = ExtResource("frame_material")
+glass_material = ExtResource("glass_material")
+roof_material = ExtResource("roof_material")
+door_material = ExtResource("door_material")

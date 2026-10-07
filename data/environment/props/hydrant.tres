@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PropDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/prop_def.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Fire hydrant"
+size = Vector3(0.4, 0.8, 0.4)
+hp = 60.0
+mass_t = 0.1
+reaction = 4
+debris_pieces = 3
+water_spray = true
+shake = 0.03

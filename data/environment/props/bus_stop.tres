@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PropDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/prop_def.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Bus stop"
+size = Vector3(3.0, 2.5, 1.5)
+hp = 120.0
+mass_t = 0.5
+reaction = 4
+debris_pieces = 8
+shake = 0.06

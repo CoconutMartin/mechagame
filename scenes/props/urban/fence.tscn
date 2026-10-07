@@ -1,0 +1,96 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/urban_prop.gd" id="prop"]
+[ext_resource type="Resource" path="res://data/environment/props/fence.tres" id="def"]
+
+[sub_resource type="StandardMaterial3D" id="m_pole"]
+albedo_color = Color(0.25, 0.27, 0.28, 1)
+metallic = 0.6
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="mesh0"]
+material = SubResource("m_pole")
+size = Vector3(0.08, 1.2, 0.08)
+
+[sub_resource type="BoxMesh" id="mesh1"]
+material = SubResource("m_pole")
+size = Vector3(0.08, 1.2, 0.08)
+
+[sub_resource type="BoxMesh" id="mesh2"]
+material = SubResource("m_pole")
+size = Vector3(2.0, 0.06, 0.05)
+
+[sub_resource type="BoxMesh" id="mesh3"]
+material = SubResource("m_pole")
+size = Vector3(2.0, 0.06, 0.05)
+
+[sub_resource type="BoxMesh" id="mesh4"]
+material = SubResource("m_pole")
+size = Vector3(2.0, 0.06, 0.05)
+
+[sub_resource type="BoxShape3D" id="shape"]
+size = Vector3(2.0, 1.2, 0.1)
+
+[sub_resource type="BoxShape3D" id="contact"]
+size = Vector3(2.6, 1.6, 0.7)
+
+[node name="Fence" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("prop")
+def = ExtResource("def")
+
+[node name="Shape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("shape")
+
+[node name="Pivot" type="Node3D" parent="."]
+
+[node name="Mesh0" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.96, 0.6, 0)
+gi_mode = 2
+visibility_range_end = 120.0
+visibility_range_end_margin = 10.0
+visibility_range_fade_mode = 1
+mesh = SubResource("mesh0")
+
+[node name="Mesh1" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.96, 0.6, 0)
+gi_mode = 2
+visibility_range_end = 120.0
+visibility_range_end_margin = 10.0
+visibility_range_fade_mode = 1
+mesh = SubResource("mesh1")
+
+[node name="Mesh2" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+gi_mode = 2
+visibility_range_end = 120.0
+visibility_range_end_margin = 10.0
+visibility_range_fade_mode = 1
+mesh = SubResource("mesh2")
+
+[node name="Mesh3" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+gi_mode = 2
+visibility_range_end = 120.0
+visibility_range_end_margin = 10.0
+visibility_range_fade_mode = 1
+mesh = SubResource("mesh3")
+
+[node name="Mesh4" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+gi_mode = 2
+visibility_range_end = 120.0
+visibility_range_end_margin = 10.0
+visibility_range_fade_mode = 1
+mesh = SubResource("mesh4")
+
+[node name="Contact" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="Shape" type="CollisionShape3D" parent="Contact"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("contact")

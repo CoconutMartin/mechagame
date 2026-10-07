@@ -1,0 +1,86 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/urban_prop.gd" id="prop"]
+[ext_resource type="Resource" path="res://data/environment/props/tree.tres" id="def"]
+
+[sub_resource type="StandardMaterial3D" id="m_bark"]
+albedo_color = Color(0.25, 0.18, 0.12, 1)
+metallic = 0.0
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="m_leaves"]
+albedo_color = Color(0.18, 0.3, 0.12, 1)
+metallic = 0.0
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="mesh0"]
+material = SubResource("m_bark")
+top_radius = 0.14
+bottom_radius = 0.2
+height = 3.4
+radial_segments = 12
+
+[sub_resource type="SphereMesh" id="mesh1"]
+material = SubResource("m_leaves")
+radius = 2.0
+height = 4.0
+radial_segments = 12
+rings = 6
+
+[sub_resource type="SphereMesh" id="mesh2"]
+material = SubResource("m_leaves")
+radius = 1.4
+height = 2.8
+radial_segments = 12
+rings = 6
+
+[sub_resource type="BoxShape3D" id="shape"]
+size = Vector3(0.5, 7.0, 0.5)
+
+[sub_resource type="BoxShape3D" id="contact"]
+size = Vector3(1.1, 7.4, 1.1)
+
+[node name="Tree" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("prop")
+def = ExtResource("def")
+
+[node name="Shape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
+shape = SubResource("shape")
+
+[node name="Pivot" type="Node3D" parent="."]
+
+[node name="Mesh0" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+gi_mode = 2
+visibility_range_end = 120.0
+visibility_range_end_margin = 10.0
+visibility_range_fade_mode = 1
+mesh = SubResource("mesh0")
+
+[node name="Mesh1" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.9, 0)
+gi_mode = 2
+visibility_range_end = 120.0
+visibility_range_end_margin = 10.0
+visibility_range_fade_mode = 1
+mesh = SubResource("mesh1")
+
+[node name="Mesh2" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 6.0, 0.3)
+gi_mode = 2
+visibility_range_end = 120.0
+visibility_range_end_margin = 10.0
+visibility_range_fade_mode = 1
+mesh = SubResource("mesh2")
+
+[node name="Contact" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="Shape" type="CollisionShape3D" parent="Contact"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
+shape = SubResource("contact")
