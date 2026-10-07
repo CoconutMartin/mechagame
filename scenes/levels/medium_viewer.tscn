@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://models/medium/medium.glb" id="medium"]
+[ext_resource type="Script" path="res://scripts/animation/animation_looper.gd" id="looper"]
+[ext_resource type="Script" path="res://scripts/camera/orbit_camera.gd" id="orbit"]
+[ext_resource type="Material" path="res://materials/asphalt.tres" id="asphalt"]
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
+sky_top_color = Color(0.32, 0.45, 0.62, 1)
+sky_horizon_color = Color(0.68, 0.7, 0.72, 1)
+ground_bottom_color = Color(0.2, 0.19, 0.18, 1)
+ground_horizon_color = Color(0.68, 0.7, 0.72, 1)
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 3
+tonemap_mode = 4
+ssao_enabled = true
+glow_enabled = true
+
+[sub_resource type="PlaneMesh" id="ground_mesh"]
+size = Vector2(80, 80)
+
+[node name="MediumViewer" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, 0, -0.5, -0.383, 0.6428, -0.6634, 0.3214, 0.766, 0.5567, 0, 20, 0)
+shadow_enabled = true
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("ground_mesh")
+surface_material_override/0 = ExtResource("asphalt")
+
+[node name="Medium" parent="." instance=ExtResource("medium")]
+
+[node name="AnimationLooper" type="Node" parent="Medium"]
+script = ExtResource("looper")
+
+[node name="Camera" type="Camera3D" parent="."]
+current = true
+fov = 50.0
+script = ExtResource("orbit")
