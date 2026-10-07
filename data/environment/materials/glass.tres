@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="MaterialDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/material_def.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Glass"
+hp_per_m3 = 40.0
+damage_threshold = 0.0
+density = 2.5
+tint = Color(0.16, 0.2, 0.24, 1.0)
+metallic = 0.5
+roughness = 0.06
+debris_color = Color(0.6, 0.7, 0.75, 1.0)

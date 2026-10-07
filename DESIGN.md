@@ -16,6 +16,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | 6 | Pilot creation and skill tree | Skipped for now (user request, after Phase 5) |
 | 7 | Save/load builds (JSON) and 4 preset archetype loadouts | Skipped for now (user request, after Phase 5) |
 | 8 | Realistic graphics pass and complete mech animation | Done: 8a graphics (materials, CC0 textures), 8b animation (hit reactions, foot planting, idle motion, turn steps) |
+| Urban | Urban map (replaces the Phase 4 test map): layout, buildings from data, props, textures, lighting; then destruction | Checkpoint 1 done (layout, textures, props, no building destruction yet). Checkpoint 2 (destruction) next |
 
 ## Controls
 
@@ -122,6 +123,42 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 | 2 | mechs | mech bodies |
 | 3 | props | cars, trucks, lampposts, people. Mech bodies pass through them; a contact area on each `DestructibleProp` finds mechs (4c). Debris, rubble and wrecks have no layer (mask 1) |
 | 4 | hitboxes | mech part hitboxes (`PartHitbox`) and target dummies. Weapons, the aim ray and blasts hit layers 1, 3 and 4 (mask 13), not the mech bodies on layer 2 |
+
+## Urban map (urban_small, replaces the Phase 4 test map)
+
+User brief: `urban_environment_agent_prompt.md` (two checkpoints). Approved there: modular chunks generated in Godot from BuildingDef data (no Blender), towers take facade damage only and never collapse, LightmapGI for the static ground only (buildings and props use SDFGI), building occluders turn off when a building collapses.
+- Map: `maps/urban_small/urban_small.tscn` (the default scene). The old test map stays in `scenes/levels/test_map.tscn`. Written by `tools/map_gen/urban_small.py` (placed nodes only: move or add them in the editor; running the script again overwrites the scene).
+- Layout (about 256 x 256 m, x right, -z north): main avenue north-south, 24 m between curbs (6 lanes, 3 mechs side by side), 4 m sidewalks. Side street A east-west through the center (4-way intersection), 14 m (2 mechs), 3 m sidewalks. Side street B east of the avenue (T junction, z 57..71). Alley 4 m wide (z -35..-31, west of the avenue): the mech (5.2 m wide) stops at its mouth (tested: x -14.3, the alley starts at -16). Plaza 30 x 30 m with benches, trees and a fountain (x -50..-20, z 14..44). Parking lot with 12 cars and a fence (x 24..60, z -48..-14). Roads at y 0, curbs, sidewalks and blocks 0.15 m higher.
+- Buildings: 25 low-rise (4 to 16 m: kiosks, sheds, shops, apartments, offices, warehouses) and 2 towers (55 m glass, 42 m concrete). Edge: 32 out-of-bounds edge blocks (32 m, no damage, one collider each) and invisible walls at +-129 m.
+- Props: 156 near the streets, dense on the avenue near the spawn (lampposts, traffic lights, trees, benches, hydrants, people, a bus stop, parked cars, a bus).
+- Paint and decals: lane lines, double yellow center lines, crosswalks, stop lines and parking stalls (one MultiMesh each for white and yellow); manhole covers, cracks and oil stains (Decal nodes, textures made by script in `assets/textures/decals`).
+- Spawn: player on the avenue (x -5, z 36) facing north; dummy mech at z -30, enemy at z -95.
+
+### Environment resources (data/environment, written by tools/map_gen/urban_data.py)
+
+- `MaterialDef` (`scripts/environment/material_def.gd`): name, hp_per_m3, damage_threshold, density (t/m³), albedo/normal/roughness textures, texture_scale_m (meters per texture repeat), tint, metallic, roughness, emission, debris_color. The look is a StandardMaterial3D with world-space triplanar mapping, so textures keep their real size on every box. Starting values: glass 40 HP/m³, threshold 0; brick and plaster 150, threshold 30; concrete 300, threshold 80; steel frame 900, threshold 150; metal sheet 120, threshold 10.
+- `BuildingDef`: footprint_x/z, floor_count, floor_height (3.2 m), ground_floor_height (4.0 m shops), wall/frame/glass/roof/door materials, window_ratio, window_height_ratio, shop_front, roof_type (FLAT, PARAPET, GRAVEL), wall_thickness, chunk_width (4 m), column_spacing, facade_only (towers), indestructible (edge blocks), integrity_multiplier.
+- `PropDef`: size, hp, mass_t, reaction (NONE, CRUSH, PUSH, BEND, BREAK, FALL), crush_scale, bend_max_deg, push_per_speed, debris_pieces, water_spray, shake.
+- New buildings, materials and props need only new .tres files (props also a scene in `scenes/props/urban`, made by `tools/map_gen/urban_props.py`).
+
+### Building generator
+
+`BuildingGenerator` (@tool, `scripts/environment/building_generator.gd`) builds a building from its BuildingDef in the editor and in the game. Origin: bottom center; front (shop windows, door) faces -Z.
+- Per floor: wall panels along each face (the face length divided evenly near chunk_width), each with a window opening (4 wall pieces around it) and a thin glass panel set back in it; shop fronts on the ground floor front face (large windows, a 1 x 2 m door in the middle panel); a floor slab on top; interior columns on a column_spacing grid. Roof: parapet 1 m (PARAPET), parapet 0.5 m and gravel (GRAVEL), or none. Towers: a dark core box and a ring of columns behind the facade. 8% of the windows are lit.
+- Look: one MultiMesh per material (few draw calls), dynamic GI. Game: each chunk is an `UrbanChunk` (StaticBody3D, layer 1) with its box shapes, kind (wall, glass, door, slab, column, parapet, roof, core), floor, material, volume and HP (volume x hp_per_m3 x integrity). Integrity: `BuildingGenerator.integrity_of()` = integrity_multiplier x (1 + 0.25 x footprint area / 100 m²). Edge blocks: one box collider, no chunks.
+- One OccluderInstance3D (box) per building; occlusion culling is on in the project settings.
+- The map has about 4050 chunks; it loads in about 1 s.
+
+### Props and mech contact (Checkpoint 1)
+
+`UrbanProp` (StaticBody3D, layer 3): weapons hit it (`on_hit`), mech bodies pass through it, its Contact area finds mechs. Reactions, one script each: `PropCrush` (car: squashed to 40% height with sparks), `PropPush` (bus: slides away about 0.35 m per m/s, heavier less, with a dent), `PropBend` (lamppost, traffic light: bends at the base, 25° + 7° per m/s up to 80°), `PropBreak` (bus stop, bench, fence section, hydrant: breaks into tumbling boxes with dust; the hydrant sprays water), `PropFall` (tree: falls over away from the mech). People stay (scale only). A small camera shake on the mech that touched it. At 0 HP from weapons the prop breaks (bends or falls for poles and trees). Meshes fade out past 120 m.
+
+### Textures and lighting
+
+- CC0 Poly Haven 1K textures in `assets/textures/<name>/` (asphalt 3 m, concrete 2 m, brick 1 m, plaster 2 m, paving tiles 2 m, sidewalk 1.8 m, metal 0.5 m, roof gravel 2.25 m; see CREDITS.md). Glass is a flat material.
+- Sun with shadows; WorldEnvironment: SDFGI, SSAO, SSR, volumetric fog, glow, AgX tonemap, TAA (project setting); depth fog 0.003 (about 45% fade at 200 m). The graphics presets (GraphicsSettings) apply to it.
+- LightmapGI node in the map: only the ground (GroundSlab meshes, static GI, lightmap UVs) is baked. Bake it in the editor on the user's PC (select LightmapGI, Bake Lightmaps); the cloud session cannot bake.
+- Damage interface: the project already had one (`on_hit(damage: float)` on every damageable body: mech hitboxes, dummies, props, chunks), so no new Damageable component was added.
 
 ## Weapon controls (Phase 3)
 
@@ -575,6 +612,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Recon Sleek: smooth, slim version of Recon Accurate, key 7 and garage parts. The user did not like it: next step is Blender MCP on the user's PC with image-to-3D.
 - Recon Gen: first generated mech (Hunyuan3D model of the reference, fitted and split with Blender MCP), key 8 and garage parts.
 - Blender MCP connected on the user's PC (Claude Desktop, mcp-for-blender with Python 3.12). Recon Sheet: built from the user's part sheet, key 9 and garage parts.
+- Urban map Checkpoint 1: urban_small map (default scene), BuildingDef/MaterialDef/PropDef data, BuildingGenerator, props with mech contact reactions, CC0 textures, decals, lighting, LightmapGI for the ground.
 - Mech frames: each mech can have its own joint layout (MechFrame on legs, core and arms). Recon Sheet rebuilt from the user's three views on its own frame.
 - Phase 3: weapons from the loadout (WeaponController, MechWeapon scripts): heavy rifle (ammo), beam sniper (heat, zoom and scope), beam blade (lunge slash, heat and energy), missile pods (hold to lock, release to fire, ammo), hex shield. Target dummies, weapon HUD, lock HUD, test loadouts on keys 1 to 4. Dodge hop reminder closed.
 - Phase 2: part resources, loadout, part scenes on sockets, MechAssembler, StatCalculator with the weight formula, build panel in the debug HUD. Warden split into 6 part models. Tuned to keep the Phase 1 feel (60 t, walk 9.1 m/s).

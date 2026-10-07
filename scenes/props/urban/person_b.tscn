@@ -1,0 +1,71 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/urban_prop.gd" id="prop"]
+[ext_resource type="Resource" path="res://data/environment/props/person.tres" id="def"]
+
+[sub_resource type="StandardMaterial3D" id="m_shirt_b"]
+albedo_color = Color(0.5, 0.25, 0.2, 1)
+metallic = 0.0
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="m_wood"]
+albedo_color = Color(0.4, 0.27, 0.15, 1)
+metallic = 0.0
+roughness = 0.85
+
+[sub_resource type="CapsuleMesh" id="mesh0"]
+material = SubResource("m_shirt_b")
+radius = 0.23
+height = 1.75
+radial_segments = 10
+rings = 4
+
+[sub_resource type="SphereMesh" id="mesh1"]
+material = SubResource("m_wood")
+radius = 0.12
+height = 0.24
+radial_segments = 12
+rings = 6
+
+[sub_resource type="BoxShape3D" id="shape"]
+size = Vector3(0.5, 1.8, 0.5)
+
+[sub_resource type="BoxShape3D" id="contact"]
+size = Vector3(1.1, 2.2, 1.1)
+
+[node name="PersonB" type="StaticBody3D"]
+collision_layer = 4
+collision_mask = 0
+script = ExtResource("prop")
+def = ExtResource("def")
+
+[node name="Shape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("shape")
+
+[node name="Pivot" type="Node3D" parent="."]
+
+[node name="Mesh0" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
+gi_mode = 2
+visibility_range_end = 120.0
+visibility_range_end_margin = 10.0
+visibility_range_fade_mode = 1
+mesh = SubResource("mesh0")
+
+[node name="Mesh1" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.63, 0)
+gi_mode = 2
+visibility_range_end = 120.0
+visibility_range_end_margin = 10.0
+visibility_range_fade_mode = 1
+mesh = SubResource("mesh1")
+
+[node name="Contact" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="Shape" type="CollisionShape3D" parent="Contact"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("contact")

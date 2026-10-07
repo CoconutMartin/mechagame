@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="PropDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/prop_def.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Lamppost"
+size = Vector3(0.3, 6.0, 0.3)
+hp = 120.0
+mass_t = 0.3
+reaction = 3
+shake = 0.05

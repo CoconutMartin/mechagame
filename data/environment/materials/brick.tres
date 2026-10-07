@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="MaterialDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/material_def.gd" id="script"]
+[ext_resource type="Texture2D" path="res://assets/textures/brick/brick_albedo.jpg" id="albedo_texture"]
+[ext_resource type="Texture2D" path="res://assets/textures/brick/brick_normal.jpg" id="normal_texture"]
+[ext_resource type="Texture2D" path="res://assets/textures/brick/brick_rough.jpg" id="roughness_texture"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Brick"
+hp_per_m3 = 150.0
+damage_threshold = 30.0
+density = 1.9
+texture_scale_m = 1.0
+roughness = 0.9
+debris_color = Color(0.5, 0.3, 0.24, 1.0)
+albedo_texture = ExtResource("albedo_texture")
+normal_texture = ExtResource("normal_texture")
+roughness_texture = ExtResource("roughness_texture")

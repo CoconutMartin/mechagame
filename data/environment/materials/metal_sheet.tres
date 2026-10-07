@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="MaterialDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/material_def.gd" id="script"]
+[ext_resource type="Texture2D" path="res://assets/textures/metal/metal_albedo.jpg" id="albedo_texture"]
+[ext_resource type="Texture2D" path="res://assets/textures/metal/metal_normal.jpg" id="normal_texture"]
+[ext_resource type="Texture2D" path="res://assets/textures/metal/metal_rough.jpg" id="roughness_texture"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Metal sheet"
+hp_per_m3 = 120.0
+damage_threshold = 10.0
+density = 1.0
+texture_scale_m = 0.5
+tint = Color(0.45, 0.5, 0.48, 1.0)
+metallic = 0.6
+roughness = 0.5
+debris_color = Color(0.4, 0.42, 0.4, 1.0)
+albedo_texture = ExtResource("albedo_texture")
+normal_texture = ExtResource("normal_texture")
+roughness_texture = ExtResource("roughness_texture")

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="PropDef" format=3]
+
+[ext_resource type="Script" path="res://scripts/environment/prop_def.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Tree"
+size = Vector3(0.5, 7.0, 0.5)
+hp = 150.0
+mass_t = 1.0
+reaction = 5
+shake = 0.06
