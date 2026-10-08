@@ -522,6 +522,17 @@ One active skill slot (example: Overdrive, +30% speed for 8 seconds).
 - Mech: `start_lunge()` (blade), boosters fire during the lunge. MechStats has the FCS lock range and max locks and the head lock-on speed.
 - Granpa Gundam still uses the older hard-wired rifle nodes (WeaponFire).
 
+## Hand grip system (approved 2026-10-08, not built yet)
+
+- Hands are rigged: each finger segment is a separate rigid mesh parented to its own bone (3 segments per finger, 2 per thumb).
+- Each weapon resource has `grip_pose` (String, for example "rifle", "pistol", "blade", "open").
+- Each weapon scene has a `socket_grip` Marker3D. The palm aligns to it. `socket_grip` replaces `GripRight` (user decision): the right arm IK target and every code that reads `GripRight` move to `socket_grip`.
+- When MechAssembler attaches a weapon, the arm's hand plays the matching grip pose.
+- New weapons need only a new `grip_pose` value in the .tres file. No code changes.
+- Step 1 (the note's "Phase 3"): add `grip_pose` and `socket_grip` with placeholder box fingers.
+- Step 2 (the note's "Phase 8"): replace them with rigged .glb arms. Grip poses are made in Blender and exported with the arm.
+- Medium: its claws are one AI-made mesh per hand, so they must be cut into finger segments (3 per finger, 2 per thumb) and rigged before they can take grip poses.
+
 ## Architecture rules
 
 - Parts, weapons, mods, plates, and skills are Godot Resources (.tres) in `/data`. New parts need no code changes.
@@ -681,3 +692,4 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Note for .tscn files: Transform3D text is row by row (basis rows, then origin).
 - Phase 1: placeholder leg swing on the box mech. Phase 8 adds complete animation: walk cycles per leg type, leg IK on slopes, torso twist toward aim, weapon recoil, boost and jump jet poses.
 - Phase 1: mechs pass through cars, lampposts, and people. Phase 4 makes these destructible.
+- 2026-10-08: hand grip system approved (see Hand grip system): weapon `grip_pose` and `socket_grip`; `socket_grip` replaces `GripRight`. Recorded only, not built yet.
