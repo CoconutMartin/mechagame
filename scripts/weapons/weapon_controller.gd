@@ -54,6 +54,8 @@ var left_data: WeaponData
 var active: MechWeapon = null
 ## Shield model nodes on the frame (PartBreaker drops them when the shield breaks).
 var shield_nodes: Array[Node3D] = []
+## Right arm hold offset (ArmPart.hold_offset), torso space: added to every right weapon hold place.
+var hold_offset: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
@@ -64,6 +66,7 @@ func _ready() -> void:
 func mount(loadout: Loadout, assembler: MechAssembler) -> void:
 	right_data = loadout.weapon_right
 	left_data = loadout.weapon_left
+	hold_offset = loadout.arm_right.hold_offset if loadout.arm_right is ArmPart else Vector3.ZERO
 	if right_data != null and right_data.scene != null:
 		right_weapon = _add_weapon(right_data, "RightWeapon")
 		_wire_right(right_data)
@@ -91,11 +94,11 @@ func _add_weapon(data: WeaponData, node_name: String) -> MechWeapon:
 func _wire_right(data: WeaponData) -> void:
 	weapon_pose.weapon = right_weapon
 	weapon_pose.use_weapon_data = true
-	weapon_pose.rest_transform = data.rest_transform
-	weapon_pose.aim_origin = data.aim_anchor
+	weapon_pose.rest_transform = data.rest_transform.translated(hold_offset)
+	weapon_pose.aim_origin = data.aim_anchor + hold_offset
 	weapon_pose.right_pole_rest = data.right_pole_rest
 	weapon_pose.right_pole_aim = data.right_pole_aim
-	right_weapon.transform = data.rest_transform
+	right_weapon.transform = data.rest_transform.translated(hold_offset)
 	arm_ik_right.target = right_weapon.get_node("GripRight")
 	weapon_recoil.bind(right_weapon)
 	weapon_recoil.kick_back = data.model_kick_back
@@ -178,8 +181,8 @@ func _hold_one_hand() -> void:
 	var grip := (right_weapon.get_node("GripRight") as Node3D).position
 	var rest_basis := Basis(Vector3.RIGHT, deg_to_rad(one_hand_rest_pitch_deg))
 	weapon_pose.left_grip_target = null
-	weapon_pose.aim_origin = one_hand_grip_aim - grip
-	weapon_pose.rest_transform = Transform3D(rest_basis, one_hand_grip_rest - rest_basis * grip)
+	weapon_pose.aim_origin = one_hand_grip_aim + hold_offset - grip
+	weapon_pose.rest_transform = Transform3D(rest_basis, one_hand_grip_rest + hold_offset - rest_basis * grip)
 	weapon_pose.right_pole_rest = one_hand_pole
 	weapon_pose.right_pole_aim = one_hand_pole
 	torso_pose.aim_twist_deg = 0.0

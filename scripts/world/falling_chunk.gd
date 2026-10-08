@@ -3,8 +3,9 @@ extends RigidBody3D
 ## A building block that lost its support. It falls, and when it hits the ground or the building
 ## it breaks into rubble with dust and hurts the mechs near the impact.
 
-## Set by DestructibleBuilding before it enters the tree.
-var building: DestructibleBuilding
+## Set by the building before it enters the tree: a node with shatter(place, size, color, velocity,
+## hurts) (DestructibleBuilding, BuildingDamage).
+var building: Node
 var size: Vector3 = Vector3.ONE
 var tint: Color = Color.GRAY
 
@@ -32,5 +33,5 @@ func _break() -> void:
 		return
 	_broken = true
 	if building != null:
-		building.shatter(global_transform, size, tint, linear_velocity, true)
+		building.call(&"shatter", global_transform, size, tint, linear_velocity, true)
 	queue_free()

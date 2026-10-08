@@ -331,7 +331,7 @@ def logic():
     mech = res("res://scenes/mech/player_mech.tscn", "PackedScene")
     hud = res("res://scenes/ui/debug_hud.tscn", "PackedScene")
     loadouts = ["warden", "warden_sniper", "warden_melee", "warden_missile", "recon", "recon_accurate", "recon_sleek",
-                "recon_gen", "recon_sheet"]
+                "recon_gen", "recon_sheet", "medium_mech"]
     refs = ", ".join(res(f"res://data/loadouts/{l}.tres") for l in loadouts)
     spawner = res("res://scripts/world/mech_spawner.gd", "Script")
     gunner = res("res://data/loadouts/warden.tres")

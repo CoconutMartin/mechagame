@@ -17,6 +17,12 @@ def objects_of(col):
     return found
 
 
+posed = [o.name for o in bpy.data.objects if "kit_rest" in o]
+if posed:
+    # kit_pose.py posed the sockets: exporting now would bake the pose into the parts.
+    raise RuntimeError("Sockets are posed (kit_pose.py). Run kit_pose.py with MODE = \"rest\" first: "
+                       + ", ".join(posed[:5]))
+
 for col in bpy.data.collections:
     if not col.name.startswith("part_"):
         continue

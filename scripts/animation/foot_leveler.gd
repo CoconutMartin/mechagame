@@ -28,6 +28,9 @@ extends Node
 @export var hang_toe_down_deg: float = 12.0
 ## Ground layers for the ray (1 = world).
 @export_flags_3d_physics var ground_mask: int = 1
+## When the ground clamp bends a leg whose knee is closer than this to the hip-ankle line (meters),
+## the knee bends toward the body front (a straight leg has no bend side of its own).
+@export var straight_leg_pole_m: float = 0.05
 
 var _pivots: Array[Node3D] = []
 ## Box around each foot's meshes, in its pivot space (by pivot).
@@ -133,9 +136,14 @@ func _lift_leg(pivot: Node3D, target: Vector3) -> void:
 	var hip := knee.get_parent_node_3d()
 	if hip == null or knee == null:
 		return
-	var middle := (hip.global_position + pivot.global_position) * 0.5
-	var pole := knee.global_position - middle
-	if pole.length_squared() < 0.0001:
+	# Bend side = how far the knee sits off the hip-ankle line. Only the part across the line counts:
+	# with a thigh and shin of different lengths a straight knee is off the middle along the line,
+	# and that would point the bend along the leg (the IK then bends it sideways).
+	var line := (pivot.global_position - hip.global_position).normalized()
+	var pole := knee.global_position - hip.global_position
+	pole -= line * pole.dot(line)
+	# A (nearly) straight leg has no bend side: bend toward the body front.
+	if pole.length() < straight_leg_pole_m:
 		pole = -hip.get_parent_node_3d().global_basis.z
 	TwoBoneIK.solve_to(hip, knee, target, pole, knee.position.length(), pivot.position.length())
 

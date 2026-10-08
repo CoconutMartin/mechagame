@@ -166,14 +166,15 @@ func _break_booster() -> void:
 		health.damage.call_deferred(key, blast)
 
 
-## Hides the armor of a part with an explosion and sparks (the part is blown away).
+## Blows away the armor of a part with an explosion and sparks. Its skeleton (frame and joint
+## meshes: struts, rollers, joint balls and hubs) stays in place.
 func blow_away(key: String, size: float = 1.0) -> void:
 	var nodes := health.get_nodes(key)
 	var center := center_of(nodes)
 	explode_at(center, 7.0 * size)
 	for node in nodes:
 		if is_instance_valid(node):
-			node.visible = false
+			_strip_armor(node)
 	var place := _part_place(key)
 	if not place.is_empty():
 		DamageSmoke.create(place[0], place[1], true)

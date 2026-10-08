@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MechFrame" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/mech_frame.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+hip_height = 7.407
+hip_width = 1.747
+thigh_length = 2.562
+shin_length = 3.374
+torso_above_hip = 1.147
+shoulder_width = 3.207
+shoulder_height = 2.797
+upper_arm_length = 1.733
+forearm_length = 2.745

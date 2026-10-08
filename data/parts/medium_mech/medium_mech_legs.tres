@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="LegPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/leg_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/medium_mech/medium_mech_legs.glb" id="scene"]
+[ext_resource type="Resource" path="res://data/frames/medium_mech_frame.tres" id="frame"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Medium Legs"
+weight_t = 16.0
+hp = 1400.0
+leg_type = 0
+load_capacity_t = 80.0
+base_speed = 11.742
+jump_height = 9.0
+turn_speed_deg = 116.1
+turn_speed_standing_deg = 58.05
+walk_lean_deg = 3.0
+frame = ExtResource("frame")
+scene = ExtResource("scene")

@@ -14,3 +14,5 @@ enum LegType { BIPED, REVERSE_JOINT, TANK, QUAD }
 ## Leg turn speeds (A / D) before the weight factor, in degrees per second.
 @export var turn_speed_deg: float = 77.4
 @export var turn_speed_standing_deg: float = 38.7
+## Forward lean of the upper body while walking, in degrees (0 = upright). Full at walk speed.
+@export var walk_lean_deg: float = 0.0

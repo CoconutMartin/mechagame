@@ -160,6 +160,10 @@ def main():
                 if folder == "recon_sheet" and part in ("core", "arm_l", "arm_r", "legs"):
                     fields["frame"] = ("resource", "res://data/frames/recon_sheet_frame.tres")
             parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
+    # Medium (user parts, rigged in Blender, game parts from tools/blender/medium_mech_build.py): the data
+    # files are written by hand (Warden stats, Recon Sheet booster stats), so only list them here.
+    for part in ("head", "core", "arm_l", "arm_r", "legs", "booster"):
+        parts[part].append(f"res://data/parts/medium_mech/medium_mech_{part}.tres")
     plates = [write(f"data/plates/{f}.tres", "PlateData", "plate_data",
                     {"display_name": n, "slot": s, "hp": float(hp), "weight_t": float(w), "thickness": float(t)})
               for f, n, s, hp, w, t in PLATES]

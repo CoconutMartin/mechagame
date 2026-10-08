@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CorePart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/core_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/medium_mech/medium_mech_core.glb" id="scene"]
+[ext_resource type="Resource" path="res://data/frames/medium_mech_frame.tres" id="frame"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Medium Core"
+weight_t = 18.0
+hp = 1600.0
+energy_capacity = 100.0
+torso_turn_speed_deg = 85.35
+frame = ExtResource("frame")
+scene = ExtResource("scene")

@@ -59,6 +59,20 @@ var front_view_on: bool = false
 @export_group("Mech Limits")
 ## Camera drop when the mech kneels fully, in meters.
 @export var kneel_height_drop: float = 1.74
+
+@export_group("Mech Size")
+## Scale the camera to the mech: pivot height, distance, side offset and kneel drop grow or shrink
+## with the mech's shoulder height (its ShoulderL joint above the feet, from the parts' MechFrame).
+@export var scale_with_mech: bool = true
+## Shoulder height that keeps the values as set (the OG / Warden layout), in meters.
+@export var reference_shoulder_height: float = 7.865
+## Limits for the size scale.
+@export var min_size_scale: float = 0.6
+@export var max_size_scale: float = 2.0
+@export_group("")
+
+## Size scale in use (1 = a mech of the reference size).
+var size_scale: float = 1.0
 var _target_pitch: float = 0.0
 var _yaw_spring := AimSpring.new()
 var _pitch_spring := AimSpring.new()
@@ -70,11 +84,34 @@ func _ready() -> void:
 	top_level = true
 	# This node moves in _process, so it must not use physics interpolation.
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	if scale_with_mech:
+		_fit_mech_size()
 	_target_yaw = target.global_rotation.y
 	_yaw_spring.value = _target_yaw
 	_target_pitch = deg_to_rad(start_pitch_deg)
 	_pitch_spring.value = _target_pitch
 	global_position = _goal_position()
+
+
+## Scales the camera to the mech size. MechAssembler (before this node) has already moved the frame
+## joints to the parts' layout, so the shoulder height is known here.
+func _fit_mech_size() -> void:
+	var shoulder := target.find_child("ShoulderL", true, false) as Node3D
+	if shoulder == null:
+		return
+	var height := shoulder.global_position.y - target.global_position.y
+	size_scale = clampf(height / reference_shoulder_height, min_size_scale, max_size_scale)
+	if is_equal_approx(size_scale, 1.0):
+		return
+	pivot_height *= size_scale
+	kneel_height_drop *= size_scale
+	var arm := _pitch_node.get_node_or_null(^"SpringArm") as SpringArm3D
+	if arm != null:
+		arm.spring_length *= size_scale
+		arm.position *= size_scale
+	for child in get_children():
+		if child is CameraAds:
+			(child as CameraAds).scale_distance(size_scale)
 
 
 func _unhandled_input(event: InputEvent) -> void:

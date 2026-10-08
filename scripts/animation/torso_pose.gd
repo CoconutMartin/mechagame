@@ -38,6 +38,9 @@ extends Node
 @export var dodge_exit_forward_sway_deg: float = 8.0
 ## Forward lean while running, in degrees.
 @export var run_lean_deg: float = 12.0
+## Forward lean while walking, in degrees (full at walk speed). MechAssembler sets it from the legs
+## (LegPart.walk_lean_deg).
+@export var walk_lean_deg: float = 0.0
 ## Forward lean after a landing from landing_lean_full_height or higher, in degrees.
 ## Lower falls lean less, in proportion. Fades out with the landing delay.
 @export var landing_lean_deg: float = 30.0
@@ -60,6 +63,7 @@ var action_shake: float = 0.0
 var _shake_time: float = 0.0
 var _boost: float = 0.0
 var _run: float = 0.0
+var _walk: float = 0.0
 ## Skid lean in degrees (positive = back), on a spring.
 var _skid_lean := AimSpring.new(0.0)
 ## Skid side roll in degrees (positive = head to the left), on a spring.
@@ -80,6 +84,9 @@ func _physics_process(delta: float) -> void:
 	var blend := 1.0 - exp(-blend_speed * delta)
 	_boost = lerpf(_boost, 1.0 if boosting_on_ground else 0.0, blend)
 	_run = lerpf(_run, 1.0 if mech.is_running else 0.0, blend)
+	var walking := mech.is_on_floor() and not mech.is_running and not boosting_on_ground and mech.walk_speed > 0.0
+	var walk_target := clampf(mech.get_horizontal_speed() / mech.walk_speed, 0.0, 1.0) if walking else 0.0
+	_walk = lerpf(_walk, walk_target, blend)
 	var skid_target := skid_lean_back_deg if mech.is_skidding else 0.0
 	_skid_lean.update(skid_target, skid_recover_frequency, skid_recover_damping, 90.0, delta)
 	if mech.is_skidding and not _was_skidding:
@@ -97,7 +104,7 @@ func _physics_process(delta: float) -> void:
 	var fall_ratio := clampf(mech.landing_recovery.fall_height / landing_lean_full_height, 0.0, 1.0)
 	var landing := sin(mech.landing_recovery.get_fraction() * PI * 0.5) * fall_ratio
 	# Negative X leans forward. Negative Y turns right. Negative Z tilts the head to the right.
-	var lean := deg_to_rad(boost_lean_deg) * _boost + deg_to_rad(run_lean_deg) * _run
+	var lean := deg_to_rad(boost_lean_deg) * _boost + deg_to_rad(run_lean_deg) * _run + deg_to_rad(walk_lean_deg) * _walk
 	lean = maxf(lean, deg_to_rad(kneel_lean_deg) * kneel_amount)
 	lean = maxf(lean, deg_to_rad(landing_lean_deg) * landing)
 	# Positive X leans back.

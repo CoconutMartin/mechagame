@@ -36,6 +36,12 @@ func _ready() -> void:
 	_normal_spring_length = spring_arm.spring_length
 
 
+## Scales the normal and the aim camera distance (MechCameraRig calls it for big or small mechs).
+func scale_distance(factor: float) -> void:
+	_normal_spring_length *= factor
+	aim_spring_length *= factor
+
+
 func _process(delta: float) -> void:
 	_amount = move_toward(_amount, 1.0 if enabled and input.aim_held else 0.0, zoom_speed * delta)
 	var t := smoothstep(0.0, 1.0, _amount)

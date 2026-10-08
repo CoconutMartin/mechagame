@@ -40,6 +40,8 @@ var chunks: Array[UrbanChunk] = []
 ## One MultiMesh per material slot (see _slots).
 var multimeshes: Array[MultiMesh] = []
 var occluder: OccluderInstance3D
+## Damage, breaking and collapse (game only, not for edge blocks).
+var damage: BuildingDamage
 
 var _slots: Array[MaterialDef] = []
 var _transforms: Array = []   # per slot: Array[Transform3D]
@@ -73,6 +75,7 @@ func build() -> void:
 			node.queue_free()
 	_generated.clear()
 	chunks.clear()
+	damage = null
 	multimeshes.clear()
 	_slots.clear()
 	_transforms.clear()
@@ -89,6 +92,11 @@ func build() -> void:
 	_make_occluder()
 	if not Engine.is_editor_hint() and def.indestructible:
 		_single_collider()
+	if runtime and not chunks.is_empty():
+		damage = BuildingDamage.new()
+		damage.name = "BuildingDamage"
+		_add(damage)
+		damage.setup(self)
 
 
 # ---- Floors ----

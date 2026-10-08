@@ -81,14 +81,20 @@
 [ext_resource type="Resource" path="res://data/mods/recoil_dampers.tres" id="r77"]
 [ext_resource type="Resource" path="res://data/mods/jump_jet_tuning.tres" id="r78"]
 
+[ext_resource type="Resource" path="res://data/parts/medium_mech/medium_mech_head.tres" id="medium_mech_head"]
+[ext_resource type="Resource" path="res://data/parts/medium_mech/medium_mech_core.tres" id="medium_mech_core"]
+[ext_resource type="Resource" path="res://data/parts/medium_mech/medium_mech_arm_l.tres" id="medium_mech_arm_l"]
+[ext_resource type="Resource" path="res://data/parts/medium_mech/medium_mech_arm_r.tres" id="medium_mech_arm_r"]
+[ext_resource type="Resource" path="res://data/parts/medium_mech/medium_mech_legs.tres" id="medium_mech_legs"]
+[ext_resource type="Resource" path="res://data/parts/medium_mech/medium_mech_booster.tres" id="medium_mech_booster"]
 [resource]
 script = ExtResource("script")
-heads = Array[HeadPart]([ExtResource("r0"), ExtResource("r1"), ExtResource("r2"), ExtResource("r3"), ExtResource("r4"), ExtResource("r5"), ExtResource("r6"), ExtResource("r7")])
-cores = Array[CorePart]([ExtResource("r8"), ExtResource("r9"), ExtResource("r10"), ExtResource("r11"), ExtResource("r12"), ExtResource("r13"), ExtResource("r14"), ExtResource("r15")])
-arms_left = Array[ArmPart]([ExtResource("r16"), ExtResource("r17"), ExtResource("r18"), ExtResource("r19"), ExtResource("r20"), ExtResource("r21"), ExtResource("r22"), ExtResource("r23")])
-arms_right = Array[ArmPart]([ExtResource("r24"), ExtResource("r25"), ExtResource("r26"), ExtResource("r27"), ExtResource("r28"), ExtResource("r29"), ExtResource("r30"), ExtResource("r31")])
-legs = Array[LegPart]([ExtResource("r32"), ExtResource("r33"), ExtResource("r34"), ExtResource("r35"), ExtResource("r36"), ExtResource("r37"), ExtResource("r38"), ExtResource("r39")])
-boosters = Array[BoosterPart]([ExtResource("r40"), ExtResource("r41"), ExtResource("r42"), ExtResource("r43"), ExtResource("r44"), ExtResource("r45"), ExtResource("r46"), ExtResource("r47")])
+heads = Array[HeadPart]([ExtResource("r0"), ExtResource("r1"), ExtResource("r2"), ExtResource("r3"), ExtResource("r4"), ExtResource("r5"), ExtResource("r6"), ExtResource("r7"), ExtResource("medium_mech_head")])
+cores = Array[CorePart]([ExtResource("r8"), ExtResource("r9"), ExtResource("r10"), ExtResource("r11"), ExtResource("r12"), ExtResource("r13"), ExtResource("r14"), ExtResource("r15"), ExtResource("medium_mech_core")])
+arms_left = Array[ArmPart]([ExtResource("r16"), ExtResource("r17"), ExtResource("r18"), ExtResource("r19"), ExtResource("r20"), ExtResource("r21"), ExtResource("r22"), ExtResource("r23"), ExtResource("medium_mech_arm_l")])
+arms_right = Array[ArmPart]([ExtResource("r24"), ExtResource("r25"), ExtResource("r26"), ExtResource("r27"), ExtResource("r28"), ExtResource("r29"), ExtResource("r30"), ExtResource("r31"), ExtResource("medium_mech_arm_r")])
+legs = Array[LegPart]([ExtResource("r32"), ExtResource("r33"), ExtResource("r34"), ExtResource("r35"), ExtResource("r36"), ExtResource("r37"), ExtResource("r38"), ExtResource("r39"), ExtResource("medium_mech_legs")])
+boosters = Array[BoosterPart]([ExtResource("r40"), ExtResource("r41"), ExtResource("r42"), ExtResource("r43"), ExtResource("r44"), ExtResource("r45"), ExtResource("r46"), ExtResource("r47"), ExtResource("medium_mech_booster")])
 generators = Array[GeneratorPart]([ExtResource("r48"), ExtResource("r49"), ExtResource("r50")])
 fcs = Array[FcsPart]([ExtResource("r51"), ExtResource("r52"), ExtResource("r53"), ExtResource("r54")])
 weapons_right = Array[WeaponData]([ExtResource("r55"), ExtResource("r56"), ExtResource("r57")])
