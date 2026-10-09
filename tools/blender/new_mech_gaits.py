@@ -1,4 +1,4 @@
-"""Builds the body gait actions of the new mech (models/new_mech/*.blend): Walk and Slow_Run.
+"""Builds the body gait actions of the new mech (models/new_mech/*.blend): Walk, Slow_Run and Jog.
 The full-speed run is built by new_mech_run.py (biped_run_* actions).
 
 Run inside Blender with the mech file open (Text Editor: Run Script). Each action keys the pelvis,
@@ -43,6 +43,10 @@ GAITS = {
     "Slow_Run": dict(cycle=45, width=0.7, duty=0.42, stride=1.4, touch=0.38, drop_extra=0.05, bob=-0.10, sway=0.03, lean=6, yaw=3,
                      roll=1.0,
                      heel=8, toe=20, lift=0.70, arm_bias=6, arm=22, arm_out=12, elbow=32, elbow_sw=8, fist=0.45, fist_sw=0.1),
+    # Jog: the game's walking speed (9.1 m/s), so the skeletal mech plays one cycle (no blend) when it walks.
+    "Jog": dict(cycle=30, width=0.65, duty=0.34, stride=9.1 / 4.93, touch=0.38, drop_extra=0.05, bob=-0.12, sway=0.03,
+                lean=9, yaw=3, roll=1.0, heel=6, toe=22, lift=0.9, arm_bias=6, arm=26, arm_out=12, elbow=36,
+                elbow_sw=8, fist=0.6, fist_sw=0.0),
 }
 
 
@@ -359,7 +363,7 @@ class Builder:
         return act, best, drop, stride
 
 
-def main(names=("Walk", "Slow_Run")):
+def main(names=("Walk", "Slow_Run", "Jog")):
     """Rebuilds the named gaits and relinks them to their NLA tracks."""
     b = Builder()
     if bpy.context.object and bpy.context.object.mode != "OBJECT":

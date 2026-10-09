@@ -52,7 +52,7 @@ func _ready() -> void:
 			max_hp["Groin"] = part_hp["Legs"] * groin_share
 			max_hp["Leg L"] = part_hp["Legs"] * leg_share
 			max_hp["Leg R"] = part_hp["Legs"] * leg_share
-	var booster := assembler.loadout.booster if assembler.loadout != null else null
+	var booster := assembler.loadout.booster if assembler != null and assembler.loadout != null else null
 	if booster != null and booster.scene != null:
 		max_hp["Booster"] = booster.hp
 	if weapons != null:
@@ -66,6 +66,19 @@ func _ready() -> void:
 	_split_segments()
 	for key: String in segment_nodes:
 		_add_hitboxes(key, segment_nodes[key])
+
+
+## Adds a part with full HP. For a mech not built from parts (a rigged mech: SkeletalHitboxes).
+func add_part(key: String, max_value: float) -> void:
+	max_hp[key] = max_value
+	hp[key] = max_value
+
+
+## Adds a hitbox for a part (it is removed when the part is destroyed).
+func add_hitbox(key: String, hitbox: PartHitbox) -> void:
+	var list: Array = hitboxes.get(key, [])
+	list.append(hitbox)
+	hitboxes[key] = list
 
 
 ## Sends damage to a part. Parts with no HP left take no more damage.
@@ -143,6 +156,8 @@ func get_hitbox_rids() -> Array[RID]:
 
 ## Sorts the part nodes into the hit keys.
 func _split_segments() -> void:
+	if assembler == null:
+		return
 	for part_key: String in assembler.part_nodes:
 		for node: Node3D in assembler.part_nodes[part_key]:
 			_add_node(_segment_key(part_key, node), node)

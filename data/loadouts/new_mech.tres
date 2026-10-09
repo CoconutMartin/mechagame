@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Loadout" format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/mech/skeletal_mech.tscn" id="1_ax0kv"]
+[ext_resource type="Script" path="res://scripts/data/mod_data.gd" id="2_vi7pw"]
+[ext_resource type="Script" path="res://scripts/data/plate_data.gd" id="3_nl2bh"]
+[ext_resource type="Script" path="res://scripts/data/loadout.gd" id="4_812vl"]
+
+[resource]
+script = ExtResource("4_812vl")
+display_name = "New Mech"
+mech_scene = ExtResource("1_ax0kv")

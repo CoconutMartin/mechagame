@@ -34,6 +34,8 @@ signal landed(fall_speed: float)
 @export var walk_speed: float = 9.1
 ## Walk speed to the side = walk speed x this value.
 @export var strafe_speed_multiplier: float = 0.9
+## Walk speed backward = walk speed x this value (1 = as fast as forward).
+@export var back_speed_multiplier: float = 1.0
 ## Speed gain while walking (m/s per second). 5.2 reaches top walk speed in 1.75 s.
 @export var acceleration: float = 5.2
 ## Slowdown for very slow stops that take less than one step (m/s per second).
@@ -526,11 +528,13 @@ func _limit_for_shield(target: Vector3) -> Vector3:
 	return target.limit_length(limit)
 
 
-## Walk speed for a move direction. Moving to the side is slower than forward.
+## Walk speed for a move direction. Moving to the side (and backward) is slower than forward.
 func _get_walk_speed(wish: Vector3) -> float:
 	var local := wish.rotated(Vector3.UP, -input.aim_yaw)
-	var side := absf(local.x) / maxf(local.length(), 0.001)
-	return walk_speed * lerpf(1.0, strafe_speed_multiplier, side)
+	var length := maxf(local.length(), 0.001)
+	var side := absf(local.x) / length
+	var back := maxf(local.z, 0.0) / length
+	return walk_speed * lerpf(1.0, strafe_speed_multiplier, side) * lerpf(1.0, back_speed_multiplier, back)
 
 
 ## Steady slowdown from the current speed to end_speed, with the given number of footsteps on the way.

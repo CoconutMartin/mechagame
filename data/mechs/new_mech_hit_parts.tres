@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="BoneHitParts" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/bone_hit_parts.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/data/bone_hit_part.gd" id="2"]
+
+[sub_resource type="Resource" id="head"]
+script = ExtResource("2")
+key = "Head"
+max_hp = 400.0
+bones = Array[StringName]([&"head"])
+
+[sub_resource type="Resource" id="torso_c"]
+script = ExtResource("2")
+key = "Torso C"
+max_hp = 960.0
+bones = Array[StringName]([&"torso"])
+min_x = -0.65
+max_x = 0.65
+
+[sub_resource type="Resource" id="torso_l"]
+script = ExtResource("2")
+key = "Torso L"
+max_hp = 640.0
+bones = Array[StringName]([&"torso"])
+min_x = 0.65
+
+[sub_resource type="Resource" id="torso_r"]
+script = ExtResource("2")
+key = "Torso R"
+max_hp = 640.0
+bones = Array[StringName]([&"torso"])
+max_x = -0.65
+
+[sub_resource type="Resource" id="arm_l"]
+script = ExtResource("2")
+key = "Arm L"
+max_hp = 600.0
+bones = Array[StringName]([&"upper_arm_L", &"forearm_L", &"hand_L"])
+
+[sub_resource type="Resource" id="arm_r"]
+script = ExtResource("2")
+key = "Arm R"
+max_hp = 600.0
+bones = Array[StringName]([&"upper_arm_R", &"forearm_R", &"hand_R"])
+
+[sub_resource type="Resource" id="groin"]
+script = ExtResource("2")
+key = "Groin"
+max_hp = 560.0
+bones = Array[StringName]([&"pelvis"])
+
+[sub_resource type="Resource" id="leg_l"]
+script = ExtResource("2")
+key = "Leg L"
+max_hp = 840.0
+bones = Array[StringName]([&"thigh_L", &"shin_L", &"foot_L"])
+
+[sub_resource type="Resource" id="leg_r"]
+script = ExtResource("2")
+key = "Leg R"
+max_hp = 840.0
+bones = Array[StringName]([&"thigh_R", &"shin_R", &"foot_R"])
+
+[resource]
+script = ExtResource("1")
+parts = Array[ExtResource("2")]([SubResource("head"), SubResource("torso_c"), SubResource("torso_l"), SubResource("torso_r"), SubResource("arm_l"), SubResource("arm_r"), SubResource("groin"), SubResource("leg_l"), SubResource("leg_r")])

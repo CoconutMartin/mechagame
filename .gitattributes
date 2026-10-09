@@ -3,3 +3,4 @@
 *.glb binary
 *.jpg binary
 *.blend filter=lfs diff=lfs merge=lfs -text
+models/new_mech/*.glb filter=lfs diff=lfs merge=lfs -text

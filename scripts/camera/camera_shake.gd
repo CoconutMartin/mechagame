@@ -34,6 +34,9 @@ extends Camera3D
 ## At the start and the end of a dodge roll.
 @export var dodge_start_kick: float = 0.267
 @export var dodge_end_kick: float = 0.267
+## Optional: a rigged mech's locomotion. Its visible foot landings shake the camera (in step with the
+## animation) in place of the MechFootsteps strides.
+@export var animation_steps: SkeletalLocomotion
 ## Optional: the dodge node, for the dodge kicks.
 @export var dodge: MechDodge
 
@@ -78,7 +81,10 @@ var _offset := Vector3.ZERO
 
 func _ready() -> void:
 	_noise.frequency = 0.5
-	footsteps.footstep.connect(_on_footstep)
+	if animation_steps != null:
+		animation_steps.footstep.connect(_on_footstep)
+	else:
+		footsteps.footstep.connect(_on_footstep)
 	mech.landed.connect(_on_landed)
 	mech.bumped.connect(_on_bumped)
 	if dodge != null:

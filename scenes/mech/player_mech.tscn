@@ -339,8 +339,9 @@ script = ExtResource("rig")
 target = NodePath("..")
 free_aim = NodePath("FreeAim")
 
-[node name="FreeAim" type="Node" parent="CameraRig" node_paths=PackedStringArray("boosters", "kneel", "shield")]
+[node name="FreeAim" type="Node" parent="CameraRig" node_paths=PackedStringArray("boosters", "kneel", "shield", "mech")]
 script = ExtResource("freeaim")
+mech = NodePath("../..")
 boosters = NodePath("../../Animation/BoosterFlames")
 shield = NodePath("../../MechShield")
 kneel = NodePath("../../MechKneel")

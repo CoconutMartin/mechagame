@@ -131,6 +131,11 @@ func apply_mouse_motion(relative: Vector2) -> void:
 
 
 func _process(delta: float) -> void:
+	if free_aim != null:
+		# Recoil with no dead zone turns the camera (muzzle climb).
+		var kick := free_aim.take_camera_kick() * deg_to_rad(1.0)
+		_target_yaw += kick.x
+		_target_pitch = clampf(_target_pitch + kick.y, deg_to_rad(min_pitch_deg), deg_to_rad(max_pitch_deg))
 	var weight := 1.0 - exp(-follow_sharpness * delta)
 	global_position = global_position.lerp(_goal_position(), weight)
 	var max_lag := deg_to_rad(max_aim_lag_deg)

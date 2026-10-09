@@ -182,13 +182,18 @@ func blow_away(key: String, size: float = 1.0) -> void:
 
 ## An explosion effect. size = flash size in meters.
 func explode_at(point: Vector3, size: float = 7.0) -> void:
+	explode_in(world(), point, size)
+
+
+## An explosion effect with sparks in a level node (also used by the rigged mech's breaker).
+static func explode_in(level: Node, point: Vector3, size: float = 7.0) -> void:
 	var effect := EXPLOSION.instantiate() as Explosion
 	effect.flash_size = size
-	world().add_child(effect)
+	level.add_child(effect)
 	effect.global_position = point
 	for i in 3:
 		var spark := IMPACT.instantiate() as Node3D
-		world().add_child(spark)
+		level.add_child(spark)
 		spark.global_position = point + Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), randf_range(-1.0, 1.0))
 
 

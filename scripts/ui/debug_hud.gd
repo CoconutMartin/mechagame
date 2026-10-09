@@ -76,13 +76,18 @@ func _camera_text() -> String:
 
 func _build_text() -> String:
 	var stats := mech.stats
-	if stats == null:
-		return "Build: no loadout"
-	var text := "BUILD\nWeight: %.1f / %.0f t   Load: %d%%\n" % [stats.total_weight_t, stats.load_capacity_t, roundi(stats.load_ratio * 100.0)]
-	text += "Walk %.1f m/s   Boost %.1f m/s   Boost accel %.1f\n" % [stats.walk_speed, stats.walk_speed * stats.boost_speed_multiplier, stats.boost_acceleration]
-	text += "Torso turn %d deg/s   Legs turn %d deg/s   Jump %.1f m\n" % [roundi(stats.torso_turn_speed_deg), roundi(stats.leg_turn_speed_deg), stats.jump_height]
-	text += "PART HP"
 	var health := mech.health
+	if stats == null and health == null:
+		return "Build: no loadout"
+	var text := "BUILD\n"
+	if stats == null:
+		# A mech not built from parts (a rigged mech): only its own speeds.
+		text += "Walk %.1f m/s   Boost %.1f m/s\n" % [mech.walk_speed, mech.get_boost_speed()]
+	else:
+		text += "Weight: %.1f / %.0f t   Load: %d%%\n" % [stats.total_weight_t, stats.load_capacity_t, roundi(stats.load_ratio * 100.0)]
+		text += "Walk %.1f m/s   Boost %.1f m/s   Boost accel %.1f\n" % [stats.walk_speed, stats.walk_speed * stats.boost_speed_multiplier, stats.boost_acceleration]
+		text += "Torso turn %d deg/s   Legs turn %d deg/s   Jump %.1f m\n" % [roundi(stats.torso_turn_speed_deg), roundi(stats.leg_turn_speed_deg), stats.jump_height]
+	text += "PART HP"
 	if health == null:
 		for part_name in stats.part_hp:
 			text += "\n  %s: %d" % [part_name, roundi(stats.part_hp[part_name])]

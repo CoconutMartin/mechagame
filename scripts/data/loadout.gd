@@ -3,6 +3,9 @@ extends Resource
 ## A full mech build: parts, weapons, plates and mods. MechAssembler builds a mech from it.
 
 @export var display_name: String = ""
+## Mech scene for this loadout, for a mech that is not built from parts (a rigged, skeletal-animation
+## mech). Empty: the part-built player mech of the LoadoutSwitcher.
+@export var mech_scene: PackedScene
 @export var head: HeadPart
 @export var core: CorePart
 @export var arm_left: ArmPart

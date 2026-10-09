@@ -16,7 +16,8 @@ var current_loadout: Loadout
 
 
 func _ready() -> void:
-	current_loadout = (mech.get_node("MechAssembler") as MechAssembler).loadout
+	var assembler := mech.get_node_or_null("MechAssembler") as MechAssembler
+	current_loadout = assembler.loadout if assembler != null else null
 	_mark_player(mech)
 
 
@@ -36,12 +37,16 @@ func switch_to(loadout: Loadout) -> void:
 	rebuild(loadout, mech.global_transform)
 
 
-## Replaces the player mech with a new one built from loadout, at place.
+## Replaces the player mech with a new one built from loadout, at place. A loadout with its own mech
+## scene (a skeletal mech) uses that scene; the others are built from parts by MechAssembler.
 func rebuild(loadout: Loadout, place: Transform3D) -> void:
 	var parent := mech.get_parent()
 	var index := mech.get_index()
-	var new_mech := mech_scene.instantiate() as Mech
-	(new_mech.get_node("MechAssembler") as MechAssembler).loadout = loadout
+	var scene := loadout.mech_scene if loadout.mech_scene != null else mech_scene
+	var new_mech := scene.instantiate() as Mech
+	var assembler := new_mech.get_node_or_null("MechAssembler") as MechAssembler
+	if assembler != null:
+		assembler.loadout = loadout
 	new_mech.name = mech.name
 	mech.name = "OldMech"
 	mech.queue_free()

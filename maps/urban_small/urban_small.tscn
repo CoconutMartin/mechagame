@@ -48,6 +48,7 @@
 [ext_resource type="Resource" path="res://data/loadouts/recon_gen.tres" id="r46"]
 [ext_resource type="Resource" path="res://data/loadouts/recon_sheet.tres" id="r47"]
 [ext_resource type="Resource" path="res://data/loadouts/medium_mech.tres" id="loadout_medium_mech"]
+[ext_resource type="Resource" path="res://data/loadouts/new_mech.tres" id="loadout_new_mech"]
 [ext_resource type="Script" path="res://scripts/world/mech_spawner.gd" id="r48"]
 [ext_resource type="Script" path="res://scripts/core/mouse_capture.gd" id="r49"]
 [ext_resource type="Script" path="res://scripts/core/loadout_switcher.gd" id="r50"]
@@ -1414,7 +1415,7 @@ mech_aim = NodePath("../PlayerMech/MechAim")
 [node name="LoadoutSwitcher" type="Node" parent="." node_paths=PackedStringArray("mech", "hud")]
 script = ExtResource("r50")
 mech_scene = ExtResource("r37")
-loadouts = Array[Resource]([ExtResource("r39"), ExtResource("r40"), ExtResource("r41"), ExtResource("r42"), ExtResource("r43"), ExtResource("r44"), ExtResource("r45"), ExtResource("r46"), ExtResource("r47"), ExtResource("loadout_medium_mech")])
+loadouts = Array[Resource]([ExtResource("r39"), ExtResource("r40"), ExtResource("r41"), ExtResource("r42"), ExtResource("r43"), ExtResource("r44"), ExtResource("r45"), ExtResource("r46"), ExtResource("r47"), ExtResource("loadout_medium_mech"), ExtResource("loadout_new_mech")])
 mech = NodePath("../PlayerMech")
 hud = NodePath("../DebugHud")
 

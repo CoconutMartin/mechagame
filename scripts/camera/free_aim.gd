@@ -1,19 +1,24 @@
 class_name FreeAim
 extends Node
-## Free aim with a dead zone (like the arm aim in ARMA or MechWarrior).
-## The mech aim (blue ring) moves with the mouse inside a box around the camera crosshair.
-## Only the mouse movement that pushes past the box edge turns the camera.
-## Each shot kicks the mech aim up and a little to the side (muzzle climb) and makes it shake a
-## little (jitter). The kick rises over a short time and the ring follows smoothly, so nothing snaps.
+## The mech aim (blue ring) around the camera crosshair. With the box size 0 (the default since
+## 2026-10-10, user request) it is a standard crosshair: the mouse turns the camera. The ring has
+## momentum: a turn drags it behind, then it swings back past the center and settles. It also sways
+## slowly, more while the mech moves. With a box (size above 0) it is a dead zone: the ring moves
+## inside the box and only the mouse movement past the edge turns the camera (like ARMA).
+## Each shot kicks the aim up and a little to the side (muzzle climb) and makes it shake a
+## little (jitter). The kick rises over a short time, so nothing snaps. With no box the kick turns
+## the camera; with a box it moves the ring. The player pulls the aim back. No automatic return.
 ## The aim also shakes while the boosters fire.
-## The camera does not move. The player pulls the aim back onto the target. No automatic return.
 ## Unsteady (a two-hand weapon held in one hand, set by WeaponController): the ring follows on a
 ## soft spring (it swings past and comes back), sways slowly, and the recoil is bigger.
 
-## Half width of the box (left and right of the crosshair), in degrees.
-@export var box_half_yaw_deg: float = 4.0
-## Half height of the box (above and below the crosshair), in degrees.
-@export var box_half_pitch_deg: float = 3.0
+## Half width of the dead zone box (left and right of the crosshair), in degrees. 0 = no dead zone.
+@export var box_half_yaw_deg: float = 0.0
+## Half height of the dead zone box (above and below the crosshair), in degrees. 0 = no dead zone.
+@export var box_half_pitch_deg: float = 0.0
+
+## Optional. The mech, for the sway while moving.
+@export var mech: Mech
 
 ## Optional. Kneeling steadies the aim.
 @export var kneel: MechKneel
@@ -48,6 +53,23 @@ extends Node
 ## How fast the ring follows the mouse and the kicks (1 / seconds). Lower = smoother, slower.
 @export var follow_speed: float = 14.0
 
+@export_group("Momentum and Sway")
+## A camera turn drags the ring behind by this part of the turn (0.25 = a 4 degree turn drags it 1 degree).
+@export var momentum: float = 0.25
+## Largest drag, in degrees.
+@export var max_momentum_deg: float = 3.0
+## Ring spring speed back to the center (swings per second). Lower = heavier.
+@export var momentum_frequency: float = 1.8
+## Ring spring damping. Lower = more swing past the center (1 = no swing).
+@export_range(0.05, 1.0) var momentum_damping: float = 0.45
+## Slow sway while standing, in degrees.
+@export var sway_deg: float = 0.2
+## Sway added at walking speed, in degrees (more when faster, up to 1.5 times this).
+@export var move_sway_deg: float = 0.5
+## How fast the sway moves (waves per second).
+@export var sway_speed: float = 0.35
+@export_group("")
+
 @export_group("Unsteady (one hand)")
 ## Ring spring speed when unsteady, in swings per second. Lower = heavier, slower swing.
 @export var unsteady_frequency: float = 1.6
@@ -81,6 +103,11 @@ var _noise := FastNoiseLite.new()
 var _spring_x := AimSpring.new(0.0)
 var _spring_y := AimSpring.new(0.0)
 var _sway_time: float = 0.0
+var _drag_x := AimSpring.new(0.0)
+var _drag_y := AimSpring.new(0.0)
+var _drag_time: float = 0.0
+## Recoil that turns the camera (no box), degrees. The camera rig takes it each frame.
+var _camera_kick: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -94,12 +121,16 @@ func _physics_process(delta: float) -> void:
 	# The kick rises over a short time.
 	var take := _pending_kick * (1.0 - exp(-recoil_rise_speed * delta))
 	_pending_kick -= take
-	offset = _clamp_to_box(offset + take)
+	if _has_box():
+		offset = _clamp_to_box(offset + take)
+	else:
+		_camera_kick += take
 	_jitter = maxf(_jitter - jitter_fade * delta, 0.0)
 	# Noise values are mostly within +/- 0.5, so x2 gives about the full jitter size. The noise is
 	# smooth by itself, so it goes on top of the smoothed ring.
 	var amount := _jitter + _get_booster_jitter()
 	var shake := Vector2(_noise.get_noise_2d(_time, 0.0), _noise.get_noise_2d(_time, 50.0)) * 2.0 * amount
+	shake += _get_drag(delta)
 	_smoothed = _smoothed.lerp(offset, 1.0 - exp(-follow_speed * delta))
 	if unsteady <= 0.0:
 		_spring_x = AimSpring.new(_smoothed.x)
@@ -121,7 +152,20 @@ func _physics_process(delta: float) -> void:
 func take_motion(motion: Vector2) -> Vector2:
 	var wanted := offset + motion
 	offset = _clamp_to_box(wanted)
-	return wanted - offset
+	var turn := wanted - offset
+	# Momentum: the ring stays behind the turn for a moment.
+	var limit := max_momentum_deg
+	_drag_x.value = clampf(_drag_x.value - turn.x * momentum, -limit, limit)
+	_drag_y.value = clampf(_drag_y.value - turn.y * momentum, -limit, limit)
+	return turn
+
+
+## Recoil that turns the camera since the last call (degrees, same signs as offset). The camera rig
+## calls it each frame. Zero with a dead zone box (the kick moves the ring there).
+func take_camera_kick() -> Vector2:
+	var kick_now := _camera_kick
+	_camera_kick = Vector2.ZERO
+	return kick_now
 
 
 ## Recoil kick after a shot: up, plus a random side kick, and some jitter.
@@ -150,6 +194,25 @@ func get_recoil_scale() -> float:
 	if shield != null:
 		scale *= lerpf(1.0, shield_multiplier, shield.amount)
 	return scale
+
+
+## Ring drag from the momentum spring plus the sway, in degrees.
+func _get_drag(delta: float) -> Vector2:
+	var limit := max_momentum_deg * 2.0
+	_drag_x.update(0.0, momentum_frequency, momentum_damping, limit, delta)
+	_drag_y.update(0.0, momentum_frequency, momentum_damping, limit, delta)
+	var size := sway_deg
+	if mech != null and mech.walk_speed > 0.0:
+		size += move_sway_deg * clampf(mech.get_horizontal_speed() / mech.walk_speed, 0.0, 1.5)
+	if kneel != null:
+		size *= lerpf(1.0, kneel_multiplier, kneel.amount)
+	_drag_time += delta * sway_speed
+	var sway := Vector2(_noise.get_noise_2d(_drag_time, 200.0), _noise.get_noise_2d(_drag_time, 250.0)) * 2.0 * size
+	return Vector2(_drag_x.value, _drag_y.value) + sway
+
+
+func _has_box() -> bool:
+	return box_half_yaw_deg > 0.0 or box_half_pitch_deg > 0.0
 
 
 func _clamp_to_box(value: Vector2) -> Vector2:
