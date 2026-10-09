@@ -68,7 +68,7 @@ def design_limits(bones):
             lim[n] = (toward(n, palm, 80, 10), (0, 0), (0, 0))
         lim["thigh_" + s] = (pitch("thigh_" + s, 110, 65), (-35, 35), side("thigh_" + s, out, 50, 20))
         lim["shin_" + s] = (pitch("shin_" + s, 0, 140), (0, 0), (0, 0))
-        lim["foot_" + s] = (toward("foot_" + s, Vector((0, 0, 1)), 30, 45), (-25, 25), (-15, 15))
+        lim["foot_" + s] = (toward("foot_" + s, Vector((0, 0, 1)), 30, 45), (-35, 35), (-15, 15))
     return lim
 
 
