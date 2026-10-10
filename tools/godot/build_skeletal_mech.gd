@@ -6,8 +6,8 @@ extends SceneTree
 ##
 ## It starts from the player mech scene and keeps its movement, input, aim and camera nodes; the
 ## part-built body (frame joints, parts, procedural animation, weapons, damage, falls) is removed and the
-## rigged model goes in its place, played by SkeletalLocomotion. Weapons, damage, falls and the run
-## start / stop / slide animations come in later phases.
+## rigged model goes in its place, played by SkeletalLocomotion; SkeletalMoves plays the run start and
+## the run stops (clips from tools/mech_gen/new_mech_moves.py). Weapons come in a later phase.
 
 const SOURCE := "res://scenes/mech/player_mech.tscn"
 const MODEL := "res://models/new_mech/new_mech_exploded.glb"
@@ -15,6 +15,8 @@ const OUT_SCENE := "res://scenes/mech/skeletal_mech.tscn"
 const OUT_LOADOUT := "res://data/loadouts/new_mech.tres"
 ## Part HP and the bones of each part.
 const HIT_PARTS := "res://data/mechs/new_mech_hit_parts.tres"
+## Run start and stop clips.
+const MOVES := "res://data/mechs/new_mech_moves/"
 ## Player mech nodes that belong to the part-built body.
 const REMOVE := ["MechAssembler", "Visual", "Animation", "FootLeveler", "WeaponController", "PartBreaker", "PowerDownPose", "MechFall", "BodyGroundClamp", "FallPose", "MechDeath", "MechShield"]
 ## Bone used for the camera size (MechCameraRig looks for a ShoulderL node).
@@ -38,6 +40,7 @@ func _initialize() -> void:
 	root.walk_speed = WALK_SPEED
 	root.strafe_speed_multiplier = STRAFE_SPEED
 	root.back_speed_multiplier = BACK_SPEED
+	root.boost_exit_style = Mech.BoostExit.ANIMATION
 	var removed: Array[Node] = []
 	var tops: Array[Node] = []
 	for node_name: String in REMOVE:
@@ -102,6 +105,20 @@ func _initialize() -> void:
 	hips.mech = root
 	hips.model = model
 	locomotion.hip_turn = hips
+
+	var moves := SkeletalMoves.new()
+	moves.name = "SkeletalMoves"
+	root.add_child(moves)
+	moves.owner = root
+	moves.mech = root
+	moves.input = root.get_node("MechInput")
+	moves.locomotion = locomotion
+	moves.hip_turn = hips
+	moves.run_start = load(MOVES + "run_start.tres")
+	var stops: Array[SkeletalMoveClip] = [load(MOVES + "run_stop_right.tres"), load(MOVES + "run_stop_left.tres")]
+	moves.run_stops = stops
+	moves.akira_left = load(MOVES + "akira_left.tres")
+	moves.akira_right = load(MOVES + "akira_right.tres")
 
 	var shake := root.get_node("CameraRig/Pitch/SpringArm/Camera") as CameraShake
 	shake.animation_steps = locomotion

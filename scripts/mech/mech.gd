@@ -93,10 +93,11 @@ signal landed(fall_speed: float)
 @export var run_speed_multiplier: float = 1.25
 ## Speed gain while boosting (m/s per second).
 @export var boost_acceleration: float = 20.0
-enum BoostExit { SKID, LEAP }
+enum BoostExit { SKID, LEAP, ANIMATION }
 ## How the mech stops a ground boost.
 ## SKID: feet plant and slide, body leans back, dust, then heavy steps.
 ## LEAP ("revert 1"): a leap that lands on one leg, then 2 medium and 2 small steps.
+## ANIMATION: only the boost_exit_step signal; a rigged mech plays its stop animation (SkeletalMoves).
 @export var boost_exit_style: BoostExit = BoostExit.SKID
 ## SKID: slowdown while the feet slide (m/s per second).
 @export var skid_deceleration: float = 6.7
@@ -166,6 +167,12 @@ var is_air_boosting: bool = false
 var is_exiting_boost: bool = false
 ## True while the feet slide in a boost skid stop.
 var is_skidding: bool = false
+## Set by an animation driver (SkeletalMoves): while true, on the ground the horizontal velocity is
+## motion_override (the speed of the start or stop animation).
+var motion_override_active: bool = false
+var motion_override: Vector3 = Vector3.ZERO
+## Set by an animation driver: no boost while true (the run start animation is playing).
+var boost_blocked: bool = false
 ## True while the mech is entrenched (braced for a missile volley). It cannot move or boost.
 var is_bracing: bool = false
 var _brace_left: float = 0.0
@@ -367,6 +374,8 @@ func get_boost_speed() -> float:
 ## Boost can start: at once when the mech already moves (since 4a.6), or after the walk and run
 ## steps from a standstill.
 func is_boost_ready() -> bool:
+	if boost_blocked:
+		return false
 	return get_horizontal_speed() >= boost_ready_speed or _run_steps_done >= run_steps
 
 
@@ -421,6 +430,9 @@ func _update_boost(delta: float) -> void:
 		_stop_deceleration = 0.0
 		if boost_exit_style == BoostExit.SKID:
 			start_skid()
+		elif boost_exit_style == BoostExit.ANIMATION:
+			# The stop animation moves the mech; with a move key held it slows to walk speed.
+			is_exiting_boost = false
 		else:
 			# One leap forward that lands on one leg, then medium and small steps to slow down.
 			_in_exit_leap = true
@@ -460,6 +472,11 @@ func _update_horizontal(delta: float) -> void:
 		var steered := air_steer.steer(steer_wish, delta, boost_speed, boost_acceleration * air_boost_multiplier)
 		velocity.x = steered.x
 		velocity.z = steered.z
+		return
+
+	if motion_override_active:
+		velocity.x = motion_override.x
+		velocity.z = motion_override.z
 		return
 
 	if is_skidding:

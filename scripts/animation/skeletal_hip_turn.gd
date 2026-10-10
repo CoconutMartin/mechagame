@@ -28,6 +28,8 @@ var is_backward: bool = false
 
 ## Hip turn from the mech front now (radians, positive = left).
 var hip_yaw: float = 0.0
+## True: the hips keep their turn (SkeletalMoves sets it while a stop animation plays).
+var hold: bool = false
 
 
 func _ready() -> void:
@@ -38,7 +40,9 @@ func _ready() -> void:
 func _process_modification_with_delta(delta: float) -> void:
 	var target := 0.0
 	var move := Vector3(mech.velocity.x, 0.0, mech.velocity.z)
-	if move.length() > min_speed:
+	if hold:
+		target = hip_yaw
+	elif move.length() > min_speed:
 		var local := mech.global_basis.inverse() * move
 		target = atan2(-local.x, -local.z)
 		var angle := absf(rad_to_deg(target))

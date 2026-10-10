@@ -111,6 +111,80 @@
         "frame": 88,
         "time": 2.9333
       }
+    ],
+    "biped_run_stop_akira_L": [
+      {
+        "name": "footstep_L",
+        "frame": 8,
+        "time": 0.2667
+      },
+      {
+        "name": "slide_start",
+        "frame": 8,
+        "time": 0.2667
+      },
+      {
+        "name": "slide_end",
+        "frame": 30,
+        "time": 1.0
+      },
+      {
+        "name": "footstep_L",
+        "frame": 40,
+        "time": 1.3333
+      },
+      {
+        "name": "footstep_R",
+        "frame": 50,
+        "time": 1.6667
+      },
+      {
+        "name": "footstep_L",
+        "frame": 58,
+        "time": 1.9333
+      },
+      {
+        "name": "footstep_R",
+        "frame": 68,
+        "time": 2.2667
+      },
+      {
+        "name": "footstep_L",
+        "frame": 78,
+        "time": 2.6
+      },
+      {
+        "name": "footstep_R",
+        "frame": 88,
+        "time": 2.9333
+      }
+    ],
+    "biped_run_stop_L": [
+      {
+        "name": "footstep_L",
+        "frame": 12,
+        "time": 0.4
+      },
+      {
+        "name": "skid_start",
+        "frame": 12,
+        "time": 0.4
+      },
+      {
+        "name": "skid_end",
+        "frame": 24,
+        "time": 0.8
+      },
+      {
+        "name": "footstep_R",
+        "frame": 24,
+        "time": 0.8
+      },
+      {
+        "name": "footstep_L",
+        "frame": 36,
+        "time": 1.2
+      }
     ]
   }
 }

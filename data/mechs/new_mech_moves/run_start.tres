@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SkeletalMoveClip" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/skeletal_move_clip.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+animation = &"biped_run_start"
+fps = 30.0
+made_for_speed = 14.16
+body_speeds = PackedFloat32Array(0, 0, 0, 0, 0, 0.4883, 0.9766, 1.4648, 1.9531, 2.4414, 2.9297, 3.4179, 3.9062, 4.3945, 4.8828, 5.371, 5.8593, 6.3476, 6.8359, 7.3241, 7.8124, 8.3007, 8.789, 9.2772, 9.7655, 10.2538, 10.7421, 11.2303, 11.7186, 12.2069, 12.6952, 13.1834, 13.6717, 14.16, 14.16, 14.16, 14.16, 14.16, 14.16, 14.16, 14.16, 14.16, 14.16, 14.16, 14.16, 14.16, 14.16, 14.16, 14.16)
+footstep_frames = PackedFloat32Array(17, 33)
+blend_in = 0.2
+blend_out = 0.12
+ends_in_run = true
+hold_hips = false

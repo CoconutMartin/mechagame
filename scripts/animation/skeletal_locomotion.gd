@@ -5,7 +5,8 @@ extends Node
 ## 9.1 m/s, so a walking mech plays it alone). Every cycle starts with the left foot
 ## landing, so they share one stride phase; the phase moves by speed / stride length, which keeps the
 ## feet with the ground at any speed. Head_Scan plays on the head bone on top of everything.
-## Each foot landing sends the footstep signal (camera shake).
+## Each foot landing sends the footstep signal (camera shake). One more animation (a run start or stop,
+## SkeletalMoves) can play over all of it with set_action().
 
 ## A foot lands (strength 0.4 to 1, from the speed).
 signal footstep(strength: float)
@@ -41,6 +42,9 @@ var _lengths: Dictionary = {}
 var _root: AnimationNodeBlendTree
 var _strides: PackedFloat32Array = PackedFloat32Array()
 var _play: PackedFloat32Array = PackedFloat32Array()
+var _action: StringName = &""
+var _action_time: float = 0.0
+var _action_weight: float = 0.0
 
 
 func _ready() -> void:
@@ -63,6 +67,12 @@ func _ready() -> void:
 	_root.add_node(&"move", AnimationNodeBlend2.new())
 	_root.connect_node(&"move", 0, &"idle")
 	_root.connect_node(&"move", 1, &"mix")
+	_root.add_node(&"act_anim", AnimationNodeAnimation.new())
+	_root.add_node(&"act_seek", AnimationNodeTimeSeek.new())
+	_root.connect_node(&"act_seek", 0, &"act_anim")
+	_root.add_node(&"act", AnimationNodeBlend2.new())
+	_root.connect_node(&"act", 0, &"move")
+	_root.connect_node(&"act", 1, &"act_seek")
 	var scan := AnimationNodeAnimation.new()
 	scan.animation = head_scan
 	_root.add_node(&"scan", scan)
@@ -70,7 +80,7 @@ func _ready() -> void:
 	head.filter_enabled = true
 	head.set_filter_path(head_track, true)
 	_root.add_node(&"head", head)
-	_root.connect_node(&"head", 0, &"move")
+	_root.connect_node(&"head", 0, &"act")
 	_root.connect_node(&"head", 1, &"scan")
 	_root.connect_node(&"output", 0, &"head")
 	tree.tree_root = _root
@@ -105,13 +115,32 @@ func _process(delta: float) -> void:
 	var landed_forward := _phase < before or (before < 0.5 and _phase >= 0.5)
 	var landed_backward := _phase > before or (before >= 0.5 and _phase < 0.5)
 	var crossed := landed_forward if direction > 0.0 else landed_backward
-	if _speed > idle_blend_speed * 0.5 and mech.is_on_floor() and crossed:
+	if _speed > idle_blend_speed * 0.5 and mech.is_on_floor() and crossed and _action_weight < 0.5:
 		footstep.emit(clampf(_speed / mech.walk_speed, 0.4, 1.0))
 	tree.set(&"parameters/seek_a/seek_request", _phase * len_a)
 	tree.set(&"parameters/seek_b/seek_request", _phase * len_b)
 	tree.set(&"parameters/mix/blend_amount", t)
 	tree.set(&"parameters/move/blend_amount", clampf(_speed / idle_blend_speed, 0.0, 1.0))
-	tree.set(&"parameters/head/blend_amount", head_scan_amount)
+	tree.set(&"parameters/act/blend_amount", _action_weight)
+	if _action_weight > 0.0:
+		tree.set(&"parameters/act_seek/seek_request", _action_time)
+	tree.set(&"parameters/head/blend_amount", head_scan_amount * (1.0 - _action_weight))
+
+
+## Plays one animation over the cycles: its time (seconds) and weight (0 = cycles only, 1 = it alone).
+## Call it every frame while it plays; weight 0 ends it.
+func set_action(animation: StringName, time: float, weight: float) -> void:
+	if animation != _action and animation != &"":
+		_action = animation
+		(_root.get_node(&"act_anim") as AnimationNodeAnimation).animation = animation
+	_action_time = time
+	_action_weight = clampf(weight, 0.0, 1.0)
+
+
+## Starts the cycles at this stride phase and the mech's speed now (the run carries on from a run start).
+func sync_to(phase: float) -> void:
+	_phase = fposmod(phase, 1.0)
+	_speed = mech.get_horizontal_speed()
 
 
 ## Stride phase now (0 = left foot lands, 0.5 = right foot lands).
