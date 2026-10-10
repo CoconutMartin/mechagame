@@ -639,6 +639,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Closed: upload individual mech parts made with Hunyuan3D, to combine in Blender with proper joints. Done 2026-10-07 as Medium (`models/medium/medium.blend`).
 - Closed: "update the dodge hop animation", the user accepted the current hop at the start of Phase 3.
 - Open (2026-10-10): broken part animation for the new mech. Question to answer: replace a broken part with a damaged version, with or without Blender (options in the chat of 2026-10-10: Godot-only damage look, or broken part models made in Blender).
+- Open (2026-10-10): hard points on the body parts of the new mech, where weapons, shields and accessories attach. Related: the approved hand grip system (grip_L/R bones) covers hand-held weapons only.
 
 ## Decisions log
 
