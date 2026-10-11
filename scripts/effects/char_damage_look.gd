@@ -96,16 +96,9 @@ func _meshes(key: String) -> Array[MeshInstance3D]:
 ## Skinned meshes: rest position = rest x pose inverse (skeleton space) x skinned position. Called
 ## when the skeleton has its final pose of the frame. A mesh that fell off (no skin) is at rest.
 func _follow_bones() -> void:
-	var skeleton := hitboxes.skeleton
 	for key: String in _layers:
 		for pair: Array in _layers[key]:
 			var mesh := pair[0] as MeshInstance3D
 			if not is_instance_valid(mesh) or not hitboxes.mesh_bones.has(mesh):
 				continue
-			var to_rest := Projection.IDENTITY
-			if mesh.skin != null:
-				var bone: int = hitboxes.mesh_bones[mesh]
-				var xform := mesh.transform.affine_inverse() * skeleton.get_bone_global_rest(bone) \
-						* skeleton.get_bone_global_pose(bone).affine_inverse() * mesh.transform
-				to_rest = Projection(xform)
-			(pair[1] as ShaderMaterial).set_shader_parameter(&"to_rest", to_rest)
+			(pair[1] as ShaderMaterial).set_shader_parameter(&"to_rest", Projection(hitboxes.mesh_to_rest(mesh)))

@@ -71,6 +71,17 @@ func _meshes_by_bone() -> Dictionary:
 	return found
 
 
+## Turns a part mesh's skinned position this frame back to its rest position (mesh space): rest x pose
+## inverse of its bone. Call it when the skeleton has its final pose (skeleton_updated). A mesh that
+## fell off (no skin) is at rest.
+func mesh_to_rest(mesh: MeshInstance3D) -> Transform3D:
+	if mesh.skin == null or not mesh_bones.has(mesh):
+		return Transform3D.IDENTITY
+	var bone: int = mesh_bones[mesh]
+	return mesh.transform.affine_inverse() * skeleton.get_bone_global_rest(bone) \
+			* skeleton.get_bone_global_pose(bone).affine_inverse() * mesh.transform
+
+
 func _top_bone(mesh: MeshInstance3D) -> int:
 	var arrays := mesh.mesh.surface_get_arrays(0)
 	var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]

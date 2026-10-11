@@ -167,6 +167,11 @@ func _initialize() -> void:
 	char_look.health = health
 	char_look.hitboxes = hitboxes
 	char_look.weapons = root.get_node("WeaponController") as WeaponController
+	var skin := PS1SkinLook.new()
+	skin.name = "PS1SkinLook"
+	root.add_child(skin)
+	skin.owner = root
+	skin.hitboxes = hitboxes
 
 	var mech_aim := root.get_node("MechAim") as MechAim
 	mech_aim.aim_origin = aim
