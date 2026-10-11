@@ -154,11 +154,11 @@ func lose_right_weapon() -> void:
 	camera_ads.enabled = false
 
 
-## Model nodes of the right weapon (the pile bunker model sits on the forearm).
+## Model nodes of the right weapon (a forearm weapon's model sits on the forearm: get_model()).
 func right_weapon_nodes() -> Array[Node3D]:
 	var nodes: Array[Node3D] = []
-	if right_weapon is PileBunkerWeapon:
-		nodes.append((right_weapon as PileBunkerWeapon).get_model())
+	if right_weapon != null and right_weapon.has_method(&"get_model"):
+		nodes.append(right_weapon.call(&"get_model") as Node3D)
 	elif right_weapon != null:
 		nodes.append(right_weapon)
 	return nodes

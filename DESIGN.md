@@ -27,6 +27,7 @@ Art style: realistic. Use placeholder shapes (boxes, capsules, cylinders) until 
 | Q / E (hold, release) | Missile pods: hold to lock targets, release to fire | `fire_back_left`, `fire_back_right` |
 | R | Reload guns and missile pods | `reload` |
 | 1 to 4 | Test loadouts: Gunner, Sniper, Melee, Missile (on the new mech since 2026-10-11) | `loadout_1` to `loadout_4` |
+| = | Test loadout New Mech Cannon: Auto Cannon (baton, RMB) and two Shoulder Cannons (Q, E), new mech | `loadout_12` |
 | V (toggle since 4a.3) | Front view: press V once the camera swings around to the front of the mech (about 0.33 s); press V again to go back. The mech aim stays on the torso direction and the crosshair hides | `front_view` |
 | Mouse | Aim. The torso turns toward the aim at its turn speed and the camera stays behind the torso. The legs follow the torso (since 4a.5) at a steady speed (90°/s moving, 45°/s standing): moving, they always follow; standing, they start when the torso is more than 25° off and then turn all the way (steps in place). The torso stays inside its twist limits (52° left, 64° right of the legs) while the legs catch up | |
 | Space | Hold on the ground to charge the jump jets, release to jump. No plain jump | `jump` |
@@ -540,6 +541,15 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
   - Crust: black to dark violet coal, fine rock bump, bluish glints, glossy (roughness 0.2 to 0.55, metallic 0.35); lumps push out up to 0.135 m (`lump_height`). Meshes under 5,000 vertices (joint balls, weapon boxes) and primitive meshes get no push, because their hard edges would crack open.
   - The noise uses each part's rest position: on `skeleton_updated` every charred skinned mesh gets its bone's pose-to-rest transform (`to_rest`), so the crust stays on the part while it moves.
   - Test (rendered): full HP, 40%, 70%, 1 HP on every part; right arm, left leg and left pod at 1 HP alone; walking frames with the crust fixed on the parts.
+- Phase W3 (Auto Cannon, user design 2026-10-11, new mech only):
+  - Model: `tools/blender/auto_cannon_build.py` (picture `models/guides/auto_cannon_ref.png`, 6 m, 1 pixel = 8.7 mm, chamfered boxes, dark gray and khaki) writes `models/auto_cannon/auto_cannon.blend`, `auto_cannon.glb` (baton: with a grip handle that the picture does not show, 2.71 m from the butt, its top 1.35 m below the bore axis) and `auto_cannon_shoulder.glb` (shoulder: with a mount block under the rear body). About 2,000 triangles each. Empties: Muzzle, Grip, Mount.
+  - Game files: `tools/mech_gen/auto_cannon.py` writes `scenes/weapons/auto_cannon.tscn`, `auto_cannon_shoulder.tscn`, `data/weapons/auto_cannon.tres`, `auto_cannon_shoulder.tres`. Slow heavy shots (user choice): 1.5 shots/s, 220 damage, 450 m/s, 8 rounds, reload 4.5 s, recoil 4° up, 300 HP, 3.5 t.
+  - Baton version (`ForearmGunWeapon`, right arm, RMB raises and fires): the model hangs upside down under the right forearm: butt at the elbow, handle in the palm (palm socket to handle 0.000 m), muzzle 3.3 m past the hand. The root is the fist target; aiming stretches the arm along the aim line from the shoulder (93% reach). Elbow pole straight down while aiming, so the cannon stays under the forearm.
+  - Shoulder version (`ShoulderGunWeapon`, Q or E): turns to the aim point (yaw ±35°, pitch +30° / -20°, 120°/s) and fires while the key is held.
+  - Shoulder mounts (user rule 2026-10-11: the top of the shoulder is the mount of every shoulder weapon, new mech): `ShoulderTopL/R` markers on the weapon frame, set by `SkeletalArmRig` 0.15 m above the shoulder armor (`Arm_L_01`, `Arm_R_01`). `SkeletalWeaponMount` puts every back weapon (missile pods too) on them, its lowest point on the marker. The part-built mechs keep their pods behind the head.
+  - `GunWeapon` finds its muzzle with `get_node_or_null` (a subclass may set it); `WeaponController.right_weapon_nodes()` uses `get_model()` when a weapon has one. The old mechs work the same (tested: Warden pile bunker break, rifle, missiles, bunker cycle).
+  - Test (headless and rendered): rest and aim, the baton fires (8 to 6 rounds), the shoulder cannon turns 17° up to the aim and fires; parts Weapon R 300, Back L/R 300; Back L, Weapon R and Torso R breaks drop the right pieces; map key = builds New Mech Cannon.
+  - Not in the garage yet (the garage lists are shared with the old mechs).
 - Next phases: run start / stop and the Akira slide on the game's boost exit and skid, footstep markers to camera shake, sound and dust, jump / air / kneel / dodge poses, aim layer.
 
 ## Beam Rifle (user design, Blender model, in the game since 2026-10-11)

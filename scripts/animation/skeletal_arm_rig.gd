@@ -33,6 +33,11 @@ extends SkeletonModifier3D
 ## Animation with the closed hand pose, and the finger bone name parts.
 @export var grip_animation: StringName = &"Hand_Grip"
 @export var finger_names: PackedStringArray = ["index", "middle", "ring", "pinky", "thumb"]
+## Shoulder weapon mounts (left, right; Torso children): set on top of the shoulder armor meshes,
+## shoulder_mount_gap above them (the arms swing under the weapons).
+@export var shoulder_mounts: Array[Node3D] = []
+@export var shoulder_armor_meshes: PackedStringArray = ["Arm_L_01", "Arm_R_01"]
+@export var shoulder_mount_gap: float = 0.15
 
 var _skeleton: Skeleton3D
 var _torso_offset: Transform3D
@@ -58,6 +63,13 @@ func _setup() -> void:
 	var torso_rest := Transform3D(Basis.IDENTITY, shoulder_mid - Vector3(0.0, shoulder_height, 0.0))
 	var bone_rest := _skeleton.get_bone_global_rest(torso_bone_id).orthonormalized()
 	_torso_offset = bone_rest.affine_inverse() * (to_mech.affine_inverse() * torso_rest)
+	for i in mini(shoulder_mounts.size(), shoulder_armor_meshes.size()):
+		var armor := _skeleton.get_node_or_null(NodePath(shoulder_armor_meshes[i])) as MeshInstance3D
+		if armor == null or shoulder_mounts[i] == null:
+			continue
+		var box := to_mech * (armor.transform * armor.get_aabb())
+		var top := Vector3(box.get_center().x, box.end.y + shoulder_mount_gap, box.get_center().z)
+		shoulder_mounts[i].position = top - torso_rest.origin
 	var grip_track := _grip_rotations()
 	for i in 2:
 		var side := {}

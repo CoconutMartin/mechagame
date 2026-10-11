@@ -50,13 +50,14 @@
 [ext_resource type="Resource" path="res://data/loadouts/recon_sheet.tres" id="r48"]
 [ext_resource type="Resource" path="res://data/loadouts/medium_mech.tres" id="r49"]
 [ext_resource type="Resource" path="res://data/loadouts/new_mech.tres" id="r50"]
-[ext_resource type="Script" path="res://scripts/world/mech_spawner.gd" id="r51"]
-[ext_resource type="Script" path="res://scripts/core/mouse_capture.gd" id="r52"]
-[ext_resource type="Script" path="res://scripts/core/loadout_switcher.gd" id="r53"]
-[ext_resource type="Script" path="res://scripts/core/player_respawner.gd" id="r54"]
-[ext_resource type="Script" path="res://scripts/core/debug_damage.gd" id="r55"]
-[ext_resource type="Script" path="res://scripts/ui/garage.gd" id="r56"]
-[ext_resource type="Resource" path="res://data/garage_catalog.tres" id="r57"]
+[ext_resource type="Resource" path="res://data/loadouts/new_mech_cannon.tres" id="r51"]
+[ext_resource type="Script" path="res://scripts/world/mech_spawner.gd" id="r52"]
+[ext_resource type="Script" path="res://scripts/core/mouse_capture.gd" id="r53"]
+[ext_resource type="Script" path="res://scripts/core/loadout_switcher.gd" id="r54"]
+[ext_resource type="Script" path="res://scripts/core/player_respawner.gd" id="r55"]
+[ext_resource type="Script" path="res://scripts/core/debug_damage.gd" id="r56"]
+[ext_resource type="Script" path="res://scripts/ui/garage.gd" id="r57"]
+[ext_resource type="Resource" path="res://data/garage_catalog.tres" id="r58"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_top_color = Color(0.32, 0.45, 0.62, 1)
@@ -1387,20 +1388,20 @@ distance_fade_enabled = true
 distance_fade_begin = 100.0
 
 [node name="MouseCapture" type="Node" parent="."]
-script = ExtResource("r52")
+script = ExtResource("r53")
 
 [node name="Targets" type="Node3D" parent="."]
 
 [node name="DummyMech" type="Node3D" parent="Targets" node_paths=PackedStringArray("player_respawner")]
 transform = Transform3D(-1, 0, -1.2246e-16, 0, 1, 0, 1.2246e-16, 0, -1, -5, 0, -30)
-script = ExtResource("r51")
+script = ExtResource("r52")
 mech_scene = ExtResource("r37")
 loadout = ExtResource("r40")
 player_respawner = NodePath("../../PlayerRespawner")
 
 [node name="Enemy1" type="Node3D" parent="Targets" node_paths=PackedStringArray("player_respawner")]
 transform = Transform3D(-1, 0, -1.2246e-16, 0, 1, 0, 1.2246e-16, 0, -1, 6, 0, -95)
-script = ExtResource("r51")
+script = ExtResource("r52")
 mech_scene = ExtResource("r37")
 loadout = ExtResource("r40")
 pilot = 1
@@ -1414,21 +1415,21 @@ mech = NodePath("../PlayerMech")
 mech_aim = NodePath("../PlayerMech/MechAim")
 
 [node name="LoadoutSwitcher" type="Node" parent="." node_paths=PackedStringArray("mech", "hud")]
-script = ExtResource("r53")
+script = ExtResource("r54")
 mech_scene = ExtResource("r38")
-loadouts = Array[Resource]([ExtResource("r40"), ExtResource("r41"), ExtResource("r42"), ExtResource("r43"), ExtResource("r44"), ExtResource("r45"), ExtResource("r46"), ExtResource("r47"), ExtResource("r48"), ExtResource("r49"), ExtResource("r50")])
+loadouts = Array[Resource]([ExtResource("r40"), ExtResource("r41"), ExtResource("r42"), ExtResource("r43"), ExtResource("r44"), ExtResource("r45"), ExtResource("r46"), ExtResource("r47"), ExtResource("r48"), ExtResource("r49"), ExtResource("r50"), ExtResource("r51")])
 mech = NodePath("../PlayerMech")
 hud = NodePath("../DebugHud")
 
 [node name="PlayerRespawner" type="Node" parent="." node_paths=PackedStringArray("switcher")]
-script = ExtResource("r54")
-switcher = NodePath("../LoadoutSwitcher")
-
-[node name="DebugDamage" type="Node" parent="." node_paths=PackedStringArray("switcher")]
 script = ExtResource("r55")
 switcher = NodePath("../LoadoutSwitcher")
 
-[node name="Garage" type="CanvasLayer" parent="." node_paths=PackedStringArray("switcher")]
+[node name="DebugDamage" type="Node" parent="." node_paths=PackedStringArray("switcher")]
 script = ExtResource("r56")
-catalog = ExtResource("r57")
+switcher = NodePath("../LoadoutSwitcher")
+
+[node name="Garage" type="CanvasLayer" parent="." node_paths=PackedStringArray("switcher")]
+script = ExtResource("r57")
+catalog = ExtResource("r58")
 switcher = NodePath("../LoadoutSwitcher")

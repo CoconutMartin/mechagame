@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/auto_cannon_shoulder.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Shoulder Cannon"
+weight_t = 3.5
+hp = 300.0
+kind = 0
+fire_rate = 1.5
+damage = 220.0
+projectile_speed = 450.0
+spread_deg = 0.3
+recoil_up_deg = 4.0
+recoil_side_deg = 1.5
+shake_trauma = 0.12
+shake_kick = 0.18
+magazine = 8
+reload_time = 4.5
+slot = 1
+scene = ExtResource("scene")

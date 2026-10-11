@@ -1,0 +1,47 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/shoulder_gun_weapon.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/auto_cannon/auto_cannon_shoulder.glb" id="model"]
+[ext_resource type="Material" path="res://materials/effects/muzzle_flash.tres" id="flash"]
+[ext_resource type="Script" path="res://scripts/effects/muzzle_flash.gd" id="flash_script"]
+
+[sub_resource type="CylinderMesh" id="flash_cone"]
+top_radius = 0.0
+bottom_radius = 0.6
+height = 1.8
+radial_segments = 8
+rings = 1
+
+[sub_resource type="SphereMesh" id="flash_core"]
+radius = 0.45
+height = 0.9
+radial_segments = 8
+rings = 4
+
+[node name="AutoCannonShoulder" type="Node3D"]
+script = ExtResource("script")
+
+[node name="Model" parent="." instance=ExtResource("model")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0, 0.98122, 1.25)
+
+[node name="Muzzle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.98122, -4.75)
+
+[node name="MuzzleFlash" type="Node3D" parent="Muzzle" node_paths=PackedStringArray("light")]
+script = ExtResource("flash_script")
+light = NodePath("Light")
+
+[node name="Cone" type="MeshInstance3D" parent="Muzzle/MuzzleFlash"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -0.9)
+cast_shadow = 0
+mesh = SubResource("flash_cone")
+surface_material_override/0 = ExtResource("flash")
+
+[node name="Core" type="MeshInstance3D" parent="Muzzle/MuzzleFlash"]
+cast_shadow = 0
+mesh = SubResource("flash_core")
+surface_material_override/0 = ExtResource("flash")
+
+[node name="Light" type="OmniLight3D" parent="Muzzle/MuzzleFlash"]
+light_color = Color(1, 0.7, 0.35, 1)
+omni_range = 14.0

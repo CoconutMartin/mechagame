@@ -5,7 +5,8 @@ extends MechWeapon
 
 const BULLET := preload("res://scenes/weapons/bullet.tscn")
 
-@onready var _muzzle: Node3D = $Muzzle
+## A subclass with the muzzle elsewhere (on a moved model) sets it in _ready.
+@onready var _muzzle: Node3D = get_node_or_null("Muzzle")
 @onready var _flash: MuzzleFlash = get_node_or_null("Muzzle/MuzzleFlash")
 
 

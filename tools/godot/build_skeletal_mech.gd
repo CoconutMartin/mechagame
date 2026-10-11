@@ -195,6 +195,12 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 		elbow.name = "Elbow" + side
 		shoulder.add_child(elbow)
 		joints[side] = [shoulder, elbow]
+	var shoulder_tops: Array[Node3D] = []
+	for side in ["L", "R"]:
+		var top := Marker3D.new()
+		top.name = "ShoulderTop" + side
+		torso.add_child(top)
+		shoulder_tops.append(top)
 	for marker_name: String in markers:
 		var marker := Marker3D.new()
 		marker.name = marker_name
@@ -216,6 +222,7 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	rig.shoulder_right = joints["R"][0]
 	rig.ik_left = ik_left
 	rig.ik_right = ik_right
+	rig.shoulder_mounts = shoulder_tops
 	rig.weapon_pose = weapon_animation.get_node("WeaponPose") as WeaponPose
 	rig.torso_pose = weapon_animation.get_node("TorsoPose") as TorsoPose
 	var weapon_pose := weapon_animation.get_node("WeaponPose") as WeaponPose
@@ -239,3 +246,4 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	mount.loadout = load(START_WEAPONS)
 	mount.frame = torso
 	mount.weapon_controller = controller
+	mount.shoulder_mounts = shoulder_tops
