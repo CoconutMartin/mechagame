@@ -8,6 +8,13 @@ Ask before big design changes. Commit after each working phase.
 
 Check "Reminders for the user" in DESIGN.md. Remind the user of each open item when a phase is about to close and when a new phase starts.
 
+## Mech scope (user rule, 2026-10-11)
+
+All new work and adjustments go to the new mech (rigged, `scenes/mech/skeletal_mech.tscn`).
+Do not change the old part-built mechs (Warden, Recon mechs, Medium, OG Mech, Granpa Gundam).
+Shared code may change only in ways that keep the old mechs working the same (new behavior
+behind the new mech's own nodes or settings). Test the old mechs after a shared change.
+
 ## Code rules
 
 - Small scripts, one job per script. Use `class_name` and typed GDScript.
