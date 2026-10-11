@@ -154,12 +154,6 @@ func lose_right_weapon() -> void:
 	camera_ads.enabled = false
 
 
-## Hit key of the right weapon: a gun counts for the right arm, another weapon (the pile bunker)
-## is its own part.
-func right_weapon_key() -> String:
-	return "Arm R" if right_data == null or right_data.is_gun() else "Weapon R"
-
-
 ## Model nodes of the right weapon (the pile bunker model sits on the forearm).
 func right_weapon_nodes() -> Array[Node3D]:
 	var nodes: Array[Node3D] = []

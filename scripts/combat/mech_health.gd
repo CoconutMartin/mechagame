@@ -3,11 +3,10 @@ extends Node
 ## HP of each mech part (Phase 4). Builds a hitbox for each part from the part models, takes the
 ## damage that hitboxes and blasts send, and tells PartBreaker and MechDeath what broke.
 ## Keys: "Head", "Torso C", "Torso L", "Torso R", "Arm L", "Arm R", "Groin", "Leg L", "Leg R",
-## "Booster" (backpack), "Shield", "Back L", "Back R", "Weapon R" (a right weapon that is not a gun:
-## the pile bunker).
+## "Booster" (backpack), "Shield", "Back L", "Back R", "Weapon R" (the right arm weapon).
 ## The core part is split by position into center, left and right torso; the legs part into
-## groin (pelvis) and the two legs. Hits on a held gun count for the arm that holds it; shields,
-## missile pods and the pile bunker have their own HP (WeaponData.hp).
+## groin (pelvis) and the two legs. Every weapon (gun, pile bunker, shield, missile pod) is a part
+## with its own HP (WeaponData.hp).
 ## The mech is alive while the head, the center torso, the groin and at least one leg are intact.
 
 signal damaged(key: String, amount: float)
@@ -64,8 +63,8 @@ func _ready() -> void:
 			max_hp["Back L"] = weapons.back_left.data.hp
 		if weapons.back_right != null:
 			max_hp["Back R"] = weapons.back_right.data.hp
-		if weapons.right_weapon != null and weapons.right_weapon_key() != "Arm R":
-			max_hp[weapons.right_weapon_key()] = weapons.right_data.hp
+		if weapons.right_weapon != null:
+			max_hp["Weapon R"] = weapons.right_data.hp
 	hp = max_hp.duplicate()
 	_split_segments()
 	for key: String in segment_nodes:
@@ -170,7 +169,7 @@ func _split_segments() -> void:
 		for node in weapons.shield_nodes:
 			_add_node("Shield", node)
 	for node in weapons.right_weapon_nodes():
-		_add_node(weapons.right_weapon_key(), node)
+		_add_node("Weapon R", node)
 	if weapons.back_left != null:
 		_add_node("Back L", weapons.back_left)
 	if weapons.back_right != null:

@@ -5,7 +5,7 @@ extends Node
 ## Below half HP a part smokes. Destroyed parts:
 ##   Head: falls off (the mech dies).
 ##   Arm: falls off with its weapon (right) or its shield (left). That weapon is lost.
-##   Weapon R (the pile bunker; guns count for the arm): falls off, the arm stays.
+##   Weapon R (the right arm weapon: gun or pile bunker): falls off, the arm stays.
 ##   Side torso: its armor is blown away, and its arm (and back unit on that side) falls off.
 ##   Leg: explodes, the armor is gone and the inner frame shows. One leg left: walks 60% slower
 ##        with short limping steps; boost speed stays and the jump jets still work; the mech falls

@@ -6,7 +6,7 @@ extends Node
 ##   Arm: falls off with its weapon (right) or its shield (left). That weapon is lost.
 ##   Side torso: explodes, its shoulder and its arm fall off with the arm's weapon, and the back unit
 ##        on that side falls off.
-##   Shield, back unit, Weapon R (the pile bunker; guns count for the arm): falls off, the arm stays.
+##   Shield, back unit, Weapon R (the right arm weapon: gun or pile bunker): falls off, the arm stays.
 ##   Leg: explodes and smokes. One leg left: walks 60% slower; boost speed stays.
 ##   Center torso, groin: explode (the mech dies).
 ## Falling parts are the skinned meshes frozen at their pose now, in rigid debris.
