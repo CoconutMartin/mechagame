@@ -1,8 +1,8 @@
 """PS1-style skin textures for Sanggigilid (user request 2026-10-11, reference: PS1-era mech games).
-Writes 64 x 64 grey pixel textures to assets/textures/ps1/ (the shader tints them per part):
+Writes 64 x 64 grey detail textures to assets/textures/ps1/ (the shader lays them over the model's
+own colors; 0.55 grey = no change):
   metal_panels.png  armor plates: panel seams, light top edges, rivets, vents, grime streaks
-  ribbed_plates.png cloth-like ribbed plates (the khaki parts): ribs, U-shaped marks, grime
-  joint_metal.png   dark joint metal: rings and noise
+  joint_metal.png   joint metal: rings and noise
 Run from the project root: python3 tools/mech_gen/ps1_textures.py
 """
 import os
@@ -96,32 +96,8 @@ def metal_panels(rng):
     return img
 
 
-def ribbed_plates(rng):
-    img = noise_image(rng, 140, 10)
-    mottle(img, rng, 8, 18)
-    # Horizontal ribs every 8 pixels: dark groove, light lip.
-    for y in range(0, SIZE, 8):
-        for x in range(SIZE):
-            img[y][x] -= 45
-            add(img, x, y + 1, 25)
-    # U-shaped marks (like the reference's thigh plates).
-    for cx, cy in ((16, 18), (48, 50)):
-        for y in range(cy - 7, cy + 5):
-            add(img, cx - 6, y, -50)
-            add(img, cx + 6, y, -50)
-        for x in range(cx - 6, cx + 7):
-            add(img, x, cy + 5, -50)
-            add(img, x, cy + 6, 22)
-    # Vertical seam.
-    for y in range(SIZE):
-        img[y][32] -= 40
-        add(img, 33, y, 18)
-    grime(img, rng, 18)
-    return img
-
-
 def joint_metal(rng):
-    img = noise_image(rng, 95, 8)
+    img = noise_image(rng, 140, 8)
     mottle(img, rng, 16, 10)
     for y in range(0, SIZE, 6):
         for x in range(SIZE):
@@ -134,5 +110,4 @@ def joint_metal(rng):
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     save(metal_panels(random.Random(11)), "metal_panels.png")
-    save(ribbed_plates(random.Random(12)), "ribbed_plates.png")
     save(joint_metal(random.Random(13)), "joint_metal.png")
