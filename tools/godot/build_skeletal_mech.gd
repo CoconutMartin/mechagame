@@ -225,6 +225,7 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	rig.shoulder_mounts = shoulder_tops
 	rig.weapon_pose = weapon_animation.get_node("WeaponPose") as WeaponPose
 	rig.torso_pose = weapon_animation.get_node("TorsoPose") as TorsoPose
+	rig.weapons = root.get_node("WeaponController") as WeaponController
 	var weapon_pose := weapon_animation.get_node("WeaponPose") as WeaponPose
 	weapon_pose.aim_anchor = torso.get_node("AimAnchor")
 	var shield_pose := weapon_animation.get_node("ShieldPose") as ShieldPose

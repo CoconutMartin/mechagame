@@ -23,6 +23,22 @@ extends SkeletonModifier3D
 ## weapon data values: aim_twist_deg to the right, aim_tilt_deg).
 @export var weapon_pose: WeaponPose
 @export var torso_pose: TorsoPose
+## The weapons (their weight sets the arm swing limit).
+@export var weapons: WeaponController
+
+@export_group("Arm swing limit")
+## Largest upper arm swing forward or back from hanging down (degrees), for weapons up to
+## light_weapon_t. Heavier weapons: limit_per_ton less per ton, down to min_swing_deg. The limit
+## holds the arms below a right angle (user rule 2026-10-11). When an arm stops at its limit, the
+## held weapon moves to the hand.
+@export var max_swing_deg: float = 50.0
+@export var light_weapon_t: float = 2.0
+@export var limit_per_ton: float = 5.0
+@export var min_swing_deg: float = 30.0
+## An elbow turn (to stay inside the swing limit) may not lift the upper arm more than this from
+## hanging down in any direction (degrees): no elbows raised high to the side.
+@export var max_lift_deg: float = 60.0
+@export_group("")
 @export var torso_bone: StringName = &"torso"
 @export var upper_arm_bones: PackedStringArray = ["upper_arm_L", "upper_arm_R"]
 @export var forearm_bones: PackedStringArray = ["forearm_L", "forearm_R"]
@@ -47,6 +63,10 @@ var _torso_offset: Transform3D
 var _sides: Array[Dictionary] = []
 ## Shoulder mount place in its upper arm bone's space: [mount, bone, offset].
 var _mount_offsets: Array = []
+## The right weapon's transform from WeaponPose, and the moved one this rig set (the weapon moves to
+## a limited hand; WeaponPose sets it again on its next physics frame).
+var _weapon_base: Transform3D
+var _weapon_moved: Transform3D
 
 
 func _ready() -> void:
@@ -154,6 +174,104 @@ func _aim_twist() -> void:
 	_skeleton.set_bone_pose_rotation(bone, local.get_rotation_quaternion())
 
 
+## Arm IK with the swing limit. The right weapon moves to a limited right hand. A two-hand weapon then
+## moves back to a limited left hand (if it falls short), and the right arm takes its grip again.
+func _solve_arms(active: Array[Dictionary]) -> void:
+	var left_ik: TwoBoneIK = null
+	var right_ik: TwoBoneIK = null
+	for side in active:
+		if side.ik == ik_left:
+			left_ik = ik_left
+		else:
+			right_ik = ik_right
+	if right_ik != null:
+		_restore_weapon()
+		right_ik.solve()
+		_limit_swing(right_ik, swing_limit(true))
+		_move_weapon_to_hand(right_ik)
+	if left_ik == null:
+		return
+	left_ik.solve()
+	_limit_swing(left_ik, swing_limit(false))
+	var weapon := weapons.right_weapon if weapons != null else null
+	if right_ik == null or weapon == null or not weapon.is_ancestor_of(left_ik.target):
+		return
+	var gap := _hand(left_ik) - left_ik.target.global_position
+	if gap.length_squared() < 0.0001:
+		return
+	weapon.global_position += gap
+	_weapon_moved = weapon.transform
+	right_ik.solve()
+	_limit_swing(right_ik, swing_limit(true))
+
+
+## Where an arm's hand (palm socket) is now.
+static func _hand(ik: TwoBoneIK) -> Vector3:
+	return ik.mid_joint.global_position + ik.mid_joint.global_basis.y * -ik.lower_length
+
+
+## Upper arm swing limit (radians) for the weapon an arm holds: the right weapon (right arm, and the
+## left arm of a two-hand weapon) or the shield (left arm).
+func swing_limit(right: bool) -> float:
+	var weight := 0.0
+	if weapons != null:
+		var data: WeaponData = weapons.right_data if right or weapons.two_handed_left_grip() else weapons.left_data
+		weight = data.weight_t if data != null else 0.0
+	var limit := max_swing_deg - maxf(weight - light_weapon_t, 0.0) * limit_per_ton
+	return deg_to_rad(maxf(limit, min_swing_deg))
+
+
+## Holds the upper arm within limit forward and back: its lean toward the torso's front or back
+## (sideways is free). The elbow turns first; if that is not enough, the upper arm stops at the limit
+## and the forearm points at the IK target from the elbow.
+func _limit_swing(ik: TwoBoneIK, limit: float) -> void:
+	var shoulder := ik.root_joint
+	var torso_basis := torso.global_basis.orthonormalized()
+	var arm := torso_basis.inverse() * (ik.mid_joint.global_position - shoulder.global_position).normalized()
+	var lean := asin(clampf(-arm.z, -1.0, 1.0))
+	if absf(lean) <= limit:
+		return
+	# First the elbow turns around the shoulder-to-hand line (the hand stays on its target): the
+	# smallest turn that brings the upper arm inside the limit.
+	var reach := (ik.target.global_position - shoulder.global_position).normalized()
+	var elbow_out := ik.mid_joint.global_position - shoulder.global_position
+	for step in range(1, 37):
+		for sign in [1.0, -1.0]:
+			var swivel := Basis(reach, deg_to_rad(5.0 * step) * sign)
+			var turned := torso_basis.inverse() * (swivel * elbow_out).normalized()
+			if absf(asin(clampf(-turned.z, -1.0, 1.0))) <= limit and -turned.y >= cos(deg_to_rad(max_lift_deg)):
+				shoulder.global_basis = (swivel * shoulder.global_basis).orthonormalized()
+				return
+	# No elbow turn helps: the upper arm stops at the limit and the hand falls short.
+	var flat := Vector2(arm.x, arm.y)
+	flat = flat.normalized() if flat.length_squared() > 0.000001 else Vector2(0.0, -1.0)
+	var held := Vector3(flat.x * cos(limit), flat.y * cos(limit), -signf(lean) * sin(limit))
+	var turn := torso_basis * Basis(Quaternion(arm, held)) * torso_basis.inverse()
+	shoulder.global_basis = (turn * shoulder.global_basis).orthonormalized()
+	var side := ik.mid_joint.global_basis.x
+	ik.mid_joint.global_basis = _joint_basis(ik.mid_joint.global_position, ik.target.global_position, side)
+
+
+func _restore_weapon() -> void:
+	var weapon := weapons.right_weapon if weapons != null else null
+	if weapon == null:
+		return
+	if not weapon.transform.is_equal_approx(_weapon_moved):
+		_weapon_base = weapon.transform
+	weapon.transform = _weapon_base
+
+
+## A limited right hand does not reach the grip: the weapon moves so its grip is in the hand.
+func _move_weapon_to_hand(ik: TwoBoneIK) -> void:
+	var weapon := weapons.right_weapon if weapons != null else null
+	if weapon == null or not weapon.is_ancestor_of(ik.target):
+		return
+	var gap := _hand(ik) - ik.target.global_position
+	if gap.length_squared() > 0.000001:
+		weapon.global_position += gap
+	_weapon_moved = weapon.transform
+
+
 ## The way through a closed fist (index to pinky), in the elbow joint node's space (Vector3.ZERO
 ## before the first frame).
 func hand_across(right: bool) -> Vector3:
@@ -182,13 +300,17 @@ func _process_modification_with_delta(_delta: float) -> void:
 	_aim_twist()
 	torso.global_transform = (skin * _skeleton.get_bone_global_pose(_skeleton.find_bone(torso_bone)).orthonormalized() \
 			* _torso_offset).orthonormalized()
-	for side in _sides:
+	var active: Array[Dictionary] = []
+	for side: Dictionary in _sides:
 		var shoulder := side.shoulder as Node3D
 		shoulder.global_position = skin * _skeleton.get_bone_global_pose(side.upper).origin
 		var ik := side.ik as TwoBoneIK
-		if ik.target == null or not ik.can_process():
-			continue
-		ik.solve()
+		if ik.target != null and ik.can_process():
+			active.append(side)
+	_solve_arms(active)
+	for side in active:
+		var shoulder := side.shoulder as Node3D
+		var ik := side.ik as TwoBoneIK
 		var to_skeleton := skin.basis.orthonormalized().inverse()
 		var upper_basis: Basis = to_skeleton * shoulder.global_basis * side.upper_offset
 		var fore_basis: Basis = to_skeleton * ik.mid_joint.global_basis * side.fore_offset
