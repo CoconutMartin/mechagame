@@ -652,7 +652,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 
 - Closed: upload individual mech parts made with Hunyuan3D, to combine in Blender with proper joints. Done 2026-10-07 as Medium (`models/medium/medium.blend`).
 - Closed: "update the dodge hop animation", the user accepted the current hop at the start of Phase 3.
-- Open (2026-10-11): the new mech's camera does not turn with the torso aim twist while aiming two-hand weapons (CameraAds zoom works; the part-built mechs' camera follows TorsoPose).
+- Closed (2026-10-11): "the new mech's camera does not turn with the aim twist" was a wrong report. No mech's camera follows the torso turn (camera scripts do not read TorsoPose); the new mech's torso turn and zoom work like the Warden's.
 - Open (2026-10-10): broken part animation for the new mech. Question to answer: replace a broken part with a damaged version, with or without Blender (options in the chat of 2026-10-10: Godot-only damage look, or broken part models made in Blender).
 
 ## Decisions log
