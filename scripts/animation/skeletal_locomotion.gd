@@ -1,6 +1,6 @@
 class_name SkeletalLocomotion
 extends Node
-## Plays a rigged mech model (skeletal_mech.tscn) from the Mech movement. Standing still: Idle.
+## Plays a rigged mech model (sanggigilid.tscn) from the Mech movement. Standing still: Idle.
 ## Moving: the walk, jog and run cycles blended by ground speed (Jog is made for the walking speed,
 ## 9.1 m/s, so a walking mech plays it alone). Every cycle starts with the left foot
 ## landing, so they share one stride phase; the phase moves by speed / stride length, which keeps the

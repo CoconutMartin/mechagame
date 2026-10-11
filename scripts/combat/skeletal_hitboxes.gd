@@ -24,7 +24,9 @@ func _ready() -> void:
 	skeleton = model.find_child("Skeleton3D", true, false) as Skeleton3D
 	var meshes := _meshes_by_bone()
 	for part: BoneHitPart in parts.parts:
-		health.add_part(part.key, part.max_hp)
+		# The loadout part HP (MechHealth from mech.stats) wins over the data's default HP.
+		if not health.max_hp.has(part.key):
+			health.add_part(part.key, part.max_hp)
 		var own: Array[MeshInstance3D] = []
 		for mesh: MeshInstance3D in mesh_bones:
 			var center := (mesh.transform * mesh.get_aabb()).get_center().x

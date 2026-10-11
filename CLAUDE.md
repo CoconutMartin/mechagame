@@ -10,10 +10,8 @@ Check "Reminders for the user" in DESIGN.md. Remind the user of each open item w
 
 ## Mech scope (user rule, 2026-10-11)
 
-All new work and adjustments go to the new mech (rigged, `scenes/mech/skeletal_mech.tscn`).
-Do not change the old part-built mechs (Warden, Recon mechs, Medium, OG Mech, Granpa Gundam).
-Shared code may change only in ways that keep the old mechs working the same (new behavior
-behind the new mech's own nodes or settings). Test the old mechs after a shared change.
+The game has one mech: Sanggigilid (rigged, `scenes/mech/sanggigilid.tscn`, built by
+`tools/godot/build_sanggigilid.gd`). All work goes to it. The other mechs were deleted.
 
 ## Code rules
 

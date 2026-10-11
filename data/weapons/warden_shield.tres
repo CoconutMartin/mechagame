@@ -5,7 +5,7 @@
 
 [resource]
 script = ExtResource("script")
-display_name = "Warden Hex Shield"
+display_name = "Hex Shield"
 weight_t = 3.0
 hp = 1200.0
 kind = 4

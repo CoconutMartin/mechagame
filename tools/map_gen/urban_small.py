@@ -328,17 +328,16 @@ def lighting():
 
 
 def logic():
-    # Targets are part-built Warden mechs. The player is the new (rigged) mech: it is the mech of every
-    # loadout without its own mech_scene (the weapon test loadouts, keys 1 to 4); the part-built
-    # loadouts (keys 5 to 0) name player_mech.tscn themselves.
-    mech = res("res://scenes/mech/player_mech.tscn", "PackedScene")
-    player = res("res://scenes/mech/skeletal_mech.tscn", "PackedScene")
+    # Sanggigilid is the only mech (2026-10-11): the player, the dummy and the enemy. The loadouts have
+    # no mech_scene; the LoadoutSwitcher builds Sanggigilid for them.
+    mech = res("res://scenes/mech/sanggigilid.tscn", "PackedScene")
+    player = mech
     hud = res("res://scenes/ui/debug_hud.tscn", "PackedScene")
-    loadouts = ["warden", "warden_sniper", "warden_melee", "warden_missile", "recon", "recon_accurate", "recon_sleek",
-                "recon_gen", "recon_sheet", "medium_mech", "new_mech", "new_mech_cannon"]
+    loadouts = ["sanggigilid_gunner", "sanggigilid_sniper", "sanggigilid_melee", "sanggigilid_missile",
+                "sanggigilid_cannon"]
     refs = ", ".join(res(f"res://data/loadouts/{l}.tres") for l in loadouts)
     spawner = res("res://scripts/world/mech_spawner.gd", "Script")
-    gunner = res("res://data/loadouts/warden.tres")
+    gunner = res("res://data/loadouts/sanggigilid_gunner.tres")
     node(f'[node name="MouseCapture" type="Node" parent="."]\nscript = {res("res://scripts/core/mouse_capture.gd", "Script")}\n')
     node('[node name="Targets" type="Node3D" parent="."]\n')
     node(f'[node name="DummyMech" type="Node3D" parent="Targets" node_paths=PackedStringArray("player_respawner")]\n'

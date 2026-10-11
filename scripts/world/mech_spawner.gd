@@ -78,7 +78,7 @@ func _spawn_if_active() -> void:
 func _spawn() -> void:
 	mech = mech_scene.instantiate() as Mech
 	if loadout != null:
-		(mech.get_node("MechAssembler") as MechAssembler).loadout = loadout
+		LoadoutSwitcher.loadout_node(mech).set(&"loadout", loadout)
 	# No keyboard, mouse or camera of its own.
 	var camera := mech.get_node("CameraRig/Pitch/SpringArm/Camera") as Camera3D
 	camera.current = false

@@ -17,13 +17,13 @@ var current_loadout: Loadout
 
 
 func _ready() -> void:
-	var builder := _loadout_node(mech)
+	var builder := loadout_node(mech)
 	current_loadout = builder.loadout if builder != null else null
 	_mark_player(mech)
 
 
 ## The node that takes the loadout: MechAssembler (part-built mech) or WeaponMount (rigged mech).
-static func _loadout_node(of_mech: Node) -> Node:
+static func loadout_node(of_mech: Node) -> Node:
 	var node := of_mech.get_node_or_null("MechAssembler")
 	return node if node != null else of_mech.get_node_or_null("WeaponMount")
 
@@ -52,7 +52,7 @@ func rebuild(loadout: Loadout, place: Transform3D) -> void:
 	var index := mech.get_index()
 	var scene := loadout.mech_scene if loadout.mech_scene != null else mech_scene
 	var new_mech := scene.instantiate() as Mech
-	var builder := _loadout_node(new_mech)
+	var builder := loadout_node(new_mech)
 	if builder != null:
 		builder.set(&"loadout", loadout)
 	new_mech.name = mech.name

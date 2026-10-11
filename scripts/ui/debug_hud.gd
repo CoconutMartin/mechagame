@@ -80,8 +80,10 @@ func _build_text() -> String:
 	if stats == null and health == null:
 		return "Build: no loadout"
 	var text := "BUILD\n"
-	if stats == null:
-		# A mech not built from parts (a rigged mech): only its own speeds.
+	if stats == null or mech.get_node_or_null("WeaponMount") != null:
+		# A mech not built from parts (Sanggigilid): its own speeds; the parts give weight and HP only.
+		if stats != null:
+			text += "Weight: %.1f t\n" % stats.total_weight_t
 		text += "Walk %.1f m/s   Boost %.1f m/s\n" % [mech.walk_speed, mech.get_boost_speed()]
 	else:
 		text += "Weight: %.1f / %.0f t   Load: %d%%\n" % [stats.total_weight_t, stats.load_capacity_t, roundi(stats.load_ratio * 100.0)]

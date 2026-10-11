@@ -2,7 +2,8 @@ class_name SkeletalWeaponMount
 extends Node
 ## Mounts the loadout weapons on a rigged (skeletal) mech. It does the weapon part of MechAssembler:
 ## weapon and shield scenes go onto the weapon frame of SkeletalArmRig (Torso, ShoulderL/R,
-## ElbowL/R). The mech keeps its own body and speeds (the loadout parts are not used).
+## ElbowL/R). The mech keeps its own body and speeds. The loadout parts (with plates and mods) give
+## the part HP: mech.stats is set here, before MechHealth starts (keep this node before it).
 ## Keep this node before the weapon nodes, so the weapons exist before the others start.
 
 @export var loadout: Loadout
@@ -15,6 +16,9 @@ extends Node
 
 
 func _ready() -> void:
+	var mech := get_parent() as Mech
+	if loadout != null and loadout.head != null and mech != null:
+		mech.stats = StatCalculator.compute(loadout)
 	if loadout != null and weapon_controller != null:
 		weapon_controller.mount(loadout, attach)
 		_to_shoulders()

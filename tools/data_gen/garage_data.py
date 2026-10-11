@@ -1,6 +1,7 @@
-"""Phase 5 garage data: light (Kestrel) and heavy (Bulwark) part variants, armor plates, mods and
-the garage catalog. The medium parts are the Warden parts (data/parts/warden).
-The variants use the Warden models with a model scale and an armor tint (PartLook).
+"""Garage data (Sanggigilid only since 2026-10-11): the Sanggigilid body parts, armor plates, mods and
+the garage catalog. The parts have no models (Sanggigilid is one rigged model); their HP sets the
+part HP of the matching body parts (MechHealth hit keys, see SkeletalWeaponMount), their other
+values feed the garage stat panel.
 Run from the project root: python3 tools/data_gen/garage_data.py"""
 import os
 
@@ -10,55 +11,22 @@ SCRIPT = {
     "arm_r": ("ArmPart", "arm_part"), "legs": ("LegPart", "leg_part"), "booster": ("BoosterPart", "booster_part"),
     "generator": ("GeneratorPart", "generator_part"), "fcs": ("FcsPart", "fcs_part"),
 }
-HAS_SCENE = {"head", "core", "arm_l", "arm_r", "legs", "booster"}
-
-# Variant: name, folder, armor tint, model scale by part (x, y, z).
-VARIANTS = {
-    "kestrel": {
-        "name": "Kestrel", "tint": (1.18, 1.06, 0.82, 1.0),
-        "scale": {"head": (0.9, 0.9, 0.9), "core": (0.9, 1.0, 0.9), "arm": (0.85, 1.0, 0.85),
-                  "legs": (0.85, 1.0, 0.85), "booster": (0.85, 0.85, 0.85)},
-        "stats": {
-            "head": dict(weight_t=2.5, hp=280, sensor_range=700, lock_on_speed=1.25),
-            "core": dict(weight_t=13, hp=1200, energy_capacity=90, torso_turn_speed_deg=100),
-            "arm": dict(weight_t=3.5, hp=450, recoil_control=1.2, melee_bonus=0.9),
-            "legs": dict(weight_t=11, hp=1000, leg_type=0, load_capacity_t=65, base_speed=13.5,
-                         jump_height=11, turn_speed_deg=135, turn_speed_standing_deg=67.5),
-            "booster": dict(weight_t=2, hp=150, thrust=1000, boost_speed_multiplier=1.6, energy_per_second=26),
-            "generator": dict(weight_t=2, hp=150, energy_output=14, recharge_delay=1.6),
-            "fcs": dict(weight_t=0.5, hp=80, lock_range=400, max_locks=3, aim_assist=0.0),
-        },
-    },
-    "bulwark": {
-        "name": "Bulwark", "tint": (0.66, 0.74, 0.64, 1.0),
-        "scale": {"head": (1.15, 1.1, 1.15), "core": (1.12, 1.0, 1.12), "arm": (1.18, 1.0, 1.18),
-                  "legs": (1.15, 1.0, 1.15), "booster": (1.2, 1.2, 1.2)},
-        "stats": {
-            "head": dict(weight_t=6, hp=560, sensor_range=500, lock_on_speed=0.85),
-            "core": dict(weight_t=24, hp=2100, energy_capacity=120, torso_turn_speed_deg=70),
-            "arm": dict(weight_t=7, hp=800, recoil_control=0.8, melee_bonus=1.25),
-            "legs": dict(weight_t=22, hp=1900, leg_type=0, load_capacity_t=105, base_speed=10.2,
-                         jump_height=7, turn_speed_deg=95, turn_speed_standing_deg=47.5),
-            "booster": dict(weight_t=4.5, hp=280, thrust=1600, boost_speed_multiplier=1.45, energy_per_second=38),
-            "generator": dict(weight_t=4.5, hp=280, energy_output=22, recharge_delay=2.4),
-            "fcs": dict(weight_t=2, hp=150, lock_range=650, max_locks=6, aim_assist=0.0),
-        },
-    },
-}
 LABEL = {"head": "Head", "core": "Core", "arm_l": "Arm L", "arm_r": "Arm R", "legs": "Legs",
          "booster": "Booster", "generator": "Generator", "fcs": "FCS"}
 
-# Recon (custom Blender model, models/recon): slim sensor mech between Kestrel and Warden.
-# The generator and FCS have no model. The other parts use the .glb files and materials/recon.
-RECON = {
-    "head": dict(weight_t=3.0, hp=320, sensor_range=900, lock_on_speed=1.35),
-    "core": dict(weight_t=15.0, hp=1350, energy_capacity=105, torso_turn_speed_deg=95),
-    "arm_l": dict(weight_t=4.0, hp=500, recoil_control=1.0, melee_bonus=0.95),
-    "arm_r": dict(weight_t=4.0, hp=500, recoil_control=1.0, melee_bonus=0.95),
-    "legs": dict(weight_t=13.0, hp=1150, leg_type=0, load_capacity_t=72, base_speed=12.8,
-                 jump_height=10.5, turn_speed_deg=128, turn_speed_standing_deg=64),
-    "booster": dict(weight_t=2.5, hp=170, thrust=1150, boost_speed_multiplier=1.6, energy_per_second=28),
-    "fcs": dict(weight_t=1.0, hp=100, lock_range=620, max_locks=5, aim_assist=0.0),
+# Sanggigilid parts (values of the removed Warden parts; HP = the body part HP the mech had:
+# head 400, core 1600 = center torso 960 + side torsos 640 each, arms 600, legs 1400 = groin 560 +
+# legs 840 each).
+SANGGIGILID = {
+    "head": dict(weight_t=4.0, hp=400, sensor_range=600, lock_on_speed=1.0),
+    "core": dict(weight_t=18.0, hp=1600, energy_capacity=100, torso_turn_speed_deg=85.35),
+    "arm_l": dict(weight_t=5.0, hp=600, recoil_control=1.0, melee_bonus=1.0),
+    "arm_r": dict(weight_t=5.0, hp=600, recoil_control=1.0, melee_bonus=1.0),
+    "legs": dict(weight_t=16.0, hp=1400, leg_type=0, load_capacity_t=80, base_speed=11.742, jump_height=9,
+                 turn_speed_deg=116.1, turn_speed_standing_deg=58.05),
+    "booster": dict(weight_t=3.0, hp=200, thrust=1200, boost_speed_multiplier=1.5, energy_per_second=30),
+    "generator": dict(weight_t=3.0, hp=200, energy_output=17.5, recharge_delay=2.0),
+    "fcs": dict(weight_t=1.0, hp=100, lock_range=500, max_locks=4, aim_assist=0.0),
 }
 
 # Plates: file, name, slot (0 head, 1 core, 2 arm L, 3 arm R, 4 legs), HP, weight, thickness.
@@ -124,56 +92,22 @@ def write(path, cls, script, fields, scene=None):
 
 def main():
     parts = {k: [] for k in SCRIPT}
-    for part in SCRIPT:
-        parts[part].append(f"res://data/parts/warden/warden_{part}.tres")
-    for folder, v in VARIANTS.items():
-        for part, (cls, script) in SCRIPT.items():
-            group = "arm" if part.startswith("arm") else part
-            fields = {"display_name": f"{v['name']} {LABEL[part]}"}
-            fields.update({k: (float(x) if isinstance(x, (int, float)) and k not in ("leg_type", "max_locks") else x)
-                           for k, x in v["stats"][group].items()})
-            scene = None
-            if part in HAS_SCENE:
-                scene = f"res://scenes/parts/warden/warden_{part}.tscn"
-                fields["model_scale"] = tuple(float(x) for x in v["scale"][group])
-                fields["armor_tint"] = v["tint"]
-            parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
-    # Recon (boxy first model), Recon Accurate (closer to the reference), Recon Sleek (smooth, slim
-    # version), Recon Gen (Hunyuan3D model split by split_generated.py) and Recon Sheet (from the
-    # user's part sheet): same stats.
-    for folder, title in (("recon", "Recon"), ("recon_accurate", "Recon Accurate"), ("recon_sleek", "Recon Sleek"),
-                          ("recon_gen", "Recon Gen"), ("recon_sheet", "Recon Sheet")):
-        for part, stats in RECON.items():
-            if folder != "recon" and part == "fcs":
-                continue  # The FCS has no model: the later Recons use the Recon FCS.
-            cls, script = SCRIPT[part]
-            fields = {"display_name": f"{title} {LABEL[part]}"}
-            fields.update({k: (float(x) if isinstance(x, (int, float)) and k not in ("leg_type", "max_locks") else x)
-                           for k, x in stats.items()})
-            scene = None
-            if part in HAS_SCENE:
-                scene = f"res://models/{folder}/{folder}_{part}.glb"
-                # Recon Gen and Recon Sheet have their own olive colors; the others use the Recon colors.
-                fields["material_library"] = {"recon_gen": "res://materials/recon_gen",
-                                              "recon_sheet": "res://materials/recon_sheet"}.get(folder, "res://materials/recon")
-                # Recon Sheet has its own joint layout (measured from models/guides/recon_sheet_views.png).
-                if folder == "recon_sheet" and part in ("core", "arm_l", "arm_r", "legs"):
-                    fields["frame"] = ("resource", "res://data/frames/recon_sheet_frame.tres")
-            parts[part].append(write(f"data/parts/{folder}/{folder}_{part}.tres", cls, script, fields, scene))
-    # Medium (user parts, rigged in Blender, game parts from tools/blender/medium_mech_build.py): the data
-    # files are written by hand (Warden stats, Recon Sheet booster stats), so only list them here.
-    for part in ("head", "core", "arm_l", "arm_r", "legs", "booster"):
-        parts[part].append(f"res://data/parts/medium_mech/medium_mech_{part}.tres")
+    for part, stats in SANGGIGILID.items():
+        cls, script = SCRIPT[part]
+        fields = {"display_name": f"Sanggigilid {LABEL[part]}"}
+        fields.update({k: (float(x) if isinstance(x, (int, float)) and k not in ("leg_type", "max_locks") else x)
+                       for k, x in stats.items()})
+        parts[part].append(write(f"data/parts/sanggigilid/sanggigilid_{part}.tres", cls, script, fields))
     plates = [write(f"data/plates/{f}.tres", "PlateData", "plate_data",
                     {"display_name": n, "slot": s, "hp": float(hp), "weight_t": float(w), "thickness": float(t)})
               for f, n, s, hp, w, t in PLATES]
     mods = [write(f"data/mods/{f}.tres", "ModData", "mod_data", {"display_name": n, "stat": s, "percent": p})
             for f, n, s, p in MODS]
     weapons = {
-        "weapons_right": ["heavy_rifle", "beam_sniper", "beam_rifle", "pile_bunker"],
+        "weapons_right": ["heavy_rifle", "beam_sniper", "beam_rifle", "pile_bunker", "auto_cannon"],
         "weapons_left": ["warden_shield"],
-        "backs_left": ["missile_pod_l"],
-        "backs_right": ["missile_pod_r"],
+        "backs_left": ["missile_pod_l", "auto_cannon_shoulder"],
+        "backs_right": ["missile_pod_r", "auto_cannon_shoulder"],
     }
     lists = {"heads": parts["head"], "cores": parts["core"], "arms_left": parts["arm_l"],
              "arms_right": parts["arm_r"], "legs": parts["legs"], "boosters": parts["booster"],

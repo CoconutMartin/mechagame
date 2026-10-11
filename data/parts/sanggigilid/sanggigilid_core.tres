@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="CorePart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/core_part.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Sanggigilid Core"
+weight_t = 18.0
+hp = 1600.0
+energy_capacity = 100.0
+torso_turn_speed_deg = 85.35

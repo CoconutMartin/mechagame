@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="Loadout" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/loadout.gd" id="script"]
+[ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_head.tres" id="head"]
+[ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_core.tres" id="core"]
+[ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_arm_l.tres" id="arm_left"]
+[ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_arm_r.tres" id="arm_right"]
+[ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_legs.tres" id="legs"]
+[ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_booster.tres" id="booster"]
+[ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_generator.tres" id="generator"]
+[ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_fcs.tres" id="fcs"]
+[ext_resource type="Resource" path="res://data/weapons/heavy_rifle.tres" id="heavy_rifle"]
+[ext_resource type="Resource" path="res://data/weapons/missile_pod_l.tres" id="missile_pod_l"]
+[ext_resource type="Resource" path="res://data/weapons/missile_pod_r.tres" id="missile_pod_r"]
+[ext_resource type="Resource" path="res://data/weapons/warden_shield.tres" id="warden_shield"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Sanggigilid Missile"
+head = ExtResource("head")
+core = ExtResource("core")
+arm_left = ExtResource("arm_left")
+arm_right = ExtResource("arm_right")
+legs = ExtResource("legs")
+booster = ExtResource("booster")
+generator = ExtResource("generator")
+fcs = ExtResource("fcs")
+weapon_right = ExtResource("heavy_rifle")
+weapon_left = ExtResource("warden_shield")
+back_left = ExtResource("missile_pod_l")
+back_right = ExtResource("missile_pod_r")

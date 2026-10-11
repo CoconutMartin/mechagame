@@ -13,7 +13,7 @@ extends SkeletonModifier3D
 @export var model: Node3D
 ## Model yaw when the hips face the mech front (the glTF model faces +Z: PI).
 @export var model_base_yaw: float = PI
-## Weapon frame nodes (made by tools/godot/build_skeletal_mech.gd).
+## Weapon frame nodes (made by tools/godot/build_sanggigilid.gd).
 @export var torso: Node3D
 @export var shoulder_left: Node3D
 @export var shoulder_right: Node3D
