@@ -33,8 +33,11 @@ extends SkeletonModifier3D
 ## Animation with the closed hand pose, and the finger bone name parts.
 @export var grip_animation: StringName = &"Hand_Grip"
 @export var finger_names: PackedStringArray = ["index", "middle", "ring", "pinky", "thumb"]
-## Shoulder weapon mounts (left, right; Torso children): set on top of the shoulder armor meshes,
-## shoulder_mount_gap above them (the arms swing under the weapons).
+## Finger curl of a holding hand, as a part of the grip_animation curl (above 1 closes the fist more,
+## around the grip).
+@export var grip_curl: float = 1.4
+## Shoulder weapon mounts (left, right; Torso children): on top of the shoulder armor meshes,
+## shoulder_mount_gap above them. Each mount turns with its upper arm bone (the shoulder armor).
 @export var shoulder_mounts: Array[Node3D] = []
 @export var shoulder_armor_meshes: PackedStringArray = ["Arm_L_01", "Arm_R_01"]
 @export var shoulder_mount_gap: float = 0.15
@@ -42,6 +45,8 @@ extends SkeletonModifier3D
 var _skeleton: Skeleton3D
 var _torso_offset: Transform3D
 var _sides: Array[Dictionary] = []
+## Shoulder mount place in its upper arm bone's space: [mount, bone, offset].
+var _mount_offsets: Array = []
 
 
 func _ready() -> void:
@@ -70,6 +75,10 @@ func _setup() -> void:
 		var box := to_mech * (armor.transform * armor.get_aabb())
 		var top := Vector3(box.get_center().x, box.end.y + shoulder_mount_gap, box.get_center().z)
 		shoulder_mounts[i].position = top - torso_rest.origin
+		var bone := _skeleton.find_bone(upper_arm_bones[i])
+		var mount_rest := to_mech.affine_inverse() * Transform3D(Basis.IDENTITY, top)
+		_mount_offsets.append([shoulder_mounts[i], bone,
+				_skeleton.get_bone_global_rest(bone).orthonormalized().affine_inverse() * mount_rest])
 	var grip_track := _grip_rotations()
 	for i in 2:
 		var side := {}
@@ -96,8 +105,16 @@ func _setup() -> void:
 		var suffix := "_L" if i == 0 else "_R"
 		for bone_name: String in grip_track:
 			if bone_name.ends_with(suffix):
-				fingers[_skeleton.find_bone(bone_name)] = grip_track[bone_name]
+				var bone := _skeleton.find_bone(bone_name)
+				var rest := _skeleton.get_bone_rest(bone).basis.get_rotation_quaternion()
+				var curl := rest.inverse() * (grip_track[bone_name] as Quaternion)
+				fingers[bone] = rest * Quaternion(curl.get_axis(), curl.get_angle() * grip_curl) \
+						if curl.get_angle() > 0.001 else rest
 		side.fingers = fingers
+		# The hand's index-to-pinky line (the way through a closed fist), in the elbow joint node's space.
+		var line := _skeleton.get_bone_global_rest(_skeleton.find_bone("pinky_01" + suffix)).origin \
+				- _skeleton.get_bone_global_rest(_skeleton.find_bone("index_01" + suffix)).origin
+		side.hand_across = (_joint_basis(p_elbow, p_grip, across).inverse() * line).normalized()
 		_sides.append(side)
 
 
@@ -137,6 +154,21 @@ func _aim_twist() -> void:
 	_skeleton.set_bone_pose_rotation(bone, local.get_rotation_quaternion())
 
 
+## The way through a closed fist (index to pinky), in the elbow joint node's space (Vector3.ZERO
+## before the first frame).
+func hand_across(right: bool) -> Vector3:
+	return _sides[1 if right else 0].hand_across if _sides.size() == 2 else Vector3.ZERO
+
+
+## Shoulder mounts follow their upper arm bones (after the arm bones got their final turn).
+func _follow_shoulders() -> void:
+	var skin := _skeleton.global_transform
+	for entry: Array in _mount_offsets:
+		var bone: int = entry[1]
+		(entry[0] as Node3D).global_transform = (skin * _skeleton.get_bone_global_pose(bone).orthonormalized() \
+				* (entry[2] as Transform3D)).orthonormalized()
+
+
 static func _joint_basis(start: Vector3, end: Vector3, across: Vector3) -> Basis:
 	var y := (start - end).normalized()
 	var x := (across - y * across.dot(y)).normalized()
@@ -166,3 +198,4 @@ func _process_modification_with_delta(_delta: float) -> void:
 		_skeleton.set_bone_pose_rotation(side.fore, (upper_basis.inverse() * fore_basis).get_rotation_quaternion())
 		for bone: int in side.fingers:
 			_skeleton.set_bone_pose_rotation(bone, side.fingers[bone])
+	_follow_shoulders()

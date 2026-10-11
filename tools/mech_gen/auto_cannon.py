@@ -3,8 +3,8 @@
 The models come from tools/blender/auto_cannon_build.py (models/auto_cannon/*.glb).
   auto_cannon:          baton version, right arm. ForearmGunWeapon moves Mount (the model) under the
                         right forearm; the root is the fist target (GripRight).
-  auto_cannon_shoulder: shoulder unit (Back L or Back R). ShoulderGunWeapon turns it to the aim point;
-                        the root is the turn point at the bottom of the mount block.
+  auto_cannon_shoulder: shoulder unit (Back L or Back R). It sits on the shoulder armor and turns with it;
+                        the root is the bottom of the mount block. Stop to fire (the mech stands still).
 Values: slow heavy shots (user choice 2026-10-11).
 """
 import os, sys
@@ -13,15 +13,16 @@ from shapes import xf
 
 # Godot axes (Blender (x, y, z) is Godot (x, z, -y)): values from auto_cannon_build.py.
 PX = 6.0 / (1510 - 823)
-MUZZLE = (0.0, 0.0, -6.0)
-MOUNT_BOTTOM = (0.0, (254 - 332) * PX - 0.3, -1.25)
+# Width and height 50%, length 75% (auto_cannon_build.py SIZE).
+MUZZLE = (0.0, 0.0, -4.5)
+MOUNT_BOTTOM = (0.0, (254 - 332) * PX * 0.5 - 0.15, -0.94)
 
 FLASH = '''[node name="MuzzleFlash" type="Node3D" parent="{parent}" node_paths=PackedStringArray("light")]
 script = ExtResource("flash_script")
 light = NodePath("Light")
 
 [node name="Cone" type="MeshInstance3D" parent="{parent}/MuzzleFlash"]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -0.9)
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -0.5)
 cast_shadow = 0
 mesh = SubResource("flash_cone")
 surface_material_override/0 = ExtResource("flash")
@@ -45,14 +46,14 @@ HEAD = '''[gd_scene format=3]
 
 [sub_resource type="CylinderMesh" id="flash_cone"]
 top_radius = 0.0
-bottom_radius = 0.6
-height = 1.8
+bottom_radius = 0.3
+height = 1.0
 radial_segments = 8
 rings = 1
 
 [sub_resource type="SphereMesh" id="flash_core"]
-radius = 0.45
-height = 0.9
+radius = 0.25
+height = 0.5
 radial_segments = 8
 rings = 4
 '''

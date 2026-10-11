@@ -1,4 +1,5 @@
-"""Builds the Auto Cannon (user design, 6 m) and exports its two versions.
+"""Builds the Auto Cannon (user design; traced at 6 m, then width and height 50%, length 75%: 4.5 m)
+and exports its two versions.
 
 Run (from the project root):
     blender -b --python tools/blender/auto_cannon_build.py
@@ -13,7 +14,7 @@ butt at 1510 (6 m, so one pixel = SCALE m), bore axis at pixel row 254. Top view
 (widths). Chamfered boxes like the picture (one wide bevel segment).
 
 Axes: Blender +Y = forward (Godot -Z), +Z = up (top box and hinge on top). Origin: the butt (back
-face), on the bore axis. Empties: Muzzle (both), Grip (baton: top of the handle, the palm),
+face), on the bore axis. Empties: Muzzle (both), Grip (baton: the fist center on the handle),
 Mount (shoulder: bottom of the mount block, the turn point).
 """
 import math, os
@@ -26,13 +27,18 @@ OUT_DIR = os.path.join(ROOT, "models", "auto_cannon")
 
 MUZZLE_PX, BUTT_PX, AXIS_PX, MID_W = 823, 1510, 254, 553
 SCALE = 6.0 / (BUTT_PX - MUZZLE_PX)
-## Baton version: grip handle from the butt (the new mech's elbow to palm socket, 2.71 m) and the
-## distance from the bore axis to the handle top (the palm): clears the forearm armor.
+## Size change after tracing (user request 2026-10-11): width and height 50%, length 75% (4.5 m).
+SIZE = (0.5, 0.75, 0.5)
+## Baton version: grip handle from the butt (the new mech's elbow to palm socket, 2.71 m), the
+## distance from the bore axis to the fist center (the cannon clears the forearm armor), the handle
+## radius and how far the handle goes on through the fist.
 GRIP_FROM_BUTT = 2.71
-GRIP_DROP = 1.35
+GRIP_DROP = 1.1
+HANDLE_RADIUS = 0.11
+HANDLE_PAST_FIST = 0.25
 ## Shoulder version: mount block under the rear body.
-MOUNT_FROM_BUTT = 1.25
-MOUNT_DROP = 0.3
+MOUNT_FROM_BUTT = 0.94
+MOUNT_DROP = 0.15
 
 MATERIALS = {
     "auto_cannon_dark": ((0.105, 0.108, 0.112), 0.55, 0.35),
@@ -171,29 +177,35 @@ def build():
         common.append(link(f"Link{side}", D, (1203, 186), (1287, 150), w, 24, 16))
         common.append(pin(f"PinCap{side}", D, 1287, 150, w - 9, w + 9, 17))
         common.append(block(f"LinkFoot{side}", D, 1192, 1216, 170, 179, w - 10, w + 10, bevel=0.01))
-    muzzle = empty("Muzzle", (0.0, Y(MUZZLE_PX), 0.0))
+    resize = Matrix.Diagonal((*SIZE, 1.0))
+    for obj in common:
+        obj.data.transform(resize)
+        for mod in obj.modifiers:
+            mod.width *= SIZE[0]
+    muzzle = empty("Muzzle", (0.0, Y(MUZZLE_PX) * SIZE[1], 0.0))
 
-    # Baton version: grip handle under the body (the body hangs upside down under the forearm).
-    rail_bottom = Z(325)
+    # Baton version: grip handle under the body (held like a tonfa: the handle goes through the fist
+    # from the pinky side, the body lies along the forearm).
+    rail_bottom = Z(325) * SIZE[2]
     grip_y = GRIP_FROM_BUTT
-    handle_top = -GRIP_DROP
+    handle_top = -GRIP_DROP - HANDLE_PAST_FIST
     bm = bmesh.new()
-    bmesh.ops.create_cone(bm, cap_ends=True, segments=16, radius1=0.13, radius2=0.13,
-                          depth=rail_bottom - handle_top + 0.15)
-    bmesh.ops.translate(bm, vec=(0.0, grip_y, (rail_bottom + handle_top - 0.15) / 2), verts=bm.verts)
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=16, radius1=HANDLE_RADIUS, radius2=HANDLE_RADIUS,
+                          depth=rail_bottom - handle_top + 0.1)
+    bmesh.ops.translate(bm, vec=(0.0, grip_y, (rail_bottom + handle_top - 0.1) / 2), verts=bm.verts)
     handle = finish(new_object("GripHandle", bm), D, 0.02)
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=1.0)
-    bmesh.ops.scale(bm, vec=(0.42, 0.42, 0.12), verts=bm.verts)
-    bmesh.ops.translate(bm, vec=(0.0, grip_y, rail_bottom - 0.04), verts=bm.verts)
-    grip_base = finish(new_object("GripBase", bm), T, 0.03)
-    grip = empty("Grip", (0.0, grip_y, handle_top))
+    bmesh.ops.scale(bm, vec=(0.3, 0.3, 0.1), verts=bm.verts)
+    bmesh.ops.translate(bm, vec=(0.0, grip_y, rail_bottom - 0.03), verts=bm.verts)
+    grip_base = finish(new_object("GripBase", bm), T, 0.02)
+    grip = empty("Grip", (0.0, grip_y, -GRIP_DROP))
 
     # Shoulder version: mount block under the rear body.
-    body_bottom = Z(332)
+    body_bottom = Z(332) * SIZE[2]
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=1.0)
-    bmesh.ops.scale(bm, vec=(0.75, 1.1, MOUNT_DROP + 0.05), verts=bm.verts)
+    bmesh.ops.scale(bm, vec=(0.38, 0.8, MOUNT_DROP + 0.05), verts=bm.verts)
     bmesh.ops.translate(bm, vec=(0.0, MOUNT_FROM_BUTT, body_bottom - (MOUNT_DROP - 0.05) / 2), verts=bm.verts)
     mount_block = finish(new_object("MountBlock", bm), D, 0.04)
     mount = empty("Mount", (0.0, MOUNT_FROM_BUTT, body_bottom - MOUNT_DROP))
