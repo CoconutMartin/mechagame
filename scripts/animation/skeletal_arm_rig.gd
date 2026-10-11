@@ -77,6 +77,10 @@ func _ready() -> void:
 ## Runs once, at the first modification (the node is under the skeleton then).
 func _setup() -> void:
 	_skeleton = get_skeleton()
+	# The rig solves the arms itself (with the swing limit and the bone twist); the IK nodes' own
+	# physics solve would put the joint nodes back to their own twist between frames.
+	for ik in [ik_left, ik_right]:
+		ik.set_physics_process(false)
 	var torso_bone_id := _skeleton.find_bone(torso_bone)
 	# Torso node at rest: mech axes, shoulders at shoulder_height above its origin. Mech space = the
 	# model with its hips facing the mech front (no hip turn).
@@ -107,6 +111,7 @@ func _setup() -> void:
 		side.upper = _skeleton.find_bone(upper_arm_bones[i])
 		side.fore = _skeleton.find_bone(forearm_bones[i])
 		var grip := _skeleton.find_bone(grip_bones[i])
+		side.grip = grip
 		var p_shoulder := _skeleton.get_bone_global_rest(side.upper).origin
 		var p_elbow := _skeleton.get_bone_global_rest(side.fore).origin
 		var p_grip := _skeleton.get_bone_global_rest(grip).origin
@@ -172,6 +177,42 @@ func _aim_twist() -> void:
 	var parent := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(bone))
 	var local := parent.basis.orthonormalized().inverse() * (turn * pose.basis.orthonormalized())
 	_skeleton.set_bone_pose_rotation(bone, local.get_rotation_quaternion())
+
+
+## Turns the arm bones to the IK result with no extra twist: each bone swings (shortest turn) from
+## its rest direction to the joint node direction, so it keeps the model's own twist about its axis (the shoulder armor stays on the shoulder ball, the palm keeps its side). Then the joint nodes
+## take the bones' turn, so the weapons and the shield on them sit on the real arm.
+func _pose_arm(side: Dictionary) -> void:
+	var skin := _skeleton.global_transform
+	var to_skeleton := skin.basis.orthonormalized().inverse()
+	var shoulder := side.shoulder as Node3D
+	var ik := side.ik as TwoBoneIK
+	var upper: int = side.upper
+	var fore: int = side.fore
+	# Start pose: the rest pose of the arm under the torso now (the same every frame; the animation does
+	# not always key the arm bones, so their pose from the last frame would make the twist drift).
+	var parent_pose := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(upper)).orthonormalized()
+	var upper_pose := parent_pose * _skeleton.get_bone_rest(upper)
+	var fore_pose := upper_pose * _skeleton.get_bone_rest(fore)
+	var grip_point := (fore_pose * _skeleton.get_bone_global_rest(fore).affine_inverse() \
+			* _skeleton.get_bone_global_rest(side.grip)).origin
+	# Upper arm: animated shoulder-to-elbow direction to the IK direction.
+	var ik_upper := (to_skeleton * (ik.mid_joint.global_position - shoulder.global_position)).normalized()
+	var upper_swing := Basis(Quaternion((fore_pose.origin - upper_pose.origin).normalized(), ik_upper))
+	var upper_basis := upper_swing * upper_pose.basis
+	# Forearm: it moved with the upper arm; then elbow-to-palm direction to the IK direction.
+	var fore_basis := upper_swing * fore_pose.basis
+	var palm_local := fore_pose.basis.inverse() * (grip_point - fore_pose.origin)
+	var ik_fore := (to_skeleton * (_hand(ik) - ik.mid_joint.global_position)).normalized()
+	fore_basis = Basis(Quaternion((fore_basis * palm_local).normalized(), ik_fore)) * fore_basis
+	_skeleton.set_bone_pose_rotation(upper, (parent_pose.basis.inverse() * upper_basis).get_rotation_quaternion())
+	_skeleton.set_bone_pose_rotation(fore, (upper_basis.inverse() * fore_basis).get_rotation_quaternion())
+	# A holding hand closes; the free (relaxed) left hand stays open.
+	if weapons == null or ik.target != weapons.free_left_hand:
+		for bone: int in side.fingers:
+			_skeleton.set_bone_pose_rotation(bone, side.fingers[bone])
+	shoulder.global_basis = (skin.basis.orthonormalized() * upper_basis * (side.upper_offset as Basis).inverse()).orthonormalized()
+	ik.mid_joint.global_basis = (skin.basis.orthonormalized() * fore_basis * (side.fore_offset as Basis).inverse()).orthonormalized()
 
 
 ## Arm IK with the swing limit. The right weapon moves to a limited right hand. A two-hand weapon then
@@ -309,15 +350,5 @@ func _process_modification_with_delta(_delta: float) -> void:
 			active.append(side)
 	_solve_arms(active)
 	for side in active:
-		var shoulder := side.shoulder as Node3D
-		var ik := side.ik as TwoBoneIK
-		var to_skeleton := skin.basis.orthonormalized().inverse()
-		var upper_basis: Basis = to_skeleton * shoulder.global_basis * side.upper_offset
-		var fore_basis: Basis = to_skeleton * ik.mid_joint.global_basis * side.fore_offset
-		var parent := _skeleton.get_bone_parent(side.upper)
-		var parent_basis := _skeleton.get_bone_global_pose(parent).basis.orthonormalized()
-		_skeleton.set_bone_pose_rotation(side.upper, (parent_basis.inverse() * upper_basis).get_rotation_quaternion())
-		_skeleton.set_bone_pose_rotation(side.fore, (upper_basis.inverse() * fore_basis).get_rotation_quaternion())
-		for bone: int in side.fingers:
-			_skeleton.set_bone_pose_rotation(bone, side.fingers[bone])
+		_pose_arm(side)
 	_follow_shoulders()

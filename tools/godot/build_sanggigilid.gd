@@ -22,6 +22,10 @@ const REMOVE := ["MechAssembler", "Visual", "Animation", "FootLeveler", "PartBre
 const KEEP_ANIMATION := ["WeaponPose", "WeaponRecoil", "ArmIKRight", "ArmIKLeft", "ShieldPose", "ShieldMount", "TorsoPose"]
 ## Hand and stock markers of the part-built torso, copied onto the weapon frame.
 const TORSO_MARKERS := ["LeftHand", "LeftHandRest", "LeftHandRaised", "AimAnchor"]
+## Free left hand place (torso space, shoulders 2.465 m above its origin, left shoulder at x -1.35):
+## a relaxed hang beside the hip, elbow a little bent, close to the body (the shoulder armor stays
+## on the shoulder ball).
+const FREE_LEFT_HAND := Vector3(-1.75, -1.3, -0.45)
 ## Weapons the mech starts with (WeaponMount): the gunner test loadout (key 1).
 const START_WEAPONS := "res://data/loadouts/sanggigilid_gunner.tres"
 ## Bone used for the camera size (MechCameraRig looks for a ShoulderL node).
@@ -236,6 +240,11 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	controller.torso = torso
 	controller.left_hand = torso.get_node("LeftHand")
 	controller.animate_free_left_arm = true
+	var relaxed := Marker3D.new()
+	relaxed.name = "LeftHandRelaxed"
+	relaxed.position = FREE_LEFT_HAND
+	torso.add_child(relaxed)
+	controller.free_left_hand = relaxed
 	var mount := SkeletalWeaponMount.new()
 	mount.name = "WeaponMount"
 	root.add_child(mount)

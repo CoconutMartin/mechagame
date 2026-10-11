@@ -2,12 +2,12 @@ class_name ForearmGunWeapon
 extends GunWeapon
 ## A gun held like a baton under the right forearm (Auto Cannon, new mech). The root is the fist target
 ## for the arm IK (GripRight); the model ("Mount", with the muzzle) moves under the forearm: the butt
-## at the elbow, the grip handle in the palm, the muzzle past the hand. Aiming points the whole arm
-## along the aim line from the shoulder. Held like a tonfa: the handle goes through the fist from the
+## at the elbow, the grip handle in the palm, the muzzle past the hand. The arm takes the heavy rifle's
+## rest and hip-fire places. Held like a tonfa: the handle goes through the fist from the
 ## pinky side (the hand's index-to-pinky line, from the arm rig), the body lies along the forearm.
 
-## Arm stretch in the aim pose (part of the arm length; 1 = straight).
-@export_range(0.5, 1.0) var aim_reach: float = 0.93
+## The heavy rifle's grip place in its model (GripRight): the fist goes there in the rifle poses.
+@export var rifle_grip: Vector3 = Vector3(0.0, -0.33, -0.99)
 
 @onready var _mount: Node3D = $Mount
 
@@ -50,10 +50,7 @@ func _attach_to_forearm() -> void:
 	_mount.transform = Transform3D(basis, Vector3(0.0, -ik.lower_length, 0.0) - basis * grip.position)
 
 
-## Aim: the fist on the aim line from the shoulder, aim_reach of the arm length out.
+## The arm holds it like the heavy rifle: the weapon data poses are the rifle's, and the fist goes
+## where the rifle's grip would be.
 func get_pose(rest: Transform3D, aim: Transform3D, t: float) -> Transform3D:
-	var ik := controller.arm_ik_right
-	var shoulder := ik.root_joint.position
-	var direction := -aim.basis.z
-	var aimed := Transform3D(aim.basis, shoulder + direction * (ik.upper_length + ik.lower_length) * aim_reach)
-	return rest.interpolate_with(aimed, t)
+	return super(rest, aim, t) * Transform3D(Basis.IDENTITY, rifle_grip)

@@ -32,6 +32,9 @@ extends Node
 @export var free_aim: FreeAim
 ## True: with no shield and no two-hand weapon the left arm keeps its animation (rigged mechs).
 @export var animate_free_left_arm: bool = false
+## Optional. With animate_free_left_arm: the free left hand goes to this marker (a relaxed hang)
+## in place of the animation.
+@export var free_left_hand: Node3D
 
 @export_group("One-hand hold")
 ## Right hand (GripRight) place in the aim pose, torso space. The one-hand rifle hip hold.
@@ -79,7 +82,7 @@ func mount(loadout: Loadout, attach: Callable) -> void:
 		_wire_shield(left_data)
 	_set_shield_enabled(has_shield)
 	if not has_shield and not _two_handed():
-		arm_ik_left.target = null if animate_free_left_arm else left_hand
+		arm_ik_left.target = _free_left_target()
 	if loadout.back_left != null and loadout.back_left.scene != null:
 		back_left = _add_weapon(loadout.back_left, "BackLeft")
 	if loadout.back_right != null and loadout.back_right.scene != null:
@@ -138,7 +141,7 @@ func lose_right_weapon() -> void:
 	right_weapon.set_trigger(false)
 	right_weapon.process_mode = Node.PROCESS_MODE_DISABLED
 	if two_handed_left_grip():
-		arm_ik_left.target = null if animate_free_left_arm else left_hand
+		arm_ik_left.target = _free_left_target()
 	right_weapon = null
 	right_data = null
 	weapon_pose.aim_amount = 0.0
@@ -152,6 +155,11 @@ func lose_right_weapon() -> void:
 	torso_pose.aim_tilt_deg = 0.0
 	torso_pose.action_twist_deg = 0.0
 	camera_ads.enabled = false
+
+
+## Left hand target when the left hand holds nothing.
+func _free_left_target() -> Node3D:
+	return free_left_hand if animate_free_left_arm else left_hand
 
 
 ## Model nodes of the right weapon (a forearm weapon's model sits on the forearm: get_model()).
@@ -178,7 +186,7 @@ func lose_shield() -> void:
 	_set_shield_enabled(false)
 	mech_shield.force_up = false
 	if animate_free_left_arm and not _two_handed():
-		arm_ik_left.target = null
+		arm_ik_left.target = free_left_hand
 
 
 ## The left arm is gone: no shield, and the left arm IK stops.
