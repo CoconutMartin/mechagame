@@ -152,6 +152,13 @@ func _initialize() -> void:
 	breaker.hitboxes = hitboxes
 	breaker.camera_shake = shake
 	breaker.weapons = root.get_node("WeaponController") as WeaponController
+	var char_look := CharDamageLook.new()
+	char_look.name = "CharDamageLook"
+	root.add_child(char_look)
+	char_look.owner = root
+	char_look.health = health
+	char_look.hitboxes = hitboxes
+	char_look.weapons = root.get_node("WeaponController") as WeaponController
 
 	var mech_aim := root.get_node("MechAim") as MechAim
 	mech_aim.aim_origin = aim

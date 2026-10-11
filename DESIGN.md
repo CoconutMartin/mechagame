@@ -535,6 +535,11 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
   - Arm destroyed: it falls off with what it holds (Arm R: the right weapon; Arm L: the shield). A two-hand weapon stays in the right hand alone when the left arm goes (WeaponController one-hand hold). Side torso destroyed: its arm falls off with the arm's weapon, and the back unit on that side falls off.
   - `WeaponController.right_weapon_nodes()` (the weapon, or the pile bunker model on the forearm); MechHealth builds the weapon hitboxes for the new mech too (no MechAssembler needed). `SkeletalPartBreaker.weapons` (new): the shield, pod, Weapon R, arm and side torso rules above.
   - Test (headless and rendered, both mechs): part lists (new mech melee: Arm L/R 600, Torso L/R 640, Shield 1200, Weapon R 300; missile: Back L/R 250); rays at each weapon hit its own key (gun rays hit Weapon R since the gun change); breaking Weapon R, Shield, Back L keeps the arms; Arm L drops the shield; Arm R drops the rifle, sniper or pile bunker; Torso R drops the arm, rifle and right pod.
+- Phase D1 (damage look, user reference picture 2026-10-11: a mech at 1 HP is charred black, lumpy like coal, with small glossy bluish glints; every part at 1 HP looks like this):
+  - `CharDamageLook` (`scripts/effects/char_damage_look.gd`, node on the new mech, made by `build_skeletal_mech.gd`) and `shaders/char_damage.gdshader` (Godot only, no Blender): each part's meshes get a material overlay crust. It starts at 10% damage, grows in patches and covers the whole part at 1 HP (`start_damage` 0.1, `full_damage` 0.998). Weapon parts (Weapon R, Shield, Back L/R) char too. Destroyed parts keep the crust on their debris.
+  - Crust: black to dark violet coal, fine rock bump, bluish glints, glossy (roughness 0.2 to 0.55, metallic 0.35); lumps push out up to 0.135 m (`lump_height`). Meshes under 5,000 vertices (joint balls, weapon boxes) and primitive meshes get no push, because their hard edges would crack open.
+  - The noise uses each part's rest position: on `skeleton_updated` every charred skinned mesh gets its bone's pose-to-rest transform (`to_rest`), so the crust stays on the part while it moves.
+  - Test (rendered): full HP, 40%, 70%, 1 HP on every part; right arm, left leg and left pod at 1 HP alone; walking frames with the crust fixed on the parts.
 - Next phases: run start / stop and the Akira slide on the game's boost exit and skid, footstep markers to camera shake, sound and dust, jump / air / kneel / dodge poses, aim layer.
 
 ## Beam Rifle (user design, Blender model, in the game since 2026-10-11)
@@ -653,7 +658,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Closed: upload individual mech parts made with Hunyuan3D, to combine in Blender with proper joints. Done 2026-10-07 as Medium (`models/medium/medium.blend`).
 - Closed: "update the dodge hop animation", the user accepted the current hop at the start of Phase 3.
 - Closed (2026-10-11): "the new mech's camera does not turn with the aim twist" was a wrong report. No mech's camera follows the torso turn (camera scripts do not read TorsoPose); the new mech's torso turn and zoom work like the Warden's.
-- Open (2026-10-10): broken part animation for the new mech. Question to answer: replace a broken part with a damaged version, with or without Blender (options in the chat of 2026-10-10: Godot-only damage look, or broken part models made in Blender).
+- Closed (2026-10-11): broken part look for the new mech. The user gave a reference picture; built as the Godot-only charred crust (Phase D1).
 
 ## Decisions log
 
