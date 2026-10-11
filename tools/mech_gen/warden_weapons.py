@@ -3,7 +3,7 @@ their poses for the Warden frame. The heavy rifle model comes from heavy_rifle.p
 model from warden.py. Run from the project root."""
 import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from shapes import Builder, xf, xf_aim, xf_rows, apply_rows
+from shapes import Builder, xf, xf_aim, xf_rows, apply_rows, r
 from mech_scene import TT, torso_point, one_hand_rest
 import warden
 
@@ -107,6 +107,32 @@ def pod(part, marker):
         marker(f"Launch{i}", (x, y, -1.3))
 
 
+# Beam Rifle (user design, models/beam_rifle): picture pixels of tools/blender/beam_rifle_build.py.
+BR_K = 6.0 / (1728 - 492)
+BR_GRIP_RIGHT = (0.0, (241 - 368) * BR_K, -(1728 - 1340) * BR_K)
+BR_GRIP_LEFT = (0.0, (241 - 318) * BR_K, -(1728 - 1000) * BR_K)
+BR_MUZZLE = (0.0, 0.0, -6.0)
+SNIPER_GRIP_RIGHT = (0.0, -0.5, -1.4)
+
+
+def beam_rifle_scene(path):
+    """Beam Rifle scene: the Blender model (.glb) under a BeamRifleWeapon root, plus the hand and
+    muzzle markers. The cyan ring lights up while charging, the muzzle bore is the emitter."""
+    o = ['[gd_scene format=3]\n',
+         '[ext_resource type="Script" path="res://scripts/weapons/beam_rifle_weapon.gd" id="script"]',
+         '[ext_resource type="PackedScene" path="res://models/beam_rifle/beam_rifle.glb" id="model"]\n',
+         '[node name="BeamRifle" type="Node3D"]',
+         'script = ExtResource("script")',
+         'coil_paths = Array[NodePath]([NodePath("Model/Coil0")])',
+         'emitter_path = NodePath("Model/MuzzleBore")\n',
+         '[node name="Model" parent="." instance=ExtResource("model")]\n']
+    for name, pos in (("GripRight", BR_GRIP_RIGHT), ("GripLeft", BR_GRIP_LEFT), ("GripLeftRest", BR_GRIP_LEFT),
+                      ("GripLeftAim", BR_GRIP_LEFT), ("Muzzle", BR_MUZZLE)):
+        o.append(f'[node name="{name}" type="Marker3D" parent="."]\ntransform = {xf(pos)}\n')
+    open(path, "w").write("\n".join(o))
+    print("wrote", path)
+
+
 def res(path, props, scene=None):
     lines = ['[gd_resource type="Resource" script_class="WeaponData" format=3]\n',
              '[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]']
@@ -157,6 +183,26 @@ if __name__ == "__main__":
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
         "aim_twist_deg": 20.0, "aim_tilt_deg": 4.0, "zoom_fov": 52.6},
         "res://scenes/weapons/beam_sniper.tscn")
+    # Beam Rifle: two hands. Rest (neutral) = low ready, right hand on the pistol grip, left hand
+    # under the lower rail. The sniper rest is too far from the left shoulder for this grip (108%
+    # of the arm length), so the right hand is higher and closer and the muzzle points more to the
+    # left: left arm 92%, right arm 67% (Godot test). Aim = the sniper hold with the right hand at
+    # the same place (the grip is 0.48 m further from the butt than on the sniper).
+    beam_rifle_scene("scenes/weapons/beam_rifle.tscn")
+    br_hand = (0.83, 0.5, -2.0)
+    br_rows = xf_aim((-0.9, -0.35, -1.0), (0.0, 1.0, 0.0), br_hand)
+    br_rest = tuple(h - g for h, g in zip(br_hand, apply_rows(br_rows, BR_GRIP_RIGHT)))
+    shift = tuple(a - b for a, b in zip(SNIPER_GRIP_RIGHT, BR_GRIP_RIGHT))
+    br_anchor = tuple(a + b for a, b in zip(sniper_anchor, shift))
+    res("data/weapons/beam_rifle.tres", {"display_name": '"Beam Rifle"', "weight_t": 3.5, "hp": 300.0,
+        "kind": 1, "two_handed": "true", "fire_rate": 0.4, "damage": 300.0, "spread_deg": 0.05, "range_m": 1500.0,
+        "recoil_up_deg": 3.5, "recoil_side_deg": 0.5, "model_kick_back": 0.5, "model_kick_up_deg": 6.0,
+        "shake_trauma": 0.1, "shake_kick": 0.15, "heat_per_use": 34.0, "heat_cooling": 10.0, "overheat_cooling": 25.0,
+        "rest_transform": xf_rows(br_rows, br_rest), "aim_anchor": v3(br_anchor),
+        "right_pole_rest": v3((1.0, -0.6, 0.4)), "right_pole_aim": v3((1.0, -0.6, 0.3)),
+        "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
+        "aim_twist_deg": 20.0, "aim_tilt_deg": 4.0, "zoom_fov": 52.6},
+        "res://scenes/weapons/beam_rifle.tscn")
     # Beam blade: one hand, held upright in front of the right shoulder (reference image 12),
     # blade up and a little forward, edge facing forward.
     blade_rest = one_hand_rest(hand=(2.6, 7.0, -2.1), muzzle_dir=(0.05, 1.0, -0.12), up_hint=(0.0, 0.0, 1.0),

@@ -118,4 +118,4 @@ def build(m):
 
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "scenes/mech/granpa_gundam.tscn"
-    write_scene(out, "res://scenes/weapons/beam_rifle.tscn", MATS, build)
+    write_scene(out, "res://scenes/weapons/gramp_rifle.tscn", MATS, build)

@@ -32,6 +32,9 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 @export var release_shake: float = 0.075
 ## Extra screen shake and aim jitter at full charge = weapon data values x this value.
 @export var full_charge_kick: float = 2.0
+## Meshes that light up one after another while charging (back to front), and the emitter lens.
+@export var coil_paths: Array[NodePath] = [^"Coil0", ^"Coil1", ^"Coil2"]
+@export var emitter_path: NodePath = ^"Emitter"
 
 ## 0 to 1 while LMB is held.
 var charge: float = 0.0
@@ -51,9 +54,9 @@ func _ready() -> void:
 	# The barrel coils and the emitter lens light up with the charge.
 	add_child(_glow)
 	var coils: Array[MeshInstance3D] = []
-	for i in 3:
-		coils.append(get_node("Coil%d" % i) as MeshInstance3D)
-	_glow.setup(coils, $Emitter as MeshInstance3D, _muzzle)
+	for path in coil_paths:
+		coils.append(get_node(path) as MeshInstance3D)
+	_glow.setup(coils, get_node(emitter_path) as MeshInstance3D, _muzzle)
 
 
 ## True while charging or firing (WeaponController keeps it active and raised).

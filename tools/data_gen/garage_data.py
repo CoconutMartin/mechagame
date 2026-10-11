@@ -170,7 +170,7 @@ def main():
     mods = [write(f"data/mods/{f}.tres", "ModData", "mod_data", {"display_name": n, "stat": s, "percent": p})
             for f, n, s, p in MODS]
     weapons = {
-        "weapons_right": ["heavy_rifle", "beam_sniper", "pile_bunker"],
+        "weapons_right": ["heavy_rifle", "beam_sniper", "beam_rifle", "pile_bunker"],
         "weapons_left": ["warden_shield"],
         "backs_left": ["missile_pod_l"],
         "backs_right": ["missile_pod_r"],

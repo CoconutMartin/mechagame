@@ -1,4 +1,4 @@
-"""Beam rifle for Granpa Gundam. Run from the project root."""
+"""Gramp rifle (beam rifle) for Granpa Gundam. Run from the project root."""
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shapes import Builder, xf
 b = Builder()
@@ -24,7 +24,7 @@ o = ['[gd_scene format=3]\n',
  '[ext_resource type="Material" path="res://materials/rx78/dark.tres" id="dark"]',
  '[ext_resource type="Material" path="res://materials/rx78/lens.tres" id="lens"]\n',
  b.sub_text(),
- '[node name="BeamRifle" type="Node3D"]\n']
+ '[node name="GrampRifle" type="Node3D"]\n']
 o += b.nodes
 def marker(n, pos): o.append(f'[node name="{n}" type="Marker3D" parent="."]\ntransform = {xf(pos)}\n')
 marker("GripRight", (0, -0.55, -1.65))
@@ -32,4 +32,4 @@ marker("GripLeft", (0, -0.45, -5.0))
 marker("GripLeftRest", (0, -0.45, -4.6))
 marker("GripLeftAim", (0, -0.45, -4.2))
 marker("Muzzle", (0, 0.05, -7.3))
-open("scenes/weapons/beam_rifle.tscn", "w").write("\n".join(o))
+open("scenes/weapons/gramp_rifle.tscn", "w").write("\n".join(o))

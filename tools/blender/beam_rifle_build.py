@@ -185,7 +185,7 @@ def build():
     tube("Barrel", D, 577, 1215, 15)
     tube("Coil0", C, 1009, 1024, 17)
     tube("Collar0", D, 1024, 1064, 18)
-    tube("Coil1", O, 1064, 1146, 16)
+    tube("Cell", O, 1064, 1146, 16)
     tube("Collar1", D, 1146, 1215, 18)
 
     # Receiver: dark core block, octagon hub on both sides, raised breech covers.
