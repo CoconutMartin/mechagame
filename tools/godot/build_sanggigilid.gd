@@ -172,6 +172,7 @@ func _initialize() -> void:
 	root.add_child(skin)
 	skin.owner = root
 	skin.hitboxes = hitboxes
+	skin.mech = root
 
 	var mech_aim := root.get_node("MechAim") as MechAim
 	mech_aim.aim_origin = aim

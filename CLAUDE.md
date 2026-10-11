@@ -13,6 +13,11 @@ Check "Reminders for the user" in DESIGN.md. Remind the user of each open item w
 The game has one mech: Sanggigilid (rigged, `scenes/mech/sanggigilid.tscn`, built by
 `tools/godot/build_sanggigilid.gd`). All work goes to it. The other mechs were deleted.
 
+## PS1 skin (user rule, 2026-10-11)
+
+Every new mech, weapon and equipment gets the PS1 skin: uploaded models and everything modelled in
+Blender. Keep the model's own colors. Use `PS1SkinLook` / `PS1Skin` and `data/skins/ps1_skin.tres`.
+
 ## Code rules
 
 - Small scripts, one job per script. Use `class_name` and typed GDScript.
