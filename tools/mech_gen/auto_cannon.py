@@ -102,13 +102,14 @@ FIRING = {"kind": 0, "fire_rate": 1.5, "damage": 220.0, "projectile_speed": 450.
 if __name__ == "__main__":
     baton("scenes/weapons/auto_cannon.tscn")
     shoulder("scenes/weapons/auto_cannon_shoulder.tscn")
-    # Baton: the right arm holds it like the heavy rifle (user request 2026-10-11): the same rest
-    # transform, aim anchor and elbow directions as data/weapons/heavy_rifle.tres. ForearmGunWeapon
-    # puts the fist where the rifle's grip (RIFLE_GRIP) would be.
+    # Baton: rest = the neutral right arm (user rule 2026-10-11): shoulder block flat, forearm hanging
+    # 35 deg forward (fist at (2.45, -1.04, -1.6)), so the cannon points down along it and its muzzle
+    # clears the shin. Aim = the heavy rifle's hip fire.
+    # ForearmGunWeapon puts the fist where the rifle's grip (RIFLE_GRIP (0, -0.33, -0.99)) would be.
     res("data/weapons/auto_cannon.tres", "res://scenes/weapons/auto_cannon.tscn", {
         "display_name": '"Auto Cannon"', "weight_t": 3.5, "hp": 300.0, **FIRING, "slot": 0,
         "model_kick_back": 0.8, "model_kick_up_deg": 4.0,
-        "rest_transform": "Transform3D(1, 0, -0, 0, 0.99682, 0.07975, 0, -0.07975, 0.99682, 2.38, 1.0624, -0.73097)",
+        "rest_transform": "Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.45, -0.71, -0.61)",
         "aim_anchor": "Vector3(2.38, 0.935, -0.85)",
         "right_pole_rest": "Vector3(0.4, -1, 0.5)", "right_pole_aim": "Vector3(0.4, -1, 0.5)"})
     res("data/weapons/auto_cannon_shoulder.tres", "res://scenes/weapons/auto_cannon_shoulder.tscn", {

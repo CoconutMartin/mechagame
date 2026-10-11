@@ -39,8 +39,11 @@ def one_hand_rest(hand, muzzle_dir, up_hint, grip=(0, -0.33, -0.99), torso_scale
     return xf_rows(rows, origin)
 
 
-RIFLE_REST = one_hand_rest(hand=(2.8, 6.17, -1.99), muzzle_dir=(0.0, -0.08, -1.0), up_hint=(0.0, 1.0, 0.0),
-                           torso_scale=K)
+# Neutral right hand (user rule 2026-10-11, Sanggigilid): the shoulder block flat, the elbow under it
+# (torso space about (2.18, 1.16, -0.05)), the forearm hanging down, 22 deg forward and a little out, so
+# the rifle stock clears the forearm and the rifle clears the thigh. Mech space (torso y + WAIST).
+RIGHT_HAND_NEUTRAL = (2.45, -1.34 + WAIST, -1.05)
+RIFLE_REST = one_hand_rest(hand=RIGHT_HAND_NEUTRAL, muzzle_dir=(0.0, -0.15, -1.0), up_hint=(0.0, 1.0, 0.0))
 MATS = {
     "rifle": "res://materials/warden/rifle.tres", "dark": "res://materials/warden/rifle_dark.tres",
     "armor": "res://materials/warden/armor.tres", "joint": "res://materials/warden/joint.tres",
@@ -94,7 +97,8 @@ def sniper(part, marker):
     marker("GripRight", (0, -0.5, -1.4))
     marker("GripLeft", (0, -0.45, -2.9))
     marker("GripLeftRest", (0, -0.45, -2.9))
-    marker("GripLeftAim", (0, -0.45, -2.7))
+    # Aim: nearer the right hand than at rest, so the left arm reaches with the stock off the chest.
+    marker("GripLeftAim", (0, -0.45, -2.2))
     marker("Muzzle", (0, 0.05, -7.15))
 
 
@@ -147,8 +151,10 @@ def beam_rifle_scene(path):
          'coil_paths = Array[NodePath]([NodePath("Model/Coil0")])',
          'emitter_path = NodePath("Model/MuzzleBore")\n',
          '[node name="Model" parent="." instance=ExtResource("model")]\n']
+    # Aim: the left hand 0.8 m nearer the right hand, so the stock stays off the chest (see br_anchor).
+    br_left_aim = (BR_GRIP_LEFT[0], BR_GRIP_LEFT[1], BR_GRIP_LEFT[2] + 0.8)
     for name, pos in (("GripRight", BR_GRIP_RIGHT), ("GripLeft", BR_GRIP_LEFT), ("GripLeftRest", BR_GRIP_LEFT),
-                      ("GripLeftAim", BR_GRIP_LEFT), ("Muzzle", BR_MUZZLE)):
+                      ("GripLeftAim", br_left_aim), ("Muzzle", BR_MUZZLE)):
         o.append(f'[node name="{name}" type="Marker3D" parent="."]\ntransform = {xf(pos)}\n')
     open(path, "w").write("\n".join(o))
     print("wrote", path)
@@ -181,23 +187,29 @@ if __name__ == "__main__":
         write_model(f"scenes/weapons/missile_pod_{side}.tscn", f"MissilePod{side.upper()}", "missile_pod_weapon", pod, place)
 
     common = {"slot": 0}
-    # Heavy rifle: one hand, rest = ready to fire at the hip, hip fire.
+    # Heavy rifle: one hand, rest = arm hanging at the side, muzzle forward and down; hip fire with the
+    # stock inside the forearm (torso space), so the forearm does not cross the stock.
+    RIFLE_HIP = (1.6, 0.7, -1.0)
     anchor = TT(*torso_point(ONE_HAND["aim_anchor"], K))
     res("data/weapons/heavy_rifle.tres", {"display_name": '"Heavy Rifle"', "weight_t": 2.0, "hp": 300.0,
         "kind": 0, "fire_rate": 0.5, "damage": 120.0, "projectile_speed": 400.0, "spread_deg": 0.4,
         "recoil_up_deg": 2.0, "recoil_side_deg": 1.0, "model_kick_back": 0.7, "model_kick_up_deg": 10.0,
         "shake_trauma": 0.052, "shake_kick": 0.078, "magazine": 12, "reload_time": 3.5,
-        "rest_transform": RIFLE_REST, "aim_anchor": v3(anchor),
+        "rest_transform": RIFLE_REST, "aim_anchor": v3(RIFLE_HIP),
         "right_pole_rest": v3(ONE_HAND["right_pole_rest"]), "right_pole_aim": v3(ONE_HAND["right_pole_aim"])},
         "res://scenes/weapons/heavy_rifle.tscn")
-    # Two-hand rest (beam sniper and Beam Rifle): low ready, right hand on the grip at TWO_HAND_HAND
-    # (torso space), muzzle left, down and forward, left hand under the barrel. The older sniper rest
-    # (stock at (1.6, 6.6, -1.4)) was out of the left arm's reach (108% Warden, 112% new mech).
-    two_hand_hand = (0.83, 0.5, -2.0)
-    rest_rows = xf_aim((-0.9, -0.35, -1.0), (0.0, 1.0, 0.0), two_hand_hand)
+    # Two-hand rest (beam sniper and Beam Rifle): low across the body, right hand on the grip at
+    # two_hand_hand (torso space), muzzle left and a little forward, left hand under the barrel. Both
+    # shoulder blocks stay flat (user rule 2026-10-11): each hand is one forearm (2.71 m) from its elbow
+    # under the flat block; the left block turns 40-45 deg about the up axis to bring its elbow forward.
+    # Places found by search (no weapon or forearm point inside the torso or the legs, the stock off
+    # the right forearm). Each weapon has its own: the grips differ.
+    two_hand_hand = (0.865, 0.451, -2.267)
+    rest_rows = xf_aim((-0.93, -0.208, -0.302), (0.0, 1.0, 0.0), two_hand_hand)
     stock_rest = tuple(h - g for h, g in zip(two_hand_hand, apply_rows(rest_rows, SNIPER_GRIP_RIGHT)))
     # Beam sniper: two hands. Aim = stock at the chest, zoom.
-    sniper_anchor = TT(*torso_point((1.0, 8.0, -1.3), K))
+    # Stock in front of the chest (torso space; the torso front is at z -1.6).
+    sniper_anchor = (0.85, 2.21, -1.8)
     res("data/weapons/beam_sniper.tres", {"display_name": '"Beam Sniper"', "weight_t": 4.0, "hp": 300.0,
         "kind": 1, "two_handed": "true", "fire_rate": 0.4, "damage": 300.0, "spread_deg": 0.05, "range_m": 1500.0,
         "recoil_up_deg": 3.5, "recoil_side_deg": 0.5, "model_kick_back": 0.5, "model_kick_up_deg": 6.0,
@@ -207,14 +219,17 @@ if __name__ == "__main__":
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
         "aim_twist_deg": 20.0, "aim_tilt_deg": 4.0, "zoom_fov": 52.6},
         "res://scenes/weapons/beam_sniper.tscn")
-    # Beam Rifle: two hands. Rest (neutral) = the two-hand rest above, right hand on the pistol grip,
+    # Beam Rifle: two hands. Rest (neutral) = like the two-hand rest above (its own direction: other
+    # grips), right hand on the pistol grip,
     # left hand under the lower rail (Warden: left arm 92%, right 67%). Aim = the sniper hold with the
     # right hand at the same place (the grip is 0.48 m further from the butt than on the sniper).
     beam_rifle_scene("scenes/weapons/beam_rifle.tscn")
-    br_rows = rest_rows
-    br_rest = tuple(h - g for h, g in zip(two_hand_hand, apply_rows(br_rows, BR_GRIP_RIGHT)))
+    br_hand = (0.727, 0.007, -2.059)
+    br_rows = xf_aim((-0.907, -0.208, -0.366), (0.0, 1.0, 0.0), br_hand)
+    br_rest = tuple(h - g for h, g in zip(br_hand, apply_rows(br_rows, BR_GRIP_RIGHT)))
     shift = tuple(a - b for a, b in zip(SNIPER_GRIP_RIGHT, BR_GRIP_RIGHT))
-    br_anchor = tuple(a + b for a, b in zip(sniper_anchor, shift))
+    # Stock in front of the chest like the beam sniper's (not moved back by the grip shift).
+    br_anchor = (sniper_anchor[0], sniper_anchor[1] + shift[1], sniper_anchor[2])
     res("data/weapons/beam_rifle.tres", {"display_name": '"Beam Rifle"', "weight_t": 3.5, "hp": 300.0,
         "kind": 1, "two_handed": "true", "fire_rate": 0.4, "damage": 300.0, "spread_deg": 0.05, "range_m": 1500.0,
         "recoil_up_deg": 3.5, "recoil_side_deg": 0.5, "model_kick_back": 0.5, "model_kick_up_deg": 6.0,
@@ -224,9 +239,11 @@ if __name__ == "__main__":
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
         "aim_twist_deg": 20.0, "aim_tilt_deg": 4.0, "zoom_fov": 52.6},
         "res://scenes/weapons/beam_rifle.tscn")
-    # Pile bunker: one hand, fist ready at the right side, stake forward.
-    bunker_rest = one_hand_rest(hand=(2.6, 6.4, -2.0), muzzle_dir=(0.0, -0.2, -1.0), up_hint=(0.0, 1.0, 0.0),
-                                grip=(0, 0, 0), torso_scale=K)
+    # Pile bunker: one hand, arm hanging at the side.
+    # A little further out and forward than the rifle hand: the clamps wrap the forearm and clear
+    # the thigh.
+    bunker_rest = one_hand_rest(hand=(2.7, -1.17 + WAIST, -1.3), muzzle_dir=(0.0, -0.35, -1.0), up_hint=(0.0, 1.0, 0.0),
+                                grip=(0, 0, 0))
     res("data/weapons/pile_bunker.tres", {"display_name": '"Pile Bunker"', "weight_t": 2.5, "hp": 300.0,
         "kind": 5, "fire_rate": 0.3333, "damage": 900.0, "magazine": 3, "reload_time": 5.0,
         "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,

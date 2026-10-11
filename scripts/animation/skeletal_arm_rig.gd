@@ -7,6 +7,9 @@ extends SkeletonModifier3D
 ## the arm bones and closes the fingers of each holding hand (Hand_Grip pose). An arm with no IK
 ## target keeps its animation. While aiming, the torso bone turns right and tilts by the weapon's
 ## aim twist and tilt (like TorsoPose on the part-built mechs), so the left hand reaches a long rifle.
+## Neutral arms (user rule 2026-10-11): the shoulder armor block (the upper arm mesh) is flat on top, so
+## the elbow sits under its outer edge. Each upper arm swings from that flat pose, and the elbow stays
+## as near to it as the hand target lets it (tucked elbows).
 ## A skeleton modifier must be a child of the Skeleton3D; this node moves itself there at start.
 ## Keep it after SkeletalHipTurn, so it runs after the hip turn and waist twist.
 
@@ -57,6 +60,15 @@ extends SkeletonModifier3D
 @export var shoulder_mounts: Array[Node3D] = []
 @export var shoulder_armor_meshes: PackedStringArray = ["Arm_L_01", "Arm_R_01"]
 @export var shoulder_mount_gap: float = 0.15
+## Elbows stay as near as the hand target lets them to their neutral place (under the flat shoulder
+## block): the elbow turns around the shoulder-to-hand line. Off: the IK elbow directions (poles) decide.
+@export var tuck_elbows: bool = true
+## The flat block may turn about the up axis up to this much (degrees) to bring the elbow forward or
+## back (a two-hand weapon in front of the body); its top stays flat.
+@export var max_block_yaw_deg: float = 45.0
+## Away from the neutral elbow height the block turn fades out over this many degrees; a raised arm
+## swings the block like before.
+@export var block_yaw_fade_deg: float = 30.0
 
 var _skeleton: Skeleton3D
 var _torso_offset: Transform3D
@@ -96,13 +108,19 @@ func _setup() -> void:
 		var armor := _skeleton.get_node_or_null(NodePath(shoulder_armor_meshes[i])) as MeshInstance3D
 		if armor == null or shoulder_mounts[i] == null:
 			continue
-		var box := to_mech * (armor.transform * armor.get_aabb())
+		# The mount sits level on top of the block in the flat (neutral) pose.
+		var bone := _skeleton.find_bone(upper_arm_bones[i])
+		var flat_rest := _flat_rest(bone, armor)
+		var flat_turn := flat_rest * _skeleton.get_bone_global_rest(bone).orthonormalized().affine_inverse()
+		var box := AABB()
+		var vertices: PackedVector3Array = armor.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		for v in vertices.size():
+			var point := to_mech * flat_turn * armor.transform * vertices[v]
+			box = AABB(point, Vector3.ZERO) if v == 0 else box.expand(point)
 		var top := Vector3(box.get_center().x, box.end.y + shoulder_mount_gap, box.get_center().z)
 		shoulder_mounts[i].position = top - torso_rest.origin
-		var bone := _skeleton.find_bone(upper_arm_bones[i])
 		var mount_rest := to_mech.affine_inverse() * Transform3D(Basis.IDENTITY, top)
-		_mount_offsets.append([shoulder_mounts[i], bone,
-				_skeleton.get_bone_global_rest(bone).orthonormalized().affine_inverse() * mount_rest])
+		_mount_offsets.append([shoulder_mounts[i], bone, flat_rest.affine_inverse() * mount_rest])
 	var grip_track := _grip_rotations()
 	for i in 2:
 		var side := {}
@@ -115,6 +133,15 @@ func _setup() -> void:
 		var p_shoulder := _skeleton.get_bone_global_rest(side.upper).origin
 		var p_elbow := _skeleton.get_bone_global_rest(side.fore).origin
 		var p_grip := _skeleton.get_bone_global_rest(grip).origin
+		# Neutral (flat block) upper arm: its local rotation, and its elbow direction in the parent
+		# bone's space.
+		var armor := _skeleton.get_node_or_null(NodePath(shoulder_armor_meshes[i])) as MeshInstance3D \
+				if i < shoulder_armor_meshes.size() else null
+		var flat_rest := _flat_rest(side.upper, armor)
+		var parent_rest := _skeleton.get_bone_global_rest(_skeleton.get_bone_parent(side.upper)).orthonormalized()
+		side.flat_local = (parent_rest.basis.inverse() * flat_rest.basis).get_rotation_quaternion()
+		side.flat_dir = parent_rest.basis.inverse() * (flat_rest.basis \
+				* _skeleton.get_bone_global_rest(side.upper).basis.orthonormalized().inverse() * (p_elbow - p_shoulder)).normalized()
 		var ik := side.ik as TwoBoneIK
 		ik.upper_length = p_shoulder.distance_to(p_elbow)
 		ik.lower_length = p_elbow.distance_to(p_grip)
@@ -141,6 +168,31 @@ func _setup() -> void:
 				- _skeleton.get_bone_global_rest(_skeleton.find_bone("index_01" + suffix)).origin
 		side.hand_across = (_joint_basis(p_elbow, p_grip, across).inverse() * line).normalized()
 		_sides.append(side)
+
+
+## The upper arm bone's global rest turned about the shoulder so the armor block's top face is flat.
+func _flat_rest(bone: int, armor: MeshInstance3D) -> Transform3D:
+	var rest := _skeleton.get_bone_global_rest(bone).orthonormalized()
+	if armor == null:
+		return rest
+	var top := armor.transform.basis * _top_normal(armor.mesh)
+	return Transform3D(Basis(Quaternion(top.normalized(), Vector3.UP)) * rest.basis, rest.origin)
+
+
+## The most upward of the main face directions of a mesh (its top face normal).
+static func _top_normal(mesh: Mesh) -> Vector3:
+	var normals: PackedVector3Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_NORMAL]
+	var counts := {}
+	for n in normals:
+		var key := n.snapped(Vector3.ONE * 0.1)
+		counts[key] = counts.get(key, 0) + 1
+	var keys := counts.keys()
+	keys.sort_custom(func(a: Vector3, b: Vector3) -> bool: return counts[a] > counts[b])
+	var top := Vector3.DOWN
+	for key: Vector3 in keys.slice(0, 12):
+		if key.normalized().y > top.y:
+			top = key.normalized()
+	return top
 
 
 ## Finger bone rotations of the closed hand pose (first frame of grip_animation).
@@ -180,7 +232,7 @@ func _aim_twist() -> void:
 
 
 ## Turns the arm bones to the IK result with no extra twist: each bone swings (shortest turn) from
-## its rest direction to the joint node direction, so it keeps the model's own twist about its axis (the shoulder armor stays on the shoulder ball, the palm keeps its side). Then the joint nodes
+## its neutral direction (the upper arm: flat block) to the joint node direction, so it keeps the model's own twist about its axis (the shoulder armor stays on the shoulder ball, the palm keeps its side). Then the joint nodes
 ## take the bones' turn, so the weapons and the shield on them sit on the real arm.
 func _pose_arm(side: Dictionary) -> void:
 	var skin := _skeleton.global_transform
@@ -189,16 +241,20 @@ func _pose_arm(side: Dictionary) -> void:
 	var ik := side.ik as TwoBoneIK
 	var upper: int = side.upper
 	var fore: int = side.fore
-	# Start pose: the rest pose of the arm under the torso now (the same every frame; the animation does
+	# Start pose: the neutral pose of the arm under the torso now (the same every frame; the animation does
 	# not always key the arm bones, so their pose from the last frame would make the twist drift).
 	var parent_pose := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(upper)).orthonormalized()
-	var upper_pose := parent_pose * _skeleton.get_bone_rest(upper)
+	var upper_pose := parent_pose * Transform3D(Basis(side.flat_local as Quaternion), _skeleton.get_bone_rest(upper).origin)
 	var fore_pose := upper_pose * _skeleton.get_bone_rest(fore)
 	var grip_point := (fore_pose * _skeleton.get_bone_global_rest(fore).affine_inverse() \
 			* _skeleton.get_bone_global_rest(side.grip)).origin
 	# Upper arm: animated shoulder-to-elbow direction to the IK direction.
 	var ik_upper := (to_skeleton * (ik.mid_joint.global_position - shoulder.global_position)).normalized()
-	var upper_swing := Basis(Quaternion((fore_pose.origin - upper_pose.origin).normalized(), ik_upper))
+	# The flat block first turns about the up axis toward the elbow (top stays flat), then swings.
+	var neutral := (fore_pose.origin - upper_pose.origin).normalized()
+	var up := (to_skeleton * torso.global_basis.y).normalized()
+	var yaw := Basis(up, _block_yaw(ik_upper, neutral, up))
+	var upper_swing := Basis(Quaternion((yaw * neutral).normalized(), ik_upper)) * yaw
 	var upper_basis := upper_swing * upper_pose.basis
 	# Forearm: it moved with the upper arm; then elbow-to-palm direction to the IK direction.
 	var fore_basis := upper_swing * fore_pose.basis
@@ -228,11 +284,13 @@ func _solve_arms(active: Array[Dictionary]) -> void:
 	if right_ik != null:
 		_restore_weapon()
 		right_ik.solve()
+		_tuck_elbow(right_ik)
 		_limit_swing(right_ik, swing_limit(true))
 		_move_weapon_to_hand(right_ik)
 	if left_ik == null:
 		return
 	left_ik.solve()
+	_tuck_elbow(left_ik)
 	_limit_swing(left_ik, swing_limit(false))
 	var weapon := weapons.right_weapon if weapons != null else null
 	if right_ik == null or weapon == null or not weapon.is_ancestor_of(left_ik.target):
@@ -243,7 +301,71 @@ func _solve_arms(active: Array[Dictionary]) -> void:
 	weapon.global_position += gap
 	_weapon_moved = weapon.transform
 	right_ik.solve()
+	_tuck_elbow(right_ik)
 	_limit_swing(right_ik, swing_limit(true))
+
+
+## Turns the elbow around the shoulder-to-hand line (the hand stays on its target) to the place
+## nearest its neutral places: the elbow height of the flat block, and as little block turn as
+## possible (inside max_block_yaw_deg).
+func _tuck_elbow(ik: TwoBoneIK) -> void:
+	if not tuck_elbows:
+		return
+	var side: Dictionary = _sides[0] if ik == ik_left else _sides[1]
+	var shoulder := ik.root_joint.global_position
+	var parent_pose := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(side.upper)).orthonormalized()
+	var neutral := (_skeleton.global_basis.orthonormalized() * parent_pose.basis * (side.flat_dir as Vector3)).normalized()
+	var up := torso.global_basis.y.normalized()
+	var reach := ik.target.global_position - shoulder
+	if reach.length_squared() < 0.0001:
+		return
+	reach = reach.normalized()
+	var now := (ik.mid_joint.global_position - shoulder).normalized()
+	# Coarse search all around, then finer around the best.
+	var best := 0.0
+	var best_cost := _elbow_cost(now, neutral, up)
+	var step := deg_to_rad(5.0)
+	var center := 0.0
+	for pass_index in 3:
+		var found := best
+		var reach_steps: int = 36 if pass_index == 0 else 5
+		for i in range(-reach_steps, reach_steps + 1):
+			var angle: float = center + step * i
+			var cost := _elbow_cost(Basis(reach, angle) * now, neutral, up)
+			if cost < best_cost:
+				best_cost = cost
+				found = angle
+		best = found
+		center = best
+		step /= 5.0
+	if best != 0.0:
+		ik.root_joint.global_basis = (Basis(reach, best) * ik.root_joint.global_basis).orthonormalized()
+
+
+## How far an upper arm direction is from neutral: elbow height off the flat block's, and block turn.
+func _elbow_cost(dir: Vector3, neutral: Vector3, up: Vector3) -> float:
+	var height := absf(dir.angle_to(-up) - neutral.angle_to(-up))
+	var yaw := absf(_flat_yaw(dir, neutral, up))
+	var over := maxf(yaw - deg_to_rad(max_block_yaw_deg), 0.0)
+	return height * height + 0.1 * yaw * yaw + 10.0 * over * over
+
+
+## Signed turn about up from the neutral elbow direction to dir (0 when dir is near straight up or down).
+static func _flat_yaw(dir: Vector3, neutral: Vector3, up: Vector3) -> float:
+	var flat := dir - up * dir.dot(up)
+	var flat_neutral := neutral - up * neutral.dot(up)
+	if flat.length_squared() < 0.0025 or flat_neutral.length_squared() < 0.0025:
+		return 0.0
+	return flat_neutral.signed_angle_to(flat, up)
+
+
+## The block turn about up for an upper arm direction: the flat yaw (clamped), fading out as the elbow
+## height moves away from the neutral one.
+func _block_yaw(dir: Vector3, neutral: Vector3, up: Vector3) -> float:
+	var height := absf(dir.angle_to(-up) - neutral.angle_to(-up))
+	var weight := clampf(1.0 - height / deg_to_rad(block_yaw_fade_deg), 0.0, 1.0)
+	var limit := deg_to_rad(max_block_yaw_deg)
+	return clampf(_flat_yaw(dir, neutral, up), -limit, limit) * weight
 
 
 ## Where an arm's hand (palm socket) is now.

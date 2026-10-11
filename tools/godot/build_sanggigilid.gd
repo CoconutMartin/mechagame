@@ -23,9 +23,13 @@ const KEEP_ANIMATION := ["WeaponPose", "WeaponRecoil", "ArmIKRight", "ArmIKLeft"
 ## Hand and stock markers of the part-built torso, copied onto the weapon frame.
 const TORSO_MARKERS := ["LeftHand", "LeftHandRest", "LeftHandRaised", "AimAnchor"]
 ## Free left hand place (torso space, shoulders 2.465 m above its origin, left shoulder at x -1.35):
-## a relaxed hang beside the hip, elbow a little bent, close to the body (the shoulder armor stays
-## on the shoulder ball).
-const FREE_LEFT_HAND := Vector3(-1.75, -1.3, -0.45)
+## neutral arm (user rule 2026-10-11): shoulder block flat, the elbow under its outer edge (about
+## (-2.12, 1.12, -0.05)), the forearm hangs down (2.71 m to the palm), a little forward.
+const FREE_LEFT_HAND := Vector3(-2.12, -1.55, -0.5)
+## Shield hand at rest: the same hang, so the shield hangs upright at the side.
+const SHIELD_HAND_REST := Vector3(-2.12, -1.55, -0.5)
+## Shield elbow directions (ShieldPose): at rest out and down (the rig tucks the elbow anyway).
+const SHIELD_POLE_REST := Vector3(-1.0, -0.6, 0.0)
 ## Weapons the mech starts with (WeaponMount): the gunner test loadout (key 1).
 const START_WEAPONS := "res://data/loadouts/sanggigilid_gunner.tres"
 ## Bone used for the camera size (MechCameraRig looks for a ShoulderL node).
@@ -232,6 +236,9 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	shield_pose.hand_target = torso.get_node("LeftHand")
 	shield_pose.rest = torso.get_node("LeftHandRest")
 	shield_pose.raised = torso.get_node("LeftHandRaised")
+	(torso.get_node("LeftHandRest") as Node3D).position = SHIELD_HAND_REST
+	(torso.get_node("LeftHand") as Node3D).position = SHIELD_HAND_REST
+	shield_pose.pole_rest = SHIELD_POLE_REST
 	# The skeleton turns the torso itself (SkeletalHipTurn); TorsoPose only takes the weapon values.
 	var torso_pose := weapon_animation.get_node("TorsoPose") as TorsoPose
 	torso_pose.torso = null
