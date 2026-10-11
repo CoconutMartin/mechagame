@@ -524,6 +524,14 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
   - Test (headless, 60 fps): back 80%, strafe 90%, back-right 80% with the hips at 45°; flat-foot slide median 0.000; mouse turn moves the camera only, ring drag 1.7° that swings back and settles in 1 s; recoil climbs the camera 1.9°; arm and side torso debris; one leg 3.1 m/s; death lean 82°.
 - Next phases: run start / stop and the Akira slide on the game's boost exit and skid, footstep markers to camera shake, sound and dust, jump / air / kneel / dodge poses, weapons in the hands (grip bones) with an aim layer, damage and part breaking.
 
+## Beam Rifle model (user design, Blender only, not in the game yet)
+
+- Picture: `models/guides/beam_rifle_ref.png` (side, front and 3/4 views). Script: `tools/blender/beam_rifle_build.py` (run `blender -b --python tools/blender/beam_rifle_build.py`; it starts from an empty file, so hand edits are lost). Output: `models/beam_rifle/beam_rifle.blend` and `beam_rifle.glb`.
+- 6 m long, two-hand. Traced from the side view (1 pixel = 4.85 mm). User choices (2026-10-11): top view guessed from the 3/4 view, the 3/4 view scope (twin lenses), lower rail is the mirror of the upper rail, simple stock back, no dark blocks under the barrel.
+- Blender +Y = forward (Godot -Z). Origin: back face of the butt pad, on the bore axis. About 3,500 triangles, 44 named pieces, 5 materials (`beam_rifle_white`, `_dark`, `_orange` and `_cyan` glow, `_glass`).
+- Empties for the weapon scene: `GripRight` (pistol grip), `GripLeft`, `GripLeftRest`, `GripLeftAim` (all under the lower rail, 2.5 m behind the muzzle, neutral hold), `Muzzle`.
+- The name `beam_rifle.tscn` is in use (Granpa Gundam rifle). The game scene for this model needs another name, or the old scene must be renamed.
+
 ## Archetypes (preset loadouts; player can mix any parts)
 
 - Melee: light, fast, blade arms, strong boost
