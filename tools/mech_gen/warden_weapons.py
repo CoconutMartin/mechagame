@@ -170,9 +170,13 @@ if __name__ == "__main__":
         "rest_transform": warden.RIFLE_REST, "aim_anchor": v3(anchor),
         "right_pole_rest": v3(warden.ONE_HAND["right_pole_rest"]), "right_pole_aim": v3(warden.ONE_HAND["right_pole_aim"])},
         "res://scenes/weapons/heavy_rifle.tscn")
-    # Beam sniper: two hands. Rest = low ready across the body. Aim = stock at the chest, zoom.
-    stock_rest = TT(*torso_point((1.6, 6.6, -1.4), K))
-    rest_rows = xf_aim((-0.5, -0.35, -1.0), (0.0, 1.0, 0.0), stock_rest)
+    # Two-hand rest (beam sniper and Beam Rifle): low ready, right hand on the grip at TWO_HAND_HAND
+    # (torso space), muzzle left, down and forward, left hand under the barrel. The older sniper rest
+    # (stock at (1.6, 6.6, -1.4)) was out of the left arm's reach (108% Warden, 112% new mech).
+    two_hand_hand = (0.83, 0.5, -2.0)
+    rest_rows = xf_aim((-0.9, -0.35, -1.0), (0.0, 1.0, 0.0), two_hand_hand)
+    stock_rest = tuple(h - g for h, g in zip(two_hand_hand, apply_rows(rest_rows, SNIPER_GRIP_RIGHT)))
+    # Beam sniper: two hands. Aim = stock at the chest, zoom.
     sniper_anchor = TT(*torso_point((1.0, 8.0, -1.3), K))
     res("data/weapons/beam_sniper.tres", {"display_name": '"Beam Sniper"', "weight_t": 4.0, "hp": 300.0,
         "kind": 1, "two_handed": "true", "fire_rate": 0.4, "damage": 300.0, "spread_deg": 0.05, "range_m": 1500.0,
@@ -183,15 +187,12 @@ if __name__ == "__main__":
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
         "aim_twist_deg": 20.0, "aim_tilt_deg": 4.0, "zoom_fov": 52.6},
         "res://scenes/weapons/beam_sniper.tscn")
-    # Beam Rifle: two hands. Rest (neutral) = low ready, right hand on the pistol grip, left hand
-    # under the lower rail. The sniper rest is too far from the left shoulder for this grip (108%
-    # of the arm length), so the right hand is higher and closer and the muzzle points more to the
-    # left: left arm 92%, right arm 67% (Godot test). Aim = the sniper hold with the right hand at
-    # the same place (the grip is 0.48 m further from the butt than on the sniper).
+    # Beam Rifle: two hands. Rest (neutral) = the two-hand rest above, right hand on the pistol grip,
+    # left hand under the lower rail (Warden: left arm 92%, right 67%). Aim = the sniper hold with the
+    # right hand at the same place (the grip is 0.48 m further from the butt than on the sniper).
     beam_rifle_scene("scenes/weapons/beam_rifle.tscn")
-    br_hand = (0.83, 0.5, -2.0)
-    br_rows = xf_aim((-0.9, -0.35, -1.0), (0.0, 1.0, 0.0), br_hand)
-    br_rest = tuple(h - g for h, g in zip(br_hand, apply_rows(br_rows, BR_GRIP_RIGHT)))
+    br_rows = rest_rows
+    br_rest = tuple(h - g for h, g in zip(two_hand_hand, apply_rows(br_rows, BR_GRIP_RIGHT)))
     shift = tuple(a - b for a, b in zip(SNIPER_GRIP_RIGHT, BR_GRIP_RIGHT))
     br_anchor = tuple(a + b for a, b in zip(sniper_anchor, shift))
     res("data/weapons/beam_rifle.tres", {"display_name": '"Beam Rifle"', "weight_t": 3.5, "hp": 300.0,

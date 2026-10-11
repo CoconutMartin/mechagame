@@ -9,7 +9,7 @@ extends Node
 ## one-hand rifle, and the aim ring is unsteady (FreeAim.unsteady). The keys stay the same.
 ## Only one weapon works at a time: the first one whose button is pressed stays active until it is
 ## done (trigger released, missiles launched). The blade is the exception: it works any time.
-## MechAssembler calls mount() before the other nodes start.
+## MechAssembler (or SkeletalWeaponMount on a rigged mech) calls mount() before the other nodes start.
 
 @export var mech: Mech
 @export var input: MechInput
@@ -30,6 +30,8 @@ extends Node
 @export var left_hand: Node3D
 ## Optional. Made unsteady when a two-hand weapon is held in one hand.
 @export var free_aim: FreeAim
+## True: with no shield and no two-hand weapon the left arm keeps its animation (rigged mechs).
+@export var animate_free_left_arm: bool = false
 
 @export_group("One-hand hold")
 ## Right hand (GripRight) place in the aim pose, torso space. The one-hand rifle hip hold.
@@ -63,7 +65,8 @@ func _ready() -> void:
 	process_physics_priority = 1
 
 
-func mount(loadout: Loadout, assembler: MechAssembler) -> void:
+## attach: adds a socket-group scene to the frame and returns the added nodes (MechAssembler.attach).
+func mount(loadout: Loadout, attach: Callable) -> void:
 	right_data = loadout.weapon_right
 	left_data = loadout.weapon_left
 	hold_offset = loadout.arm_right.hold_offset if loadout.arm_right is ArmPart else Vector3.ZERO
@@ -72,11 +75,11 @@ func mount(loadout: Loadout, assembler: MechAssembler) -> void:
 		_wire_right(right_data)
 	var has_shield := left_data != null and left_data.kind == WeaponData.Kind.SHIELD
 	if has_shield:
-		shield_nodes = assembler.attach(left_data.scene)
+		shield_nodes.assign(attach.call(left_data.scene))
 		_wire_shield(left_data)
 	_set_shield_enabled(has_shield)
 	if not has_shield and not _two_handed():
-		arm_ik_left.target = left_hand
+		arm_ik_left.target = null if animate_free_left_arm else left_hand
 	if loadout.back_left != null and loadout.back_left.scene != null:
 		back_left = _add_weapon(loadout.back_left, "BackLeft")
 	if loadout.back_right != null and loadout.back_right.scene != null:
@@ -135,7 +138,7 @@ func lose_right_weapon() -> void:
 	right_weapon.set_trigger(false)
 	right_weapon.process_mode = Node.PROCESS_MODE_DISABLED
 	if two_handed_left_grip():
-		arm_ik_left.target = left_hand
+		arm_ik_left.target = null if animate_free_left_arm else left_hand
 	right_weapon = null
 	right_data = null
 	weapon_pose.aim_amount = 0.0

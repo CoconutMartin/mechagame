@@ -43,7 +43,7 @@ func _ready() -> void:
 		nodes.append_array(plates[key])
 		part_nodes[key] = nodes
 	if weapon_controller != null:
-		weapon_controller.mount(loadout, self)
+		weapon_controller.mount(loadout, attach)
 	var torso_pose := mech.find_child("TorsoPose", true, false) as TorsoPose
 	if torso_pose != null and loadout.legs is LegPart:
 		torso_pose.walk_lean_deg = (loadout.legs as LegPart).walk_lean_deg

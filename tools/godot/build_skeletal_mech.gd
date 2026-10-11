@@ -6,8 +6,9 @@ extends SceneTree
 ##
 ## It starts from the player mech scene and keeps its movement, input, aim and camera nodes; the
 ## part-built body (frame joints, parts, procedural animation, weapons, damage, falls) is removed and the
-## rigged model goes in its place, played by SkeletalLocomotion. Weapons, damage, falls and the run
-## start / stop / slide animations come in later phases.
+## rigged model goes in its place, played by SkeletalLocomotion. The weapon nodes stay (WeaponController,
+## WeaponPose, arm IK, recoil, shield): SkeletalArmRig gives them a weapon frame that follows the
+## skeleton, and WeaponMount mounts the loadout weapons (default: the gunner loadout's weapons).
 
 const SOURCE := "res://scenes/mech/player_mech.tscn"
 const MODEL := "res://models/new_mech/new_mech_exploded.glb"
@@ -16,7 +17,13 @@ const OUT_LOADOUT := "res://data/loadouts/new_mech.tres"
 ## Part HP and the bones of each part.
 const HIT_PARTS := "res://data/mechs/new_mech_hit_parts.tres"
 ## Player mech nodes that belong to the part-built body.
-const REMOVE := ["MechAssembler", "Visual", "Animation", "FootLeveler", "WeaponController", "PartBreaker", "PowerDownPose", "MechFall", "BodyGroundClamp", "FallPose", "MechDeath", "MechShield"]
+const REMOVE := ["MechAssembler", "Visual", "Animation", "FootLeveler", "PartBreaker", "PowerDownPose", "MechFall", "BodyGroundClamp", "FallPose", "MechDeath"]
+## Animation nodes the weapons use: they move to WeaponAnimation before Animation is removed.
+const KEEP_ANIMATION := ["WeaponPose", "WeaponRecoil", "ArmIKRight", "ArmIKLeft", "ShieldPose", "ShieldMount", "TorsoPose"]
+## Hand and stock markers of the part-built torso, copied onto the weapon frame.
+const TORSO_MARKERS := ["LeftHand", "LeftHandRest", "LeftHandRaised", "AimAnchor"]
+## Weapons the mech starts with (WeaponMount): the gunner test loadout (key 1).
+const START_WEAPONS := "res://data/loadouts/warden.tres"
 ## Bone used for the camera size (MechCameraRig looks for a ShoulderL node).
 const SHOULDER_BONE := "upper_arm_L"
 ## Where the aim ray starts on the body (chest, in front of the torso), m.
@@ -38,6 +45,17 @@ func _initialize() -> void:
 	root.walk_speed = WALK_SPEED
 	root.strafe_speed_multiplier = STRAFE_SPEED
 	root.back_speed_multiplier = BACK_SPEED
+	var weapon_animation := Node.new()
+	weapon_animation.name = "WeaponAnimation"
+	var markers := {}
+	for marker_name: String in TORSO_MARKERS:
+		markers[marker_name] = (root.get_node("Visual/Roll/Upper/Torso/" + marker_name) as Node3D).transform
+	for node_name: String in KEEP_ANIMATION:
+		var node := root.get_node("Animation/" + node_name)
+		node.get_parent().remove_child(node)
+		node.owner = null
+		weapon_animation.add_child(node)
+	root.add_child(weapon_animation)
 	var removed: Array[Node] = []
 	var tops: Array[Node] = []
 	for node_name: String in REMOVE:
@@ -106,6 +124,8 @@ func _initialize() -> void:
 	var shake := root.get_node("CameraRig/Pitch/SpringArm/Camera") as CameraShake
 	shake.animation_steps = locomotion
 
+	_add_weapon_rig(root, visual, model, weapon_animation, markers)
+
 	var health := root.get_node("MechHealth") as MechHealth
 	var hitboxes := SkeletalHitboxes.new()
 	hitboxes.name = "SkeletalHitboxes"
@@ -136,6 +156,9 @@ func _initialize() -> void:
 	mech_aim.aim_origin = aim
 	mech_aim.body_visual = visual
 
+	for node in [root] + root.find_children("*", "", true, false):
+		if node != root and node.owner == null:
+			node.owner = root
 	var packed := PackedScene.new()
 	var err := packed.pack(root)
 	if err == OK:
@@ -147,3 +170,64 @@ func _initialize() -> void:
 	print("BUILD loadout ", OUT_LOADOUT, " ", error_string(ResourceSaver.save(loadout, OUT_LOADOUT)))
 	root.free()
 	quit()
+
+
+## Weapon frame (Torso with ShoulderL/R, ElbowL/R and the hand markers), SkeletalArmRig, the kept
+## weapon nodes and WeaponMount.
+func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation: Node, markers: Dictionary) -> void:
+	var torso := Node3D.new()
+	torso.name = "Torso"
+	visual.add_child(torso)
+	var joints := {}
+	for side in ["L", "R"]:
+		var shoulder := Node3D.new()
+		shoulder.name = "Shoulder" + side
+		torso.add_child(shoulder)
+		var elbow := Node3D.new()
+		elbow.name = "Elbow" + side
+		shoulder.add_child(elbow)
+		joints[side] = [shoulder, elbow]
+	for marker_name: String in markers:
+		var marker := Marker3D.new()
+		marker.name = marker_name
+		marker.transform = markers[marker_name]
+		torso.add_child(marker)
+	var ik_left := weapon_animation.get_node("ArmIKLeft") as TwoBoneIK
+	var ik_right := weapon_animation.get_node("ArmIKRight") as TwoBoneIK
+	for pair in [[ik_left, "L"], [ik_right, "R"]]:
+		var ik := pair[0] as TwoBoneIK
+		ik.root_joint = joints[pair[1]][0]
+		ik.mid_joint = joints[pair[1]][1]
+		ik.target = null
+	var rig := SkeletalArmRig.new()
+	rig.name = "ArmRig"
+	visual.add_child(rig)
+	rig.model = model
+	rig.torso = torso
+	rig.shoulder_left = joints["L"][0]
+	rig.shoulder_right = joints["R"][0]
+	rig.ik_left = ik_left
+	rig.ik_right = ik_right
+	rig.weapon_pose = weapon_animation.get_node("WeaponPose") as WeaponPose
+	rig.torso_pose = weapon_animation.get_node("TorsoPose") as TorsoPose
+	var weapon_pose := weapon_animation.get_node("WeaponPose") as WeaponPose
+	weapon_pose.aim_anchor = torso.get_node("AimAnchor")
+	var shield_pose := weapon_animation.get_node("ShieldPose") as ShieldPose
+	shield_pose.hand_target = torso.get_node("LeftHand")
+	shield_pose.rest = torso.get_node("LeftHandRest")
+	shield_pose.raised = torso.get_node("LeftHandRaised")
+	# The skeleton turns the torso itself (SkeletalHipTurn); TorsoPose only takes the weapon values.
+	var torso_pose := weapon_animation.get_node("TorsoPose") as TorsoPose
+	torso_pose.torso = null
+	torso_pose.process_mode = Node.PROCESS_MODE_DISABLED
+	var controller := root.get_node("WeaponController") as WeaponController
+	controller.torso = torso
+	controller.left_hand = torso.get_node("LeftHand")
+	controller.animate_free_left_arm = true
+	var mount := SkeletalWeaponMount.new()
+	mount.name = "WeaponMount"
+	root.add_child(mount)
+	root.move_child(mount, 1)
+	mount.loadout = load(START_WEAPONS)
+	mount.frame = torso
+	mount.weapon_controller = controller

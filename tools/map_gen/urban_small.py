@@ -328,7 +328,11 @@ def lighting():
 
 
 def logic():
+    # Targets are part-built Warden mechs. The player is the new (rigged) mech: it is the mech of every
+    # loadout without its own mech_scene (the weapon test loadouts, keys 1 to 4); the part-built
+    # loadouts (keys 5 to 0) name player_mech.tscn themselves.
     mech = res("res://scenes/mech/player_mech.tscn", "PackedScene")
+    player = res("res://scenes/mech/skeletal_mech.tscn", "PackedScene")
     hud = res("res://scenes/ui/debug_hud.tscn", "PackedScene")
     loadouts = ["warden", "warden_sniper", "warden_melee", "warden_missile", "recon", "recon_accurate", "recon_sleek",
                 "recon_gen", "recon_sheet", "medium_mech", "new_mech"]
@@ -344,11 +348,11 @@ def logic():
          f'transform = {xform(6, 0, -95, 180)}\nscript = {spawner}\nmech_scene = {mech}\nloadout = {gunner}\npilot = 1\n'
          f'player_respawner = NodePath("../../PlayerRespawner")\n')
     # Player on the avenue, south of the intersection, facing north.
-    node(f'[node name="PlayerMech" parent="." instance={mech}]\ntransform = {xform(-5, 0, 36)}\n')
+    node(f'[node name="PlayerMech" parent="." instance={player}]\ntransform = {xform(-5, 0, 36)}\n')
     node(f'[node name="DebugHud" parent="." node_paths=PackedStringArray("mech", "mech_aim") instance={hud}]\n'
          f'mech = NodePath("../PlayerMech")\nmech_aim = NodePath("../PlayerMech/MechAim")\n')
     node(f'[node name="LoadoutSwitcher" type="Node" parent="." node_paths=PackedStringArray("mech", "hud")]\n'
-         f'script = {res("res://scripts/core/loadout_switcher.gd", "Script")}\nmech_scene = {mech}\n'
+         f'script = {res("res://scripts/core/loadout_switcher.gd", "Script")}\nmech_scene = {player}\n'
          f'loadouts = Array[Resource]([{refs}])\nmech = NodePath("../PlayerMech")\nhud = NodePath("../DebugHud")\n')
     node(f'[node name="PlayerRespawner" type="Node" parent="." node_paths=PackedStringArray("switcher")]\n'
          f'script = {res("res://scripts/core/player_respawner.gd", "Script")}\nswitcher = NodePath("../LoadoutSwitcher")\n')
