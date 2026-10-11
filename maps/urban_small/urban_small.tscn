@@ -43,13 +43,14 @@
 [ext_resource type="Resource" path="res://data/loadouts/sanggigilid_melee.tres" id="r41"]
 [ext_resource type="Resource" path="res://data/loadouts/sanggigilid_missile.tres" id="r42"]
 [ext_resource type="Resource" path="res://data/loadouts/sanggigilid_cannon.tres" id="r43"]
-[ext_resource type="Script" path="res://scripts/world/mech_spawner.gd" id="r44"]
-[ext_resource type="Script" path="res://scripts/core/mouse_capture.gd" id="r45"]
-[ext_resource type="Script" path="res://scripts/core/loadout_switcher.gd" id="r46"]
-[ext_resource type="Script" path="res://scripts/core/player_respawner.gd" id="r47"]
-[ext_resource type="Script" path="res://scripts/core/debug_damage.gd" id="r48"]
-[ext_resource type="Script" path="res://scripts/ui/garage.gd" id="r49"]
-[ext_resource type="Resource" path="res://data/garage_catalog.tres" id="r50"]
+[ext_resource type="Resource" path="res://data/loadouts/sanggigilid_smg.tres" id="r44"]
+[ext_resource type="Script" path="res://scripts/world/mech_spawner.gd" id="r45"]
+[ext_resource type="Script" path="res://scripts/core/mouse_capture.gd" id="r46"]
+[ext_resource type="Script" path="res://scripts/core/loadout_switcher.gd" id="r47"]
+[ext_resource type="Script" path="res://scripts/core/player_respawner.gd" id="r48"]
+[ext_resource type="Script" path="res://scripts/core/debug_damage.gd" id="r49"]
+[ext_resource type="Script" path="res://scripts/ui/garage.gd" id="r50"]
+[ext_resource type="Resource" path="res://data/garage_catalog.tres" id="r51"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_top_color = Color(0.32, 0.45, 0.62, 1)
@@ -1380,20 +1381,20 @@ distance_fade_enabled = true
 distance_fade_begin = 100.0
 
 [node name="MouseCapture" type="Node" parent="."]
-script = ExtResource("r45")
+script = ExtResource("r46")
 
 [node name="Targets" type="Node3D" parent="."]
 
 [node name="DummyMech" type="Node3D" parent="Targets" node_paths=PackedStringArray("player_respawner")]
 transform = Transform3D(-1, 0, -1.2246e-16, 0, 1, 0, 1.2246e-16, 0, -1, -5, 0, -30)
-script = ExtResource("r44")
+script = ExtResource("r45")
 mech_scene = ExtResource("r37")
 loadout = ExtResource("r39")
 player_respawner = NodePath("../../PlayerRespawner")
 
 [node name="Enemy1" type="Node3D" parent="Targets" node_paths=PackedStringArray("player_respawner")]
 transform = Transform3D(-1, 0, -1.2246e-16, 0, 1, 0, 1.2246e-16, 0, -1, 6, 0, -95)
-script = ExtResource("r44")
+script = ExtResource("r45")
 mech_scene = ExtResource("r37")
 loadout = ExtResource("r39")
 pilot = 1
@@ -1407,21 +1408,21 @@ mech = NodePath("../PlayerMech")
 mech_aim = NodePath("../PlayerMech/MechAim")
 
 [node name="LoadoutSwitcher" type="Node" parent="." node_paths=PackedStringArray("mech", "hud")]
-script = ExtResource("r46")
+script = ExtResource("r47")
 mech_scene = ExtResource("r37")
-loadouts = Array[Resource]([ExtResource("r39"), ExtResource("r40"), ExtResource("r41"), ExtResource("r42"), ExtResource("r43")])
+loadouts = Array[Resource]([ExtResource("r39"), ExtResource("r40"), ExtResource("r41"), ExtResource("r42"), ExtResource("r43"), ExtResource("r44")])
 mech = NodePath("../PlayerMech")
 hud = NodePath("../DebugHud")
 
 [node name="PlayerRespawner" type="Node" parent="." node_paths=PackedStringArray("switcher")]
-script = ExtResource("r47")
-switcher = NodePath("../LoadoutSwitcher")
-
-[node name="DebugDamage" type="Node" parent="." node_paths=PackedStringArray("switcher")]
 script = ExtResource("r48")
 switcher = NodePath("../LoadoutSwitcher")
 
-[node name="Garage" type="CanvasLayer" parent="." node_paths=PackedStringArray("switcher")]
+[node name="DebugDamage" type="Node" parent="." node_paths=PackedStringArray("switcher")]
 script = ExtResource("r49")
-catalog = ExtResource("r50")
+switcher = NodePath("../LoadoutSwitcher")
+
+[node name="Garage" type="CanvasLayer" parent="." node_paths=PackedStringArray("switcher")]
+script = ExtResource("r50")
+catalog = ExtResource("r51")
 switcher = NodePath("../LoadoutSwitcher")

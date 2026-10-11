@@ -14,6 +14,7 @@ LOADOUTS = [
                                                      "back_left": "missile_pod_l", "back_right": "missile_pod_r"}),
     ("sanggigilid_cannon", "Sanggigilid Cannon", {"weapon_right": "auto_cannon", "back_left": "auto_cannon_shoulder",
                                                    "back_right": "auto_cannon_shoulder"}),
+    ("sanggigilid_smg", "Sanggigilid SMG", {"weapon_right": "smg", "weapon_left": "warden_shield"}),
 ]
 
 

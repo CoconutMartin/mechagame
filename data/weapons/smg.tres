@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/smg.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "SMG"
+weight_t = 1.5
+hp = 250.0
+kind = 0
+slot = 0
+fire_rate = 10.0
+damage = 35.0
+projectile_speed = 380.0
+spread_deg = 1.2
+recoil_up_deg = 0.6
+recoil_side_deg = 0.5
+model_kick_back = 0.25
+model_kick_up_deg = 2.0
+shake_trauma = 0.02
+shake_kick = 0.03
+magazine = 45
+reload_time = 2.5
+rest_transform = Transform3D(1, 0, -0, -0, 1, -0, 0, 0, 1, 2.45, -0.68097, 0.24116)
+aim_anchor = Vector3(1.2000, 0.6000, -1.2000)
+right_pole_rest = Vector3(0.4000, -1.0000, 0.5000)
+right_pole_aim = Vector3(0.4000, -1.0000, 0.5000)
+scene = ExtResource("scene")
