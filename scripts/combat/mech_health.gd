@@ -3,9 +3,11 @@ extends Node
 ## HP of each mech part (Phase 4). Builds a hitbox for each part from the part models, takes the
 ## damage that hitboxes and blasts send, and tells PartBreaker and MechDeath what broke.
 ## Keys: "Head", "Torso C", "Torso L", "Torso R", "Arm L", "Arm R", "Groin", "Leg L", "Leg R",
-## "Booster" (backpack), "Shield", "Back L", "Back R".
+## "Booster" (backpack), "Shield", "Back L", "Back R", "Weapon R" (a right weapon that is not a gun:
+## the pile bunker).
 ## The core part is split by position into center, left and right torso; the legs part into
-## groin (pelvis) and the two legs. Hits on the held weapon count for the arm that holds it.
+## groin (pelvis) and the two legs. Hits on a held gun count for the arm that holds it; shields,
+## missile pods and the pile bunker have their own HP (WeaponData.hp).
 ## The mech is alive while the head, the center torso, the groin and at least one leg are intact.
 
 signal damaged(key: String, amount: float)
@@ -62,6 +64,8 @@ func _ready() -> void:
 			max_hp["Back L"] = weapons.back_left.data.hp
 		if weapons.back_right != null:
 			max_hp["Back R"] = weapons.back_right.data.hp
+		if weapons.right_weapon != null and weapons.right_weapon_key() != "Arm R":
+			max_hp[weapons.right_weapon_key()] = weapons.right_data.hp
 	hp = max_hp.duplicate()
 	_split_segments()
 	for key: String in segment_nodes:
@@ -156,22 +160,17 @@ func get_hitbox_rids() -> Array[RID]:
 
 ## Sorts the part nodes into the hit keys.
 func _split_segments() -> void:
-	if assembler == null:
-		return
-	for part_key: String in assembler.part_nodes:
-		for node: Node3D in assembler.part_nodes[part_key]:
-			_add_node(_segment_key(part_key, node), node)
+	if assembler != null:
+		for part_key: String in assembler.part_nodes:
+			for node: Node3D in assembler.part_nodes[part_key]:
+				_add_node(_segment_key(part_key, node), node)
 	if weapons == null:
 		return
 	if hp.has("Shield"):
 		for node in weapons.shield_nodes:
 			_add_node("Shield", node)
-	if weapons.right_weapon != null:
-		_add_node("Arm R", weapons.right_weapon)
-		# Weapon parts mounted on the forearm (the pile bunker).
-		for child in weapons.arm_ik_right.mid_joint.get_children():
-			if child is Node3D and _has_mesh(child) and not get_nodes("Arm R").has(child):
-				_add_node("Arm R", child)
+	for node in weapons.right_weapon_nodes():
+		_add_node(weapons.right_weapon_key(), node)
 	if weapons.back_left != null:
 		_add_node("Back L", weapons.back_left)
 	if weapons.back_right != null:

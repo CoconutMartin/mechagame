@@ -88,3 +88,9 @@ enum Slot { ARM, BACK }
 @export var shield_area_m2: float = 0.0
 ## Shield model scale.
 @export var shield_scale: float = 1.2
+
+
+## Guns (bullets or beams) have no HP of their own: hits on them count for the arm that holds them.
+## The other weapons (shield, missile pods, pile bunker) are parts with their own HP.
+func is_gun() -> bool:
+	return kind == Kind.GUN or kind == Kind.BEAM_RIFLE

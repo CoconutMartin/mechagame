@@ -151,6 +151,7 @@ func _initialize() -> void:
 	breaker.health = health
 	breaker.hitboxes = hitboxes
 	breaker.camera_shake = shake
+	breaker.weapons = root.get_node("WeaponController") as WeaponController
 
 	var mech_aim := root.get_node("MechAim") as MechAim
 	mech_aim.aim_origin = aim

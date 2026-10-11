@@ -143,6 +143,11 @@ func cancel() -> void:
 	_next(State.RECOVER)
 
 
+## The model ("Mount"; it moves onto the forearm).
+func get_model() -> Node3D:
+	return _mount
+
+
 ## Moves the model onto the right forearm (once, after WeaponController has wired the arm IK).
 func _attach_to_forearm() -> void:
 	var forearm := controller.arm_ik_right.mid_joint

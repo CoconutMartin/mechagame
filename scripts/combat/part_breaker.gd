@@ -5,6 +5,7 @@ extends Node
 ## Below half HP a part smokes. Destroyed parts:
 ##   Head: falls off (the mech dies).
 ##   Arm: falls off with its weapon (right) or its shield (left). That weapon is lost.
+##   Weapon R (the pile bunker; guns count for the arm): falls off, the arm stays.
 ##   Side torso: its armor is blown away, and its arm (and back unit on that side) falls off.
 ##   Leg: explodes, the armor is gone and the inner frame shows. One leg left: walks 60% slower
 ##        with short limping steps; boost speed stays and the jump jets still work; the mech falls
@@ -68,6 +69,10 @@ func _on_part_destroyed(key: String) -> void:
 			drop(nodes, -mech.global_basis.x)
 		"Back L", "Back R":
 			break_back(key, Vector3.UP - mech.global_basis.z)
+		"Weapon R":
+			var nodes := weapons.right_weapon_nodes()
+			weapons.lose_right_weapon()
+			drop(nodes, mech.global_basis.x - mech.global_basis.z)
 		"Booster":
 			_break_booster()
 
@@ -82,8 +87,9 @@ func break_arm(key: String, away: Vector3) -> void:
 			health.remove_part("Shield")
 		weapons.lose_left_arm()
 	else:
-		if weapons.right_weapon != null:
-			nodes.append(weapons.right_weapon)
+		nodes += weapons.right_weapon_nodes()
+		if health.is_part_alive("Weapon R"):
+			health.remove_part("Weapon R")
 		weapons.lose_right_weapon()
 	drop(nodes, away)
 	_socket_smoke("ShoulderL" if left else "ShoulderR")

@@ -154,6 +154,22 @@ func lose_right_weapon() -> void:
 	camera_ads.enabled = false
 
 
+## Hit key of the right weapon: a gun counts for the right arm, another weapon (the pile bunker)
+## is its own part.
+func right_weapon_key() -> String:
+	return "Arm R" if right_data == null or right_data.is_gun() else "Weapon R"
+
+
+## Model nodes of the right weapon (the pile bunker model sits on the forearm).
+func right_weapon_nodes() -> Array[Node3D]:
+	var nodes: Array[Node3D] = []
+	if right_weapon is PileBunkerWeapon:
+		nodes.append((right_weapon as PileBunkerWeapon).get_model())
+	elif right_weapon != null:
+		nodes.append(right_weapon)
+	return nodes
+
+
 ## True when the left hand holds the right weapon (two-hand weapon).
 func two_handed_left_grip() -> bool:
 	return right_data != null and right_data.two_handed
@@ -167,6 +183,8 @@ func lose_shield() -> void:
 	shield_nodes = []
 	_set_shield_enabled(false)
 	mech_shield.force_up = false
+	if animate_free_left_arm and not _two_handed():
+		arm_ik_left.target = null
 
 
 ## The left arm is gone: no shield, and the left arm IK stops.

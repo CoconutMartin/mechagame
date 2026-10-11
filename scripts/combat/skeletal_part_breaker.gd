@@ -3,8 +3,10 @@ extends Node
 ## What happens to a rigged mech's part when it is damaged or destroyed (the PartBreaker rules for a
 ## mech with a skeleton). Below half HP a part smokes. Destroyed parts:
 ##   Head: explodes and falls off (the mech dies).
-##   Arm: falls off.
-##   Side torso: explodes, its shoulder and its arm fall off.
+##   Arm: falls off with its weapon (right) or its shield (left). That weapon is lost.
+##   Side torso: explodes, its shoulder and its arm fall off with the arm's weapon, and the back unit
+##        on that side falls off.
+##   Shield, back unit, Weapon R (the pile bunker; guns count for the arm): falls off, the arm stays.
 ##   Leg: explodes and smokes. One leg left: walks 60% slower; boost speed stays.
 ##   Center torso, groin: explode (the mech dies).
 ## Falling parts are the skinned meshes frozen at their pose now, in rigid debris.
@@ -12,6 +14,8 @@ extends Node
 @export var mech: Mech
 @export var health: MechHealth
 @export var hitboxes: SkeletalHitboxes
+## The mech's weapons (a destroyed arm or side torso loses its weapons).
+@export var weapons: WeaponController
 @export var camera_shake: CameraShake
 ## Part HP fraction where smoke starts.
 @export_range(0.0, 1.0) var smoke_below: float = 0.5
@@ -46,7 +50,7 @@ func _on_part_destroyed(key: String) -> void:
 			_drop(key, Vector3.UP)
 		"Arm L", "Arm R":
 			PartBreaker.explode_in(_world(), center, 2.0)
-			_drop(key, _side_out(key))
+			_break_arm(key)
 		"Torso L", "Torso R":
 			PartBreaker.explode_in(_world(), center, 7.0)
 			_heavy_smoke(key)
@@ -54,7 +58,21 @@ func _on_part_destroyed(key: String) -> void:
 			var arm := "Arm L" if key == "Torso L" else "Arm R"
 			if health.is_part_alive(arm):
 				health.remove_part(arm)
-				_drop(arm, _side_out(arm))
+				_break_arm(arm)
+			_break_back("Back L" if key == "Torso L" else "Back R")
+		"Shield":
+			PartBreaker.explode_in(_world(), center, 2.0)
+			var nodes := weapons.shield_nodes.duplicate()
+			weapons.lose_shield()
+			_drop_nodes(nodes, -mech.global_basis.x)
+		"Back L", "Back R":
+			PartBreaker.explode_in(_world(), center, 3.0)
+			_break_back(key)
+		"Weapon R":
+			PartBreaker.explode_in(_world(), center, 2.0)
+			var nodes := weapons.right_weapon_nodes()
+			weapons.lose_right_weapon()
+			_drop_nodes(nodes, mech.global_basis.x - mech.global_basis.z)
 		"Leg L", "Leg R":
 			PartBreaker.explode_in(_world(), center, 3.0)
 			_heavy_smoke(key)
@@ -67,10 +85,56 @@ func _on_part_destroyed(key: String) -> void:
 			PartBreaker.explode_in(_world(), center, 7.0)
 
 
-## Middle of a part's meshes now (world).
+## An arm falls off with what it holds: the right arm with its weapon, the left arm with its shield
+## (a two-hand weapon stays in the right hand alone).
+func _break_arm(key: String) -> void:
+	_drop(key, _side_out(key))
+	if weapons == null:
+		return
+	var nodes: Array[Node3D] = []
+	if key == "Arm L":
+		nodes = weapons.shield_nodes.duplicate()
+		if health.is_part_alive("Shield"):
+			health.remove_part("Shield")
+		weapons.lose_left_arm()
+	else:
+		nodes = weapons.right_weapon_nodes()
+		if health.is_part_alive("Weapon R"):
+			health.remove_part("Weapon R")
+		weapons.lose_right_weapon()
+	_drop_nodes(nodes, _side_out(key))
+
+
+## A back unit falls off.
+func _break_back(key: String) -> void:
+	if weapons == null:
+		return
+	var pod := weapons.back_left if key == "Back L" else weapons.back_right
+	if pod == null:
+		return
+	if health.is_part_alive(key):
+		health.remove_part(key)
+	weapons.lose_back_weapon(pod)
+	_drop_nodes([pod] as Array[Node3D], Vector3.UP - mech.global_basis.z)
+
+
+## Weapon models (not skinned) fall off in debris.
+func _drop_nodes(nodes: Array[Node3D], away: Vector3) -> void:
+	var unique: Array[Node3D] = []
+	for node in nodes:
+		if is_instance_valid(node) and not unique.has(node):
+			unique.append(node)
+	if not unique.is_empty():
+		Debris.drop(unique, _world(), mech.velocity + (away.normalized() + Vector3.UP * 0.8) * drop_push)
+
+
+## Middle of a part's meshes now (world). A weapon part: the middle of its nodes.
 func get_center(key: String) -> Vector3:
 	var sum := Vector3.ZERO
 	var count := 0
+	for node in health.get_nodes(key):
+		sum += node.global_position
+		count += 1
 	for mesh: MeshInstance3D in hitboxes.part_meshes.get(key, []):
 		if not is_instance_valid(mesh):
 			continue
