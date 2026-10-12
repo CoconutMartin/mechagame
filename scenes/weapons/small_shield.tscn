@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://models/small_shield/small_shield.glb" id="model"]
+
+[node name="SmallShield" type="Node3D"]
+
+[node name="ElbowL" type="Node3D" parent="."]
+
+[node name="ShieldMountRest" type="Marker3D" parent="ElbowL"]
+transform = Transform3D(0, 0, 1, 0, -1, 0, 1, 0, 0, -0.85, -1.0, 0)
+
+[node name="Shield" type="Node3D" parent="ElbowL"]
+transform = Transform3D(0, 0, 1, 0, -1, 0, 1, 0, 0, -0.85, -1.0, 0)
+
+[node name="Model" parent="ElbowL/Shield" instance=ExtResource("model")]
+
+[node name="Torso" type="Node3D" parent="."]
+
+[node name="ShieldCover" type="Marker3D" parent="Torso"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 1.53, -2.0)

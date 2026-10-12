@@ -12,20 +12,23 @@ extends MechWeapon
 
 const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 
-## Weapon poses in torso space: position of the grip, then the direction the stake points.
-## Guard: fist in front of the right chest during the charge.
-@export var guard_position: Vector3 = Vector3(2.3, 1.8, -1.6)
+## Weapon poses in torso space: position of the grip, then the direction the stake points (Sanggigilid,
+## from the user's arm drawing 2026-10-12: the elbow-90 place, the arm straight forward; no part
+## enters the body in the whole punch cycle).
+## Guard: fist ahead of the elbow, forearm level, during the charge.
+@export var guard_position: Vector3 = Vector3(2.18, 1.16, -2.76)
 @export var guard_direction: Vector3 = Vector3(0.0, 0.0, -1.0)
-## Wind-up: fist pulled back at the right side.
-@export var windup_position: Vector3 = Vector3(2.5, 1.6, 0.6)
-@export var windup_direction: Vector3 = Vector3(-0.1, 0.0, -1.0)
+## Wind-up: fist pulled back a little, beside the body.
+@export var windup_position: Vector3 = Vector3(2.4, 1.0, -1.8)
+@export var windup_direction: Vector3 = Vector3(0.0, 0.0, -1.0)
 ## Punch: arm reaching forward.
-@export var punch_position: Vector3 = Vector3(1.2, 2.3, -4.7)
-@export var punch_direction: Vector3 = Vector3(-0.15, 0.0, -1.0)
+@export var punch_position: Vector3 = Vector3(2.1, 1.4, -4.0)
+@export var punch_direction: Vector3 = Vector3(-0.05, 0.0, -1.0)
 
 ## Model place on the right forearm (elbow space: -Y runs down the forearm to the fist, -X is the
-## outer side, +Z is the top of the forearm).
-@export var mount_position: Vector3 = Vector3(-1.0, -1.6, 0.0)
+## outer side, +Z is the top of the forearm). Far enough down the forearm and out that the clamps
+## clear the shoulder armor and the thigh.
+@export var mount_position: Vector3 = Vector3(-1.15, -2.4, 0.0)
 @export var mount_rotation_deg: Vector3 = Vector3(-90.0, 0.0, 180.0)
 
 @export_group("Torso")

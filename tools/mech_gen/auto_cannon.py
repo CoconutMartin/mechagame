@@ -10,6 +10,8 @@ Values: slow heavy shots (user choice 2026-10-11).
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shapes import xf
+import arm_poses
+from weapons import RIGHT_HAND_AIM, v3
 
 # Godot axes (Blender (x, y, z) is Godot (x, z, -y)): values from auto_cannon_build.py.
 PX = 6.0 / (1510 - 823)
@@ -102,15 +104,18 @@ FIRING = {"kind": 0, "fire_rate": 1.5, "damage": 220.0, "projectile_speed": 450.
 if __name__ == "__main__":
     baton("scenes/weapons/auto_cannon.tscn")
     shoulder("scenes/weapons/auto_cannon_shoulder.tscn")
-    # Baton: rest = the neutral right arm (user rule 2026-10-11): shoulder block flat, forearm hanging
-    # 35 deg forward (fist at (2.45, -1.04, -1.6)), so the cannon points down along it and its muzzle
-    # clears the shin. Aim = the heavy rifle's hip fire.
-    # ForearmGunWeapon puts the fist where the rifle's grip (RIFLE_GRIP (0, -0.33, -0.99)) would be.
+    # Baton: the arm drawing poses (user, 2026-10-12): elbow 45 deg at neutral, 90 deg when aiming, the
+    # cannon under the forearm. ForearmGunWeapon puts the fist at its rifle_grip offset from the weapon
+    # origin (FIST_OFFSET, its default), so the origin is the fist place less FIST_OFFSET (level).
+    FIST_OFFSET = (0.0, -0.33, -0.99)
+    rest_hand = arm_poses.hand(arm_poses.ELBOW_R, arm_poses.NEUTRAL_DEG, arm_poses.CANNON_OUT_DEG)
+    rest_origin = arm_poses.minus(rest_hand, FIST_OFFSET)
+    aim_anchor = arm_poses.minus(RIGHT_HAND_AIM, FIST_OFFSET)
     res("data/weapons/auto_cannon.tres", "res://scenes/weapons/auto_cannon.tscn", {
         "display_name": '"Auto Cannon"', "weight_t": 3.5, "hp": 300.0, **FIRING, "slot": 0,
         "model_kick_back": 0.8, "model_kick_up_deg": 4.0,
-        "rest_transform": "Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.45, -0.71, -0.61)",
-        "aim_anchor": "Vector3(2.38, 0.935, -0.85)",
+        "rest_transform": "Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, %.4f, %.4f, %.4f)" % rest_origin,
+        "aim_anchor": v3(aim_anchor),
         "right_pole_rest": "Vector3(0.4, -1, 0.5)", "right_pole_aim": "Vector3(0.4, -1, 0.5)"})
     res("data/weapons/auto_cannon_shoulder.tres", "res://scenes/weapons/auto_cannon_shoulder.tscn", {
         "display_name": '"Shoulder Cannon"', "weight_t": 3.5, "hp": 300.0, **FIRING, "slot": 1})

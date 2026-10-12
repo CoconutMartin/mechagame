@@ -334,7 +334,7 @@ def logic():
     player = mech
     hud = res("res://scenes/ui/debug_hud.tscn", "PackedScene")
     loadouts = ["sanggigilid_gunner", "sanggigilid_sniper", "sanggigilid_melee", "sanggigilid_missile",
-                "sanggigilid_cannon", "sanggigilid_smg"]
+                "sanggigilid_cannon", "sanggigilid_smg", "sanggigilid_small_shield"]
     refs = ", ".join(res(f"res://data/loadouts/{l}.tres") for l in loadouts)
     spawner = res("res://scripts/world/mech_spawner.gd", "Script")
     gunner = res("res://data/loadouts/sanggigilid_gunner.tres")

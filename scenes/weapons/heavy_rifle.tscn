@@ -36,7 +36,7 @@ size = Vector3(0.36, 0.57, 1.56)
 size = Vector3(0.396, 0.21, 1.32)
 
 [sub_resource type="BoxMesh" id="m5"]
-size = Vector3(0.192, 0.45, 0.228)
+size = Vector3(0.192, 0.96, 0.228)
 
 [sub_resource type="BoxMesh" id="m6"]
 size = Vector3(0.24, 0.6, 0.33)
@@ -119,7 +119,7 @@ mesh = SubResource("m4")
 surface_material_override/0 = ExtResource("dark")
 
 [node name="Grip" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.93969, 0.34202, 0, -0.34202, 0.93969, 0, -0.372, -0.99)
+transform = Transform3D(1, 0, 0, 0, 0.93969, 0.34202, 0, -0.34202, 0.93969, 0, -0.61156, -0.90264)
 mesh = SubResource("m5")
 surface_material_override/0 = ExtResource("dark")
 
@@ -184,7 +184,7 @@ mesh = SubResource("m17")
 surface_material_override/0 = ExtResource("dark")
 
 [node name="GripRight" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.33, -0.99)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.89347, -0.80004)
 
 [node name="GripLeft" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.27, -3)

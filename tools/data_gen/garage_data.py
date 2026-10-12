@@ -105,7 +105,7 @@ def main():
             for f, n, s, p in MODS]
     weapons = {
         "weapons_right": ["heavy_rifle", "beam_sniper", "beam_rifle", "pile_bunker", "auto_cannon", "smg"],
-        "weapons_left": ["warden_shield"],
+        "weapons_left": ["warden_shield", "small_shield"],
         "backs_left": ["missile_pod_l", "auto_cannon_shoulder"],
         "backs_right": ["missile_pod_r", "auto_cannon_shoulder"],
     }

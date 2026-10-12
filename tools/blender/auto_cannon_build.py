@@ -29,10 +29,11 @@ MUZZLE_PX, BUTT_PX, AXIS_PX, MID_W = 823, 1510, 254, 553
 SCALE = 6.0 / (BUTT_PX - MUZZLE_PX)
 ## Size change after tracing (user request 2026-10-11): width and height 50%, length 75% (4.5 m).
 SIZE = (0.5, 0.75, 0.5)
-## Baton version: grip handle from the butt (the new mech's elbow to palm socket, 2.71 m), the
+## Baton version: grip handle from the butt (the elbow to palm socket is 2.71 m; 3.2 m puts the butt
+## 0.5 m behind the elbow, as in the user's arm drawing 2026-10-12), the
 ## distance from the bore axis to the fist center (the cannon clears the forearm armor), the handle
 ## radius and how far the handle goes on through the fist.
-GRIP_FROM_BUTT = 2.71
+GRIP_FROM_BUTT = 3.2
 GRIP_DROP = 1.1
 HANDLE_RADIUS = 0.11
 HANDLE_PAST_FIST = 0.25

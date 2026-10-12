@@ -16,27 +16,28 @@
 [ext_resource type="Resource" path="res://data/weapons/auto_cannon.tres" id="r12"]
 [ext_resource type="Resource" path="res://data/weapons/smg.tres" id="r13"]
 [ext_resource type="Resource" path="res://data/weapons/warden_shield.tres" id="r14"]
-[ext_resource type="Resource" path="res://data/weapons/missile_pod_l.tres" id="r15"]
-[ext_resource type="Resource" path="res://data/weapons/auto_cannon_shoulder.tres" id="r16"]
-[ext_resource type="Resource" path="res://data/weapons/missile_pod_r.tres" id="r17"]
-[ext_resource type="Resource" path="res://data/plates/head_plate_light.tres" id="r18"]
-[ext_resource type="Resource" path="res://data/plates/head_plate_heavy.tres" id="r19"]
-[ext_resource type="Resource" path="res://data/plates/core_plate_light.tres" id="r20"]
-[ext_resource type="Resource" path="res://data/plates/core_plate_heavy.tres" id="r21"]
-[ext_resource type="Resource" path="res://data/plates/arm_l_plate_light.tres" id="r22"]
-[ext_resource type="Resource" path="res://data/plates/arm_l_plate_heavy.tres" id="r23"]
-[ext_resource type="Resource" path="res://data/plates/arm_r_plate_light.tres" id="r24"]
-[ext_resource type="Resource" path="res://data/plates/arm_r_plate_heavy.tres" id="r25"]
-[ext_resource type="Resource" path="res://data/plates/leg_plate_light.tres" id="r26"]
-[ext_resource type="Resource" path="res://data/plates/leg_plate_heavy.tres" id="r27"]
-[ext_resource type="Resource" path="res://data/mods/boost_tuning.tres" id="r28"]
-[ext_resource type="Resource" path="res://data/mods/lightweight_frame.tres" id="r29"]
-[ext_resource type="Resource" path="res://data/mods/reinforced_frame.tres" id="r30"]
-[ext_resource type="Resource" path="res://data/mods/capacitor_bank.tres" id="r31"]
-[ext_resource type="Resource" path="res://data/mods/overclocked_generator.tres" id="r32"]
-[ext_resource type="Resource" path="res://data/mods/servo_tuning.tres" id="r33"]
-[ext_resource type="Resource" path="res://data/mods/recoil_dampers.tres" id="r34"]
-[ext_resource type="Resource" path="res://data/mods/jump_jet_tuning.tres" id="r35"]
+[ext_resource type="Resource" path="res://data/weapons/small_shield.tres" id="r15"]
+[ext_resource type="Resource" path="res://data/weapons/missile_pod_l.tres" id="r16"]
+[ext_resource type="Resource" path="res://data/weapons/auto_cannon_shoulder.tres" id="r17"]
+[ext_resource type="Resource" path="res://data/weapons/missile_pod_r.tres" id="r18"]
+[ext_resource type="Resource" path="res://data/plates/head_plate_light.tres" id="r19"]
+[ext_resource type="Resource" path="res://data/plates/head_plate_heavy.tres" id="r20"]
+[ext_resource type="Resource" path="res://data/plates/core_plate_light.tres" id="r21"]
+[ext_resource type="Resource" path="res://data/plates/core_plate_heavy.tres" id="r22"]
+[ext_resource type="Resource" path="res://data/plates/arm_l_plate_light.tres" id="r23"]
+[ext_resource type="Resource" path="res://data/plates/arm_l_plate_heavy.tres" id="r24"]
+[ext_resource type="Resource" path="res://data/plates/arm_r_plate_light.tres" id="r25"]
+[ext_resource type="Resource" path="res://data/plates/arm_r_plate_heavy.tres" id="r26"]
+[ext_resource type="Resource" path="res://data/plates/leg_plate_light.tres" id="r27"]
+[ext_resource type="Resource" path="res://data/plates/leg_plate_heavy.tres" id="r28"]
+[ext_resource type="Resource" path="res://data/mods/boost_tuning.tres" id="r29"]
+[ext_resource type="Resource" path="res://data/mods/lightweight_frame.tres" id="r30"]
+[ext_resource type="Resource" path="res://data/mods/reinforced_frame.tres" id="r31"]
+[ext_resource type="Resource" path="res://data/mods/capacitor_bank.tres" id="r32"]
+[ext_resource type="Resource" path="res://data/mods/overclocked_generator.tres" id="r33"]
+[ext_resource type="Resource" path="res://data/mods/servo_tuning.tres" id="r34"]
+[ext_resource type="Resource" path="res://data/mods/recoil_dampers.tres" id="r35"]
+[ext_resource type="Resource" path="res://data/mods/jump_jet_tuning.tres" id="r36"]
 
 [resource]
 script = ExtResource("script")
@@ -49,8 +50,8 @@ boosters = Array[BoosterPart]([ExtResource("r5")])
 generators = Array[GeneratorPart]([ExtResource("r6")])
 fcs = Array[FcsPart]([ExtResource("r7")])
 weapons_right = Array[WeaponData]([ExtResource("r8"), ExtResource("r9"), ExtResource("r10"), ExtResource("r11"), ExtResource("r12"), ExtResource("r13")])
-weapons_left = Array[WeaponData]([ExtResource("r14")])
-backs_left = Array[WeaponData]([ExtResource("r15"), ExtResource("r16")])
-backs_right = Array[WeaponData]([ExtResource("r17"), ExtResource("r16")])
-plates = Array[PlateData]([ExtResource("r18"), ExtResource("r19"), ExtResource("r20"), ExtResource("r21"), ExtResource("r22"), ExtResource("r23"), ExtResource("r24"), ExtResource("r25"), ExtResource("r26"), ExtResource("r27")])
-mods = Array[ModData]([ExtResource("r28"), ExtResource("r29"), ExtResource("r30"), ExtResource("r31"), ExtResource("r32"), ExtResource("r33"), ExtResource("r34"), ExtResource("r35")])
+weapons_left = Array[WeaponData]([ExtResource("r14"), ExtResource("r15")])
+backs_left = Array[WeaponData]([ExtResource("r16"), ExtResource("r17")])
+backs_right = Array[WeaponData]([ExtResource("r18"), ExtResource("r17")])
+plates = Array[PlateData]([ExtResource("r19"), ExtResource("r20"), ExtResource("r21"), ExtResource("r22"), ExtResource("r23"), ExtResource("r24"), ExtResource("r25"), ExtResource("r26"), ExtResource("r27"), ExtResource("r28")])
+mods = Array[ModData]([ExtResource("r29"), ExtResource("r30"), ExtResource("r31"), ExtResource("r32"), ExtResource("r33"), ExtResource("r34"), ExtResource("r35"), ExtResource("r36")])

@@ -25,6 +25,10 @@ MUZZLE_PX, BUTT_PX, AXIS_PX = 67, 870, 138
 ## Length from muzzle to butt (m).
 LENGTH = 3.6
 SCALE = LENGTH / (BUTT_PX - MUZZLE_PX)
+## Pistol grip: extra length past the picture's (pixels; 156 = 0.7 m), and where the fist holds it
+## (pixels above its bottom end; 67 = 0.3 m).
+GRIP_EXTRA_PX = 156
+GRIP_HOLD_PX = 67
 
 MATERIALS = {
     "smg_olive": ((0.15, 0.165, 0.11), 0.65, 0.1),
@@ -164,8 +168,13 @@ def build():
     # Magazine (angled forward) with its base plate, pistol grip (angled back) with its base.
     parts.append(bar("Magazine", K, (398, 200), (353, 412), 74, 40))
     parts.append(bar("MagazinePlate", K, (354, 404), (350, 424), 86, 46))
-    parts.append(bar("PistolGrip", K, (555, 200), (607, 352), 72, 44))
-    parts.append(bar("PistolGripBase", K, (606, 344), (611, 362), 84, 48))
+    # Pistol grip longer than the picture by GRIP_EXTRA_PX (user choice 2026-10-12): the fist holds it
+    # near the bottom, so the SMG rides clear above the thick forearm armor.
+    gx, gy = 607 - 555, 352 - 200
+    glen = math.hypot(gx, gy)
+    end = (607 + gx / glen * GRIP_EXTRA_PX, 352 + gy / glen * GRIP_EXTRA_PX)
+    parts.append(bar("PistolGrip", K, (555, 200), end, 72, 44))
+    parts.append(bar("PistolGripBase", K, (end[0] - 1, end[1] - 8), (end[0] + 4, end[1] + 10), 84, 48))
     # Stock: tube, rear adapter, lower brace and the hollow triangle pad.
     parts.append(block("StockAdapter", K, 650, 676, 100, 160, 46, chamfer_px=4))
     parts.append(block("StockTube", K, 676, 780, 112, 142, 26, chamfer_px=3))
@@ -178,8 +187,9 @@ def build():
     parts.append(block("MarkReceiver", YL, 540, 585, 113, 122, 66, bevel=0.0))
     parts.append(block("MarkStock", YL, 845, 853, 210, 256, 48, bevel=0.0))
     muzzle = empty("Muzzle", (0.0, Y(MUZZLE_PX), 0.0))
-    # Fist center on the pistol grip: its middle line at row 285.
-    grip = empty("Grip", (0.0, Y(582), Z(285)))
+    # Fist center on the pistol grip: GRIP_HOLD_PX above its bottom end.
+    hold = (end[0] - gx / glen * GRIP_HOLD_PX, end[1] - gy / glen * GRIP_HOLD_PX)
+    grip = empty("Grip", (0.0, Y(hold[0]), Z(hold[1])))
     return parts + [muzzle, grip]
 
 

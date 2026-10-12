@@ -129,6 +129,10 @@ func _wire_shield(data: WeaponData) -> void:
 	shield_mount.cover = torso.find_child("ShieldCover", true, false)
 	shield_mount.shield_scale = data.shield_scale
 	mech_shield.area_m2 = data.shield_area_m2
+	# The arm holds the shield in one place (rest = raised).
+	if shield_pose != null and shield_pose.rest != null and shield_pose.raised != null:
+		shield_pose.rest.position = data.shield_hand
+		shield_pose.raised.position = data.shield_hand
 	arm_ik_left.target = left_hand
 
 

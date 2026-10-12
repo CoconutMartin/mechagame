@@ -1,25 +1,23 @@
 """SMG (user design 2026-10-11): the weapon scene and its data file. Run from the project root:
     python3 tools/mech_gen/smg.py
 The model comes from tools/blender/smg_build.py (models/smg/smg.glb, 3.6 m). One hand (right arm),
-held like the heavy rifle: neutral = arm hanging at the side, hip fire. Fast, light shots.
+held like the heavy rifle (the arm drawing poses). Fast, light shots.
 """
-import os, sys
+import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shapes import xf
-from weapons import one_hand_rest, res, v3, WAIST
+from weapons import res, v3, gun_on_forearm_rest, gun_aim_anchor
 
 # Godot axes (Blender (x, y, z) is Godot (x, z, -y)): the Grip and Muzzle empties of smg_build.py.
 PX = 3.6 / (870 - 67)
-GRIP = (0.0, (138 - 285) * PX, -(870 - 582) * PX)
+# The fist place on the long pistol grip (smg_build.py GRIP_EXTRA_PX 156, GRIP_HOLD_PX 67).
+_GX, _GY = 607 - 555, 352 - 200
+_GL = math.hypot(_GX, _GY)
+_HOLD = (607 + _GX / _GL * (156 - 67), 352 + _GY / _GL * (156 - 67))
+GRIP = (0.0, (138 - _HOLD[1]) * PX, -(870 - _HOLD[0]) * PX)
 MUZZLE = (0.0, 0.0, -3.6)
-# Hip fire: stock end (torso space) inside the forearm, so the tall stock clears it (found by the
-# clipping test at aim pitches -15, 0 and 20 degrees).
-HIP = (1.2, 0.6, -1.2)
-# Rest: muzzle direction with the arm hanging (mech space). Level: the receiver corner then touches
-# the forearm least (0.07 m); a pitch either way pushes the receiver or the stock into it.
-REST_MUZZLE = (0.0, 0.0, -1.0)
-# Rest: fist place (torso space): the heavy rifle's (weapons.py RIGHT_HAND_NEUTRAL), muzzle level.
-REST_HAND = (2.45, -1.34, -1.05)
+# Poses from the user's arm drawing (weapons.py): on top of the forearm, elbow 45 deg at neutral and
+# 90 deg when aiming.
 
 SCENE = '''[gd_scene format=3]
 
@@ -82,8 +80,6 @@ if __name__ == "__main__":
         "fire_rate": 10.0, "damage": 35.0, "projectile_speed": 380.0, "spread_deg": 1.2,
         "recoil_up_deg": 0.6, "recoil_side_deg": 0.5, "model_kick_back": 0.25, "model_kick_up_deg": 2.0,
         "shake_trauma": 0.02, "shake_kick": 0.03, "magazine": 45, "reload_time": 2.5,
-        "rest_transform": one_hand_rest(hand=(REST_HAND[0], REST_HAND[1] + WAIST, REST_HAND[2]), muzzle_dir=REST_MUZZLE,
-                                        up_hint=(0.0, 1.0, 0.0), grip=GRIP),
-        "aim_anchor": v3(HIP),
+        "rest_transform": gun_on_forearm_rest(GRIP), "aim_anchor": v3(gun_aim_anchor(GRIP)),
         "right_pole_rest": v3((0.4, -1.0, 0.5)), "right_pole_aim": v3((0.4, -1.0, 0.5))},
         "res://scenes/weapons/smg.tscn")

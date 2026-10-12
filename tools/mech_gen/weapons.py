@@ -5,6 +5,7 @@ Warden, 2026-10-11). Run from the project root: python3 tools/mech_gen/weapons.p
 import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shapes import Builder, xf, xf_aim, xf_rows, apply_rows, r
+import arm_poses
 
 # Frame values the weapon poses were made for (from the removed Warden generator, 2026-10-11): torso
 # pivot height, torso scale, hold places. The new mech's arm rig uses the same torso space.
@@ -39,11 +40,29 @@ def one_hand_rest(hand, muzzle_dir, up_hint, grip=(0, -0.33, -0.99), torso_scale
     return xf_rows(rows, origin)
 
 
-# Neutral right hand (user rule 2026-10-11, Sanggigilid): the shoulder block flat, the elbow under it
-# (torso space about (2.18, 1.16, -0.05)), the forearm hanging down, 22 deg forward and a little out, so
-# the rifle stock clears the forearm and the rifle clears the thigh. Mech space (torso y + WAIST).
-RIGHT_HAND_NEUTRAL = (2.45, -1.34 + WAIST, -1.05)
-RIFLE_REST = one_hand_rest(hand=RIGHT_HAND_NEUTRAL, muzzle_dir=(0.0, -0.15, -1.0), up_hint=(0.0, 1.0, 0.0))
+# Right hand poses from the user's arm drawing (tools/mech_gen/arm_poses.py, torso space): elbow 45 deg
+# at neutral, the gun on top of the forearm and along it; elbow 90 deg when aiming. Mech space for
+# one_hand_rest (torso y + WAIST).
+RIGHT_HAND_NEUTRAL_TORSO = arm_poses.hand(arm_poses.ELBOW_R, arm_poses.NEUTRAL_DEG)
+RIGHT_HAND_NEUTRAL = (RIGHT_HAND_NEUTRAL_TORSO[0], RIGHT_HAND_NEUTRAL_TORSO[1] + WAIST, RIGHT_HAND_NEUTRAL_TORSO[2])
+RIGHT_HAND_AIM = arm_poses.hand(arm_poses.ELBOW_R, arm_poses.AIM_DEG)
+
+
+def gun_on_forearm_rest(grip):
+    """One-hand gun at neutral: grip in the fist, muzzle along the forearm, gun top away from it."""
+    return one_hand_rest(hand=RIGHT_HAND_NEUTRAL, muzzle_dir=arm_poses.forearm_dir(arm_poses.NEUTRAL_DEG),
+                         up_hint=arm_poses.top_side(arm_poses.NEUTRAL_DEG), grip=grip)
+
+
+def gun_aim_anchor(grip):
+    """Aim anchor (the gun origin) that puts the grip in the fist of the level forearm (aiming ahead)."""
+    return arm_poses.minus(RIGHT_HAND_AIM, grip)
+
+
+# Heavy rifle fist place (GripRight of heavy_rifle.py: low on its long pistol grip, user choice
+# 2026-10-12, so the rifle rides clear above the forearm armor).
+RIFLE_GRIP = (0.0, -0.89347, -0.80004)
+RIFLE_REST = gun_on_forearm_rest(RIFLE_GRIP)
 MATS = {
     "rifle": "res://materials/warden/rifle.tres", "dark": "res://materials/warden/rifle_dark.tres",
     "armor": "res://materials/warden/armor.tres", "joint": "res://materials/warden/joint.tres",
@@ -187,10 +206,8 @@ if __name__ == "__main__":
         write_model(f"scenes/weapons/missile_pod_{side}.tscn", f"MissilePod{side.upper()}", "missile_pod_weapon", pod, place)
 
     common = {"slot": 0}
-    # Heavy rifle: one hand, rest = arm hanging at the side, muzzle forward and down; hip fire with the
-    # stock inside the forearm (torso space), so the forearm does not cross the stock.
-    RIFLE_HIP = (1.6, 0.7, -1.0)
-    anchor = TT(*torso_point(ONE_HAND["aim_anchor"], K))
+    # Heavy rifle: one hand (arm drawing poses above).
+    RIFLE_HIP = gun_aim_anchor(RIFLE_GRIP)
     res("data/weapons/heavy_rifle.tres", {"display_name": '"Heavy Rifle"', "weight_t": 2.0, "hp": 300.0,
         "kind": 0, "fire_rate": 0.5, "damage": 120.0, "projectile_speed": 400.0, "spread_deg": 0.4,
         "recoil_up_deg": 2.0, "recoil_side_deg": 1.0, "model_kick_back": 0.7, "model_kick_up_deg": 10.0,
@@ -239,16 +256,19 @@ if __name__ == "__main__":
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
         "aim_twist_deg": 20.0, "aim_tilt_deg": 4.0, "zoom_fov": 52.6},
         "res://scenes/weapons/beam_rifle.tscn")
-    # Pile bunker: one hand, arm hanging at the side.
-    # A little further out and forward than the rifle hand: the clamps wrap the forearm and clear
-    # the thigh.
-    bunker_rest = one_hand_rest(hand=(2.7, -1.17 + WAIST, -1.3), muzzle_dir=(0.0, -0.35, -1.0), up_hint=(0.0, 1.0, 0.0),
-                                grip=(0, 0, 0))
+    # Pile bunker: on the forearm like the auto cannon (user, 2026-10-12): the fist (weapon root) at the
+    # drawing's hand places, elbow 45 deg at neutral, 90 deg when aiming.
+    # The forearm turns out like the auto cannon's (CANNON_OUT_DEG), so the clamps clear the thigh.
+    bunker_hand = arm_poses.hand(arm_poses.ELBOW_R, arm_poses.NEUTRAL_DEG, arm_poses.CANNON_OUT_DEG)
+    bunker_rest = one_hand_rest(hand=(bunker_hand[0], bunker_hand[1] + WAIST, bunker_hand[2]),
+                                muzzle_dir=arm_poses.forearm_dir(arm_poses.NEUTRAL_DEG, arm_poses.CANNON_OUT_DEG),
+                                up_hint=arm_poses.top_side(arm_poses.NEUTRAL_DEG), grip=(0, 0, 0))
+    bunker_aim = RIGHT_HAND_AIM
     res("data/weapons/pile_bunker.tres", {"display_name": '"Pile Bunker"', "weight_t": 2.5, "hp": 300.0,
         "kind": 5, "fire_rate": 0.3333, "damage": 900.0, "magazine": 3, "reload_time": 5.0,
         "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,
         "shake_trauma": 0.45, "shake_kick": 0.6, "recoil_up_deg": 2.0, "recoil_side_deg": 1.0,
-        "rest_transform": bunker_rest, "aim_anchor": v3(anchor),
+        "rest_transform": bunker_rest, "aim_anchor": v3(bunker_aim),
         "right_pole_rest": v3((0.6, -1.0, 0.3)), "right_pole_aim": v3((0.6, -1.0, 0.4))},
         "res://scenes/weapons/pile_bunker.tscn")
     for side in ("l", "r"):
@@ -258,5 +278,7 @@ if __name__ == "__main__":
             "recoil_up_deg": 0.3, "recoil_side_deg": 0.3, "shake_trauma": 0.08, "shake_kick": 0.1},
             f"res://scenes/weapons/missile_pod_{side}.tscn")
     res("data/weapons/warden_shield.tres", {"display_name": '"Hex Shield"', "weight_t": 3.0, "hp": 1200.0,
-        "kind": 4, "shield_area_m2": round(ONE_HAND["shield_area"], 3), "shield_scale": SHIELD_SCALE},
+        "kind": 4, "shield_area_m2": round(ONE_HAND["shield_area"], 3), "shield_scale": SHIELD_SCALE,
+        # Large shield (user's arm drawing 2026-10-12): elbow 90 deg, forearm level.
+        "shield_hand": v3(arm_poses.hand(arm_poses.ELBOW_L, arm_poses.AIM_DEG))},
         "res://scenes/weapons/warden_shield.tscn")

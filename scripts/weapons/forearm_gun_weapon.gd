@@ -2,16 +2,16 @@ class_name ForearmGunWeapon
 extends GunWeapon
 ## A gun held like a baton under the right forearm (Auto Cannon, new mech). The root is the fist target
 ## for the arm IK (GripRight); the model ("Mount", with the muzzle) moves under the forearm: the butt
-## at the elbow, the grip handle in the palm, the muzzle past the hand. The arm takes the heavy rifle's
-## rest and hip-fire places. Held like a tonfa: the handle goes through the fist from the
-## pinky side (the hand's index-to-pinky line, from the arm rig), the body lies along the forearm.
+## behind the elbow, the grip handle in the palm, the muzzle past the hand. Held like a tonfa, straight
+## under the fist (the user's arm drawing, 2026-10-12): the handle goes up through the fist, the body
+## lies along the forearm.
 
 ## The heavy rifle's grip place in its model (GripRight): the fist goes there in the rifle poses.
 @export var rifle_grip: Vector3 = Vector3(0.0, -0.33, -0.99)
-## Turn of the cannon about the forearm (degrees, + = to the outer side), so it clears the thigh: at
-## rest (arm hanging) and in the aim pose (hip fire). It blends between them with the aim amount.
-@export var rest_roll_deg: float = 60.0
-@export var aim_roll_deg: float = 60.0
+## Turn of the cannon about the forearm (degrees, + = to the outer side), at rest and in the aim pose;
+## it blends between them with the aim amount. 0 = straight under the fist (user's arm drawing).
+@export var rest_roll_deg: float = 0.0
+@export var aim_roll_deg: float = 0.0
 
 @onready var _mount: Node3D = $Mount
 
@@ -40,15 +40,24 @@ func _attach_to_forearm() -> void:
 	if _mount.get_parent() != ik.mid_joint:
 		_mount.reparent(ik.mid_joint, false)
 	var grip := _mount.get_node("Model/Grip") as Node3D
-	# Model axes on the forearm: muzzle (-Z) along the forearm (-Y); the handle (model -Y, from the
-	# body to the fist) points from the pinky to the index finger.
-	var across := Vector3(0.0, 0.0, -1.0)
-	var rig := controller.mech.find_child("ArmRig", true, false)
-	if rig != null and rig.has_method(&"hand_across"):
-		across = rig.call(&"hand_across", true)
+	# Model axes on the forearm: muzzle (-Z) along the forearm (-Y); the model's +Y (from the fist to
+	# the body) points to the forearm's lower side in the side view (the user's arm drawing: the cannon
+	# straight under the fist, also in the front view): square to the forearm and to the torso's
+	# sideways axis, toward the torso's down.
+	var to_joint := ik.mid_joint.global_basis.orthonormalized().inverse()
+	var up := Vector3.DOWN.cross(to_joint * controller.torso.global_basis.x)
+	if up.dot(to_joint * -controller.torso.global_basis.y) < 0.0:
+		up = -up
+	if up.length_squared() < 0.01:
+		# Forearm straight up or down: the hand's index-to-pinky line instead.
+		var rig := controller.mech.find_child("ArmRig", true, false)
+		if rig == null or not rig.has_method(&"hand_across"):
+			return
+		var across: Vector3 = rig.call(&"hand_across", true)
 		if across.is_zero_approx():
 			return  # The rig is not set up yet (first frame).
-	var up := (across - Vector3.DOWN * across.dot(Vector3.DOWN)).normalized()
+		up = across - Vector3.DOWN * across.dot(Vector3.DOWN)
+	up = up.normalized()
 	var aim := controller.weapon_pose.aim_amount if controller.weapon_pose != null else 0.0
 	up = Basis(Vector3.UP, deg_to_rad(lerpf(rest_roll_deg, aim_roll_deg, smoothstep(0.0, 1.0, aim)))) * up
 	var back := Vector3.UP

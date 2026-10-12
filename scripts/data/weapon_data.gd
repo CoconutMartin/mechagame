@@ -88,4 +88,7 @@ enum Slot { ARM, BACK }
 @export var shield_area_m2: float = 0.0
 ## Shield model scale.
 @export var shield_scale: float = 1.2
+## Left hand place with this shield (weapon frame torso space). The arm stays there; the shield is in
+## its blocking place all the time (user's arm drawing, 2026-10-12).
+@export var shield_hand: Vector3 = Vector3(-2.1, -0.82, -1.95)
 

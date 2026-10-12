@@ -13,6 +13,9 @@ extends Node
 @export var cover: Node3D
 ## Size of the shield model.
 @export var shield_scale: float = 1.2
+## False: the shield stays on the forearm (rest_mount) when raised; the arm pose already covers
+## (Sanggigilid, user's arm drawing 2026-10-12).
+@export var move_to_cover: bool = true
 
 
 func _ready() -> void:
@@ -21,6 +24,6 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	var t := smoothstep(0.0, 1.0, shield.amount)
+	var t := smoothstep(0.0, 1.0, shield.amount) if move_to_cover else 0.0
 	var place := rest_mount.global_transform.interpolate_with(cover.global_transform, t)
 	shield_node.global_transform = Transform3D(place.basis.orthonormalized() * Basis.from_scale(Vector3.ONE * shield_scale), place.origin)

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/small_shield.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Small Shield"
+weight_t = 1.5
+hp = 700.0
+kind = 4
+shield_area_m2 = 7.48
+shield_scale = 1.0
+shield_hand = Vector3(-2.1000, -0.8163, -1.9463)
+scene = ExtResource("scene")
