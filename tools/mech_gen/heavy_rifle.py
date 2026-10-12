@@ -23,12 +23,9 @@ b.part("StockPad", P, "dark", "box", (0.44, 0.9, 0.2), (0, -0.05, 0.05))
 b.part("StockRail", P, "dark", "box", (0.2, 0.2, 1.2), (0, 0.35, -0.7))
 b.part("Receiver", P, "rifle", "box", (0.6, 0.95, 2.6), (0, 0.05, -2.4))
 b.part("ReceiverSide", P, "dark", "box", (0.66, 0.35, 2.2), (0, -0.05, -2.5))
-# Pistol grip: long (user choice 2026-10-12), so the fist holds it near the bottom and the rifle rides
-# clear above the thick forearm armor (the user's arm drawing). It hangs from the same top, tilted 20 deg.
-GRIP_TOP = (0.0, -0.2675, -1.778)
-GRIP_AXIS = (0.0, -0.9397, 0.342)
-GRIP_LENGTH = 1.6
-GRIP_HOLD = GRIP_LENGTH - 0.3
+# Pistol grip and the fist place on it: weapons.py RIFLE_GRIP_* (shared with the rest and aim holds).
+from weapons import RIFLE_GRIP_TOP as GRIP_TOP, RIFLE_GRIP_AXIS as GRIP_AXIS, \
+    RIFLE_GRIP_LENGTH as GRIP_LENGTH, RIFLE_GRIP_HOLD as GRIP_HOLD
 grip_center = tuple(t + a * GRIP_LENGTH / 2 for t, a in zip(GRIP_TOP, GRIP_AXIS))
 grip_hold = tuple(t + a * GRIP_HOLD for t, a in zip(GRIP_TOP, GRIP_AXIS))
 b.part("Grip", P, "dark", "box", (0.32, GRIP_LENGTH, 0.38), grip_center, (-20, 0, 0))

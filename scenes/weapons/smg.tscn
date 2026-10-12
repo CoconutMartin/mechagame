@@ -24,7 +24,7 @@ script = ExtResource("script")
 [node name="Model" parent="." instance=ExtResource("model")]
 
 [node name="GripRight" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, -1.33693, -1.22993)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, -0.70489, -1.44615)
 
 [node name="Muzzle" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.6)

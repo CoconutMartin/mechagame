@@ -48,21 +48,35 @@ RIGHT_HAND_NEUTRAL = (RIGHT_HAND_NEUTRAL_TORSO[0], RIGHT_HAND_NEUTRAL_TORSO[1] +
 RIGHT_HAND_AIM = arm_poses.hand(arm_poses.ELBOW_R, arm_poses.AIM_DEG)
 
 
-def gun_on_forearm_rest(grip):
-    """One-hand gun at neutral: grip in the fist, muzzle along the forearm, gun top away from it."""
-    return one_hand_rest(hand=RIGHT_HAND_NEUTRAL, muzzle_dir=arm_poses.forearm_dir(arm_poses.NEUTRAL_DEG),
+def gun_on_forearm_rest(grip, out_deg=0.0):
+    """One-hand gun at neutral: grip in the fist, muzzle along the forearm (side view), gun top away from
+    it. out_deg turns the forearm out to the side (the gun keeps pointing ahead), so a low stock passes
+    beside the forearm, not into it."""
+    hand = arm_poses.hand(arm_poses.ELBOW_R, arm_poses.NEUTRAL_DEG, out_deg)
+    return one_hand_rest(hand=(hand[0], hand[1] + WAIST, hand[2]),
+                         muzzle_dir=arm_poses.forearm_dir(arm_poses.NEUTRAL_DEG),
                          up_hint=arm_poses.top_side(arm_poses.NEUTRAL_DEG), grip=grip)
 
 
-def gun_aim_anchor(grip):
-    """Aim anchor (the gun origin) that puts the grip in the fist of the level forearm (aiming ahead)."""
-    return arm_poses.minus(RIGHT_HAND_AIM, grip)
+def gun_aim_anchor(grip, out_deg=0.0):
+    """Aim anchor (the gun origin) that puts the grip in the fist of the level forearm (aiming ahead),
+    the forearm turned out_deg out to the side like at rest."""
+    return arm_poses.minus(arm_poses.hand(arm_poses.ELBOW_R, arm_poses.AIM_DEG, out_deg), grip)
 
 
-# Heavy rifle fist place (GripRight of heavy_rifle.py: low on its long pistol grip, user choice
-# 2026-10-12, so the rifle rides clear above the forearm armor).
-RIFLE_GRIP = arm_poses.palm_socket((0.0, -0.89347, -0.80004))
-RIFLE_REST = gun_on_forearm_rest(RIFLE_GRIP)
+# Heavy rifle pistol grip (heavy_rifle.py builds it from these; model units, SCALE 0.6): it hangs from
+# RIFLE_GRIP_TOP along RIFLE_GRIP_AXIS (tilted 20 deg). The fist holds it RIFLE_GRIP_HOLD down from the
+# top: high, so the fist top meets the rifle body (user picture 2026-10-12).
+RIFLE_SCALE = 0.6
+RIFLE_GRIP_TOP = (0.0, -0.2675, -1.778)
+RIFLE_GRIP_AXIS = (0.0, -0.9397, 0.342)
+RIFLE_GRIP_HOLD = 0.75
+RIFLE_GRIP_LENGTH = 1.6
+## The forearm turns this much out to the side (rest and aim), so the stock passes beside it.
+RIFLE_OUT_DEG = 20.0
+RIFLE_GRIP = arm_poses.palm_socket(tuple(RIFLE_SCALE * (t + a * RIFLE_GRIP_HOLD)
+                                         for t, a in zip(RIFLE_GRIP_TOP, RIFLE_GRIP_AXIS)))
+RIFLE_REST = gun_on_forearm_rest(RIFLE_GRIP, RIFLE_OUT_DEG)
 MATS = {
     "rifle": "res://materials/warden/rifle.tres", "dark": "res://materials/warden/rifle_dark.tres",
     "armor": "res://materials/warden/armor.tres", "joint": "res://materials/warden/joint.tres",
@@ -207,7 +221,7 @@ if __name__ == "__main__":
 
     common = {"slot": 0}
     # Heavy rifle: one hand (arm drawing poses above).
-    RIFLE_HIP = gun_aim_anchor(RIFLE_GRIP)
+    RIFLE_HIP = gun_aim_anchor(RIFLE_GRIP, RIFLE_OUT_DEG)
     res("data/weapons/heavy_rifle.tres", {"display_name": '"Heavy Rifle"', "weight_t": 2.0, "hp": 300.0,
         "kind": 0, "fire_rate": 0.5, "damage": 120.0, "projectile_speed": 400.0, "spread_deg": 0.4,
         "recoil_up_deg": 2.0, "recoil_side_deg": 1.0, "model_kick_back": 0.7, "model_kick_up_deg": 10.0,

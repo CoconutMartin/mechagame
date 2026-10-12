@@ -25,10 +25,10 @@ MUZZLE_PX, BUTT_PX, AXIS_PX = 67, 870, 138
 ## Length from muzzle to butt (m).
 LENGTH = 3.6
 SCALE = LENGTH / (BUTT_PX - MUZZLE_PX)
-## Pistol grip: extra length past the picture's (pixels; 156 = 0.7 m), and where the fist holds it
-## (pixels above its bottom end; 67 = 0.3 m).
-GRIP_EXTRA_PX = 156
-GRIP_HOLD_PX = 67
+## Pistol grip: extra length past the picture's (pixels; 56 = 0.25 m), and where the fist holds it
+## (pixels above its bottom end; 116 = 0.52 m: high, the fist top under the receiver, user 2026-10-12).
+GRIP_EXTRA_PX = 56
+GRIP_HOLD_PX = 116
 
 MATERIALS = {
     "smg_olive": ((0.15, 0.165, 0.11), 0.65, 0.1),
@@ -168,8 +168,8 @@ def build():
     # Magazine (angled forward) with its base plate, pistol grip (angled back) with its base.
     parts.append(bar("Magazine", K, (398, 200), (353, 412), 74, 40))
     parts.append(bar("MagazinePlate", K, (354, 404), (350, 424), 86, 46))
-    # Pistol grip longer than the picture by GRIP_EXTRA_PX (user choice 2026-10-12): the fist holds it
-    # near the bottom, so the SMG rides clear above the thick forearm armor.
+    # Pistol grip a little longer than the picture (GRIP_EXTRA_PX); the fist holds it high, its top right
+    # under the receiver (user picture 2026-10-12), and the grip ends just under the fist.
     gx, gy = 607 - 555, 352 - 200
     glen = math.hypot(gx, gy)
     end = (607 + gx / glen * GRIP_EXTRA_PX, 352 + gy / glen * GRIP_EXTRA_PX)

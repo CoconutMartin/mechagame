@@ -11,10 +11,16 @@ import arm_poses
 
 # Godot axes (Blender (x, y, z) is Godot (x, z, -y)): the Grip and Muzzle empties of smg_build.py.
 PX = 3.6 / (870 - 67)
-# The fist place on the long pistol grip (smg_build.py GRIP_EXTRA_PX 156, GRIP_HOLD_PX 67).
+# The fist place on the pistol grip: keep these the same as smg_build.py (pistol grip extra length,
+# and the fist place above its bottom end, in picture pixels).
+GRIP_EXTRA_PX = 56
+GRIP_HOLD_PX = 116
+## The forearm turns this much out to the side (rest and aim; the SMG still points ahead), so the low
+## stock pad passes beside the forearm with the fist right under the receiver.
+OUT_DEG = 25.0
 _GX, _GY = 607 - 555, 352 - 200
 _GL = math.hypot(_GX, _GY)
-_HOLD = (607 + _GX / _GL * (156 - 67), 352 + _GY / _GL * (156 - 67))
+_HOLD = (607 + _GX / _GL * (GRIP_EXTRA_PX - GRIP_HOLD_PX), 352 + _GY / _GL * (GRIP_EXTRA_PX - GRIP_HOLD_PX))
 GRIP = (0.0, (138 - _HOLD[1]) * PX, -(870 - _HOLD[0]) * PX)
 # GripRight marker: the palm socket place, so the fist hollow is on the hold point.
 GRIP = arm_poses.palm_socket(GRIP)
@@ -83,6 +89,6 @@ if __name__ == "__main__":
         "fire_rate": 10.0, "damage": 35.0, "projectile_speed": 380.0, "spread_deg": 1.2,
         "recoil_up_deg": 0.6, "recoil_side_deg": 0.5, "model_kick_back": 0.25, "model_kick_up_deg": 2.0,
         "shake_trauma": 0.02, "shake_kick": 0.03, "magazine": 45, "reload_time": 2.5,
-        "rest_transform": gun_on_forearm_rest(GRIP), "aim_anchor": v3(gun_aim_anchor(GRIP)),
+        "rest_transform": gun_on_forearm_rest(GRIP, OUT_DEG), "aim_anchor": v3(gun_aim_anchor(GRIP, OUT_DEG)),
         "right_pole_rest": v3((0.4, -1.0, 0.5)), "right_pole_aim": v3((0.4, -1.0, 0.5))},
         "res://scenes/weapons/smg.tscn")
