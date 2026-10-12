@@ -15,7 +15,7 @@ const MISSILE := preload("res://scenes/weapons/missile.tscn")
 ## The mech stays entrenched this long after the last missile of a locked volley, in seconds.
 @export var brace_after: float = 0.6
 ## Layers that block the lock line of sight (1 = world).
-@export_flags_3d_physics var sight_mask: int = 1
+@export_flags_3d_physics var sight_mask: int = 17
 
 ## Locked targets, in lock order.
 var locks: Array[Node3D] = []

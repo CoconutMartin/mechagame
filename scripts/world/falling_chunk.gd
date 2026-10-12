@@ -15,7 +15,7 @@ var _broken: bool = false
 
 func _ready() -> void:
 	collision_layer = 0
-	collision_mask = 1
+	collision_mask = 1 | 16  # world and buildings
 	contact_monitor = true
 	max_contacts_reported = 1
 

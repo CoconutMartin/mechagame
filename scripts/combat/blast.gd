@@ -4,8 +4,8 @@ extends RefCounted
 ## full damage at the center, falling to 30% at the edge (by distance to the nearest shape).
 ## Each body is hit once.
 
-## Layers a blast hits: 1 world, 3 props, 4 hitboxes.
-const MASK := 1 | 4 | 8
+## Layers a blast hits: 1 world, 3 props, 4 hitboxes, 5 buildings.
+const MASK := 1 | 4 | 8 | 16
 
 
 ## mask: the layers it hits (default: world, props and hitboxes).

@@ -155,6 +155,7 @@ loadout_7={
 3d_physics/layer_2="mechs"
 3d_physics/layer_3="props"
 3d_physics/layer_4="hitboxes"
+3d_physics/layer_5="buildings"
 
 [physics]
 

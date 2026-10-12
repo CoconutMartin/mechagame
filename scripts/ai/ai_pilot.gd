@@ -154,7 +154,7 @@ func _find_target() -> Mech:
 
 func _has_line_of_sight() -> bool:
 	var from := mech_aim.aim_origin.global_position
-	var query := PhysicsRayQueryParameters3D.create(from, target.get_lock_point(), 1)
+	var query := PhysicsRayQueryParameters3D.create(from, target.get_lock_point(), 1 | 16)
 	return mech.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 
 

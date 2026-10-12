@@ -52,6 +52,8 @@ var _target: float = 0.0
 var _was_skidding: bool = false
 var _slide_direction: Vector3 = Vector3.FORWARD
 var _hold_left: float = 0.0
+## The lean node's own turn (the lean goes on top of it).
+var _lean_rest: Basis = Basis.IDENTITY
 
 
 ## After a fall (MechFall): no slide swing; the body turn eases back to straight from where it is.
@@ -66,6 +68,8 @@ func reset_after_fall() -> void:
 func _ready() -> void:
 	# After the Mech moves, before the torso and arm poses.
 	process_physics_priority = 2
+	if lean_node != null:
+		_lean_rest = lean_node.basis
 
 
 func _physics_process(delta: float) -> void:
@@ -112,7 +116,7 @@ func _update_lean(delta: float) -> void:
 	var local := body.global_basis.inverse() * -_slide_direction
 	local.y = 0.0
 	if local.length_squared() < 0.001 or absf(_lean.value) < 0.01:
-		lean_node.basis = Basis.IDENTITY
+		lean_node.basis = _lean_rest
 		return
 	var axis := Vector3.UP.cross(local.normalized()).normalized()
-	lean_node.basis = Basis(axis, deg_to_rad(_lean.value))
+	lean_node.basis = Basis(axis, deg_to_rad(_lean.value)) * _lean_rest

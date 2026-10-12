@@ -25,7 +25,7 @@ static func play(prop: UrbanProp, direction: Vector3, speed: float) -> void:
 static func _piece(world: Node, prop: UrbanProp, source: MeshInstance3D, center: Vector3, direction: Vector3, speed: float) -> void:
 	var body := RigidBody3D.new()
 	body.collision_layer = 0
-	body.collision_mask = 1
+	body.collision_mask = 1 | 16  # world and buildings
 	var size := prop.def.size * randf_range(0.2, 0.4)
 	size = size.clamp(Vector3.ONE * 0.08, Vector3.ONE * 1.2)
 	var look := MeshInstance3D.new()

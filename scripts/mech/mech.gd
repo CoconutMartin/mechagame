@@ -392,6 +392,7 @@ func _update_boost(delta: float) -> void:
 	if get_horizontal_speed() < footsteps.min_speed and is_on_floor():
 		_walk_steps = 0
 	var was_ground_boosting := is_boosting and _boost_on_ground
+	var was_running := is_running
 	var has_input := input.move_direction.length_squared() > 0.01
 	var wants_boost := false
 	if is_on_floor():
@@ -426,6 +427,10 @@ func _update_boost(delta: float) -> void:
 			_in_exit_leap = true
 			velocity.y = boost_exit_leap_velocity
 		boost_exit_step.emit()
+	elif was_running and not is_running and not is_boosting and is_on_floor() and not is_skidding \
+			and get_horizontal_speed() > walk_speed * 1.05 and not dodge.is_dodging:
+		# Run stop (user request 2026-10-12): the same skid and Akira slide as the boost stop.
+		start_skid()
 
 
 func _update_horizontal(delta: float) -> void:

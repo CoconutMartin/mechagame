@@ -70,7 +70,7 @@ size = Vector3(0.95, 5.9, 0.95)
 
 [node name="TrafficLight" type="RigidBody3D"]
 collision_layer = 4
-collision_mask = 13
+collision_mask = 29
 freeze = true
 script = ExtResource("prop")
 def = ExtResource("def")

@@ -129,6 +129,25 @@ func _initialize() -> void:
 	hips.model = model
 	locomotion.hip_turn = hips
 
+	# Akira slide (user report 2026-10-12: it was missing on Sanggigilid): at the end of the boost and
+	# run stop skids the whole body swings sideways to the slide and leans back against it.
+	var skid_turn := SkidBodyTurn.new()
+	skid_turn.name = "SkidBodyTurn"
+	root.add_child(skid_turn)
+	skid_turn.owner = root
+	skid_turn.mech = root
+	skid_turn.input = root.get_node("MechInput") as MechInput
+	skid_turn.body = visual
+	skid_turn.lean_node = model
+
+	# Walking through buildings: a little damage to the parts inside them, and to the walls.
+	var contact := MechBuildingContact.new()
+	contact.name = "MechBuildingContact"
+	root.add_child(contact)
+	contact.owner = root
+	contact.mech = root
+	contact.health = root.get_node("MechHealth") as MechHealth
+
 	var shake := root.get_node("CameraRig/Pitch/SpringArm/Camera") as CameraShake
 	shake.animation_steps = locomotion
 

@@ -19,7 +19,7 @@ const EXPLOSION := preload("res://scenes/effects/explosion.tscn")
 @export var terminal_distance: float = 45.0
 @export var terminal_turn_multiplier: float = 4.0
 ## Layers the missile hits: 1 world, 3 props, 4 hitboxes.
-@export_flags_3d_physics var collision_mask: int = 13
+@export_flags_3d_physics var collision_mask: int = 29
 ## Blast radius in meters (Blast: full damage at the center, 30% at the edge).
 @export var blast_radius: float = 8.0
 ## Road crater radius (meters) when it explodes on or just above the ground (Crater); 0 = none.

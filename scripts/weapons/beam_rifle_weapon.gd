@@ -11,7 +11,7 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 
 ## Layers the beam hits: 1 world, 3 props, 4 hitboxes.
-@export_flags_3d_physics var collision_mask: int = 13
+@export_flags_3d_physics var collision_mask: int = 29
 ## Seconds of holding LMB for a full charge.
 @export var charge_time: float = 3.0
 ## Damage and beam width of a shot with no charge, as a part of a full shot.

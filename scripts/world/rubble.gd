@@ -27,7 +27,7 @@ static func spawn(world: Node, point: Vector3, size: Vector3, tint: Color, veloc
 	var piece := Rubble.new()
 	piece._size = size
 	piece.collision_layer = 0
-	piece.collision_mask = 1
+	piece.collision_mask = 1 | 16  # world and buildings
 	piece.mass = maxf(size.x * size.y * size.z * 2.0, 0.5)
 	var mesh := MeshInstance3D.new()
 	var box := BoxMesh.new()

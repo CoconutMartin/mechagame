@@ -35,7 +35,7 @@ size = Vector3(1.1, 2.2, 1.1)
 
 [node name="PersonB" type="RigidBody3D"]
 collision_layer = 4
-collision_mask = 13
+collision_mask = 29
 freeze = true
 script = ExtResource("prop")
 def = ExtResource("def")

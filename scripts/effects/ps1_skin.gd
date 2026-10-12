@@ -61,6 +61,7 @@ static func make(original: Material, settings: PS1SkinSettings, joint: bool, ind
 	material.set_shader_parameter(&"use_albedo_texture", texture != null)
 	if texture != null:
 		material.set_shader_parameter(&"albedo_texture", texture)
+		material.set_shader_parameter(&"albedo_smooth", texture)
 	material.set_shader_parameter(&"brightness", lerpf(1.0, settings.metal_brightness, clampf(metallic, 0.0, 1.0)))
 	var detail: Texture2D = JOINT_TEXTURE if joint else ARMOR_TEXTURE
 	material.set_shader_parameter(&"grey_texture", detail)

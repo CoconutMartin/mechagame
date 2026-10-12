@@ -22,7 +22,7 @@ extends Node
 ## below the mech. 0.3 (revision 59) = the view about 12 degrees lower than 0.135, as the user drew.
 @export var screen_offset_up: float = 0.3
 ## Layers the aim ray hits: 1 world, 3 props, 4 hitboxes (mech parts and dummies). The own mech is skipped.
-@export_flags_3d_physics var collision_mask: int = 13
+@export_flags_3d_physics var collision_mask: int = 29
 ## How fast the ring moves to and from its neutral place (1 / seconds).
 @export var neutral_blend_speed: float = 4.0
 ## After an Akira slide the ring follows the torso again when the body turn is below this, in degrees.

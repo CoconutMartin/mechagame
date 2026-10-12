@@ -26,7 +26,7 @@ static func drop(nodes: Array[Node3D], world: Node, push: Vector3, smoke: bool =
 	var debris := Debris.new()
 	debris.name = "Debris"
 	debris.collision_layer = 0
-	debris.collision_mask = 1
+	debris.collision_mask = 1 | 16  # world and buildings
 	debris.mass = 5.0
 	world.add_child(debris)
 	debris.global_position = center

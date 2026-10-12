@@ -63,7 +63,7 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 ## The mech is pushed back this fast when the stake fires (m/s).
 @export var push_back_speed: float = 7.0
 ## Layers the contact check hits: 1 world, 3 props, 4 hitboxes.
-@export_flags_3d_physics var collision_mask: int = 13
+@export_flags_3d_physics var collision_mask: int = 29
 
 @export_group("Power")
 ## Hold RMB to power up the stake: seconds to full power, and energy use per second while holding.

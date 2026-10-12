@@ -37,7 +37,7 @@ size = Vector3(1.0, 1.2000000000000002, 1.0)
 
 [node name="Hydrant" type="RigidBody3D"]
 collision_layer = 4
-collision_mask = 13
+collision_mask = 29
 freeze = true
 script = ExtResource("prop")
 def = ExtResource("def")

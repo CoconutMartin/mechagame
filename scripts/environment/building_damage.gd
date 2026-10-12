@@ -1,7 +1,8 @@
 class_name BuildingDamage
 extends Node
 ## Damage for one urban building (made by BuildingGenerator in the game, not for edge blocks).
-## A chunk takes damage from hits at or above its material's damage_threshold. At 0 HP it breaks:
+## A chunk takes full damage from hits at or above its material's damage_threshold, and less from weaker
+## hits (x hit / threshold, so they add up). At 0 HP it breaks:
 ## its boxes leave the building's MultiMeshes, rubble and dust in the material's debris color fly out
 ## (glass: small shards, no dust), and its collision goes away. The building's occluder turns off at
 ## the first break (holes would hide what is behind them).
@@ -111,8 +112,10 @@ func damage(chunk: UrbanChunk, amount: float) -> void:
 	if not _links.has(chunk) or amount <= 0.0:
 		return
 	var threshold := chunk.material_def.damage_threshold if chunk.material_def != null else 0.0
+	# A hit below the material's threshold still counts, but less (user request 2026-10-12: weak
+	# guns wear walls down): x hit / threshold (an SMG shot of 35 on concrete (80) does 15).
 	if amount < threshold:
-		return
+		amount *= amount / threshold
 	chunk.hp -= amount
 	if chunk.hp <= 0.0:
 		break_chunk(chunk)
@@ -202,16 +205,18 @@ func _drop_unsupported() -> void:
 			_fall_queue.append(chunk)
 			added = true
 	if added:
+		_fall_queue = _fall_queue.filter(func(c: Variant) -> bool: return is_instance_valid(c))
 		_fall_queue.sort_custom(func(a: UrbanChunk, b: UrbanChunk) -> bool: return a.position.y < b.position.y)
 
 
 func _physics_process(_delta: float) -> void:
 	var count := 0
 	while not _fall_queue.is_empty() and count < fall_per_frame:
-		var chunk: UrbanChunk = _fall_queue.pop_front()
+		# Untyped: a queued chunk can be freed meanwhile (broken by a hit or a mech walking through).
+		var chunk: Variant = _fall_queue.pop_front()
 		_queued.erase(chunk)
 		if is_instance_valid(chunk) and _links.has(chunk):
-			_fall(chunk)
+			_fall(chunk as UrbanChunk)
 			count += 1
 
 

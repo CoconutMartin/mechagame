@@ -266,7 +266,9 @@ func _chunk(kind: UrbanChunk.Kind, floor_index: int, material: MaterialDef, runt
 	chunk.floor_index = floor_index
 	chunk.material_def = material
 	chunk.building = self
-	chunk.collision_layer = 1
+	# Layer 5 (buildings): weapons, props and debris hit it; mech bodies walk through (user request
+	# 2026-10-12; MechBuildingContact hurts the mech a little). Edge blocks stay on layer 1 (world).
+	chunk.collision_layer = 16
 	chunk.collision_mask = 0
 	return chunk
 

@@ -9,8 +9,8 @@ extends Node3D
 @export var mark_scene: PackedScene
 ## Seconds before the bullet disappears when it hits nothing.
 @export var lifetime: float = 2.0
-## Layers the bullet hits: 1 world, 3 props, 4 hitboxes.
-@export_flags_3d_physics var collision_mask: int = 13
+## Layers the bullet hits: 1 world, 3 props, 4 hitboxes, 5 buildings.
+@export_flags_3d_physics var collision_mask: int = 29
 ## Pull down in m/s² (small, so the path looks almost straight).
 @export var gravity: float = 4.0
 ## A hit on the ground with at least this damage leaves a road crater (cannon shells; Crater).

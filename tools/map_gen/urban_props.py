@@ -111,7 +111,7 @@ def scene(name, parts):
     # A physics body held still (freeze, static) until a mech kicks or pushes it (UrbanProp). It collides
     # with the world, the props and the mech hitboxes (a flying prop hurts mechs: DebrisHurt); the mask is
     # set here, not at run time (Jolt kept the old mask of a body already in the world).
-    lines += [f'[node name="{root}" type="RigidBody3D"]', f'collision_layer = {PROP_LAYER}', f'collision_mask = {1 | PROP_LAYER | HITBOX_LAYER}',
+    lines += [f'[node name="{root}" type="RigidBody3D"]', f'collision_layer = {PROP_LAYER}', f'collision_mask = {1 | PROP_LAYER | HITBOX_LAYER | 16}',
               'freeze = true',
               'script = ExtResource("prop")', 'def = ExtResource("def")', '',
               '[node name="Shape" type="CollisionShape3D" parent="."]',
