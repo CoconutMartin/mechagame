@@ -1,7 +1,7 @@
 class_name PS1SkinSettings
 extends Resource
 ## Tuning values of the PS1 skin (shaders/ps1_skin.gdshader), shared by the mech body and every weapon
-## and equipment on it (data/skins/ps1_skin.tres).
+## and equipment on it, and by the environment (PS1WorldLook) (data/skins/ps1_skin.tres).
 
 ## Chunky pixels across the whole model texture (smaller = bigger pixels).
 @export var uv_pixels: float = 256.0
@@ -16,3 +16,8 @@ extends Resource
 @export var color_steps: float = 32.0
 ## Screen grid of the vertex snap (the PS1 wobble; smaller = more wobble); (0, 0) = no snap.
 @export var snap_grid: Vector2 = Vector2(640.0, 480.0)
+
+@export_group("Environment")
+## Chunky pixels per meter on the environment's world-mapped textures (roads, buildings, rubble);
+## smaller = bigger pixels. UV-mapped prop textures use uv_pixels.
+@export var world_pixels_per_meter: float = 32.0

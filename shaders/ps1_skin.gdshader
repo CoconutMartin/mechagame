@@ -35,13 +35,14 @@ varying vec3 rest_normal;
 void vertex() {
 	rest_pos = (to_rest * vec4(VERTEX, 1.0)).xyz;
 	rest_normal = normalize(mat3(to_rest) * NORMAL);
-	if (snap_grid.x > 0.0) {
-		vec4 clip = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+	// POSITION is written on every path: a shader that writes it skips Godot's own transform.
+	vec4 clip = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+	if (snap_grid.x > 0.0 && clip.w > 0.0) {
 		vec2 ndc = clip.xy / clip.w;
 		ndc = floor(ndc * snap_grid * 0.5 + 0.5) / (snap_grid * 0.5);
 		clip.xy = ndc * clip.w;
-		POSITION = clip;
 	}
+	POSITION = clip;
 }
 
 // 4 x 4 ordered dither value (0 to 1) for a screen pixel.
