@@ -22,6 +22,8 @@ const EXPLOSION := preload("res://scenes/effects/explosion.tscn")
 @export_flags_3d_physics var collision_mask: int = 13
 ## Blast radius in meters (Blast: full damage at the center, 30% at the edge).
 @export var blast_radius: float = 8.0
+## Road crater radius (meters) when it explodes on or just above the ground (Crater); 0 = none.
+@export var crater_radius: float = 2.2
 
 var velocity: Vector3 = Vector3.ZERO
 var target: Node3D = null
@@ -86,4 +88,15 @@ func _explode(point: Vector3) -> void:
 	get_parent().add_child(effect)
 	effect.global_position = point
 	Blast.apply(get_world_3d(), point, blast_radius, damage, _exclude)
+	_crater(point)
 	queue_free()
+
+
+## A crater when the blast is on or near the ground (within 2 m above it).
+func _crater(point: Vector3) -> void:
+	if crater_radius <= 0.0:
+		return
+	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * 0.5, point + Vector3.DOWN * 2.0, 1)
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.is_empty() and hit.collider is GroundSlab:
+		Crater.spawn(get_parent(), hit.position, crater_radius, hit.collider)

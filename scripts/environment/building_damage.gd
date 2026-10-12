@@ -5,9 +5,11 @@ extends Node
 ## its boxes leave the building's MultiMeshes, rubble and dust in the material's debris color fly out
 ## (glass: small shards, no dust), and its collision goes away. The building's occluder turns off at
 ## the first break (holes would hide what is behind them).
-## Support (low-rise buildings): chunks connect where their boxes touch; chunks that touch the ground
-## carry the rest. Glass and doors carry nothing. A chunk with no path to the ground falls as a body
-## and breaks when it lands (the impact hurts mechs near it). Towers (facade_only) never collapse.
+## Support: chunks connect where their boxes touch; chunks that touch the ground carry the rest. Glass
+## and doors carry nothing. A chunk with no path to the ground falls as a body and breaks when it lands
+## (the impact hurts mechs near it). Falling chunks are let go a few per frame, lowest first.
+## Towers (facade_only, user answer 2026-10-12: towers collapse): when a floor loses collapse_fraction of
+## its walls and columns, everything above it falls.
 
 ## Hitbox layer (4): falling chunks hurt mechs, not other chunks.
 const HITBOX_MASK := 8
@@ -32,6 +34,12 @@ const NOT_CARRYING := [UrbanChunk.Kind.GLASS, UrbanChunk.Kind.DOOR]
 ## Damage to mech hitboxes where a falling chunk lands (full at the center), and the radius.
 @export var fall_damage: float = 250.0
 @export var fall_radius: float = 6.0
+## Towers: part of a floor's wall and column volume that, broken, brings everything above it down.
+@export_range(0.1, 1.0) var collapse_fraction: float = 0.6
+## Unsupported chunks let go per physics frame (lowest first), so a collapse does not stall a frame.
+@export var fall_per_frame: int = 15
+## Support grid cell size (meters): only chunks in the same cells are tested for touching.
+@export var grid_cell: float = 4.0
 
 static var _falling_now: int = 0
 
@@ -40,6 +48,13 @@ var generator: BuildingGenerator
 var _links := {}
 var _grounded := {}
 var _broken_any := false
+## Towers: wall and column volume per floor, and the part broken.
+var _floor_total := {}
+var _floor_lost := {}
+var _collapsed_from: int = -1
+## Chunks waiting to fall (lowest first).
+var _fall_queue: Array = []
+var _queued := {}
 
 
 ## Called by BuildingGenerator after it made the chunks.
@@ -53,24 +68,42 @@ func setup(building: BuildingGenerator) -> void:
 		for box: AABB in boxes[chunk]:
 			if box.position.y <= ground_tolerance:
 				_grounded[chunk] = true
-	# Towers never collapse: no support links (they are also the biggest buildings).
-	if building.def.facade_only:
-		return
+		if building.def.facade_only and _counts_for_floor(chunk):
+			_floor_total[chunk.floor_index] = _floor_total.get(chunk.floor_index, 0.0) + chunk.volume
+	# Links: chunks in the same grid cells are tested (whole-chunk bounds first, then the boxes).
 	var list := building.chunks
 	var bounds := {}
-	for chunk in list:
-		var all: Array = boxes[chunk]
+	var grid := {}
+	for i in list.size():
+		var all: Array = boxes[list[i]]
 		var merged: AABB = all[0] if not all.is_empty() else AABB()
 		for box: AABB in all:
 			merged = merged.merge(box)
-		bounds[chunk] = merged.grow(touch_gap)
-	for i in list.size():
-		var near: AABB = bounds[list[i]]
-		for j in range(i + 1, list.size()):
-			# Whole-chunk bounds first (cheap), then the boxes.
-			if near.intersects(bounds[list[j]]) and _touch(boxes[list[i]], boxes[list[j]]):
-				_links[list[i]].append(list[j])
-				_links[list[j]].append(list[i])
+		merged = merged.grow(touch_gap)
+		bounds[list[i]] = merged
+		var low := Vector3i((merged.position / grid_cell).floor())
+		var high := Vector3i((merged.end / grid_cell).floor())
+		for x in range(low.x, high.x + 1):
+			for y in range(low.y, high.y + 1):
+				for z in range(low.z, high.z + 1):
+					var key := Vector3i(x, y, z)
+					if not grid.has(key):
+						grid[key] = []
+					grid[key].append(i)
+	var tested := {}
+	for key: Vector3i in grid:
+		var cell: Array = grid[key]
+		for a in cell.size():
+			for b in range(a + 1, cell.size()):
+				var i: int = cell[a]
+				var j: int = cell[b]
+				var pair := mini(i, j) * 100000 + maxi(i, j)
+				if tested.has(pair):
+					continue
+				tested[pair] = true
+				if (bounds[list[i]] as AABB).intersects(bounds[list[j]]) and _touch(boxes[list[i]], boxes[list[j]]):
+					_links[list[i]].append(list[j])
+					_links[list[j]].append(list[i])
 
 
 ## A hit on a chunk (UrbanChunk.on_hit).
@@ -94,19 +127,22 @@ func break_chunk(chunk: UrbanChunk) -> void:
 		shatter(Transform3D(generator.global_basis, generator.global_transform * box.get_center()), box.size,
 				_debris_color(chunk), Vector3.ZERO, false, chunk.kind == UrbanChunk.Kind.GLASS)
 	chunk.queue_free()
-	if not generator.def.facade_only:
-		_drop_unsupported()
+	if generator.def.facade_only and _counts_for_floor(chunk):
+		_check_floor(chunk.floor_index)
+	_drop_unsupported()
 
 
 ## Breaks a box into rubble (and dust unless it is glass). hurts: the impact hurts mechs near it.
+## light: one rubble piece and dust only now and then (many chunks at once, a tower collapse).
 ## FallingChunk calls it when a falling chunk lands.
-func shatter(place: Transform3D, size: Vector3, color: Color, velocity: Vector3, hurts: bool, glass: bool = false) -> void:
+func shatter(place: Transform3D, size: Vector3, color: Color, velocity: Vector3, hurts: bool, glass: bool = false,
+		light: bool = false) -> void:
 	var world := _world()
 	color.a = 1.0
-	if not glass:
+	if not glass and (not light or randf() < 0.3):
 		DustBurst.create(world, place.origin, size)
 	var volume := size.x * size.y * size.z
-	var count := clampi(roundi(volume * rubble_per_m3), min_rubble, max_rubble)
+	var count := 1 if light else clampi(roundi(volume * rubble_per_m3), min_rubble, max_rubble)
 	var smallest := minf(size.x, minf(size.y, size.z))
 	var largest := maxf(size.x, maxf(size.y, size.z))
 	for i in count:
@@ -132,6 +168,8 @@ func _remove(chunk: UrbanChunk) -> void:
 			_links[other].erase(chunk)
 	_links.erase(chunk)
 	_grounded.erase(chunk)
+	if generator.def.facade_only and _counts_for_floor(chunk):
+		_floor_lost[chunk.floor_index] = _floor_lost.get(chunk.floor_index, 0.0) + chunk.volume
 	# Hide its boxes in the building look.
 	for piece: Vector2i in chunk.pieces:
 		var mm: MultiMesh = generator.multimeshes[piece.x]
@@ -157,9 +195,48 @@ func _drop_unsupported() -> void:
 			if not supported.has(other):
 				supported[other] = true
 				open.append(other)
+	var added := false
 	for chunk: UrbanChunk in _links.keys():
-		if not supported.has(chunk):
+		if not supported.has(chunk) and not _queued.has(chunk):
+			_queued[chunk] = true
+			_fall_queue.append(chunk)
+			added = true
+	if added:
+		_fall_queue.sort_custom(func(a: UrbanChunk, b: UrbanChunk) -> bool: return a.position.y < b.position.y)
+
+
+func _physics_process(_delta: float) -> void:
+	var count := 0
+	while not _fall_queue.is_empty() and count < fall_per_frame:
+		var chunk: UrbanChunk = _fall_queue.pop_front()
+		_queued.erase(chunk)
+		if is_instance_valid(chunk) and _links.has(chunk):
 			_fall(chunk)
+			count += 1
+
+
+## Towers: a floor that lost collapse_fraction of its walls and columns gives way; every chunk from that
+## floor up loses its support (they fall, lowest first).
+func _check_floor(floor_index: int) -> void:
+	var total: float = _floor_total.get(floor_index, 0.0)
+	if total <= 0.0 or (_collapsed_from >= 0 and floor_index >= _collapsed_from):
+		return
+	if _floor_lost.get(floor_index, 0.0) < total * collapse_fraction:
+		return
+	_collapsed_from = floor_index
+	for chunk: UrbanChunk in _links.keys():
+		if chunk.floor_index >= floor_index:
+			# Cut its links: nothing holds it now.
+			_grounded.erase(chunk)
+			for other: UrbanChunk in _links[chunk]:
+				if _links.has(other) and other.floor_index < floor_index:
+					_links[other].erase(chunk)
+			_links[chunk] = _links[chunk].filter(func(o: UrbanChunk) -> bool: return o.floor_index >= floor_index)
+
+
+## Tower walls and columns count for the floor collapse (not glass, doors, the core or the roof).
+static func _counts_for_floor(chunk: UrbanChunk) -> bool:
+	return chunk.kind == UrbanChunk.Kind.WALL or chunk.kind == UrbanChunk.Kind.COLUMN
 
 
 ## A chunk becomes a falling body made of its boxes (a little smaller, so it does not catch on its
@@ -171,7 +248,7 @@ func _fall(chunk: UrbanChunk) -> void:
 	if _falling_now >= max_falling or boxes.is_empty():
 		for box: AABB in boxes:
 			shatter(Transform3D(generator.global_basis, generator.global_transform * box.get_center()), box.size,
-					color, Vector3.ZERO, false, chunk.kind == UrbanChunk.Kind.GLASS)
+					color, Vector3.ZERO, false, chunk.kind == UrbanChunk.Kind.GLASS, true)
 		chunk.queue_free()
 		return
 	var bounds := boxes[0]

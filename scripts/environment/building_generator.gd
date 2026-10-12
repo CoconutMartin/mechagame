@@ -216,9 +216,14 @@ func _roof(runtime: bool) -> void:
 func _core(runtime: bool) -> void:
 	var top := def.get_height()
 	var inset := 2.4
-	var core := _chunk(UrbanChunk.Kind.CORE, 0, INTERIOR, runtime)
-	_piece(core, INTERIOR, Vector3(0.0, top * 0.5, 0.0), Vector3(def.footprint_x - 2.0 * inset, top, def.footprint_z - 2.0 * inset))
-	_finish_chunk(core)
+	# One core block per floor (so a collapsing tower falls floor by floor); the last one reaches the top.
+	for i in def.floor_count:
+		var bottom := def.floor_bottom(i)
+		var core_top := top if i == def.floor_count - 1 else def.floor_top(i)
+		var core := _chunk(UrbanChunk.Kind.CORE, i, INTERIOR, runtime)
+		_piece(core, INTERIOR, Vector3(0.0, (bottom + core_top) * 0.5, 0.0),
+				Vector3(def.footprint_x - 2.0 * inset, core_top - bottom, def.footprint_z - 2.0 * inset))
+		_finish_chunk(core)
 	var ring := def.wall_thickness + 1.0
 	var step := def.chunk_width * 2.0
 	for i in def.floor_count:
