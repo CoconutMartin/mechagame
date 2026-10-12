@@ -138,7 +138,9 @@ func _initialize() -> void:
 	skid_turn.mech = root
 	skid_turn.input = root.get_node("MechInput") as MechInput
 	skid_turn.body = visual
-	skid_turn.lean_node = model
+	# No lean_node: SkeletalHipTurn owns the model's turn and adds the lean (two writers made the body
+	# flick between turned and straight every frame).
+	hips.skid_turn = skid_turn
 
 	# Walking through buildings: a little damage to the parts inside them, and to the walls.
 	var contact := MechBuildingContact.new()

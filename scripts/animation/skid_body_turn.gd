@@ -11,7 +11,8 @@ extends Node
 @export var input: MechInput
 ## The whole mech visual (legs and torso).
 @export var body: Node3D
-## Optional. Tilts the whole body for the Akira slide lean. A child of body.
+## Optional. Tilts the whole body for the Akira slide lean. A child of body. Leave it empty when another
+## script owns that node's turn (Sanggigilid: SkeletalHipTurn reads lean_basis and applies it).
 @export var lean_node: Node3D
 ## Optional. Its Y turn (leg twist) counts when the legs turn sideways to the slide.
 @export var lower_body: Node3D
@@ -46,6 +47,8 @@ extends Node
 var akira_amount: float = 0.0
 ## Swing side: +1 = body turns left, -1 = right. DodgeSlidePose reads it.
 var akira_side: float = 1.0
+## The Akira lean as a turn in body space (identity when there is no lean).
+var lean_basis: Basis = Basis.IDENTITY
 
 var _turn := AimSpring.new(0.0)
 var _lean := AimSpring.new(0.0)
@@ -111,13 +114,11 @@ func _get_sideways_turn_deg() -> float:
 
 ## Leans the whole body back against the slide (top away from the motion).
 func _update_lean(delta: float) -> void:
-	if lean_node == null:
-		return
 	_lean.update(akira_lean_deg * akira_amount, akira_frequency, 0.6, 90.0, delta)
 	var local := body.global_basis.inverse() * -_slide_direction
 	local.y = 0.0
-	if local.length_squared() < 0.001 or absf(_lean.value) < 0.01:
-		lean_node.basis = _lean_rest
-		return
-	var axis := Vector3.UP.cross(local.normalized()).normalized()
-	lean_node.basis = Basis(axis, deg_to_rad(_lean.value)) * _lean_rest
+	lean_basis = Basis.IDENTITY
+	if local.length_squared() >= 0.001 and absf(_lean.value) >= 0.01:
+		lean_basis = Basis(Vector3.UP.cross(local.normalized()).normalized(), deg_to_rad(_lean.value))
+	if lean_node != null:
+		lean_node.basis = lean_basis * _lean_rest

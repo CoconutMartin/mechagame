@@ -9,6 +9,8 @@ extends SkeletonModifier3D
 @export var mech: Mech
 ## The node the hips turn (the model root).
 @export var model: Node3D
+## Optional. Its Akira slide lean goes on the model turn (the two must not both set the model).
+@export var skid_turn: SkidBodyTurn
 ## Model yaw when the hips face the mech front (the glTF model faces +Z: PI).
 @export var model_base_yaw: float = PI
 ## Bone that twists back to the aim (the bone above the hips).
@@ -65,7 +67,8 @@ func _process_modification_with_delta(delta: float) -> void:
 	if is_backward != was_backward:
 		_back_hold = back_step_hold_time
 	hip_yaw = wrapf(rotate_toward(hip_yaw, target, deg_to_rad(turn_speed_deg) * delta), -PI, PI)
-	model.rotation.y = model_base_yaw + hip_yaw
+	var lean := skid_turn.lean_basis if skid_turn != null else Basis.IDENTITY
+	model.basis = lean * Basis(Vector3.UP, model_base_yaw + hip_yaw)
 	var limit := deg_to_rad(max_twist_deg)
 	var wanted := wrapf(mech.get_torso_twist() - hip_yaw, -PI, PI)
 	# Near the back (about 180 degrees) the wrap can flip sides: keep the side the twist is on.
