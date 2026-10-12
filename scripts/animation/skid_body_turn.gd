@@ -36,7 +36,8 @@ extends Node
 ## Spring speed for the Akira swing (faster than the drift turn).
 @export var akira_frequency: float = 2.2
 ## The Akira pose stays this long after the slide ends (seconds), then the body turns back.
-@export var akira_hold_time: float = 0.4
+## 0.4 + 10 frames at 60 per second (user request 2026-10-12: a longer slide end).
+@export var akira_hold_time: float = 0.567
 ## How fast the body turns back after the hold (1 / seconds). 1.2 = 40% slower than 2.
 @export var akira_recover_speed: float = 1.2
 @export_group("")
