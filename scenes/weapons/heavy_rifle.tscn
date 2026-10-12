@@ -184,7 +184,7 @@ mesh = SubResource("m17")
 surface_material_override/0 = ExtResource("dark")
 
 [node name="GripRight" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.89347, -0.80004)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, -0.89347, -0.98004)
 
 [node name="GripLeft" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.27, -3)

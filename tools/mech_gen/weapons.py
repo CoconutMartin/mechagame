@@ -61,7 +61,7 @@ def gun_aim_anchor(grip):
 
 # Heavy rifle fist place (GripRight of heavy_rifle.py: low on its long pistol grip, user choice
 # 2026-10-12, so the rifle rides clear above the forearm armor).
-RIFLE_GRIP = (0.0, -0.89347, -0.80004)
+RIFLE_GRIP = arm_poses.palm_socket((0.0, -0.89347, -0.80004))
 RIFLE_REST = gun_on_forearm_rest(RIFLE_GRIP)
 MATS = {
     "rifle": "res://materials/warden/rifle.tres", "dark": "res://materials/warden/rifle_dark.tres",

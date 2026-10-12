@@ -7,6 +7,7 @@ import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shapes import xf
 from weapons import res, v3, gun_on_forearm_rest, gun_aim_anchor
+import arm_poses
 
 # Godot axes (Blender (x, y, z) is Godot (x, z, -y)): the Grip and Muzzle empties of smg_build.py.
 PX = 3.6 / (870 - 67)
@@ -15,6 +16,8 @@ _GX, _GY = 607 - 555, 352 - 200
 _GL = math.hypot(_GX, _GY)
 _HOLD = (607 + _GX / _GL * (156 - 67), 352 + _GY / _GL * (156 - 67))
 GRIP = (0.0, (138 - _HOLD[1]) * PX, -(870 - _HOLD[0]) * PX)
+# GripRight marker: the palm socket place, so the fist hollow is on the hold point.
+GRIP = arm_poses.palm_socket(GRIP)
 MUZZLE = (0.0, 0.0, -3.6)
 # Poses from the user's arm drawing (weapons.py): on top of the forearm, elbow 45 deg at neutral and
 # 90 deg when aiming.

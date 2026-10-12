@@ -3,6 +3,7 @@ The barrel is one straight cylinder on the bore line, so it points exactly along
 SCALE sets the size (revision 43: 0.6, for one-hand holding)."""
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shapes import Builder, xf
+import arm_poses
 SCALE = 0.6
 BORE_Y = 0.05
 b = Builder()
@@ -56,7 +57,8 @@ o = ['[gd_scene format=3]\n',
  '[node name="HeavyRifle" type="Node3D"]\nscript = ExtResource("weapon_script")\n']
 o += b.nodes
 def marker(n, pos): o.append(f'[node name="{n}" type="Marker3D" parent="."]\ntransform = {xf(tuple(v * SCALE for v in pos))}\n')
-marker("GripRight", grip_hold)
+# The marker is the palm socket place: the fist hollow on the hold point (arm_poses.palm_socket).
+o.append(f'[node name="GripRight" type="Marker3D" parent="."]\ntransform = {xf(arm_poses.palm_socket(tuple(v * SCALE for v in grip_hold)))}\n')
 marker("GripLeft", (0, -0.45, -5.0))
 marker("GripLeftRest", (0, -0.45, -4.6))
 marker("GripLeftAim", (0, -0.45, -4.2))

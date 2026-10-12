@@ -9,7 +9,7 @@
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_booster.tres" id="booster"]
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_generator.tres" id="generator"]
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_fcs.tres" id="fcs"]
-[ext_resource type="Resource" path="res://data/weapons/beam_sniper.tres" id="beam_sniper"]
+[ext_resource type="Resource" path="res://data/weapons/beam_rifle.tres" id="beam_rifle"]
 
 [resource]
 script = ExtResource("script")
@@ -22,4 +22,4 @@ legs = ExtResource("legs")
 booster = ExtResource("booster")
 generator = ExtResource("generator")
 fcs = ExtResource("fcs")
-weapon_right = ExtResource("beam_sniper")
+weapon_right = ExtResource("beam_rifle")

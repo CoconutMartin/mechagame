@@ -37,5 +37,18 @@ def hand(elbow, bend_deg, out_deg=0.0, side=1.0):
     return tuple(e + FOREARM * c for e, c in zip(elbow, d))
 
 
+## The hollow of the closed fist from the grip_R socket bone (its frame: +X out to the right, +Y along
+## the fist from the pinky to the index, +Z toward the wrist; measured from the curled finger bones). The
+## socket bone sits at the front of the fist (user picture 2026-10-12: the pistol grip showed in front of
+## the knuckles), so a gun's GripRight marker goes this much off its grip: the grip then sits in the palm.
+PALM_HOLLOW = (0.2, 0.0, 0.18)
+
+
+def palm_socket(grip):
+    """GripRight marker place (weapon space) for a pistol grip hold point at grip: the fist hollow on it.
+    The weapon axes match the socket bone's in the one-hand poses (gun along the forearm, top up)."""
+    return minus(grip, PALM_HOLLOW)
+
+
 def minus(a, b):
     return tuple(x - y for x, y in zip(a, b))

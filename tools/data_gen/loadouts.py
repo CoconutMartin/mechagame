@@ -8,7 +8,7 @@ PARTS = ["head", "core", "arm_left", "arm_right", "legs", "booster", "generator"
 PART_FILE = {"arm_left": "arm_l", "arm_right": "arm_r"}
 LOADOUTS = [
     ("sanggigilid_gunner", "Sanggigilid Gunner", {"weapon_right": "heavy_rifle", "weapon_left": "warden_shield"}),
-    ("sanggigilid_sniper", "Sanggigilid Sniper", {"weapon_right": "beam_sniper"}),
+    ("sanggigilid_sniper", "Sanggigilid Sniper", {"weapon_right": "beam_rifle"}),  # default two-hand rifle (user, 2026-10-12)
     ("sanggigilid_melee", "Sanggigilid Melee", {"weapon_right": "pile_bunker", "weapon_left": "warden_shield"}),
     ("sanggigilid_missile", "Sanggigilid Missile", {"weapon_right": "heavy_rifle", "weapon_left": "warden_shield",
                                                      "back_left": "missile_pod_l", "back_right": "missile_pod_r"}),

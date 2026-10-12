@@ -23,6 +23,11 @@ extends Node
 @export var raise_speed: float = 4.0
 ## How fast the weapon goes down to rest (1 / seconds).
 @export var lower_speed: float = 3.0
+## One-hand gun (no left grip): when the aim goes up or down it turns about this place (the right
+## elbow, weapon parent space), so the gun and the forearm turn together and the level hold (stock off
+## the forearm) stays the same. Off (one_hand_elbow_pivot false): about the stock.
+@export var one_hand_elbow_pivot: bool = true
+@export var one_hand_pivot: Vector3 = Vector3(2.18, 1.16, -0.05)
 
 @export_group("Hands")
 ## The left hand IK target on the weapon. Leave empty for a one-hand weapon.
@@ -68,6 +73,9 @@ func _physics_process(delta: float) -> void:
 	var rest := rest_transform if use_weapon_data else rest_pose.transform
 	var target := parent.global_transform.affine_inverse() * mech_aim.aim_point
 	var aim_pose := Transform3D(Basis.looking_at(target - origin, Vector3.UP), origin)
+	if one_hand_elbow_pivot and left_grip_target == null and weapon is GunWeapon \
+			and not weapon is ForearmGunWeapon:
+		aim_pose.origin = one_hand_pivot + aim_pose.basis * (origin - one_hand_pivot)
 	if weapon is MechWeapon:
 		weapon.transform = (weapon as MechWeapon).get_pose(rest, aim_pose, t)
 	else:
