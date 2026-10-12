@@ -58,8 +58,10 @@ func _physics_process(_delta: float) -> void:
 	var was_held := jump_held
 	jump_held = Input.is_action_pressed("jump")
 	jump_pressed = jump_held and not was_held
-	aim_held = Input.is_action_pressed("aim")
-	fire_held = Input.is_action_pressed("use_right_arm")
+	# In the free camera RMB turns the camera: no aim and no right arm weapon.
+	var camera_free := camera_rig != null and camera_rig.free_camera_on
+	aim_held = Input.is_action_pressed("aim") and not camera_free
+	fire_held = Input.is_action_pressed("use_right_arm") and not camera_free
 	shield_held = Input.is_action_pressed("use_left_arm")
 	left_fire_held = shield_held
 	back_left_held = Input.is_action_pressed("fire_back_left")

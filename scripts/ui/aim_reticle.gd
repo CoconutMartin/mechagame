@@ -36,8 +36,8 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	var rig := mech_aim.camera_rig
-	if rig != null and rig.front_view_amount > 0.0:
-		return  # Front view: no crosshair.
+	if rig != null and rig.free_camera_amount > 0.0:
+		return  # Free camera: no crosshair.
 	_draw_locks()
 	if show_crosshair:
 		var half := crosshair_size * 0.5

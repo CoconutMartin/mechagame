@@ -3,7 +3,8 @@ extends Node3D
 ## Over-the-shoulder camera. Stays behind the mech torso and turns with it.
 ## The mouse moves an aim target (yaw). The torso turns toward that target at its own turn speed,
 ## and the camera turns with the torso. Pitch follows the mouse on a spring.
-## Press V (front_view) to swing the camera around to the front of the mech; press V again to go back.
+## Press V (free_camera) for the free camera: hold RMB and move the mouse to turn the camera around the
+## mech (the mech keeps its aim, its weapons do not raise); press V again to go back behind the mech.
 ## With a FreeAim node the mouse first moves the mech aim inside a box. Only the movement past the
 ## box edge turns the camera.
 ## Node layout: MechCameraRig > Pitch > SpringArm3D > Camera3D.
@@ -40,16 +41,21 @@ var pitch: float = 0.0
 var sensitivity_scale: float = 1.0
 
 var _target_yaw: float = 0.0
-## 0 = camera behind the mech, 1 = camera in front, looking at the mech.
-var front_view_amount: float = 0.0
+## 0 = camera behind the mech, 1 = free camera (turned by the mouse while RMB is held).
+var free_camera_amount: float = 0.0
 ## 1 = the camera follows the mouse only (mech down), 0 = it stays behind the torso.
 var _free_look: float = 0.0
-## V toggles the front view.
-var front_view_on: bool = false
+## V toggles the free camera.
+var free_camera_on: bool = false
 
-@export_group("Front View")
-## How fast the camera swings to the front and back (1 / seconds).
-@export var front_view_speed: float = 3.0
+@export_group("Free Camera")
+## How fast the camera blends into and out of the free camera (1 / seconds).
+@export var free_camera_speed: float = 3.0
+## Free camera turn speed = mouse sensitivity x this value (both axes).
+@export var free_camera_sensitivity_scale: float = 1.0
+## Free camera pitch limits, in degrees (negative = looking down).
+@export var free_camera_min_pitch_deg: float = -75.0
+@export var free_camera_max_pitch_deg: float = 60.0
 ## After the mech gets up, the camera goes back behind the torso once the torso is this close to the
 ## mouse aim (degrees), blending over 1 / free_look_blend_speed seconds.
 @export var free_look_release_deg: float = 3.0
@@ -74,6 +80,9 @@ var front_view_on: bool = false
 ## Size scale in use (1 = a mech of the reference size).
 var size_scale: float = 1.0
 var _target_pitch: float = 0.0
+## Free camera turn (radians).
+var _free_yaw: float = 0.0
+var _free_pitch: float = 0.0
 var _yaw_spring := AimSpring.new()
 var _pitch_spring := AimSpring.new()
 
@@ -119,11 +128,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		apply_mouse_motion((event as InputEventMouseMotion).relative)
 
 
-## Turns a mouse movement (pixels) into free aim and camera turn.
+## Turns a mouse movement (pixels) into free aim and camera turn. In the free camera with RMB held it
+## turns the free camera only.
 func apply_mouse_motion(relative: Vector2) -> void:
+	if free_camera_on and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+		var turn_speed := mouse_sensitivity * free_camera_sensitivity_scale
+		_free_yaw -= relative.x * turn_speed
+		_free_pitch = clampf(_free_pitch - relative.y * turn_speed, deg_to_rad(free_camera_min_pitch_deg),
+				deg_to_rad(free_camera_max_pitch_deg))
+		return
 	var sensitivity := mouse_sensitivity * sensitivity_scale
 	var turn := Vector2(-relative.x * sensitivity, -relative.y * sensitivity * pitch_sensitivity_scale)
-	if free_aim != null and front_view_amount <= 0.0:
+	if free_aim != null and free_camera_amount <= 0.0:
 		# The mech aim moves first. The camera turns by the part past the box edge.
 		turn = free_aim.take_motion(turn * rad_to_deg(1.0)) * deg_to_rad(1.0)
 	_target_yaw += turn.x
@@ -154,12 +170,16 @@ func _process(delta: float) -> void:
 		elif absf(wrapf(yaw - torso_yaw, -PI, PI)) < deg_to_rad(free_look_release_deg):
 			_free_look = move_toward(_free_look, 0.0, free_look_blend_speed * delta)
 		view_yaw = lerp_angle(torso_yaw, yaw, _free_look)
-	if Input.is_action_just_pressed("front_view"):
-		front_view_on = not front_view_on
-	front_view_amount = move_toward(front_view_amount, 1.0 if front_view_on else 0.0, front_view_speed * delta)
-	view_yaw += PI * smoothstep(0.0, 1.0, front_view_amount)
-	rotation = Vector3(0.0, view_yaw, 0.0)
-	_pitch_node.rotation = Vector3(pitch, 0.0, 0.0)
+	if Input.is_action_just_pressed("free_camera"):
+		free_camera_on = not free_camera_on
+		if free_camera_on and free_camera_amount <= 0.0:
+			# The free camera starts where the camera is now.
+			_free_yaw = view_yaw
+			_free_pitch = pitch
+	free_camera_amount = move_toward(free_camera_amount, 1.0 if free_camera_on else 0.0, free_camera_speed * delta)
+	var blend := smoothstep(0.0, 1.0, free_camera_amount)
+	rotation = Vector3(0.0, lerp_angle(view_yaw, _free_yaw, blend), 0.0)
+	_pitch_node.rotation = Vector3(lerpf(pitch, _free_pitch, blend), 0.0, 0.0)
 
 
 func _goal_position() -> Vector3:

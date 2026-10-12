@@ -9,7 +9,7 @@ extends Node
 
 @export var mech: Mech
 @export var camera: Camera3D
-## Optional. While the camera looks at the front of the mech, the aim keeps its last pitch and
+## Optional. While the free camera is on, the aim keeps its last pitch and
 ## follows the torso turn (the camera view is not used then).
 @export var camera_rig: MechCameraRig
 ## Start point of the mech's aim (the weapon stock at the shoulder).
@@ -79,7 +79,7 @@ func _physics_process(delta: float) -> void:
 		aim_direction = (ai_target - origin).normalized()
 		aim_point = _cast(origin, aim_direction)
 		return
-	if camera_rig != null and camera_rig.front_view_amount > 0.0:
+	if camera_rig != null and camera_rig.free_camera_amount > 0.0:
 		var flat_yaw := atan2(-aim_direction.x, -aim_direction.z)
 		aim_direction = aim_direction.rotated(Vector3.UP, wrapf(mech.get_aim_yaw() - flat_yaw, -PI, PI))
 		aim_point = _cast(origin, aim_direction)

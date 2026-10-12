@@ -87,7 +87,7 @@ theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 14
 text = "W / S walk   A / D strafe   Mouse: aim (the torso turns, the legs follow)
 RMB fire (hip); pile bunker: hold to power up, release to attack   LMB lift shield (sniper: RMB zoom, hold LMB charge, release fire)
-Q / E hold: lock missiles, release: fire (locked volley entrenches)   R reload   V front view   1-4 test loadouts
+Q / E hold: lock missiles, release: fire (locked volley entrenches)   R reload   V free camera (hold RMB to turn it)   1-4 test loadouts
 Space hold: charge jump jets, release to jump (W or S held: jump that way)
 Space double tap: dodge hop (A / D side, W forward, S or none back; forward while boosting)
 Shift + W: walk 2 steps, run 2 steps, then boost   Ctrl kneel
