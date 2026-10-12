@@ -265,10 +265,13 @@ func _physics_process(_delta: float) -> void:
 		var allowed: bool = weapon == active or weapon.is_melee() \
 				or (weapon is MissilePodWeapon and active is MissilePodWeapon)
 		weapon.set_trigger(wants[weapon] and allowed)
+	input.stance_lock = false
 	if right_weapon != null:
 		var right_on := right_weapon == active
 		if _two_handed():
 			weapon_pose.wants_raise = input.aim_held or (right_on and (input.left_fire_held or right_weapon.is_busy()))
+			# Sniping stance: no walking while the rifle is raised (user, 2026-10-12).
+			input.stance_lock = weapon_pose.wants_raise or weapon_pose.aim_amount > 0.5
 		else:
 			weapon_pose.wants_raise = input.fire_held and right_on and right_data.kind == WeaponData.Kind.GUN
 		if input.reload_pressed:

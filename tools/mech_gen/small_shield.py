@@ -13,8 +13,9 @@ from weapons import res, v3
 
 LENGTH, WIDTH = 3.4, 2.2
 ## Shield center in the left elbow joint space: out to the side (-X), along the forearm (-Y), from the
-## elbow; the basis puts the long side along the forearm and the front face outward.
-MOUNT = "Transform3D(0, 0, 1, 0, -1, 0, 1, 0, 0, -0.85, -1.0, 0)"
+## elbow (1.15 m down the forearm: clear of the upper arm when the shoulder block faces forward); the
+## basis puts the long side along the forearm and the front face outward.
+MOUNT = "Transform3D(0, 0, 1, 0, -1, 0, 1, 0, 0, -0.85, -1.15, 0)"
 
 SCENE = f'''[gd_scene format=3]
 

@@ -28,6 +28,14 @@ extends SkeletonModifier3D
 @export var torso_pose: TorsoPose
 ## The weapons (their weight sets the arm swing limit).
 @export var weapons: WeaponController
+## Optional. The sniping stance: the head turns back to the aim by its hip turn plus the torso twist.
+@export var stance: SkeletalAimStance
+@export var head_bone: StringName = &"head"
+## In the sniping stance the right elbow tucks toward this direction (torso space: out to the side and
+## a little down, inside max_lift_deg), like the reference's raised right elbow.
+@export var stance_right_elbow: Vector3 = Vector3(1.0, -0.6, 0.15)
+## In the sniping stance the torso bends up or down with the aim, this much at most (degrees).
+@export var stance_max_pitch_deg: float = 30.0
 
 @export_group("Arm swing limit")
 ## Largest upper arm swing forward or back from hanging down (degrees), for weapons up to
@@ -64,8 +72,9 @@ extends SkeletonModifier3D
 ## block): the elbow turns around the shoulder-to-hand line. Off: the IK elbow directions (poles) decide.
 @export var tuck_elbows: bool = true
 ## The flat block may turn about the up axis up to this much (degrees) to bring the elbow forward or
-## back (a two-hand weapon in front of the body); its top stays flat.
-@export var max_block_yaw_deg: float = 45.0
+## back; its top stays flat. 0 (user rule 2026-10-12): the shoulders and the shoulder weapons face
+## forward at neutral in every loadout.
+@export var max_block_yaw_deg: float = 0.0
 ## Away from the neutral elbow height the block turn fades out over this many degrees; a raised arm
 ## swings the block like before.
 @export var block_yaw_fade_deg: float = 30.0
@@ -226,9 +235,36 @@ func _aim_twist() -> void:
 	# Tilt = roll about the torso's forward axis (the weapon side down), after the turn.
 	var forward := turn * (_skeleton.global_basis.inverse() * -torso.global_basis.z).normalized()
 	turn = Basis(forward.normalized(), -deg_to_rad(torso_pose.aim_tilt_deg) * aim) * turn
+	# Sniping stance: the upper body bends with the aim's height (like a rifleman), so the rifle stays
+	# on the shoulder in one hold and only the torso pitches.
+	if stance != null and stance.amount > 0.0 and weapon_pose.mech_aim != null:
+		var to_aim := _skeleton.global_basis.inverse() * (weapon_pose.mech_aim.aim_point - _skeleton.global_transform * pose.origin)
+		var flat := to_aim - up * to_aim.dot(up)
+		if flat.length_squared() > 0.0001:
+			var limit := deg_to_rad(stance_max_pitch_deg)
+			var pitch := clampf(atan2(to_aim.dot(up), flat.length()), -limit, limit)
+			turn = Basis(flat.normalized().cross(up).normalized(), pitch * stance.amount) * turn
 	var parent := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(bone))
 	var local := parent.basis.orthonormalized().inverse() * (turn * pose.basis.orthonormalized())
 	_skeleton.set_bone_pose_rotation(bone, local.get_rotation_quaternion())
+
+
+## In the sniping stance the head turns back by the hip turn and the torso twist, so it looks along the
+## aim (the user's reference: the head over the rifle).
+func _head_to_aim() -> void:
+	if stance == null or stance.amount <= 0.0:
+		return
+	var total := stance.applied_turn
+	if weapon_pose != null and torso_pose != null and weapon_pose.weapon != null:
+		total -= deg_to_rad(torso_pose.aim_twist_deg) * smoothstep(0.0, 1.0, weapon_pose.aim_amount)
+	var head := _skeleton.find_bone(head_bone)
+	if head < 0:
+		return
+	var up := (_skeleton.global_basis.inverse() * Vector3.UP).normalized()
+	var pose := _skeleton.get_bone_global_pose(head).orthonormalized()
+	var parent := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(head)).orthonormalized()
+	var turned := Basis(up, -total) * pose.basis
+	_skeleton.set_bone_pose_rotation(head, (parent.basis.inverse() * turned).get_rotation_quaternion())
 
 
 ## Turns the arm bones to the IK result with no extra twist: each bone swings (shortest turn) from
@@ -315,6 +351,9 @@ func _tuck_elbow(ik: TwoBoneIK) -> void:
 	var shoulder := ik.root_joint.global_position
 	var parent_pose := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(side.upper)).orthonormalized()
 	var neutral := (_skeleton.global_basis.orthonormalized() * parent_pose.basis * (side.flat_dir as Vector3)).normalized()
+	if ik == ik_right and stance != null and stance.amount > 0.0:
+		var raised := (torso.global_basis.orthonormalized() * stance_right_elbow).normalized()
+		neutral = neutral.slerp(raised, stance.amount)
 	var up := torso.global_basis.y.normalized()
 	var reach := ik.target.global_position - shoulder
 	if reach.length_squared() < 0.0001:
@@ -461,6 +500,7 @@ func _process_modification_with_delta(_delta: float) -> void:
 		_setup()
 	var skin := _skeleton.global_transform
 	_aim_twist()
+	_head_to_aim()
 	torso.global_transform = (skin * _skeleton.get_bone_global_pose(_skeleton.find_bone(torso_bone)).orthonormalized() \
 			* _torso_offset).orthonormalized()
 	var active: Array[Dictionary] = []

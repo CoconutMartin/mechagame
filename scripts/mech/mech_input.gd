@@ -37,6 +37,9 @@ var reload_pressed: bool = false
 var forward_held: bool = false
 ## True on the frame the crouch key (Ctrl) is pressed. MechKneel toggles on it.
 var crouch_pressed: bool = false
+## Set by WeaponController: true while a two-hand rifle is aimed (sniping stance). The mech does not
+## move, boost or jump then.
+var stance_lock: bool = false
 
 
 func _ready() -> void:
@@ -52,11 +55,11 @@ func _physics_process(_delta: float) -> void:
 	if wish.length() > 1.0:
 		wish = wish.normalized()
 	var facing: float = (mech as Mech).get_aim_yaw() if mech is Mech else mech.rotation.y
-	move_direction = wish.rotated(Vector3.UP, facing)
-	boost_held = Input.is_action_pressed("boost")
+	move_direction = Vector3.ZERO if stance_lock else wish.rotated(Vector3.UP, facing)
+	boost_held = Input.is_action_pressed("boost") and not stance_lock
 	# Pressed = held now but not in the last frame, so the two values always agree.
 	var was_held := jump_held
-	jump_held = Input.is_action_pressed("jump")
+	jump_held = Input.is_action_pressed("jump") and not stance_lock
 	jump_pressed = jump_held and not was_held
 	# In the free camera RMB turns the camera: no aim and no right arm weapon.
 	var camera_free := camera_rig != null and camera_rig.free_camera_on

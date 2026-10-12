@@ -110,7 +110,10 @@ if __name__ == "__main__":
     FIST_OFFSET = (0.0, -0.33, -0.99)
     rest_hand = arm_poses.hand(arm_poses.ELBOW_R, arm_poses.NEUTRAL_DEG, arm_poses.CANNON_OUT_DEG)
     rest_origin = arm_poses.minus(rest_hand, FIST_OFFSET)
+    # 0.15 m further out than the aim hand: the long butt keeps off the right thigh (the shoulder blocks
+    # do not turn, user rule 2026-10-12).
     aim_anchor = arm_poses.minus(RIGHT_HAND_AIM, FIST_OFFSET)
+    aim_anchor = (aim_anchor[0] + 0.15, aim_anchor[1], aim_anchor[2])
     res("data/weapons/auto_cannon.tres", "res://scenes/weapons/auto_cannon.tscn", {
         "display_name": '"Auto Cannon"', "weight_t": 3.5, "hp": 300.0, **FIRING, "slot": 0,
         "model_kick_back": 0.8, "model_kick_up_deg": 4.0,

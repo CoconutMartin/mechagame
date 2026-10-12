@@ -223,6 +223,14 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 		ik.root_joint = joints[pair[1]][0]
 		ik.mid_joint = joints[pair[1]][1]
 		ik.target = null
+	# Sniping stance (legs, hips) before the arm rig: the rig then turns the head back to the aim.
+	var stance := SkeletalAimStance.new()
+	stance.name = "AimStance"
+	visual.add_child(stance)
+	stance.model = model
+	stance.mech = root
+	stance.weapon_pose = weapon_animation.get_node("WeaponPose") as WeaponPose
+	stance.weapons = root.get_node("WeaponController") as WeaponController
 	var rig := SkeletalArmRig.new()
 	rig.name = "ArmRig"
 	visual.add_child(rig)
@@ -236,6 +244,7 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	rig.weapon_pose = weapon_animation.get_node("WeaponPose") as WeaponPose
 	rig.torso_pose = weapon_animation.get_node("TorsoPose") as TorsoPose
 	rig.weapons = root.get_node("WeaponController") as WeaponController
+	rig.stance = stance
 	var weapon_pose := weapon_animation.get_node("WeaponPose") as WeaponPose
 	weapon_pose.aim_anchor = torso.get_node("AimAnchor")
 	var shield_pose := weapon_animation.get_node("ShieldPose") as ShieldPose
