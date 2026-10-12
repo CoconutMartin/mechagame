@@ -21,3 +21,6 @@ extends Resource
 ## Chunky pixels per meter on the environment's world-mapped textures (roads, buildings, rubble);
 ## smaller = bigger pixels. UV-mapped prop textures use uv_pixels.
 @export var world_pixels_per_meter: float = 32.0
+## Screen grid of the vertex wobble on the environment; (0, 0) = no wobble (default, 2026-10-12: on the
+## big ground and building boxes the wobble made the textures jump and tear at the seams).
+@export var world_snap_grid: Vector2 = Vector2.ZERO

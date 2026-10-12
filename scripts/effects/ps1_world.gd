@@ -80,5 +80,5 @@ static func _new(shader: Shader, settings: PS1SkinSettings) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = shader
 	material.set_shader_parameter(&"color_steps", settings.color_steps)
-	material.set_shader_parameter(&"snap_grid", settings.snap_grid)
+	material.set_shader_parameter(&"snap_grid", settings.world_snap_grid)
 	return material

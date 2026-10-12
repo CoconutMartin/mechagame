@@ -19,7 +19,9 @@ uniform vec3 emission = vec3(0.0);
 uniform float color_steps = 32.0;
 uniform vec2 snap_grid = vec2(640.0, 480.0);
 
-varying vec3 map_pos;
+// High precision: tablet graphics chips may use half precision, which makes the texture pixels of
+// world positions (up to about 130 m) shake.
+varying highp vec3 map_pos;
 varying vec3 map_normal;
 
 void vertex() {
@@ -57,16 +59,18 @@ vec3 ps1_quantize(vec3 color, vec2 pixel) {
 vec3 ps1_albedo(vec2 uv) {
 	vec3 color = albedo_color.rgb;
 	if (use_albedo_texture) {
-		vec2 tex_uv;
+		highp vec2 tex_uv;
 		if (map_mode == 0) {
 			tex_uv = uv * uv_scale.xy + uv_offset.xy;
 		} else {
 			// Box mapping: the plane facing the main axis of the normal.
-			vec3 p = map_pos * uv_scale + uv_offset;
+			highp vec3 p = map_pos * uv_scale + uv_offset;
 			vec3 n = abs(map_normal);
 			tex_uv = n.x > n.y && n.x > n.z ? p.zy : (n.y > n.z ? p.xz : p.xy);
 		}
-		vec2 chunky = (floor(tex_uv * pixels_per_repeat) + 0.5) / pixels_per_repeat;
+		// Wrap to one repeat first (the texture repeats), so the numbers stay small.
+		tex_uv = fract(tex_uv);
+		highp vec2 chunky = (floor(tex_uv * pixels_per_repeat) + 0.5) / pixels_per_repeat;
 		// The mip level whose pixels are the chunky pixel size: each one is the average color there.
 		float level = max(log2(float(textureSize(albedo_texture, 0).x) / pixels_per_repeat), 0.0);
 		color *= textureLod(albedo_texture, chunky, level).rgb;
