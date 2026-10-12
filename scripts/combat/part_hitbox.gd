@@ -1,6 +1,7 @@
 class_name PartHitbox
-extends StaticBody3D
-## A hit box on one part of a mech (layer 4, "hitboxes"). It moves with the part. Weapons call
+extends AnimatableBody3D
+## A hit box on one part of a mech (layer 4, "hitboxes"). It moves with the part (an animatable body:
+## physics knows its speed, so flying props and rubble bounce off it). Weapons call
 ## on_hit(damage) on it, and it sends the damage to MechHealth for its part.
 
 const LAYER := 8

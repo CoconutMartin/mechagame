@@ -8,5 +8,5 @@ display_name = "Person"
 size = Vector3(0.5, 1.8, 0.5)
 hp = 10.0
 mass_t = 0.08
-reaction = 0
+reaction = 5
 shake = 0.0

@@ -1,7 +1,8 @@
 class_name Rubble
 extends RigidBody3D
 ## A piece of broken building. It tumbles to the ground, lies there, then sinks into the ground
-## and is removed. Mechs walk through it (no collision layer). Only max_count pieces exist at a
+## and is removed. Mechs walk through it (no collision layer); a fast piece that hits a mech part hurts
+## it a little (DebrisHurt). Only max_count pieces exist at a
 ## time: the oldest piece goes first.
 
 ## Largest number of rubble pieces in the level.
@@ -39,6 +40,8 @@ static func spawn(world: Node, point: Vector3, size: Vector3, tint: Color, veloc
 	box_shape.size = size
 	shape.shape = box_shape
 	piece.add_child(shape)
+	# Flying rubble hurts mechs a little (minor damage).
+	DebrisHurt.attach(piece)
 	world.add_child(piece)
 	piece.global_position = point
 	piece.rotation = Vector3(randf() * TAU, randf() * TAU, randf() * TAU)

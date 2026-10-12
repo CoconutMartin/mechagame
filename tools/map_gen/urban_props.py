@@ -1,7 +1,7 @@
 """Writes the urban prop scenes (scenes/props/urban/*.tscn) from simple shapes.
 
 Run from the project root: python3 tools/map_gen/urban_props.py
-Each scene: UrbanProp root (StaticBody3D, layer 3 props) with its PropDef, a CollisionShape3D box
+Each scene: UrbanProp root (RigidBody3D held still until kicked, layer 3 props) with its PropDef, a CollisionShape3D box
 (PropDef size), a Pivot node at the base with the meshes, and a Contact Area3D (finds mechs, layer 2).
 Meshes fade out past 120 m (visibility range) and use dynamic GI.
 """
@@ -9,7 +9,7 @@ import os
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 OUT = "scenes/props/urban"
-PROP_LAYER, MECH_LAYER = 4, 2
+PROP_LAYER, MECH_LAYER, HITBOX_LAYER = 4, 2, 8
 FADE = 120.0
 
 # Prop size (x, y, z) from data/environment/props (the collision box).
@@ -108,7 +108,11 @@ def scene(name, parts):
               '[sub_resource type="BoxShape3D" id="contact"]',
               f'size = Vector3({size[0] + 0.6}, {size[1] + 0.4}, {size[2] + 0.6})', '']
     root = "".join(w.capitalize() for w in name.split("_"))
-    lines += [f'[node name="{root}" type="StaticBody3D"]', f'collision_layer = {PROP_LAYER}', 'collision_mask = 0',
+    # A physics body held still (freeze, static) until a mech kicks or pushes it (UrbanProp). It collides
+    # with the world, the props and the mech hitboxes (a flying prop hurts mechs: DebrisHurt); the mask is
+    # set here, not at run time (Jolt kept the old mask of a body already in the world).
+    lines += [f'[node name="{root}" type="RigidBody3D"]', f'collision_layer = {PROP_LAYER}', f'collision_mask = {1 | PROP_LAYER | HITBOX_LAYER}',
+              'freeze = true',
               'script = ExtResource("prop")', 'def = ExtResource("def")', '',
               '[node name="Shape" type="CollisionShape3D" parent="."]',
               f'transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, {size[1] / 2}, 0)', 'shape = SubResource("shape")', '',

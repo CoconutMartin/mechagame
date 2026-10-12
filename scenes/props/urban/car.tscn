@@ -64,9 +64,10 @@ size = Vector3(1.8, 1.5, 4.5)
 [sub_resource type="BoxShape3D" id="contact"]
 size = Vector3(2.4, 1.9, 5.1)
 
-[node name="Car" type="StaticBody3D"]
+[node name="Car" type="RigidBody3D"]
 collision_layer = 4
-collision_mask = 0
+collision_mask = 13
+freeze = true
 script = ExtResource("prop")
 def = ExtResource("def")
 

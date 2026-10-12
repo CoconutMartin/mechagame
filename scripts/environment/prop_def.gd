@@ -4,12 +4,13 @@ extends Resource
 ## The prop scene (scenes/props/urban) holds the look; UrbanProp reads this file.
 
 enum Reaction {
-	NONE,   ## Nothing (people: only for scale).
-	CRUSH,  ## Flattened: the model shrinks to crush_scale high, sparks, small camera shake (cars).
-	PUSH,   ## Pushed away by the mech and dented (buses).
+	NONE,   ## Nothing.
+	CRUSH,  ## Kicked away (UrbanProp physics); flattened when a mech comes down on it: the model shrinks
+	        ## to crush_scale high, sparks, small camera shake (cars).
+	PUSH,   ## Pushed along by the mech, which slows down (UrbanProp physics; buses).
 	BEND,   ## Bends at the base, up to bend_max_deg (lampposts, traffic lights).
 	BREAK,  ## Breaks into debris (bus stops, benches, fences, hydrants).
-	FALL,   ## Falls over away from the mech (trees).
+	FALL,   ## Falls over away from the mech (trees, people).
 }
 
 @export var display_name: String = ""
@@ -26,8 +27,6 @@ enum Reaction {
 @export var crush_scale: float = 0.4
 ## BEND: largest bend angle at the base, in degrees.
 @export var bend_max_deg: float = 80.0
-## PUSH: push distance per m/s of mech speed, in meters.
-@export var push_per_speed: float = 0.35
 ## BREAK: number of debris pieces.
 @export var debris_pieces: int = 6
 ## BREAK: water spray (fire hydrant).

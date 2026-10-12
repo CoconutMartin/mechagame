@@ -125,7 +125,8 @@ PROPS = {
     "hydrant": dict(display_name="Fire hydrant", size=(0.4, 0.8, 0.4), hp=60.0, mass_t=0.1, reaction=4, debris_pieces=3,
                     water_spray=True, shake=0.03),
     "tree": dict(display_name="Tree", size=(0.5, 7.0, 0.5), hp=150.0, mass_t=1.0, reaction=5, shake=0.06),
-    "person": dict(display_name="Person", size=(0.5, 1.8, 0.5), hp=10.0, mass_t=0.08, reaction=0, shake=0.0),
+    # People fall over when a mech walks into them or a weapon hits them (user answer 2026-10-12).
+    "person": dict(display_name="Person", size=(0.5, 1.8, 0.5), hp=10.0, mass_t=0.08, reaction=5, shake=0.0),
 }
 
 

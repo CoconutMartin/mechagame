@@ -124,7 +124,7 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 |---|---|---|
 | 1 | world | ground, buildings, platforms, building blocks (4c) |
 | 2 | mechs | mech bodies |
-| 3 | props | cars, trucks, lampposts, people. Mech bodies pass through them; a contact area on each `DestructibleProp` finds mechs (4c). Debris, rubble and wrecks have no layer (mask 1) |
+| 3 | props | cars, trucks, lampposts, people (`UrbanProp`, rigid bodies held still until moved; mask world, props and hitboxes). Mech bodies pass through them; a contact area on each prop finds mechs. Debris and rubble have no layer (mask world and hitboxes: `DebrisHurt`) |
 | 4 | hitboxes | mech part hitboxes (`PartHitbox`) and target dummies. Weapons, the aim ray and blasts hit layers 1, 3 and 4 (mask 13), not the mech bodies on layer 2 |
 
 ## Urban map (urban_small, replaces the Phase 4 test map)
@@ -154,7 +154,7 @@ User brief: `urban_environment_agent_prompt.md` (two checkpoints; Checkpoint 2 b
 
 ### Props and mech contact (Checkpoint 1)
 
-`UrbanProp` (StaticBody3D, layer 3): weapons hit it (`on_hit`), mech bodies pass through it, its Contact area finds mechs. Reactions, one script each: `PropCrush` (car: squashed to 40% height with sparks), `PropPush` (bus: slides away about 0.35 m per m/s, heavier less, with a dent), `PropBend` (lamppost, traffic light: bends at the base, 25° + 7° per m/s up to 80°), `PropBreak` (bus stop, bench, fence section, hydrant: breaks into tumbling boxes with dust; the hydrant sprays water), `PropFall` (tree: falls over away from the mech). People stay (scale only). A small camera shake on the mech that touched it. At 0 HP from weapons the prop breaks (bends or falls for poles and trees). Meshes fade out past 120 m.
+`UrbanProp` (layer 3; since 2026-10-12 a rigid body, see Environment PS1 look and full destruction): weapons hit it (`on_hit`), mech bodies pass through it, its Contact area finds mechs. Reactions, one script each: `PropCrush` (car: squashed to 40% height with sparks), `PropBend` (lamppost, traffic light: bends at the base, 25° + 7° per m/s up to 80°), `PropBreak` (bus stop, bench, fence section, hydrant: breaks into tumbling boxes with dust; the hydrant sprays water), `PropFall` (tree: falls over away from the mech). People stay (scale only). A small camera shake on the mech that touched it. At 0 HP from weapons the prop breaks (bends or falls for poles and trees). Meshes fade out past 120 m.
 
 ### Building damage (Checkpoint 2, user choice "break + collapse")
 
@@ -168,9 +168,12 @@ User brief: `urban_environment_agent_prompt.md` (two checkpoints; Checkpoint 2 b
 
 - PS1 look on the whole environment: built (step 1). `PS1WorldLook` (node in the map, written by `urban_small.py`) converts every mesh under the map, and every mesh added later (rubble, debris, falling chunks, broken props), with `PS1World`: the same color, texture and texture mapping (UV, or box mapping in world or mesh space like the original triplanar), chunky pixels (`world_pixels_per_meter` 32 for world-mapped textures, `uv_pixels` for UV textures), 15-bit color with the 4 x 4 dither, the vertex wobble, no normal maps or shine; lit windows keep their glow, glass stays see-through (`shaders/ps1_world.gdshader`, `ps1_world_alpha.gdshader`, shared code `ps1_world.gdshaderinc`). Mechs keep their own skin; effects (unshaded, added, particles) keep their materials. Settings: `data/skins/ps1_skin.tres` (the mech's file; new value `world_pixels_per_meter`).
   - Fix: both PS1 shaders now write POSITION on every path (a shader that writes it skips Godot's own transform; the snap-off setting (0, 0) drew nothing before).
-- Props become physics bodies: the mech pushes or kicks cars, benches and debris away; heavy ones (bus) slow it. Prepares the car pick-up reminder.
+- Props as physics bodies: built (step 2). `UrbanProp` is a RigidBody3D held still (frozen, kinematic mode) until a mech moves it, then held still again after 1.5 s at rest. Cars (CRUSH) are kicked away from a walking mech (kick speed = mech speed x 1.3 x 10 / (10 + mass t), at least 3 m/s, a little lift and spin) and crushed when a mech comes down on them (falling faster than 2 m/s). The bus (PUSH) is pushed along at mech mass / (mech mass + bus mass) x 0.9 of the mech's speed, and the mech cannot walk into it faster than it moves (it slows down; a hard shove can tip the bus over a curb). A moving prop faster than 3 m/s knocks a still prop it hits loose (poles bend, trees fall). Props collide with the world, other props and the mech hitboxes; mech bodies still pass through them. The kicking mech's hitboxes ignore its prop for 1 s. `PropPush` was removed.
+  - Test (headless, map): mech walking into a car: the car flies 5 m; into the bus: the bus moves 10 m in 4 s and the mech drops to 0.4 to 5.5 m/s while pushing; into a person: it falls; a mech landing from 8 m on a car crushes it (40% height).
+- People fall over (step 3): the person PropDef reaction is FALL (a mech walking into one, a weapon hit, or a flying prop).
 - Also breakable: the two towers collapse like the low-rise buildings; road craters from missiles and cannon shells; the people figures get hit and fall. Edge blocks stay indestructible.
-- Debris deals minor damage to mechs.
+- Debris deals minor damage to mechs (step 4): `DebrisHurt` (child of rubble, broken prop pieces and moving props) turns on contact reports and the hitbox layer; a piece faster than 5 m/s that hits a part hitbox does mass t x speed x 2 damage (2 to 40) to that part, once per 0.5 s; pieces are held under 40 m/s. Mech `PartHitbox` is now an AnimatableBody3D (physics knows its speed, so pieces bounce off a moving leg instead of being shot out of it). Jolt notes: a prop frozen as static did not collide with hitboxes after it started moving (kinematic freeze works), a frozen kinematic prop keeps the speed of a teleport (cleared when it starts moving), and a flying prop that touches a mech's contact area is not kicked by that mech again (that turned off its hitbox collisions).
+  - Test (headless): rubble at 18 m/s into the dummy: 36 damage; slow rubble: none; a car kicked at 14 m/s into its leg: 38 damage.
 
 ### Textures and lighting
 

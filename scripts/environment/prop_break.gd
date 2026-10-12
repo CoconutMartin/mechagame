@@ -40,7 +40,8 @@ static func _piece(world: Node, prop: UrbanProp, source: MeshInstance3D, center:
 	box_shape.size = size
 	shape.shape = box_shape
 	body.add_child(shape)
-	body.mass = maxf(prop.def.mass_t * 1000.0 / maxf(prop.def.debris_pieces, 1), 5.0)
+	body.mass = maxf(prop.def.mass_t / maxf(prop.def.debris_pieces, 1), 0.02)
+	DebrisHurt.attach(body)
 	world.add_child(body)
 	body.global_position = center + Vector3(randf_range(-0.5, 0.5), randf_range(-0.3, 0.3), randf_range(-0.5, 0.5)) * prop.def.size
 	body.linear_velocity = direction * maxf(speed, 3.0) * randf_range(0.4, 0.9) + Vector3.UP * randf_range(2.0, 5.0)

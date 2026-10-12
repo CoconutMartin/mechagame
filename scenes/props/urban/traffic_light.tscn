@@ -68,9 +68,10 @@ size = Vector3(0.35, 5.5, 0.35)
 [sub_resource type="BoxShape3D" id="contact"]
 size = Vector3(0.95, 5.9, 0.95)
 
-[node name="TrafficLight" type="StaticBody3D"]
+[node name="TrafficLight" type="RigidBody3D"]
 collision_layer = 4
-collision_mask = 0
+collision_mask = 13
+freeze = true
 script = ExtResource("prop")
 def = ExtResource("def")
 
