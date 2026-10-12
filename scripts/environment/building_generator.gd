@@ -34,6 +34,9 @@ const DOOR_SIZE := Vector2(1.0, 2.0)
 		_queue_build()
 ## Strength growth with footprint area: integrity x (1 + this x area / 100 m²).
 @export var area_strength_per_100m2: float = 0.25
+## All chunk HP x this value (user request 2026-10-12: buildings break faster; 0.25 = 75% less HP).
+## An office wall then takes about 4 heavy rifle shots.
+@export var hp_scale: float = 0.25
 
 ## Chunks made in the game (empty in the editor).
 var chunks: Array[UrbanChunk] = []
@@ -298,7 +301,7 @@ func _finish_chunk(chunk: UrbanChunk) -> void:
 		chunk.free()
 		return
 	var strength := chunk.material_def.hp_per_m3 if chunk.material_def != null else 100.0
-	chunk.max_hp = chunk.volume * strength * integrity_of(def)
+	chunk.max_hp = chunk.volume * strength * integrity_of(def) * hp_scale
 	chunk.hp = chunk.max_hp
 	chunks.append(chunk)
 	_add(chunk)

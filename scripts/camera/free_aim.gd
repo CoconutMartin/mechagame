@@ -11,6 +11,8 @@ extends Node
 ## The aim also shakes while the boosters fire.
 ## Unsteady (a two-hand weapon held in one hand, set by WeaponController): the ring follows on a
 ## soft spring (it swings past and comes back), sways slowly, and the recoil is bigger.
+## Crosshair jitter off (user request 2026-10-12): the shot jitter, booster jitter, sway and turn
+## momentum are 0; only the recoil kick moves the ring. The values stay for later use.
 
 ## Half width of the dead zone box (left and right of the crosshair), in degrees. 0 = no dead zone.
 @export var box_half_yaw_deg: float = 0.0
@@ -27,7 +29,7 @@ extends Node
 ## Optional. The aim shakes while the boosters fire (boost, air boost, jump jets, dodge hop).
 @export var boosters: BoosterFlames
 ## Aim shake at full booster thrust, in degrees.
-@export var booster_jitter_deg: float = 0.7
+@export var booster_jitter_deg: float = 0.0
 
 @export_group("Recoil")
 ## Muzzle climb per shot, in degrees.
@@ -37,7 +39,7 @@ extends Node
 ## How fast a kick rises (1 / seconds). 25 = most of the kick in about 0.1 s.
 @export var recoil_rise_speed: float = 25.0
 ## Jitter added by each shot, in degrees. It fades out.
-@export var jitter_per_shot_deg: float = 0.9
+@export var jitter_per_shot_deg: float = 0.0
 ## Largest jitter, in degrees.
 @export var max_jitter_deg: float = 1.2
 ## How fast the jitter fades (degrees per second).
@@ -55,7 +57,7 @@ extends Node
 
 @export_group("Momentum and Sway")
 ## A camera turn drags the ring behind by this part of the turn (0.25 = a 4 degree turn drags it 1 degree).
-@export var momentum: float = 0.25
+@export var momentum: float = 0.0
 ## Largest drag, in degrees.
 @export var max_momentum_deg: float = 3.0
 ## Ring spring speed back to the center (swings per second). Lower = heavier.
@@ -63,9 +65,9 @@ extends Node
 ## Ring spring damping. Lower = more swing past the center (1 = no swing).
 @export_range(0.05, 1.0) var momentum_damping: float = 0.45
 ## Slow sway while standing, in degrees.
-@export var sway_deg: float = 0.2
+@export var sway_deg: float = 0.0
 ## Sway added at walking speed, in degrees (more when faster, up to 1.5 times this).
-@export var move_sway_deg: float = 0.5
+@export var move_sway_deg: float = 0.0
 ## How fast the sway moves (waves per second).
 @export var sway_speed: float = 0.35
 @export_group("")
@@ -76,7 +78,7 @@ extends Node
 ## Ring spring damping when unsteady. Lower = more swing past the target (1 = no swing).
 @export var unsteady_damping: float = 0.3
 ## Slow sway of the ring when unsteady, in degrees.
-@export var unsteady_sway_deg: float = 0.9
+@export var unsteady_sway_deg: float = 0.0
 ## How fast the sway moves (waves per second).
 @export var unsteady_sway_speed: float = 0.45
 ## Recoil and jitter when unsteady = normal x this value.

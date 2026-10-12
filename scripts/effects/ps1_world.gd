@@ -42,6 +42,7 @@ static func _from_base(base: BaseMaterial3D, settings: PS1SkinSettings) -> Shade
 	material.set_shader_parameter(&"use_albedo_texture", texture != null)
 	if texture != null:
 		material.set_shader_parameter(&"albedo_texture", texture)
+		material.set_shader_parameter(&"albedo_smooth", texture)
 	material.set_shader_parameter(&"uv_scale", base.uv1_scale)
 	material.set_shader_parameter(&"uv_offset", base.uv1_offset)
 	var mode := 0
@@ -68,6 +69,7 @@ static func _from_facade(facade: ShaderMaterial, settings: PS1SkinSettings) -> S
 	var scale := 1.0 / (float(mean) if mean != null else 0.36)
 	material.set_shader_parameter(&"albedo_color", Color(tint.r * scale, tint.g * scale, tint.b * scale))
 	material.set_shader_parameter(&"albedo_texture", facade.get_shader_parameter(&"concrete_albedo"))
+	material.set_shader_parameter(&"albedo_smooth", facade.get_shader_parameter(&"concrete_albedo"))
 	material.set_shader_parameter(&"use_albedo_texture", true)
 	var repeat_m := float(size) if size != null else 4.0
 	material.set_shader_parameter(&"map_mode", 1)
