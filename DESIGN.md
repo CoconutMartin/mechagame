@@ -164,6 +164,13 @@ User brief: `urban_environment_agent_prompt.md` (two checkpoints; Checkpoint 2 b
 - `FallingChunk.building` is now any node with `shatter()` (DestructibleBuilding or BuildingDamage).
 - Test (headless, urban map): load 1.7 s (support links: whole-chunk bounds first, towers skipped); all 44 ground-floor chunks of Office5F broken: the other 186 chunks lose support (60 fall, the rest break in place), occluder off, rubble at its 220 cap; one wall on Apartment4F: that chunk and its window glass go, nothing else; a 1-damage hit on concrete does nothing; 116 facade chunks of TowerConcrete broken, nothing falls.
 
+### Environment PS1 look and full destruction (next phase, user answers 2026-10-12, not built yet)
+
+- PS1 look on the whole environment (buildings, ground, props, cars, debris), the same settings as the mech (`data/skins/ps1_skin.tres`), keeping each texture's own colors.
+- Props become physics bodies: the mech pushes or kicks cars, benches and debris away; heavy ones (bus) slow it. Prepares the car pick-up reminder.
+- Also breakable: the two towers collapse like the low-rise buildings; road craters from missiles and cannon shells; the people figures get hit and fall. Edge blocks stay indestructible.
+- Debris deals minor damage to mechs.
+
 ### Textures and lighting
 
 - CC0 Poly Haven 1K textures in `assets/textures/<name>/` (asphalt 3 m, concrete 2 m, brick 1 m, plaster 2 m, paving tiles 2 m, sidewalk 1.8 m, metal 0.5 m, roof gravel 2.25 m; see CREDITS.md). Glass is a flat material.
