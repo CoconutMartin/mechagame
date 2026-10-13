@@ -30,6 +30,11 @@ extends Node
 @export var one_hand_pivot: Vector3 = Vector3(2.18, 1.16, -0.05)
 
 @export_group("Hands")
+## Optional (two-hand rifles): the right hand IK target slides between a rest and an aim place on the
+## weapon, like the left hand (the fist sits on the grip in both holds).
+@export var right_grip_target: Node3D
+@export var right_grip_rest: Node3D
+@export var right_grip_aim: Node3D
 ## The left hand IK target on the weapon. Leave empty for a one-hand weapon.
 @export var left_grip_target: Node3D
 ## Left hand place in the rest pose (on the weapon).
@@ -84,6 +89,8 @@ func _physics_process(delta: float) -> void:
 		weapon.transform = weapon.transform * recoil.get_offset()
 
 	arm_ik_right.pole_direction = right_pole_rest.lerp(right_pole_aim, t)
+	if right_grip_target != null and right_grip_rest != null and right_grip_aim != null:
+		right_grip_target.position = right_grip_rest.position.lerp(right_grip_aim.position, t)
 	if left_grip_target == null:
 		return  # One-hand weapon: the left arm is free.
 	left_grip_target.position = left_grip_rest.position.lerp(left_grip_aim.position, t)

@@ -53,7 +53,7 @@ def grip_socket(name, origin, rake_deg, radius, hand_reach=True):
     (where the fist hollow goes), +Y along the grip toward the gun body (a pistol grip leans back:
     rake_deg, top forward), +Z toward the butt (the palm side), +X to the gun's right; metadata
     grip_radius = the grip's half thickness (meters, the fingers close on it); hand_reach = false keeps
-    the arm's pose (two-hand rifles: the tuned stance) and only turns the hand at the wrist."""
+    the arm's pose and only turns the hand at the wrist."""
     return (f'[node name="{name}" type="Marker3D" parent="."]\ntransform = {xf(origin, (-rake_deg, 0, 0))}\n'
             f'metadata/grip_radius = {radius}\nmetadata/hand_reach = {"true" if hand_reach else "false"}\n')
 
@@ -143,14 +143,20 @@ def sniper(part, marker):
         part(f"Coil{i}", "dark", "cyl", (0.3, 0.3, 0.25), (0, 0.05, z), (90, 0, 0))
     # Emitter: a flat lens set into the barrel face (it lights up with the charge, BeamRifleWeapon).
     part("Emitter", "dark", "cyl", (0.14, 0.14, 0.04), (0, 0.05, -6.81), (90, 0, 0))
-    marker("GripRight", (0, -0.5, -1.4))
+    # Hand markers (arm IK targets, the palm socket bone): placed so the fist hollow sits on the grip
+    # sockets (measured in the game, 2026-10-13); the right one slides from rest to aim like the left.
+    marker("GripRight", SNIPER_HANDS["right_rest"])
+    marker("GripRightRest", SNIPER_HANDS["right_rest"])
+    marker("GripRightAim", SNIPER_HANDS["right_aim"])
     # Grip sockets: on the grip and foregrip axes, nearest the hand markers.
-    marker("GripSocketRight", (0, -0.514, -1.439), (-20, 0, 0), meta={"grip_radius": 0.15, "hand_reach": "false"})
-    marker("GripSocketLeft", (0, -0.454, -2.926), (-10, 0, 0), meta={"grip_radius": 0.14, "hand_reach": "false"})
-    marker("GripLeft", (0, -0.45, -2.9))
-    marker("GripLeftRest", (0, -0.45, -2.9))
+    marker("GripSocketRight", (0, -0.514, -1.439), (-20, 0, 0), meta={"grip_radius": 0.15, "hand_reach": "true"})
+    marker("GripSocketLeft", (0, -0.454, -2.926), (-10, 0, 0), meta={"grip_radius": 0.14, "hand_reach": "true"})
+    # Aim: the left hand cups the underside of the body, nearer the right hand (GripLeftAim).
+    marker("GripSocketLeftAim", (0, -0.3, -2.2), (-90, 0, 0), meta={"grip_radius": 0.2, "hand_reach": "true"})
+    marker("GripLeft", SNIPER_HANDS["left_rest"])
+    marker("GripLeftRest", SNIPER_HANDS["left_rest"])
     # Aim: nearer the right hand than at rest, so the left arm reaches with the stock off the chest.
-    marker("GripLeftAim", (0, -0.45, -2.2))
+    marker("GripLeftAim", SNIPER_HANDS["left_aim"])
     marker("Muzzle", (0, 0.05, -7.15))
 
 
@@ -192,6 +198,27 @@ BR_MUZZLE = (0.0, 0.0, -6.0)
 SNIPER_GRIP_RIGHT = (0.0, -0.5, -1.4)
 
 
+def plus(a, b):
+    return tuple(round(x + y, 4) for x, y in zip(a, b))
+
+
+# Two-hand rifle hand markers (grip sockets, 2026-10-13): the arm IK target is the palm socket bone,
+# about 0.3 m from the fist hollow, so each marker sits off its grip socket by the gap measured in the
+# game (hand turned to the grip, fist hollow on the socket), at rest and at aim.
+SNIPER_HANDS = {
+    "right_rest": plus(SNIPER_GRIP_RIGHT, (0.056, 0.359, -0.269)),
+    "right_aim": plus(SNIPER_GRIP_RIGHT, (-0.051, 0.427, -0.291)),
+    "left_rest": plus((0.0, -0.45, -2.9), (0.001, -0.31, 0.253)),
+    "left_aim": plus((0.0, -0.45, -2.2), (0.115, 0.391, 0.143)),
+}
+BR_HANDS = {
+    "right_rest": plus(BR_GRIP_RIGHT, (0.058, 0.424, -0.236)),
+    "right_aim": plus(BR_GRIP_RIGHT, (-0.043, 0.594, -0.237)),
+    "left_rest": plus(BR_GRIP_LEFT, (0.097, 0.023, 0.433)),
+    "left_aim": plus((BR_GRIP_LEFT[0], BR_GRIP_LEFT[1], BR_GRIP_LEFT[2] + 0.8), (0.145, 0.22, 0.07)),
+}
+
+
 def beam_rifle_scene(path):
     """Beam Rifle scene: the Blender model (.glb) under a BeamRifleWeapon root, plus the hand and
     muzzle markers. The cyan ring lights up while charging, the muzzle bore is the emitter."""
@@ -205,12 +232,15 @@ def beam_rifle_scene(path):
          '[node name="Model" parent="." instance=ExtResource("model")]\n']
     # Aim: the left hand 0.8 m nearer the right hand, so the stock stays off the chest (see br_anchor).
     br_left_aim = (BR_GRIP_LEFT[0], BR_GRIP_LEFT[1], BR_GRIP_LEFT[2] + 0.8)
-    for name, pos in (("GripRight", BR_GRIP_RIGHT), ("GripLeft", BR_GRIP_LEFT), ("GripLeftRest", BR_GRIP_LEFT),
-                      ("GripLeftAim", br_left_aim), ("Muzzle", BR_MUZZLE)):
+    # Hand markers: the fist hollows on the grip sockets (see SNIPER_HANDS).
+    for name, pos in (("GripRight", BR_HANDS["right_rest"]), ("GripRightRest", BR_HANDS["right_rest"]),
+                      ("GripRightAim", BR_HANDS["right_aim"]), ("GripLeft", BR_HANDS["left_rest"]),
+                      ("GripLeftRest", BR_HANDS["left_rest"]), ("GripLeftAim", BR_HANDS["left_aim"]), ("Muzzle", BR_MUZZLE)):
         o.append(f'[node name="{name}" type="Marker3D" parent="."]\ntransform = {xf(pos)}\n')
     # Grip sockets: the pistol grip (tilted 24 deg, 0.24 x 0.45 m) and the lower rail (along the gun).
-    o.append(grip_socket("GripSocketRight", BR_GRIP_RIGHT, 24.0, 0.16, hand_reach=False))
-    o.append(grip_socket("GripSocketLeft", BR_GRIP_LEFT, 90.0, 0.15, hand_reach=False))
+    o.append(grip_socket("GripSocketRight", BR_GRIP_RIGHT, 24.0, 0.16, hand_reach=True))
+    o.append(grip_socket("GripSocketLeft", BR_GRIP_LEFT, 90.0, 0.15, hand_reach=True))
+    o.append(grip_socket("GripSocketLeftAim", br_left_aim, 90.0, 0.15, hand_reach=True))
     open(path, "w").write("\n".join(o))
     print("wrote", path)
 
@@ -257,14 +287,20 @@ if __name__ == "__main__":
     # forward: each hand is one forearm (2.71 m) from its elbow under the flat block. Places found by
     # search (no weapon or forearm point inside the body part boxes, the stock off the right forearm,
     # the barrel off the left forearm), then checked in the game (no clipping on either rifle).
-    two_hand_hand = (0.363, 1.01, -2.011)
-    rest_rows = xf_aim((-0.894, -0.342, -0.29), (0.0, 1.0, 0.0), two_hand_hand)
+    # Grip sockets (2026-10-13): the hands lower and further forward, the muzzle straight across the
+    # body and 15 deg down (was 20 deg down and forward), so the right forearm runs across the pistol
+    # grip and the fist closes around it (before: the forearm ran up along the grip, a 50 deg wrist
+    # bend). Found by search: wrist bends at most 30 deg, no clipping.
+    two_hand_hand = (0.4, 0.2, -2.4)
+    rest_rows = xf_aim((-0.965, -0.259, 0.034), (0.0, 1.0, 0.0), two_hand_hand)
     stock_rest = tuple(h - g for h, g in zip(two_hand_hand, apply_rows(rest_rows, SNIPER_GRIP_RIGHT)))
     # Beam sniper: two hands. Aim = stock at the chest, zoom.
     # Stock in front of the chest (torso space; the torso front is at z -1.6).
-    # Sniping stance (user reference 2026-10-12): the butt against the front of the right shoulder, the
-    # rifle level across the turned chest (hips 45 deg, SkeletalAimStance, plus aim_twist_deg 25).
-    sniper_anchor = (1.4, 2.0, -1.7)
+    # Sniping stance (user reference 2026-10-12): the rifle level across the turned chest (hips 45 deg,
+    # SkeletalAimStance, plus aim_twist_deg 25). Grip sockets (2026-10-13): the butt 0.8 m lower (at the
+    # front of the chest, was the front of the right shoulder) and 0.5 m further out, so the right fist
+    # lines up with the pistol grip and the stock keeps off the right forearm (found by search).
+    sniper_anchor = (1.9, 1.2, -1.5)
     res("data/weapons/beam_sniper.tres", {"display_name": '"Beam Sniper"', "weight_t": 4.0, "hp": 300.0,
         "kind": 1, "two_handed": "true", "fire_rate": 0.4, "damage": 300.0, "spread_deg": 0.05, "range_m": 1500.0,
         "recoil_up_deg": 3.5, "recoil_side_deg": 0.5, "model_kick_back": 0.5, "model_kick_up_deg": 6.0,
@@ -281,9 +317,8 @@ if __name__ == "__main__":
     br_hand = two_hand_hand
     br_rows = rest_rows
     br_rest = tuple(h - g for h, g in zip(br_hand, apply_rows(br_rows, BR_GRIP_RIGHT)))
-    # The butt on the right shoulder (sniping stance), 0.4 m further out than the sniper's: the longer
-    # stock then keeps off the right upper arm.
-    br_anchor = (1.8, 2.0, -1.7)
+    # The same butt place as the sniper (grip sockets, 2026-10-13).
+    br_anchor = (1.9, 1.2, -1.5)
     res("data/weapons/beam_rifle.tres", {"display_name": '"Beam Rifle"', "weight_t": 3.5, "hp": 300.0,
         "kind": 1, "two_handed": "true", "fire_rate": 0.4, "damage": 300.0, "spread_deg": 0.05, "range_m": 1500.0,
         "recoil_up_deg": 3.5, "recoil_side_deg": 0.5, "model_kick_back": 0.5, "model_kick_up_deg": 6.0,

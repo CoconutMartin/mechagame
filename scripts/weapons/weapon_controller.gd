@@ -106,6 +106,9 @@ func _wire_right(data: WeaponData) -> void:
 	weapon_pose.right_pole_aim = data.right_pole_aim
 	right_weapon.transform = data.rest_transform.translated(hold_offset)
 	arm_ik_right.target = right_weapon.get_node("GripRight")
+	weapon_pose.right_grip_target = right_weapon.get_node_or_null("GripRight") as Node3D
+	weapon_pose.right_grip_rest = right_weapon.get_node_or_null("GripRightRest") as Node3D
+	weapon_pose.right_grip_aim = right_weapon.get_node_or_null("GripRightAim") as Node3D
 	weapon_recoil.bind(right_weapon)
 	weapon_recoil.kick_back = data.model_kick_back
 	weapon_recoil.kick_up_deg = data.model_kick_up_deg
