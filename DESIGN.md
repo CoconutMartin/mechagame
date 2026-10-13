@@ -92,7 +92,7 @@ All values are exports on `Mech` (Inspector). Phase 2 will compute them from par
 
 | Value | Current |
 |---|---|
-| Camera crosshair | hidden since 4c (user request, `AimReticle.show_crosshair`); yellow dot 13.5% of the screen height above the center (matches the reference screenshot). `MechAim.screen_offset_up` |
+| Camera crosshair | hidden since 4c (user request, `AimReticle.show_crosshair`); at the screen center since 2026-10-13 (user request). `MechAim.screen_offset_up` |
 | Mech aim reticle | blue ring, placed from the torso angle (no shake, no jitter). The camera follows the torso, so it sits on the yellow dot |
 | Aim jitter | removed (0°). The code and exports stay in `MechAim` for later use. Crosshair (blue ring) jitter also removed (2026-10-12, user request): `FreeAim` shot jitter, booster jitter, sway and turn momentum are 0; only the recoil kick moves it |
 | Vertical aim | mouse pitch speed 30% of horizontal |
@@ -106,11 +106,11 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 
 | Value | Current |
 |---|---|
-| Distance behind the pivot (spring length) | 8.5 m since revision 54 (above the head, FOV 65° since revision 61). The feet are below the screen edge at the start pitch. RMB (two-hand weapons) moves it to 8 m and zooms to the weapon zoom FOV |
-| Shoulder offset | 3 m right (right side of the head) |
-| Crosshair height | 0.3 of the screen height above the center since revision 59 (was 0.135): the view is about 12° lower (more ground and the whole mech in view), as the user drew |
-| Pivot height | 11.5 m (above the head). The camera sits on the aim line behind the pivot, 3 m to the right, and tilts down by the crosshair angle (about 21° at FOV 65°, crosshair 0.3 above center), so it looks down over the head |
-| Start view | camera pitch -24°, FOV 65° (4c, set by the user; -24.5° in revision 61): aim pitch starts at -3.1° and the crosshair tilt adds about 21°. `MechCameraRig.start_pitch_deg`. The debug HUD shows the camera angle: camera pitch, aim pitch, distance and FOV |
+| Distance behind the pivot (spring length) | 12.3 m on Sanggigilid since 2026-10-13 (8.5 m before). About 75% of the feet show at the bottom edge with the level start view. RMB (two-hand weapons) moves it to 8 m and zooms to the weapon zoom FOV |
+| Shoulder offset | 8.2 m right on Sanggigilid since 2026-10-13 (3 m before): the mech stands in the left part of the screen (about 8% to 33% of the screen width at 16:9), as the user drew |
+| Crosshair height | screen center on Sanggigilid since 2026-10-13 (`MechAim.screen_offset_up` 0; was 0.3 since revision 59), so the camera has no extra down tilt |
+| Pivot height | 7.4 m on Sanggigilid since 2026-10-13 (script default 11.5 m), about 7.75 m after the mech size scale (chest height). The camera sits on the aim line behind the pivot, to the right |
+| Start view | camera pitch 0° (level), FOV 65° since 2026-10-13 (user request: lower camera, no down tilt; was -24°). `MechCameraRig.start_pitch_deg` 0 on Sanggigilid. The debug HUD shows the camera angle: camera pitch, aim pitch, distance and FOV |
 | Same target in ADS | the camera stays on the aim line and its tilt follows the FOV, so the crosshair points at the same spot with and without RMB |
 | Tilt limits | 27.5° down, 15° up |
 | Boost shake | steady shake while boosting (trauma 0.4) |
