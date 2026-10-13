@@ -33,7 +33,8 @@ signal footstep(strength: float)
 @export var head_scan: StringName = &"Head_Scan"
 ## Head scan strength (0 = off, 1 = full).
 @export_range(0.0, 1.0) var head_scan_amount: float = 1.0
-## One-shot stop animation layer over the cycles (SkeletalAkiraStop sets stop_weight and stop_time).
+## One-shot stop animation layer over the cycles (stop_weight and stop_time; unused since the brake
+## stop, SkeletalBrakeStop, replaced the Akira stop animation on 2026-10-13).
 @export var stop_animation: StringName = &"biped_run_stop_akira"
 
 var stop_weight: float = 0.0
@@ -121,7 +122,9 @@ func _process(delta: float) -> void:
 	var landed_forward := _phase < before or (before < 0.5 and _phase >= 0.5)
 	var landed_backward := _phase > before or (before >= 0.5 and _phase < 0.5)
 	var crossed := landed_forward if direction > 0.0 else landed_backward
-	if _speed > idle_blend_speed * 0.5 and mech.is_on_floor() and crossed and stop_weight < 0.5:
+	# No steps while the feet slide (brake stop) or a dodge clip has the legs.
+	var legs_busy := mech.akira_playing or (mech.dodge != null and mech.dodge.is_rolling())
+	if _speed > idle_blend_speed * 0.5 and mech.is_on_floor() and crossed and stop_weight < 0.5 and not legs_busy:
 		footstep.emit(clampf(_speed / mech.walk_speed, 0.4, 1.0))
 	tree.set(&"parameters/seek_a/seek_request", _phase * len_a)
 	tree.set(&"parameters/seek_b/seek_request", _phase * len_b)

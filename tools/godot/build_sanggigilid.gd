@@ -142,13 +142,7 @@ func _initialize() -> void:
 	# flick between turned and straight every frame).
 	hips.skid_turn = skid_turn
 
-	# Akira stop animation (biped_run_stop_akira) at the end of a run or boost stop.
-	var akira := SkeletalAkiraStop.new()
-	akira.name = "AkiraStop"
-	root.add_child(akira)
-	akira.owner = root
-	akira.mech = root
-	akira.locomotion = locomotion
+	# The run and boost stop slides to a stop (Mech's Akira slide speed curve); SkeletalBrakeStop poses it.
 	root.akira_stop_animation = true
 
 	# Walking through buildings: a little damage to the parts inside them, and to the walls.
@@ -293,6 +287,14 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	dodge_animation.mech = root
 	dodge_animation.arm_rig = rig
 	(root.get_node("MechDodge") as MechDodge).animation = dodge_animation
+	# Power brake at the end of a full run or boost (after the arm rig, like the dodge).
+	var brake := SkeletalBrakeStop.new()
+	brake.name = "BrakeStop"
+	visual.add_child(brake)
+	brake.model = model
+	brake.mech = root
+	brake.arm_rig = rig
+	brake.locomotion = root.get_node("Locomotion") as SkeletalLocomotion
 	var weapon_pose := weapon_animation.get_node("WeaponPose") as WeaponPose
 	weapon_pose.aim_anchor = torso.get_node("AimAnchor")
 	var bounce := WeaponBounce.new()

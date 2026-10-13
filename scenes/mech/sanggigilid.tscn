@@ -36,7 +36,6 @@
 [ext_resource type="Script" path="res://scripts/animation/weapon_bounce.gd" id="34_tjmys"]
 [ext_resource type="Script" path="res://scripts/animation/skeletal_locomotion.gd" id="35_bnhrj"]
 [ext_resource type="Script" path="res://scripts/animation/skid_body_turn.gd" id="36_cjnl1"]
-[ext_resource type="Script" path="res://scripts/animation/skeletal_akira_stop.gd" id="37_lk213"]
 [ext_resource type="Script" path="res://scripts/mech/mech_building_contact.gd" id="38_smi74"]
 [ext_resource type="Script" path="res://scripts/combat/skeletal_hitboxes.gd" id="39_oexbt"]
 [ext_resource type="Resource" path="res://data/mechs/sanggigilid_hit_parts.tres" id="40_v8305"]
@@ -46,6 +45,7 @@
 [ext_resource type="Script" path="res://scripts/mech/mech_hand_control.gd" id="44_x0loa"]
 [ext_resource type="Script" path="res://scripts/effects/ps1_skin_look.gd" id="45_l5mie"]
 [ext_resource type="Script" path="res://scripts/animation/skeletal_dodge_animation.gd" id="46_droll"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_brake_stop.gd" id="47_brake"]
 
 [sub_resource type="CapsuleShape3D" id="body_shape"]
 radius = 2.6
@@ -461,13 +461,6 @@ mech = NodePath("..")
 input = NodePath("../MechInput")
 body = NodePath("../Visual")
 
-[node name="AkiraStop" type="Node" parent="." unique_id=67439141 node_paths=PackedStringArray("mech", "locomotion")]
-script = ExtResource("37_lk213")
-mech = NodePath("..")
-locomotion = NodePath("../Locomotion")
-step_speeds = PackedVector2Array(1.7, 0, 1.83, 3.75, 1.93, 3.9, 2.57, 3.9, 2.63, 3.2, 2.8, 1.35, 3, 0)
-footstep_times = PackedFloat32Array(0.267, 1.333, 1.667, 1.933, 2.267, 2.6, 2.933)
-
 [node name="MechBuildingContact" type="Node" parent="." unique_id=1565021965 node_paths=PackedStringArray("mech", "health")]
 script = ExtResource("38_smi74")
 mech = NodePath("..")
@@ -523,3 +516,10 @@ script = ExtResource("46_droll")
 model = NodePath("../Model")
 mech = NodePath("../..")
 arm_rig = NodePath("../ArmRig")
+
+[node name="BrakeStop" type="SkeletonModifier3D" parent="Visual" node_paths=PackedStringArray("model", "mech", "arm_rig", "locomotion")]
+script = ExtResource("47_brake")
+model = NodePath("../Model")
+mech = NodePath("../..")
+arm_rig = NodePath("../ArmRig")
+locomotion = NodePath("../../Locomotion")

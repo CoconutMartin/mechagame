@@ -181,7 +181,7 @@ var _lunge_speed: float = 0.0
 var _lunge_left: float = 0.0
 ## True while the current skid uses the brake thrusters (dodge hop ending).
 var is_brake_skidding: bool = false
-## Akira stop animation (SkeletalAkiraStop sets akira_stop_animation): a run or boost stop with no
+## Akira slide speed curve (the build sets akira_stop_animation; SkeletalBrakeStop poses it): a run or boost stop with no
 ## move key slides all the way to 0 (no heavy steps), then the animation's own steps move the mech
 ## (root_motion_velocity while root_motion_active).
 @export var akira_stop_animation: bool = false
@@ -564,7 +564,7 @@ func _update_skid(delta: float, has_input: bool) -> void:
 		return
 	is_skidding = false
 	if akira_skid:
-		# The Akira stop: no heavy steps, the animation steps on (SkeletalAkiraStop).
+		# The slide stop: no heavy steps, the brake stop pose recovers (SkeletalBrakeStop).
 		akira_skid = false
 		velocity.x = 0.0
 		velocity.z = 0.0
