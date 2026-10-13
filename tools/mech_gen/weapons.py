@@ -195,6 +195,11 @@ BR_K = 6.0 / (1728 - 492)
 BR_GRIP_RIGHT = (0.0, (241 - 368) * BR_K, -(1728 - 1340) * BR_K)
 BR_GRIP_LEFT = (0.0, (241 - 318) * BR_K, -(1728 - 1000) * BR_K)
 BR_MUZZLE = (0.0, 0.0, -6.0)
+## Sanggigilid's shoulder joint distance (torso space, measured in the game: x +-1.348).
+SHOULDER_WIDTH = 2.696
+## Beam Rifle rest (user request 2026-10-13): the hands one shoulder width apart, so the left hand
+## holds the lower rail this far ahead of the pistol grip (the rail runs from z -2.37 to -6.0).
+BR_LEFT_REST = (0.0, BR_GRIP_LEFT[1], BR_GRIP_RIGHT[2] - SHOULDER_WIDTH)
 SNIPER_GRIP_RIGHT = (0.0, -0.5, -1.4)
 
 
@@ -212,9 +217,9 @@ SNIPER_HANDS = {
     "left_aim": plus((0.0, -0.45, -2.2), (0.115, 0.391, 0.143)),
 }
 BR_HANDS = {
-    "right_rest": plus(BR_GRIP_RIGHT, (0.058, 0.424, -0.236)),
+    "right_rest": plus(BR_GRIP_RIGHT, (0.166, 0.094, -0.151)),
     "right_aim": plus(BR_GRIP_RIGHT, (-0.043, 0.594, -0.237)),
-    "left_rest": plus(BR_GRIP_LEFT, (0.097, 0.023, 0.433)),
+    "left_rest": plus(BR_LEFT_REST, (0.128, 0.094, 0.322)),
     "left_aim": plus((BR_GRIP_LEFT[0], BR_GRIP_LEFT[1], BR_GRIP_LEFT[2] + 0.8), (0.145, 0.22, 0.07)),
 }
 
@@ -239,7 +244,7 @@ def beam_rifle_scene(path):
         o.append(f'[node name="{name}" type="Marker3D" parent="."]\ntransform = {xf(pos)}\n')
     # Grip sockets: the pistol grip (tilted 24 deg, 0.24 x 0.45 m) and the lower rail (along the gun).
     o.append(grip_socket("GripSocketRight", BR_GRIP_RIGHT, 24.0, 0.16, hand_reach=True))
-    o.append(grip_socket("GripSocketLeft", BR_GRIP_LEFT, 90.0, 0.15, hand_reach=True))
+    o.append(grip_socket("GripSocketLeft", BR_LEFT_REST, 90.0, 0.15, hand_reach=True))
     o.append(grip_socket("GripSocketLeftAim", br_left_aim, 90.0, 0.15, hand_reach=True))
     open(path, "w").write("\n".join(o))
     print("wrote", path)
@@ -310,12 +315,14 @@ if __name__ == "__main__":
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
         "aim_twist_deg": 25.0, "aim_tilt_deg": 4.0, "zoom_fov": 52.6},
         "res://scenes/weapons/beam_sniper.tscn")
-    # Beam Rifle: two hands. Rest (neutral) = the two-hand rest above, right hand on the pistol grip,
-    # left hand under the lower rail (Warden: left arm 92%, right 67%). Aim = the sniper hold with the
-    # right hand at the same place (the grip is 0.48 m further from the butt than on the sniper).
+    # Beam Rifle: two hands, right hand on the pistol grip, left hand under the lower rail. Aim = the
+    # sniper hold.
     beam_rifle_scene("scenes/weapons/beam_rifle.tscn")
-    br_hand = two_hand_hand
-    br_rows = rest_rows
+    # Rest (user request 2026-10-13): each hand in front of its shoulder joint, the rifle level and
+    # straight across the body (muzzle left), the pistol grip and the rail socket one shoulder width
+    # apart (BR_LEFT_REST). Height and depth found by search: wrist bends 5 and 22 deg, no clipping.
+    br_hand = (SHOULDER_WIDTH / 2, 0.4, -2.6)
+    br_rows = xf_aim((-1.0, 0.0, 0.0), (0.0, 1.0, 0.0), br_hand)
     br_rest = tuple(h - g for h, g in zip(br_hand, apply_rows(br_rows, BR_GRIP_RIGHT)))
     # The same butt place as the sniper (grip sockets, 2026-10-13).
     br_anchor = (1.9, 1.2, -1.5)
