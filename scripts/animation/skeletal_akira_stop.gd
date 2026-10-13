@@ -19,13 +19,16 @@ extends Node
 		Vector2(2.63, 3.2), Vector2(2.80, 1.35), Vector2(3.00, 0.0)])
 ## Footstep times in the animation (s; markers footstep_*): each shakes the camera like a step.
 @export var footstep_times: PackedFloat32Array = PackedFloat32Array([0.267, 1.333, 1.667, 1.933, 2.267, 2.6, 2.933])
-## Playback speed at the start of the pivot steps that turn the body back (after the slide). It eases to
-## full speed at turn_back_end_time. The slide plays at about this speed (1 s of animation over the 2 to
-## 2.25 s slide), so the turn back keeps the same pace (user report 2026-10-13: the torso snapped back).
-@export_range(0.1, 1.0) var turn_back_rate: float = 0.45
-## Animation time (s) where the playback is at full speed again (the body faces forward at 1.75, the
-## first step lands at 1.93).
-@export var turn_back_end_time: float = 2.0
+## Time (s) for the pivot steps that turn the body back to the front after the slide (user requests
+## 2026-10-13: the torso snapped back in 0.7 s; then 2 s). The playback eases from the slide pace to the
+## pace that gives this time, holds it to facing_time, then speeds up to full for the forward steps.
+@export var turn_back_time: float = 2.0
+## Animation time (s) where the body faces forward again (end of the pivot steps).
+@export var facing_time: float = 1.75
+## Animation time (s) where the playback is at full speed again (the first forward step lands at 1.93).
+@export var full_speed_time: float = 2.0
+## Animation time (s) over which the playback eases from the slide pace to the turn back pace.
+@export var pace_blend_time: float = 0.15
 ## Blend in at the start and out at the end or on a key (seconds).
 @export var blend_in: float = 0.15
 @export var blend_out: float = 0.3
@@ -35,6 +38,11 @@ var _time: float = 0.0
 var _weight: float = 0.0
 var _length: float = 0.0
 var _direction: Vector3 = Vector3.FORWARD
+## Real time of the slide (s) and the slide pace (animation seconds per second) it gives.
+var _slide_seconds: float = 0.0
+var _slide_rate: float = 0.5
+## Turn back pace (animation seconds per second), set at the slide end.
+var _turn_rate: float = 0.375
 
 
 func _ready() -> void:
@@ -50,6 +58,7 @@ func _physics_process(delta: float) -> void:
 		return
 	if not _active and mech.akira_skid and mech.is_skidding:
 		_active = true
+		_slide_seconds = 0.0
 		_time = 0.0
 		var flat := Vector3(mech.velocity.x, 0.0, mech.velocity.z)
 		_direction = flat.normalized() if flat.length() > 0.1 else -mech.global_basis.z
@@ -73,9 +82,13 @@ func _step(delta: float) -> void:
 		return
 	var before := _time
 	if mech.is_skidding:
+		_slide_seconds += delta
+		_slide_rate = slide_end_time / maxf(_slide_seconds, 0.01)
 		# The slide part follows the skid; it never runs ahead of real time.
 		_time = clampf(maxf(_time, mech.get_skid_progress() * slide_end_time), 0.0, minf(before + delta * 3.0, slide_end_time))
 	else:
+		if _time <= slide_end_time:
+			_turn_rate = _find_turn_rate()
 		var rate := _rate_at(maxf(_time, slide_end_time))
 		_time = minf(maxf(_time, slide_end_time) + delta * rate, _length)
 		mech.root_motion_active = true
@@ -95,9 +108,23 @@ func _stop() -> void:
 	mech.akira_skid = false
 
 
-## Playback speed after the slide: turn_back_rate, easing to 1 at turn_back_end_time.
+## Playback speed after the slide: from the slide pace to the turn back pace, then up to full speed.
 func _rate_at(time: float) -> float:
-	return lerpf(turn_back_rate, 1.0, smoothstep(slide_end_time, turn_back_end_time, time))
+	if time >= facing_time:
+		return lerpf(_turn_rate, 1.0, smoothstep(facing_time, full_speed_time, time))
+	return lerpf(_slide_rate, _turn_rate, smoothstep(slide_end_time, slide_end_time + pace_blend_time, time))
+
+
+## Turn back pace that, with the ease from the slide pace, faces the body forward in turn_back_time.
+func _find_turn_rate() -> float:
+	var span := facing_time - slide_end_time
+	var blend := minf(pace_blend_time, span)
+	var rate := span / maxf(turn_back_time, 0.1)
+	for i in 4:
+		# The ease part takes about blend / (mean pace); the rest goes at the turn back pace.
+		var ease_seconds := blend / ((_slide_rate + rate) * 0.5)
+		rate = (span - blend) / maxf(turn_back_time - ease_seconds, 0.1)
+	return clampf(rate, 0.05, 1.0)
 
 
 func _speed_at(time: float) -> float:
