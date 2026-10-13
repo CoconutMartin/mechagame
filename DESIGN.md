@@ -620,6 +620,11 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
 - No quick side switches (user report 2026-10-12: W + D with the aim to the left flicked the body left and right): `SkeletalHipTurn` keeps forward or backward stepping at least 0.5 s after a switch (`back_step_hold_time`), the waist twist moves at most 300 deg/s (`twist_speed_deg`) and keeps its side near 180 deg (the wrap flipped it from +90 to -90 in one frame). Test (move direction swinging +/-15 deg around 100, 135 and 170 deg from the aim): largest change per frame 5.6 deg (hips and waist), one forward/back switch in 6 s.
 - Next phases: run start / stop and the Akira slide on the game's boost exit and skid, footstep markers to camera shake, sound and dust, jump / air / kneel / dodge poses, aim layer.
 
+## New mech hand (user request 2026-10-13, waiting for the user's picture)
+
+- A mech hand with joints that opens, closes and grips weapon grips. User answers: 4 fingers and a thumb (3 joints each); the look from a picture the user will send; auto fit grip (each finger closes until it touches the grip, so one hand fits thin and thick grips; open when empty, a fist when free and moving).
+- Plan: model it in Blender by script (like the SMG: `tools/blender/`), with bones for the wrist, each finger joint and a palm socket; export a .glb; fix it to Sanggigilid's hand bones in Godot and hide the old hand meshes; a grip script turns each finger joint until a ray or shape test along the finger touches the weapon (`PS1Skin` on it).
+
 ## Beam Rifle (user design, Blender model, in the game since 2026-10-11)
 
 - Picture: `models/guides/beam_rifle_ref.png` (side, front and 3/4 views). Script: `tools/blender/beam_rifle_build.py` (run `blender -b --python tools/blender/beam_rifle_build.py`; it starts from an empty file, so hand edits are lost). Output: `models/beam_rifle/beam_rifle.blend` and `beam_rifle.glb`.
