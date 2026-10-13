@@ -11,6 +11,9 @@ extends SkeletonModifier3D
 ## match. The roll is a forward clip: for a side roll the body turns toward the roll and back.
 ## After the clip the mech slides on (its speed fades, dust from the feet) while the body blends back
 ## from the clip's last pose over the clip's settle time (user request 2026-10-13: no abrupt end).
+## A move key hands the mech back to the player from release_at of the clip on (user request
+## 2026-10-13: no wait for the neutral pose): the dodge ends, the mech walks on from its dodge speed
+## and the body blends from the clip into the walk over release_fade.
 ## The arms are not taken from the clips: they keep holding the weapon, and the arm rig moves the
 ## torso frame (weapons, shield) with the new torso (user request 2026-10-13: no floating weapon).
 
@@ -27,6 +30,10 @@ extends SkeletonModifier3D
 ## during the last turn_back part.
 @export var turn_in: float = 0.12
 @export var turn_back: float = 0.25
+## A move key ends the dodge from this part of the clip on (0 to 1; the slide after the clip too).
+@export_range(0.0, 1.0) var release_at: float = 0.7
+## Seconds for the body to blend from the clip into the walk after a move key ended the dodge.
+@export var release_fade: float = 0.35
 
 ## Bones the clips do not move: the arms keep holding the weapon.
 const ARM_BONES: Array[String] = ["upper_arm_L", "forearm_L", "hand_L", "upper_arm_R", "forearm_R", "hand_R"]
@@ -48,6 +55,10 @@ var _turn: float = 0.0
 ## Clip -> [[track, type, bone name], ...].
 var _tracks := {}
 var _finished_callback: Callable
+## After a move key ended the dodge: the clip pose fades out while the mech walks.
+var _fading: bool = false
+var _fade_from: float = 0.0
+var _fade_left: float = 0.0
 
 
 func _ready() -> void:
@@ -84,6 +95,7 @@ func pick(local_direction: Vector3) -> DodgeClip:
 func start(chosen: DodgeClip, local_direction: Vector3, from_boost: bool, finished: Callable) -> void:
 	clip = chosen
 	is_playing = true
+	_fading = false
 	_time = 0.0
 	_after = 0.0
 	_momentum = 0.0
@@ -102,7 +114,15 @@ func is_sliding() -> bool:
 
 
 func _physics_process(delta: float) -> void:
+	if _fading:
+		_time = minf(_time + delta * clip.speed_scale, clip.animation.length)
+		_fade_left = maxf(_fade_left - delta, 0.0)
+		_fading = _fade_left > 0.0
+		return
 	if not is_playing:
+		return
+	if _wants_release():
+		_release()
 		return
 	var length := clip.animation.length
 	var clip_speed := 0.0
@@ -124,7 +144,27 @@ func _physics_process(delta: float) -> void:
 			_finished_callback.call()
 
 
+## A move key after release_at of the clip, while the mech can walk.
+func _wants_release() -> bool:
+	return mech.input.move_direction.length_squared() > 0.01 and _time >= clip.animation.length * release_at \
+			and mech.is_on_floor() and not mech.is_fallen and not mech.is_wrecked
+
+
+## Ends the dodge for the walk: the mech keeps its dodge speed (Mech walks on from it) and the body
+## blends out of the clip over release_fade.
+func _release() -> void:
+	_fade_from = _weight()
+	_fade_left = release_fade
+	_fading = release_fade > 0.0
+	is_playing = false
+	mech.root_motion_active = false
+	if _finished_callback.is_valid():
+		_finished_callback.call()
+
+
 func _weight() -> float:
+	if _fading:
+		return _fade_from * _fade_left / maxf(release_fade, 0.01)
 	if not is_playing:
 		return 0.0
 	var blend_in := clampf(_time / (clip.blend_in * clip.speed_scale), 0.0, 1.0)
@@ -151,6 +191,8 @@ func _process_modification_with_delta(_delta: float) -> void:
 		var progress := _time / animation.length
 		var amount := smoothstep(0.0, turn_in, progress) * (1.0 - smoothstep(1.0 - turn_back, 1.0, progress))
 		amount *= 1.0 - smoothstep(0.0, 1.0, _after / maxf(clip.settle_time, 0.01))
+		if _fading:
+			amount *= _fade_left / maxf(release_fade, 0.01)
 		var root := skeleton.find_bone("root")
 		var yaw := Quaternion(Vector3.UP, _turn * amount * weight)
 		skeleton.set_bone_pose_rotation(root, yaw * skeleton.get_bone_pose_rotation(root))

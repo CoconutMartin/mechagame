@@ -213,7 +213,8 @@ func _start_animation(clip: DodgeClip) -> void:
 
 func _end_roll() -> void:
 	is_dodging = false
-	_recover_left = recovery_time
+	# A move key ended the dodge (SkeletalDodgeAnimation.release_at): walk at once.
+	_recover_left = 0.0 if input.move_direction.length_squared() > 0.01 else recovery_time
 	dodge_ended.emit()
 
 
