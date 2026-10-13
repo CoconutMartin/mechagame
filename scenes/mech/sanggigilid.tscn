@@ -334,7 +334,7 @@ margin = 0.4
 
 [node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm" unique_id=2082299913 node_paths=PackedStringArray("mech", "footsteps", "animation_steps", "dodge")]
 current = true
-fov = 60.0
+fov = 56.0
 far = 2000.0
 script = ExtResource("23_rde4d")
 mech = NodePath("../../../..")
