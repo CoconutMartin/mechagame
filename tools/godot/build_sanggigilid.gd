@@ -188,6 +188,7 @@ func _initialize() -> void:
 	char_look.health = health
 	char_look.hitboxes = hitboxes
 	char_look.weapons = root.get_node("WeaponController") as WeaponController
+	_add_hands(root, visual, model, health, hitboxes)
 	var skin := PS1SkinLook.new()
 	skin.name = "PS1SkinLook"
 	root.add_child(skin)
@@ -298,3 +299,44 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	mount.frame = torso
 	mount.weapon_controller = controller
 	mount.shoulder_mounts = shoulder_tops
+
+
+## Jointed hands (user drawings 2026-10-13; scenes/mech/mech_hand_r/l.tscn): each follows its old hand
+## bone (a BoneAttachment3D with the external skeleton), placed in the hand frame H measured from the old
+## hand at rest: origin at the wrist, +Y to the finger roots, +Z to the back of the hand. MechHandControl
+## poses the fingers and hides the old hand meshes.
+func _add_hands(root: Mech, visual: Node3D, model: Node3D, health: MechHealth, hitboxes: SkeletalHitboxes) -> void:
+	var skeleton := model.find_child("Skeleton3D", true, false) as Skeleton3D
+	var control := MechHandControl.new()
+	control.name = "MechHandControl"
+	root.add_child(control)
+	control.owner = root
+	control.mech = root
+	control.skeleton = skeleton
+	control.weapons = root.get_node("WeaponController") as WeaponController
+	control.health = health
+	control.hitboxes = hitboxes
+	for side in ["R", "L"]:
+		var hand_rest := skeleton.get_bone_global_rest(skeleton.find_bone("hand_" + side))
+		var p := func(n: String) -> Vector3: return skeleton.get_bone_global_rest(skeleton.find_bone(n + "_" + side)).origin
+		var roots: Vector3 = (p.call("index_01") + p.call("middle_01") + p.call("ring_01") + p.call("pinky_01")) / 4.0
+		var y := (roots - hand_rest.origin).normalized()
+		var to_palm := p.call("grip") - roots as Vector3
+		to_palm = (to_palm - y * to_palm.dot(y)).normalized()
+		var z := -to_palm
+		var frame := Transform3D(Basis(y.cross(z).normalized(), y, z), hand_rest.origin)
+		var attach := BoneAttachment3D.new()
+		attach.name = "HandAttach" + side
+		visual.add_child(attach)
+		attach.owner = root
+		attach.use_external_skeleton = true
+		attach.external_skeleton = attach.get_path_to(skeleton)
+		attach.bone_name = "hand_" + side
+		var hand := (load("res://scenes/mech/mech_hand_%s.tscn" % side.to_lower()) as PackedScene).instantiate() as MechHand
+		attach.add_child(hand)
+		hand.owner = root
+		hand.transform = hand_rest.affine_inverse() * frame
+		if side == "R":
+			control.hand_right = hand
+		else:
+			control.hand_left = hand

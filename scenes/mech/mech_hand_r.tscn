@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/mech/mech_hand.gd" id="hand"]
+[ext_resource type="PackedScene" path="res://models/mech_hand/mech_hand_r.glb" id="model"]
+
+[node name="MechHandR" type="Node3D"]
+script = ExtResource("hand")
+
+[node name="Model" parent="." instance=ExtResource("model")]
