@@ -38,13 +38,19 @@ void vertex() {
 	rest_pos = (to_rest * vec4(VERTEX, 1.0)).xyz;
 	rest_normal = normalize(mat3(to_rest) * NORMAL);
 	// POSITION is written on every path: a shader that writes it skips Godot's own transform.
-	vec4 clip = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
-	if (snap_grid.x > 0.0 && clip.w > 0.0) {
-		vec2 ndc = clip.xy / clip.w;
-		ndc = floor(ndc * snap_grid * 0.5 + 0.5) / (snap_grid * 0.5);
-		clip.xy = ndc * clip.w;
+	// The snap is in view space (direction x / depth), not in clip space: the projection matrix
+	// carries the TAA jitter, which changes every frame and moved the vertices across the grid
+	// (flicker and shaking edges, 2026-10-13). Orthographic passes (directional light shadows) are
+	// not snapped, so the shadow matches the mesh. Only vertices in front of the camera are snapped.
+	vec4 view = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+	bool orthographic = PROJECTION_MATRIX[3][3] > 0.5;
+	if (snap_grid.x > 0.0 && !orthographic && view.z < -0.1) {
+		vec2 cell = 2.0 / (snap_grid * vec2(PROJECTION_MATRIX[0][0], PROJECTION_MATRIX[1][1]));
+		vec2 slope = view.xy / -view.z;
+		slope = floor(slope / cell + 0.5) * cell;
+		view.xy = slope * -view.z;
 	}
-	POSITION = clip;
+	POSITION = PROJECTION_MATRIX * view;
 }
 
 // 4 x 4 ordered dither value (0 to 1) for a screen pixel.
