@@ -246,14 +246,19 @@ func _build_ui() -> void:
 		toggle.toggled.connect(spawner.set_active)
 		targets.add_child(toggle)
 
+	# The right column scrolls: stats, graphics and the PS1 look do not fit a short screen.
+	var right_scroll := ScrollContainer.new()
+	right_scroll.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
+	right_scroll.offset_right = -12
+	right_scroll.offset_top = 12
+	right_scroll.offset_bottom = -12
+	right_scroll.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	right_scroll.custom_minimum_size = Vector2(400, 0)
+	right_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_root.add_child(right_scroll)
 	var right := VBoxContainer.new()
-	right.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
-	right.offset_right = -12
-	right.offset_top = 12
-	right.offset_bottom = -12
-	right.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	right.custom_minimum_size = Vector2(380, 0)
-	_root.add_child(right)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_scroll.add_child(right)
 	var buttons := HBoxContainer.new()
 	right.add_child(buttons)
 	var reset := Button.new()
@@ -267,6 +272,7 @@ func _build_ui() -> void:
 	_stats = GarageStatPanel.new()
 	right.add_child(_stats)
 	right.add_child(GraphicsMenu.new())
+	right.add_child(PS1TuningMenu.new())
 
 
 func _section(parent: Control, text: String) -> VBoxContainer:

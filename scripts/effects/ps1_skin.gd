@@ -72,4 +72,23 @@ static func make(original: Material, settings: PS1SkinSettings, joint: bool, ind
 	material.set_shader_parameter(&"uv_offset", Vector2(0.37 * index, 0.61 * index))
 	material.set_shader_parameter(&"color_steps", settings.color_steps)
 	material.set_shader_parameter(&"snap_grid", settings.snap_grid)
+	# The original metallic value: a settings change sets the brightness again (refresh_all).
+	material.set_meta(&"ps1_metallic", metallic)
 	return material
+
+
+## Sets the tuning values on every skin material under root (the PS1 tuning menu, 2026-10-13).
+static func refresh_all(root: Node, settings: PS1SkinSettings) -> void:
+	for node in root.find_children("*", "MeshInstance3D", true, false):
+		var mesh := node as MeshInstance3D
+		for surface in mesh.get_surface_override_material_count():
+			var material := mesh.get_surface_override_material(surface) as ShaderMaterial
+			if material == null or material.shader != SHADER:
+				continue
+			var metallic := float(material.get_meta(&"ps1_metallic", 0.0))
+			material.set_shader_parameter(&"brightness", lerpf(1.0, settings.metal_brightness, clampf(metallic, 0.0, 1.0)))
+			material.set_shader_parameter(&"texels_per_meter", settings.texels_per_meter)
+			material.set_shader_parameter(&"detail_strength", settings.detail_strength)
+			material.set_shader_parameter(&"uv_pixels", settings.uv_pixels)
+			material.set_shader_parameter(&"color_steps", settings.color_steps)
+			material.set_shader_parameter(&"snap_grid", settings.snap_grid)

@@ -19,6 +19,9 @@ var _count := 0
 
 
 func _ready() -> void:
+	# The player's saved PS1 tuning (garage menu) goes on the shared settings first.
+	if settings == preload("res://data/skins/ps1_skin.tres"):
+		settings = PS1Tuning.settings()
 	var skeleton := hitboxes.skeleton
 	for mesh: MeshInstance3D in hitboxes.mesh_bones:
 		var bone_name := String(skeleton.get_bone_name(hitboxes.mesh_bones[mesh]))
