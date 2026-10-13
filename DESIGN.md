@@ -107,10 +107,10 @@ All values are exports on `MechCameraRig` and the `SpringArm` node.
 | Value | Current |
 |---|---|
 | Distance behind the pivot (spring length) | 12.3 m on Sanggigilid since 2026-10-13 (8.5 m before). About 75% of the feet show at the bottom edge with the level start view. RMB (two-hand weapons) moves it to 8 m and zooms to the weapon zoom FOV |
-| Shoulder offset | 8.2 m right on Sanggigilid since 2026-10-13 (3 m before): the mech stands in the left part of the screen (about 8% to 33% of the screen width at 16:9), as the user drew |
+| Shoulder offset | 6.8 m right on Sanggigilid since 2026-10-13 (3 m before): the mech stands in the left part of the screen, as the user drew |
 | Crosshair height | screen center on Sanggigilid since 2026-10-13 (`MechAim.screen_offset_up` 0; was 0.3 since revision 59), so the camera has no extra down tilt |
-| Pivot height | 7.4 m on Sanggigilid since 2026-10-13 (script default 11.5 m), about 7.75 m after the mech size scale (chest height). The camera sits on the aim line behind the pivot, to the right |
-| Start view | camera pitch 0° (level), FOV 65° since 2026-10-13 (user request: lower camera, no down tilt; was -24°). `MechCameraRig.start_pitch_deg` 0 on Sanggigilid. The debug HUD shows the camera angle: camera pitch, aim pitch, distance and FOV |
+| Pivot height | 6.05 m on Sanggigilid since 2026-10-13 (script default 11.5 m), about 6.34 m after the mech size scale. The camera sits on the aim line behind the pivot, to the right |
+| Start view | camera pitch 0° (level), FOV 54.4° since 2026-10-13 (user request: lower camera, no down tilt, then zoom to the red box the user drew; was -24° and FOV 65°). Beam rifle and beam sniper zoom FOV 43.4° (was 52.6°, same zoom ratio). `MechCameraRig.start_pitch_deg` 0 on Sanggigilid. The debug HUD shows the camera angle: camera pitch, aim pitch, distance and FOV |
 | Same target in ADS | the camera stays on the aim line and its tilt follows the FOV, so the crosshair points at the same spot with and without RMB |
 | Tilt limits | 27.5° down, 15° up |
 | Boost shake | steady shake while boosting (trauma 0.4) |
