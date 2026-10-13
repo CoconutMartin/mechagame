@@ -195,9 +195,9 @@ BR_K = 6.0 / (1728 - 492)
 BR_GRIP_RIGHT = (0.0, (241 - 368) * BR_K, -(1728 - 1340) * BR_K)
 BR_GRIP_LEFT = (0.0, (241 - 318) * BR_K, -(1728 - 1000) * BR_K)
 BR_MUZZLE = (0.0, 0.0, -6.0)
-## Beam Rifle rest (low ready, user request 2026-10-13): the left hand holds the lower rail this far
-## ahead of the pistol grip (the rail runs from z -2.37 to -6.0).
-BR_LEFT_REST_SPACING = 1.0
+## Beam Rifle rest (user request 2026-10-13): the left hand holds the lower rail this far ahead of the
+## pistol grip, out near the barrel (the rail runs from z -2.37 to -6.0).
+BR_LEFT_REST_SPACING = 3.2
 BR_LEFT_REST = (0.0, BR_GRIP_LEFT[1], BR_GRIP_RIGHT[2] - BR_LEFT_REST_SPACING)
 SNIPER_GRIP_RIGHT = (0.0, -0.5, -1.4)
 
@@ -216,9 +216,9 @@ SNIPER_HANDS = {
     "left_aim": plus((0.0, -0.45, -2.2), (0.115, 0.391, 0.143)),
 }
 BR_HANDS = {
-    "right_rest": plus(BR_GRIP_RIGHT, (-0.331, 0.915, -0.092)),
+    "right_rest": plus(BR_GRIP_RIGHT, (0.051, 0.406, -0.249)),
     "right_aim": plus(BR_GRIP_RIGHT, (-0.043, 0.594, -0.237)),
-    "left_rest": plus(BR_LEFT_REST, (-0.126, -0.129, 0.543)),
+    "left_rest": plus(BR_LEFT_REST, (0.146, -0.06, 0.305)),
     "left_aim": plus((BR_GRIP_LEFT[0], BR_GRIP_LEFT[1], BR_GRIP_LEFT[2] + 0.8), (0.145, 0.22, 0.07)),
 }
 
@@ -317,14 +317,12 @@ if __name__ == "__main__":
     # Beam Rifle: two hands, right hand on the pistol grip, left hand under the lower rail. Aim = the
     # sniper hold.
     beam_rifle_scene("scenes/weapons/beam_rifle.tscn")
-    # Rest (user request 2026-10-13): a low ready carry (muzzle down about 45 deg, like a rifle low
-    # ready; held across the body near the waist with the elbows down, like drill port arms, but muzzle
-    # down): the pistol grip in front of the right groin, the rifle across the lower torso, the muzzle
-    # down to the left, the shoulders near their hanging rest (upper arms lifted 3 and 19 deg). The left
-    # hand on the rail BR_LEFT_REST_SPACING ahead of the grip. Found by search in the game: no
-    # clipping at rest and while moving (with WeaponBounce).
-    br_hand = (0.5, 0.9, -2.6)
-    br_rows = xf_aim((-0.7071, -0.7071, 0.0), (0.0, 1.0, 0.0), br_hand)
+    # Rest (user requests 2026-10-13): across the body at groin height, the muzzle 10 deg down to the
+    # left (was 45 deg), the pistol grip right of the groin, the left hand out on the rail near the
+    # barrel (BR_LEFT_REST_SPACING). Found by search in the game: no clipping at rest and while moving
+    # (WeaponBounce).
+    br_hand = (1.0, 0.6, -2.3)
+    br_rows = xf_aim((-0.9848, -0.1736, 0.0), (0.0, 1.0, 0.0), br_hand)
     br_rest = tuple(h - g for h, g in zip(br_hand, apply_rows(br_rows, BR_GRIP_RIGHT)))
     # The same butt place as the sniper (grip sockets, 2026-10-13).
     br_anchor = (1.9, 1.2, -1.5)

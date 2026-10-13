@@ -72,9 +72,14 @@ extends SkeletonModifier3D
 ## block): the elbow turns around the shoulder-to-hand line. Off: the IK elbow directions (poles) decide.
 @export var tuck_elbows: bool = true
 ## The flat block may turn about the up axis up to this much (degrees) to bring the elbow forward or
-## back; its top stays flat. 0 (user rule 2026-10-12): the shoulders and the shoulder weapons face
-## forward at neutral in every loadout.
-@export var max_block_yaw_deg: float = 0.0
+## back; its top stays flat. 20 (user, 2026-10-13: "the shoulder blocks can take some angle"; was 0,
+## the rule of 2026-10-12 that the shoulders face forward at neutral). At rest only: it fades out
+## while aiming.
+@export var max_block_yaw_deg: float = 20.0
+## Fastest elbow swing around the shoulder-to-hand line (degrees per second): no elbow jumps.
+@export var max_elbow_speed_deg: float = 180.0
+## How strongly the elbow choice avoids a block turn past max_block_yaw_deg (cost weight).
+@export var block_yaw_weight: float = 10.0
 ## Away from the neutral elbow height the block turn fades out over this many degrees; a raised arm
 ## swings the block like before.
 @export var block_yaw_fade_deg: float = 30.0
@@ -82,6 +87,8 @@ extends SkeletonModifier3D
 var _skeleton: Skeleton3D
 var _torso_offset: Transform3D
 var _sides: Array[Dictionary] = []
+## Seconds since the last modification (the elbow speed limit).
+var _delta: float = 1.0 / 60.0
 ## Shoulder mount place in its upper arm bone's space: [mount, bone, offset].
 var _mount_offsets: Array = []
 ## The right weapon's transform from WeaponPose, and the moved one this rig set (the weapon moves to
@@ -377,6 +384,18 @@ func _tuck_elbow(ik: TwoBoneIK) -> void:
 		best = found
 		center = best
 		step /= 5.0
+	# The elbow swings toward the best place at most max_elbow_speed_deg: when two places take turns
+	# as the best (the aim or the steps move the hand), it moves over instead of jumping each frame.
+	var torso_basis := torso.global_basis.orthonormalized()
+	if side.has("last_elbow"):
+		var last: Vector3 = torso_basis * (side.last_elbow as Vector3)
+		var flat_now := now - reach * now.dot(reach)
+		var flat_last := last - reach * last.dot(reach)
+		if flat_now.length_squared() > 0.0001 and flat_last.length_squared() > 0.0001:
+			var at := flat_now.signed_angle_to(flat_last, reach)
+			var limit := deg_to_rad(max_elbow_speed_deg) * _delta
+			best = at + clampf(wrapf(best - at, -PI, PI), -limit, limit)
+	side.last_elbow = torso_basis.inverse() * (Basis(reach, best) * now)
 	if best != 0.0:
 		ik.root_joint.global_basis = (Basis(reach, best) * ik.root_joint.global_basis).orthonormalized()
 
@@ -384,9 +403,13 @@ func _tuck_elbow(ik: TwoBoneIK) -> void:
 ## How far an upper arm direction is from neutral: elbow height off the flat block's, and block turn.
 func _elbow_cost(dir: Vector3, neutral: Vector3, up: Vector3) -> float:
 	var height := absf(dir.angle_to(-up) - neutral.angle_to(-up))
-	var yaw := absf(_flat_yaw(dir, neutral, up))
-	var over := maxf(yaw - deg_to_rad(max_block_yaw_deg), 0.0)
-	return height * height + 0.1 * yaw * yaw + 10.0 * over * over
+	# Near straight down the turn about up means little (_flat_yaw is 0 there): it fades in smoothly
+	# with the lean, so the cost has no step (the shoulder block flickered between a hanging and a
+	# turned arm from one frame to the next, user report 2026-10-13).
+	var flat := (dir - up * dir.dot(up)).length()
+	var yaw := absf(_flat_yaw(dir, neutral, up)) * smoothstep(0.05, 0.2, flat)
+	var over := maxf(yaw - _block_limit(), 0.0)
+	return height * height + 0.1 * yaw * yaw + block_yaw_weight * over * over
 
 
 ## Signed turn about up from the neutral elbow direction to dir (0 when dir is near straight up or down).
@@ -403,8 +426,15 @@ static func _flat_yaw(dir: Vector3, neutral: Vector3, up: Vector3) -> float:
 func _block_yaw(dir: Vector3, neutral: Vector3, up: Vector3) -> float:
 	var height := absf(dir.angle_to(-up) - neutral.angle_to(-up))
 	var weight := clampf(1.0 - height / deg_to_rad(block_yaw_fade_deg), 0.0, 1.0)
-	var limit := deg_to_rad(max_block_yaw_deg)
+	var limit := _block_limit()
 	return clampf(_flat_yaw(dir, neutral, up), -limit, limit) * weight
+
+
+## The block turn limit (radians): max_block_yaw_deg at rest, fading to 0 while aiming (the aim holds
+## were tuned with flat, forward blocks).
+func _block_limit() -> float:
+	var aim := smoothstep(0.0, 1.0, weapon_pose.aim_amount) if weapon_pose != null else 0.0
+	return deg_to_rad(max_block_yaw_deg) * (1.0 - aim)
 
 
 ## Where an arm's hand (palm socket) is now.
@@ -495,7 +525,8 @@ static func _joint_basis(start: Vector3, end: Vector3, across: Vector3) -> Basis
 	return Basis(x, y, x.cross(y))
 
 
-func _process_modification_with_delta(_delta: float) -> void:
+func _process_modification_with_delta(delta: float) -> void:
+	_delta = delta
 	if _skeleton == null:
 		_setup()
 	var skin := _skeleton.global_transform
