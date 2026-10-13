@@ -173,14 +173,15 @@ func _update_side(side: String, socket: Node3D, ik: TwoBoneIK, marker_path: Node
 func _after_skeleton() -> void:
 	for side: String in _sides:
 		var state: Dictionary = _sides[side]
-		var hand := state.hand as MechHand
-		if not is_instance_valid(hand):
+		# Check before each cast: casting a freed node (a broken arm or weapon) is an error.
+		if not is_instance_valid(state.hand):
 			continue
+		var hand := state.hand as MechHand
 		var bone_pose := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("hand_" + side))
 		var base: Transform3D = state.base
-		var socket := state.socket as Node3D
+		var socket: Node3D = state.socket as Node3D if is_instance_valid(state.socket) else null
 		var weight: float = state.weight
-		if socket == null or not is_instance_valid(socket) or weight <= 0.0:
+		if socket == null or weight <= 0.0:
 			hand.transform = base
 			continue
 		var attached := (bone_pose * base).orthonormalized()
@@ -197,8 +198,8 @@ func _after_skeleton() -> void:
 			now.origin += (place.origin - now * hollow) * smoothstep(0.0, 1.0, weight)
 		hand.transform = bone_pose.affine_inverse() * now
 		# The arm reaches by part of the gap between its wrist and the placed hand's wrist.
-		var weapon := state.weapon as Node3D
-		if reach and weapon != null and is_instance_valid(weapon):
+		var weapon: Node3D = state.weapon as Node3D if is_instance_valid(state.weapon) else null
+		if reach and weapon != null:
 			var local := weapon.global_basis.orthonormalized().inverse() * (now.origin - attached.origin)
 			state.offset = ((state.offset as Vector3) + local * reach_gain).limit_length(max_reach_offset)
 

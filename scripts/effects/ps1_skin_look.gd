@@ -45,10 +45,10 @@ func _ready() -> void:
 ## Changes the skin on every mesh of this mech.
 func set_style(value: MechSkinChoice.Style) -> void:
 	_style = value
+	_entries = _entries.filter(func(entry: Dictionary) -> bool: return is_instance_valid(entry.mesh))
 	for entry in _entries:
-		if is_instance_valid(entry.mesh):
-			_restore(entry)
-			_apply(entry)
+		_restore(entry)
+		_apply(entry)
 
 
 func _add(mesh: MeshInstance3D, joint: bool, body: bool) -> void:
@@ -98,11 +98,10 @@ func _on_node_added(node: Node) -> void:
 
 func _follow_bones() -> void:
 	for entry in _entries:
-		if not entry.body or (entry.made as Array).is_empty():
+		# Check before the cast: casting a freed mesh (a part that broke off) is an error.
+		if not entry.body or (entry.made as Array).is_empty() or not is_instance_valid(entry.mesh):
 			continue
 		var mesh := entry.mesh as MeshInstance3D
-		if not is_instance_valid(mesh):
-			continue
 		var to_rest := Projection(hitboxes.mesh_to_rest(mesh))
 		for material: ShaderMaterial in entry.made:
 			material.set_shader_parameter(&"to_rest", to_rest)

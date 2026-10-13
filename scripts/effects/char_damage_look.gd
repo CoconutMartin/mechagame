@@ -98,7 +98,8 @@ func _meshes(key: String) -> Array[MeshInstance3D]:
 func _follow_bones() -> void:
 	for key: String in _layers:
 		for pair: Array in _layers[key]:
-			var mesh := pair[0] as MeshInstance3D
-			if not is_instance_valid(mesh) or not hitboxes.mesh_bones.has(mesh):
+			# Check before the cast: casting a freed mesh (a part that broke off) is an error.
+			if not is_instance_valid(pair[0]) or not hitboxes.mesh_bones.has(pair[0]):
 				continue
+			var mesh := pair[0] as MeshInstance3D
 			(pair[1] as ShaderMaterial).set_shader_parameter(&"to_rest", Projection(hitboxes.mesh_to_rest(mesh)))

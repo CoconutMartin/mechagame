@@ -357,6 +357,7 @@ Phase 4a (user choices: parts fall off, respawn), revised in 4a.2 (user rules):
 ## Garage (Phase 5)
 
 User choices: G key in the level, light / medium / heavy part variants, 0 to 3 plates per part with visuals, weapons and mods in the garage.
+- Crash fix (user report 2026-10-13: the game crashed after less than 10 minutes): after a part broke off, `PS1SkinLook._follow_bones` and `CharDamageLook._follow_bones` cast the freed mesh before the validity check, so each frame gave a "Trying to cast a freed object" error per script (2 broken arms: 2,404 errors in 40 s; a 12 minute soak test: 17,076, starting when the first parts broke at about 8 minutes). `MechHandControl._after_skeleton` had the same pattern for a freed hand, socket or weapon. The checks now come before the casts. The error flood is the likely cause of the crash (the editor debugger gets every error). Soak test (12 minutes of play, headless, scripted input, enemy and dummy on): memory and node counts stay flat, no leak found.
 - Mech texture picker (user request 2026-10-13): "MECH TEXTURE" in the garage's right column (`SkinStylePicker`) picks Basic, PS1 or Realistic for every mech, weapon and equipment. The choice shows at once (`MechSkinChoice.set_style` calls every `PS1SkinLook` in the group `mech_skin_look`) and is kept in `user://mech_skin.cfg`. PS1 is the default. `PS1SkinLook` keeps each mesh's own materials, so it can switch back and forth.
   - Basic: the model's own materials.
   - PS1: `PS1Skin` (see "PS1 skin").
