@@ -1,16 +1,18 @@
 extends SceneTree
 ## Retargets a Mixamo animation (FBX, "Without Skin") onto Sanggigilid's skeleton (user request
-## 2026-10-13: the dodge roll). Writes an Animation for the Model's AnimationPlayer (tracks
-## "MechRig/Skeleton3D:<bone>") and a Curve of the forward travel (0 to 1 over 0 to 1 of the time).
+## 2026-10-13: the dodge animations). Writes an Animation for the Model's AnimationPlayer (tracks
+## "MechRig/Skeleton3D:<bone>") and a Curve of the travel (0 to 1 over 0 to 1 of the time; metadata
+## travel_direction in model space and travel_m).
 ##
 ## How: both skeletons face +Z with their left side at +X. For each mapped bone the world rotation
 ## change from the source rest pose is copied: target = change x align x target rest. "align" turns
 ## the target limb from its rest direction (A-pose arms, splayed legs) to the source rest direction
 ## (T-pose), so the limbs point the same way. The hips height change is scaled by the hip heights;
-## the forward travel is taken out (the roll plays in place, the dodge code moves the mech along the
-## travel curve). The source hips' yaw at the first frame is taken out of the whole pose (Mixamo
-## "Stand To Roll" stands turned 45 degrees), so the mech faces the travel direction at the start and
-## at the end.
+## the travel is taken out (the animation plays in place, the dodge code moves the mech along the
+## travel curve). The source's stance turn at the first frame (the average of the hips and shoulder
+## facing; Mixamo dodges stand turned 45 to 60 degrees from their travel axes) is taken out of the
+## body, not out of the travel, so the mech faces forward at the start and at the end and moves along
+## the clip's own axis (+Z forward, +X left).
 ##
 ## Run: godot --headless --path . --script res://tools/godot/retarget_mixamo.gd -- <fbx> <out anim .res> <out curve .tres>
 
@@ -83,11 +85,15 @@ func _initialize() -> void:
 	player.seek(0.0, true)
 	player.advance(0.0)
 	source.force_update_all_bone_transforms()
-	var start_forward := source.get_bone_global_pose(hips).basis.z
-	var unturn := Quaternion(Vector3.UP, -atan2(start_forward.x, start_forward.z))
+	# Stance turn: the average of the hips and shoulder facing at the first frame (Mixamo dodges stand
+	# in a boxer stance, turned about 60 degrees from the travel axes).
+	var hips_face := source.get_bone_global_pose(hips).basis.z
+	var shoulders := source.get_bone_global_pose(_src(source, "LeftArm")).origin - source.get_bone_global_pose(_src(source, "RightArm")).origin
+	var shoulder_face := shoulders.cross(Vector3.UP)
+	var stance_yaw := (atan2(hips_face.x, hips_face.z) + atan2(shoulder_face.x, shoulder_face.z)) * 0.5
+	var unturn := Quaternion(Vector3.UP, -stance_yaw)
 	var frames := int(ceil(source_anim.length * FPS))
-	var travel: Array[float] = []
-	var start_z := 0.0
+	var offsets: Array[Vector3] = []
 	for frame in frames + 1:
 		var time := minf(frame / FPS, source_anim.length)
 		player.seek(time, true)
@@ -113,21 +119,32 @@ func _initialize() -> void:
 			globals[b] = parent_global * local
 		# Hips: the height change (scaled), in place; the forward travel goes to the curve.
 		var hips_pos := source.get_bone_global_pose(hips).origin
-		var change_pos := unturn * (hips_pos - source_rest[hips].origin) * scale
-		if frame == 0:
-			start_z = change_pos.z
-		travel.append(change_pos.z - start_z)
+		var change_pos := (hips_pos - source_rest[hips].origin) * scale
+		# The travel stays on the source axes (+Z forward): only the body is turned.
+		offsets.append(Vector3(change_pos.x, 0.0, change_pos.z))
 		var pelvis := target.find_bone("pelvis")
 		var root_global: Transform3D = globals[target.get_bone_parent(pelvis)]
 		var world := target_rest[pelvis].origin + Vector3(0.0, change_pos.y, 0.0)
 		anim.position_track_insert_key(pelvis_track, time, root_global.affine_inverse() * world)
 
+	# Travel: along the line to the farthest hips place (a dodge can step back toward the start at
+	# the end), 1 = that farthest place.
+	var farthest := Vector3.ZERO
+	for offset in offsets:
+		if (offset - offsets[0]).length() > farthest.length():
+			farthest = offset - offsets[0]
+	var travel_direction := farthest.normalized()
 	var curve := Curve.new()
-	var total := travel[travel.size() - 1]
-	for i in travel.size():
-		curve.add_point(Vector2(float(i) / float(travel.size() - 1), travel[i] / total), 0.0, 0.0, Curve.TANGENT_LINEAR, Curve.TANGENT_LINEAR)
-	curve.set_meta(&"travel_m", total)
-	print("length %.2f s, frames %d, scale %.1f, travel %.1f m (at this hip height)" % [anim.length, frames, scale, total])
+	curve.min_value = -0.5
+	curve.max_value = 1.5
+	for i in offsets.size():
+		var along := (offsets[i] - offsets[0]).dot(travel_direction) / farthest.length()
+		curve.add_point(Vector2(float(i) / float(offsets.size() - 1), along), 0.0, 0.0, Curve.TANGENT_LINEAR, Curve.TANGENT_LINEAR)
+	curve.set_meta(&"travel_m", farthest.length())
+	# Model space: +Z forward, +X left.
+	curve.set_meta(&"travel_direction", travel_direction)
+	print("length %.2f s, frames %d, scale %.1f, travel %.1f m toward %s (model space, +Z forward, +X left), end %.2f" % [
+			anim.length, frames, scale, farthest.length(), travel_direction.snapped(Vector3.ONE * 0.01), curve.sample(1.0)])
 	print("save anim ", ResourceSaver.save(anim, args[1]), " curve ", ResourceSaver.save(curve, args[2]))
 	quit()
 

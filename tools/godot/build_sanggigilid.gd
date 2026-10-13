@@ -285,13 +285,13 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	rig.weapons = root.get_node("WeaponController") as WeaponController
 	rig.stance = stance
 	rig.jump_pose = jump_pose
-	# Dodge roll (light and medium mechs) after the arm rig: the roll has the whole body.
-	var roll := SkeletalDodgeRoll.new()
-	roll.name = "DodgeRoll"
-	visual.add_child(roll)
-	roll.model = model
-	roll.mech = root
-	(root.get_node("MechDodge") as MechDodge).roll = roll
+	# Dodge animations (roll, steps) after the arm rig: the clip has the whole body.
+	var dodge_animation := SkeletalDodgeAnimation.new()
+	dodge_animation.name = "DodgeAnimation"
+	visual.add_child(dodge_animation)
+	dodge_animation.model = model
+	dodge_animation.mech = root
+	(root.get_node("MechDodge") as MechDodge).animation = dodge_animation
 	var weapon_pose := weapon_animation.get_node("WeaponPose") as WeaponPose
 	weapon_pose.aim_anchor = torso.get_node("AimAnchor")
 	var bounce := WeaponBounce.new()
