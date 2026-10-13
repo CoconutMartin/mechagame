@@ -24,6 +24,7 @@ b.part("StockRail", P, "dark", "box", (0.2, 0.2, 1.2), (0, 0.35, -0.7))
 b.part("Receiver", P, "rifle", "box", (0.6, 0.95, 2.6), (0, 0.05, -2.4))
 b.part("ReceiverSide", P, "dark", "box", (0.66, 0.35, 2.2), (0, -0.05, -2.5))
 # Pistol grip and the fist place on it: weapons.py RIFLE_GRIP_* (shared with the rest and aim holds).
+from weapons import grip_socket, RIFLE_GRIP_HOLD_POINT, RIFLE_GRIP_RAKE, RIFLE_GRIP_RADIUS
 from weapons import RIFLE_GRIP_TOP as GRIP_TOP, RIFLE_GRIP_AXIS as GRIP_AXIS, \
     RIFLE_GRIP_LENGTH as GRIP_LENGTH, RIFLE_GRIP_HOLD as GRIP_HOLD
 grip_center = tuple(t + a * GRIP_LENGTH / 2 for t, a in zip(GRIP_TOP, GRIP_AXIS))
@@ -56,6 +57,8 @@ o += b.nodes
 def marker(n, pos): o.append(f'[node name="{n}" type="Marker3D" parent="."]\ntransform = {xf(tuple(v * SCALE for v in pos))}\n')
 # The marker is the palm socket place: the fist hollow on the hold point (arm_poses.palm_socket).
 o.append(f'[node name="GripRight" type="Marker3D" parent="."]\ntransform = {xf(arm_poses.palm_socket(tuple(v * SCALE for v in grip_hold)))}\n')
+# Grip socket: the hold point on the pistol grip axis (MechHandControl).
+o.append(grip_socket("GripSocketRight", RIFLE_GRIP_HOLD_POINT, RIFLE_GRIP_RAKE, RIFLE_GRIP_RADIUS))
 marker("GripLeft", (0, -0.45, -5.0))
 marker("GripLeftRest", (0, -0.45, -4.6))
 marker("GripLeftAim", (0, -0.45, -4.2))

@@ -48,6 +48,16 @@ RIGHT_HAND_NEUTRAL = (RIGHT_HAND_NEUTRAL_TORSO[0], RIGHT_HAND_NEUTRAL_TORSO[1] +
 RIGHT_HAND_AIM = arm_poses.hand(arm_poses.ELBOW_R, arm_poses.AIM_DEG)
 
 
+def grip_socket(name, origin, rake_deg, radius, hand_reach=True):
+    """Grip socket node text (user request 2026-10-13; MechHandControl): a Marker3D at the grip center
+    (where the fist hollow goes), +Y along the grip toward the gun body (a pistol grip leans back:
+    rake_deg, top forward), +Z toward the butt (the palm side), +X to the gun's right; metadata
+    grip_radius = the grip's half thickness (meters, the fingers close on it); hand_reach = false keeps
+    the arm's pose (two-hand rifles: the tuned stance) and only turns the hand at the wrist."""
+    return (f'[node name="{name}" type="Marker3D" parent="."]\ntransform = {xf(origin, (-rake_deg, 0, 0))}\n'
+            f'metadata/grip_radius = {radius}\nmetadata/hand_reach = {"true" if hand_reach else "false"}\n')
+
+
 def gun_on_forearm_rest(grip, out_deg=0.0):
     """One-hand gun at neutral: grip in the fist, muzzle along the forearm (side view), gun top away from
     it. out_deg turns the forearm out to the side (the gun keeps pointing ahead), so a low stock passes
@@ -73,9 +83,12 @@ RIFLE_GRIP_AXIS = (0.0, -0.9397, 0.342)
 RIFLE_GRIP_HOLD = 0.75
 RIFLE_GRIP_LENGTH = 1.6
 ## The forearm turns this much out to the side (rest and aim), so the stock passes beside it.
-RIFLE_OUT_DEG = 20.0
-RIFLE_GRIP = arm_poses.palm_socket(tuple(RIFLE_SCALE * (t + a * RIFLE_GRIP_HOLD)
-                                         for t, a in zip(RIFLE_GRIP_TOP, RIFLE_GRIP_AXIS)))
+RIFLE_OUT_DEG = 25.0
+RIFLE_GRIP_HOLD_POINT = tuple(RIFLE_SCALE * (t + a * RIFLE_GRIP_HOLD) for t, a in zip(RIFLE_GRIP_TOP, RIFLE_GRIP_AXIS))
+## Pistol grip rake (degrees from vertical, top forward) and half thickness (the 0.32 x 0.38 box x 0.6).
+RIFLE_GRIP_RAKE = 20.0
+RIFLE_GRIP_RADIUS = 0.105
+RIFLE_GRIP = arm_poses.palm_socket(RIFLE_GRIP_HOLD_POINT)
 RIFLE_REST = gun_on_forearm_rest(RIFLE_GRIP, RIFLE_OUT_DEG)
 MATS = {
     "rifle": "res://materials/warden/rifle.tres", "dark": "res://materials/warden/rifle_dark.tres",
@@ -92,8 +105,11 @@ def write_model(path, root, script, build, root_transform=None, extra_ext=()):
         b.nodes = []
         b.part(name, parent, mat, kind, params, pos, rot)
         nodes.extend(b.nodes)
-    def marker(name, pos, rot=(0, 0, 0), parent="."):
-        nodes.append(f'[node name="{name}" type="Marker3D" parent="{parent}"]\ntransform = {xf(pos, rot)}\n')
+    def marker(name, pos, rot=(0, 0, 0), parent=".", meta=None):
+        text = f'[node name="{name}" type="Marker3D" parent="{parent}"]\ntransform = {xf(pos, rot)}\n'
+        for key, value in (meta or {}).items():
+            text += f'metadata/{key} = {value}\n'
+        nodes.append(text)
     build(part, marker)
     o = ['[gd_scene format=3]\n', f'[ext_resource type="Script" path="res://scripts/weapons/{script}.gd" id="script"]']
     for mid, p in MATS.items():
@@ -128,6 +144,9 @@ def sniper(part, marker):
     # Emitter: a flat lens set into the barrel face (it lights up with the charge, BeamRifleWeapon).
     part("Emitter", "dark", "cyl", (0.14, 0.14, 0.04), (0, 0.05, -6.81), (90, 0, 0))
     marker("GripRight", (0, -0.5, -1.4))
+    # Grip sockets: on the grip and foregrip axes, nearest the hand markers.
+    marker("GripSocketRight", (0, -0.514, -1.439), (-20, 0, 0), meta={"grip_radius": 0.15, "hand_reach": "false"})
+    marker("GripSocketLeft", (0, -0.454, -2.926), (-10, 0, 0), meta={"grip_radius": 0.14, "hand_reach": "false"})
     marker("GripLeft", (0, -0.45, -2.9))
     marker("GripLeftRest", (0, -0.45, -2.9))
     # Aim: nearer the right hand than at rest, so the left arm reaches with the stock off the chest.
@@ -189,6 +208,9 @@ def beam_rifle_scene(path):
     for name, pos in (("GripRight", BR_GRIP_RIGHT), ("GripLeft", BR_GRIP_LEFT), ("GripLeftRest", BR_GRIP_LEFT),
                       ("GripLeftAim", br_left_aim), ("Muzzle", BR_MUZZLE)):
         o.append(f'[node name="{name}" type="Marker3D" parent="."]\ntransform = {xf(pos)}\n')
+    # Grip sockets: the pistol grip (tilted 24 deg, 0.24 x 0.45 m) and the lower rail (along the gun).
+    o.append(grip_socket("GripSocketRight", BR_GRIP_RIGHT, 24.0, 0.16, hand_reach=False))
+    o.append(grip_socket("GripSocketLeft", BR_GRIP_LEFT, 90.0, 0.15, hand_reach=False))
     open(path, "w").write("\n".join(o))
     print("wrote", path)
 

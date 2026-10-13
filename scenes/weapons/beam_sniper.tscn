@@ -130,6 +130,16 @@ surface_material_override/0 = ExtResource("dark")
 [node name="GripRight" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -1.4)
 
+[node name="GripSocketRight" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.93969, 0.34202, 0, -0.34202, 0.93969, 0, -0.514, -1.439)
+metadata/grip_radius = 0.15
+metadata/hand_reach = false
+
+[node name="GripSocketLeft" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.98481, 0.17365, 0, -0.17365, 0.98481, 0, -0.454, -2.926)
+metadata/grip_radius = 0.14
+metadata/hand_reach = false
+
 [node name="GripLeft" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.45, -2.9)
 

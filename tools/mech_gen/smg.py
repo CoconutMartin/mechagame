@@ -6,7 +6,7 @@ held like the heavy rifle (the arm drawing poses). Fast, light shots.
 import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shapes import xf
-from weapons import res, v3, gun_on_forearm_rest, gun_aim_anchor
+from weapons import res, v3, gun_on_forearm_rest, gun_aim_anchor, grip_socket
 import arm_poses
 
 # Godot axes (Blender (x, y, z) is Godot (x, z, -y)): the Grip and Muzzle empties of smg_build.py.
@@ -17,12 +17,16 @@ GRIP_EXTRA_PX = 56
 GRIP_HOLD_PX = 116
 ## The forearm turns this much out to the side (rest and aim; the SMG still points ahead), so the low
 ## stock pad passes beside the forearm with the fist right under the receiver.
-OUT_DEG = 25.0
+OUT_DEG = 30.0
 _GX, _GY = 607 - 555, 352 - 200
 _GL = math.hypot(_GX, _GY)
 _HOLD = (607 + _GX / _GL * (GRIP_EXTRA_PX - GRIP_HOLD_PX), 352 + _GY / _GL * (GRIP_EXTRA_PX - GRIP_HOLD_PX))
 GRIP = (0.0, (138 - _HOLD[1]) * PX, -(870 - _HOLD[0]) * PX)
 # GripRight marker: the palm socket place, so the fist hollow is on the hold point.
+## Grip socket: the hold point on the pistol grip axis, its rake and half thickness (MechHandControl).
+GRIP_HOLD_POINT = GRIP
+GRIP_RAKE = math.degrees(math.atan2(_GX, _GY))
+GRIP_RADIUS = 0.12
 GRIP = arm_poses.palm_socket(GRIP)
 MUZZLE = (0.0, 0.0, -3.6)
 # Poses from the user's arm drawing (weapons.py): on top of the forearm, elbow 45 deg at neutral and
@@ -59,6 +63,7 @@ transform = {grip}
 [node name="Muzzle" type="Marker3D" parent="."]
 transform = {muzzle}
 
+{socket}
 [node name="MuzzleFlash" type="Node3D" parent="Muzzle" node_paths=PackedStringArray("light")]
 script = ExtResource("flash_script")
 light = NodePath("Light")
@@ -81,7 +86,8 @@ omni_range = 9.0
 
 if __name__ == "__main__":
     path = "scenes/weapons/smg.tscn"
-    open(path, "w").write(SCENE.format(grip=xf(GRIP), muzzle=xf(MUZZLE)))
+    open(path, "w").write(SCENE.format(grip=xf(GRIP), muzzle=xf(MUZZLE),
+                                       socket=grip_socket("GripSocketRight", GRIP_HOLD_POINT, GRIP_RAKE, GRIP_RADIUS)))
     print("wrote", path)
     # Fast, light shots: 10 per second, small kick.
     res("data/weapons/smg.tres", {

@@ -29,6 +29,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, -0.70489, -1.44615)
 [node name="Muzzle" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.6)
 
+[node name="GripSocketRight" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.94616, 0.32369, 0, -0.32369, 0.94616, 0, -0.70489, -1.26615)
+metadata/grip_radius = 0.12
+metadata/hand_reach = true
+
 [node name="MuzzleFlash" type="Node3D" parent="Muzzle" node_paths=PackedStringArray("light")]
 script = ExtResource("flash_script")
 light = NodePath("Light")

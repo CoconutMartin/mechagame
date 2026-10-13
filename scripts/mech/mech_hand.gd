@@ -21,6 +21,8 @@ const FINGERS := ["Index", "Middle", "Ring", "Pinky", "Thumb"]
 @export var fist_curl: float = 1.0
 ## Thumb bend when OPEN (below 0 = swung out from the palm, like the open drawing).
 @export var open_thumb_curl: float = -0.5
+## GRIP: bend of a finger that touches the grip already when open (the grip runs through it).
+@export var wrapped_curl: float = 0.8
 ## Sideways spread of each finger when open (degrees, + = away from the middle; scaled down as it bends).
 @export var open_spread_deg: Dictionary = {"Index": 7.0, "Middle": 2.0, "Ring": 3.0, "Pinky": 8.0}
 ## How fast a finger bends (part of the full bend per second).
@@ -111,15 +113,21 @@ func _apply(name: String, c: float) -> void:
 ## never does.
 func _fit(name: String, center: Vector3, axis: Vector3) -> float:
 	var step := 0.05
-	var c := 0.0
+	# The thumb starts swung out (it lies on the other side of the grip).
+	var c := open_thumb_curl if name == "Thumb" else 0.0
+	var start := c
 	while c <= 1.0:
 		if _touches(name, c, center, axis):
 			break
 		c += step
 	if c > 1.0:
 		return fist_curl
+	# Touching already when open: the grip runs through the finger (a hand placed by an old pose);
+	# a closed finger looks like holding it, a straight one does not.
+	if c <= start:
+		return wrapped_curl
 	# Finer: back to just before the contact.
-	var low := maxf(c - step, 0.0)
+	var low := maxf(c - step, start)
 	var high := c
 	for i in 5:
 		var mid := (low + high) * 0.5
