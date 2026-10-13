@@ -19,6 +19,8 @@ extends Node
 @export var input: MechInput
 ## Optional. Adds the shot kick to the weapon pose.
 @export var recoil: WeaponRecoil
+## Optional. Adds the swing and bounce off the body while moving (two-hand weapons at rest).
+@export var bounce: WeaponBounce
 ## How fast the weapon comes up to aim (1 / seconds).
 @export var raise_speed: float = 4.0
 ## How fast the weapon goes down to rest (1 / seconds).
@@ -87,6 +89,8 @@ func _physics_process(delta: float) -> void:
 		weapon.transform = rest.interpolate_with(aim_pose, t)
 	if recoil != null:
 		weapon.transform = weapon.transform * recoil.get_offset()
+	if bounce != null:
+		weapon.position += bounce.offset * bounce.amount()
 
 	arm_ik_right.pole_direction = right_pole_rest.lerp(right_pole_aim, t)
 	if right_grip_target != null and right_grip_rest != null and right_grip_aim != null:

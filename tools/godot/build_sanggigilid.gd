@@ -269,6 +269,13 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	rig.stance = stance
 	var weapon_pose := weapon_animation.get_node("WeaponPose") as WeaponPose
 	weapon_pose.aim_anchor = torso.get_node("AimAnchor")
+	var bounce := WeaponBounce.new()
+	bounce.name = "WeaponBounce"
+	weapon_animation.add_child(bounce)
+	bounce.torso = torso
+	bounce.weapons = root.get_node("WeaponController") as WeaponController
+	bounce.weapon_pose = weapon_pose
+	weapon_pose.bounce = bounce
 	var shield_pose := weapon_animation.get_node("ShieldPose") as ShieldPose
 	shield_pose.hand_target = torso.get_node("LeftHand")
 	shield_pose.rest = torso.get_node("LeftHandRest")

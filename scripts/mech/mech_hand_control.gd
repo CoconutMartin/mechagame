@@ -41,7 +41,7 @@ const PALM_FACE_Z := 0.07
 ## Largest hand roll about the forearm line (degrees; the roller wrist) and largest bend off that line
 ## (degrees) to line the fist up with a socket's grip.
 @export var max_wrist_twist_deg: float = 90.0
-@export var max_wrist_bend_deg: float = 30.0
+@export var max_wrist_bend_deg: float = 60.0
 ## Turn pivot from the wrist (0) to the fist hollow (1): the wrist and the fist each move part of the way.
 @export_range(0.0, 1.0) var pivot_on_fist: float = 1.0
 ## Part of the wrist gap the arm target closes each frame, and the largest target move (meters).

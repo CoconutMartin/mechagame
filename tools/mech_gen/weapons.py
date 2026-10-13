@@ -217,9 +217,9 @@ SNIPER_HANDS = {
     "left_aim": plus((0.0, -0.45, -2.2), (0.115, 0.391, 0.143)),
 }
 BR_HANDS = {
-    "right_rest": plus(BR_GRIP_RIGHT, (0.166, 0.094, -0.151)),
+    "right_rest": plus(BR_GRIP_RIGHT, (0.034, 0.033, -0.238)),
     "right_aim": plus(BR_GRIP_RIGHT, (-0.043, 0.594, -0.237)),
-    "left_rest": plus(BR_LEFT_REST, (0.128, 0.094, 0.322)),
+    "left_rest": plus(BR_LEFT_REST, (-0.329, 0.114, 0.725)),
     "left_aim": plus((BR_GRIP_LEFT[0], BR_GRIP_LEFT[1], BR_GRIP_LEFT[2] + 0.8), (0.145, 0.22, 0.07)),
 }
 
@@ -318,10 +318,12 @@ if __name__ == "__main__":
     # Beam Rifle: two hands, right hand on the pistol grip, left hand under the lower rail. Aim = the
     # sniper hold.
     beam_rifle_scene("scenes/weapons/beam_rifle.tscn")
-    # Rest (user request 2026-10-13): each hand in front of its shoulder joint, the rifle level and
+    # Rest (user requests 2026-10-13): each hand in front of its shoulder joint, the rifle level and
     # straight across the body (muzzle left), the pistol grip and the rail socket one shoulder width
-    # apart (BR_LEFT_REST). Height and depth found by search: wrist bends 5 and 22 deg, no clipping.
-    br_hand = (SHOULDER_WIDTH / 2, 0.4, -2.6)
+    # apart (BR_LEFT_REST), the rifle as close to the body as it goes without clipping, also while
+    # walking, strafing and boosting with the WeaponBounce swing (0.12 m from the torso at rest; the
+    # bounce lets it come 0.07 m nearer). Found by search in the game.
+    br_hand = (SHOULDER_WIDTH / 2, 1.2, -1.75)
     br_rows = xf_aim((-1.0, 0.0, 0.0), (0.0, 1.0, 0.0), br_hand)
     br_rest = tuple(h - g for h, g in zip(br_hand, apply_rows(br_rows, BR_GRIP_RIGHT)))
     # The same butt place as the sniper (grip sockets, 2026-10-13).
