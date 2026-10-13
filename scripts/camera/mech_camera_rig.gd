@@ -3,6 +3,7 @@ extends Node3D
 ## Over-the-shoulder camera. Stays behind the mech torso and turns with it.
 ## The mouse moves an aim target (yaw). The torso turns toward that target at its own turn speed,
 ## and the camera turns with the torso. Pitch follows the mouse on a spring.
+## The arrow keys aim like the mouse (key_aim_pixels_per_second).
 ## Press V (free_camera) for the free camera: hold RMB and move the mouse to turn the camera around the
 ## mech (the mech keeps its aim, its weapons do not raise); press V again to go back behind the mech.
 ## With a FreeAim node the mouse first moves the mech aim inside a box. Only the movement past the
@@ -20,6 +21,12 @@ extends Node3D
 @export var mouse_sensitivity: float = 0.0025
 ## Vertical mouse aim speed = mouse sensitivity x this value. 0.3 = 70% slower than horizontal.
 @export var pitch_sensitivity_scale: float = 0.3
+## Arrow keys (aim_left / aim_right / aim_up / aim_down) aim like a mouse moving this many pixels per
+## second (user request 2026-10-13: an alternative to the mouse). 600 = about 86 deg/s sideways.
+@export var key_aim_pixels_per_second: float = 600.0
+## Up and down keys move this many times faster than the same mouse movement (the mouse's vertical
+## aim is slowed by pitch_sensitivity_scale).
+@export var key_pitch_scale: float = 2.0
 @export var min_pitch_deg: float = -27.5
 ## Aim pitch at the start, in degrees. Negative = down. The camera also tilts down by the crosshair
 ## angle (about 21 degrees at FOV 65), so -3.1 gives a camera pitch of -24 degrees.
@@ -147,6 +154,9 @@ func apply_mouse_motion(relative: Vector2) -> void:
 
 
 func _process(delta: float) -> void:
+	var keys := Input.get_vector(&"aim_left", &"aim_right", &"aim_up", &"aim_down")
+	if keys != Vector2.ZERO:
+		apply_mouse_motion(Vector2(keys.x, keys.y * key_pitch_scale) * key_aim_pixels_per_second * delta)
 	if free_aim != null:
 		# Recoil with no dead zone turns the camera (muzzle climb).
 		var kick := free_aim.take_camera_kick() * deg_to_rad(1.0)
