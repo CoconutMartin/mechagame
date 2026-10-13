@@ -328,26 +328,24 @@ def lighting():
 
 
 def logic():
-    # PS1 look on the whole environment (user request 2026-10-12; settings: data/skins/ps1_skin.tres).
-    look = res("res://scripts/effects/ps1_world_look.gd", "Script")
-    node(f'[node name="PS1WorldLook" type="Node" parent="."]\nscript = {look}\n')
+    # PS1 look on the environment (PS1WorldLook, user request 2026-10-12): off for now (user, 2026-10-13).
     # Sanggigilid is the only mech (2026-10-11): the player, the dummy and the enemy. The loadouts have
     # no mech_scene; the LoadoutSwitcher builds Sanggigilid for them.
     mech = res("res://scenes/mech/sanggigilid.tscn", "PackedScene")
     player = mech
     hud = res("res://scenes/ui/debug_hud.tscn", "PackedScene")
-    loadouts = ["sanggigilid_gunner", "sanggigilid_sniper", "sanggigilid_melee", "sanggigilid_missile",
-                "sanggigilid_cannon", "sanggigilid_smg", "sanggigilid_small_shield"]
+    # One test loadout, key 1 (user, 2026-10-13); other equipment comes from the garage.
+    loadouts = ["sanggigilid_beam_rifle"]
     refs = ", ".join(res(f"res://data/loadouts/{l}.tres") for l in loadouts)
     spawner = res("res://scripts/world/mech_spawner.gd", "Script")
-    gunner = res("res://data/loadouts/sanggigilid_gunner.tres")
+    gunner = res("res://data/loadouts/sanggigilid_beam_rifle.tres")
     node(f'[node name="MouseCapture" type="Node" parent="."]\nscript = {res("res://scripts/core/mouse_capture.gd", "Script")}\n')
     node('[node name="Targets" type="Node3D" parent="."]\n')
     node(f'[node name="DummyMech" type="Node3D" parent="Targets" node_paths=PackedStringArray("player_respawner")]\n'
-         f'transform = {xform(-5, 0, -30, 180)}\nscript = {spawner}\nmech_scene = {mech}\nloadout = {gunner}\n'
+         f'transform = {xform(-5, 0, -30, 180)}\nscript = {spawner}\nmech_scene = {mech}\nloadout = {gunner}\nactive = false\n'
          f'player_respawner = NodePath("../../PlayerRespawner")\n')
     node(f'[node name="Enemy1" type="Node3D" parent="Targets" node_paths=PackedStringArray("player_respawner")]\n'
-         f'transform = {xform(6, 0, -95, 180)}\nscript = {spawner}\nmech_scene = {mech}\nloadout = {gunner}\npilot = 1\n'
+         f'transform = {xform(6, 0, -95, 180)}\nscript = {spawner}\nmech_scene = {mech}\nloadout = {gunner}\npilot = 1\nactive = false\n'
          f'player_respawner = NodePath("../../PlayerRespawner")\n')
     # Player on the avenue, south of the intersection, facing north.
     node(f'[node name="PlayerMech" parent="." instance={player}]\ntransform = {xform(-5, 0, 36)}\n')

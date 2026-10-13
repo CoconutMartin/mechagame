@@ -31,7 +31,7 @@ const SHIELD_HAND_REST := Vector3(-2.1, -0.82, -1.95)
 ## Shield elbow directions (ShieldPose): out and down (the rig tucks the elbow anyway).
 const SHIELD_POLE_REST := Vector3(-1.0, -0.6, 0.0)
 ## Weapons the mech starts with (WeaponMount): the gunner test loadout (key 1).
-const START_WEAPONS := "res://data/loadouts/sanggigilid_gunner.tres"
+const START_WEAPONS := "res://data/loadouts/sanggigilid_beam_rifle.tres"
 ## Bone used for the camera size (MechCameraRig looks for a ShoulderL node).
 const SHOULDER_BONE := "upper_arm_L"
 ## Where the aim ray starts on the body (chest, in front of the torso), m.

@@ -20,7 +20,7 @@ enum Pilot { NONE, AI }
 
 var mech: Mech
 ## False: no mech (the garage test buttons switch it). A reset or respawn does nothing then.
-var active: bool = true
+@export var active: bool = true
 
 var _label: Label3D
 var _respawn_left: float = 0.0

@@ -1,4 +1,4 @@
-"""Sanggigilid test loadouts (keys 1 to 5 in the urban map). Run from the project root:
+"""Sanggigilid test loadout (key 1 in the urban map). Run from the project root:
     python3 tools/data_gen/loadouts.py
 They have no mech_scene: the map's LoadoutSwitcher builds Sanggigilid (its mech_scene) for them."""
 import os
@@ -7,15 +7,8 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 PARTS = ["head", "core", "arm_left", "arm_right", "legs", "booster", "generator", "fcs"]
 PART_FILE = {"arm_left": "arm_l", "arm_right": "arm_r"}
 LOADOUTS = [
-    ("sanggigilid_gunner", "Sanggigilid Gunner", {"weapon_right": "heavy_rifle", "weapon_left": "warden_shield"}),
-    ("sanggigilid_sniper", "Sanggigilid Sniper", {"weapon_right": "beam_rifle"}),  # default two-hand rifle (user, 2026-10-12)
-    ("sanggigilid_melee", "Sanggigilid Melee", {"weapon_right": "pile_bunker", "weapon_left": "warden_shield"}),
-    ("sanggigilid_missile", "Sanggigilid Missile", {"weapon_right": "heavy_rifle", "weapon_left": "warden_shield",
-                                                     "back_left": "missile_pod_l", "back_right": "missile_pod_r"}),
-    ("sanggigilid_cannon", "Sanggigilid Cannon", {"weapon_right": "auto_cannon", "back_left": "auto_cannon_shoulder",
-                                                   "back_right": "auto_cannon_shoulder"}),
-    ("sanggigilid_smg", "Sanggigilid SMG", {"weapon_right": "smg", "weapon_left": "warden_shield"}),
-    ("sanggigilid_small_shield", "Sanggigilid Small Shield", {"weapon_right": "smg", "weapon_left": "small_shield"}),
+    # The only test loadout (user, 2026-10-13: key 1; the user picks other equipment in the garage).
+    ("sanggigilid_beam_rifle", "Sanggigilid Beam Rifle", {"weapon_right": "beam_rifle"}),
 ]
 
 

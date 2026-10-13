@@ -9,12 +9,11 @@
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_booster.tres" id="booster"]
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_generator.tres" id="generator"]
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_fcs.tres" id="fcs"]
-[ext_resource type="Resource" path="res://data/weapons/smg.tres" id="smg"]
-[ext_resource type="Resource" path="res://data/weapons/warden_shield.tres" id="warden_shield"]
+[ext_resource type="Resource" path="res://data/weapons/beam_rifle.tres" id="beam_rifle"]
 
 [resource]
 script = ExtResource("script")
-display_name = "Sanggigilid SMG"
+display_name = "Sanggigilid Beam Rifle"
 head = ExtResource("head")
 core = ExtResource("core")
 arm_left = ExtResource("arm_left")
@@ -23,5 +22,4 @@ legs = ExtResource("legs")
 booster = ExtResource("booster")
 generator = ExtResource("generator")
 fcs = ExtResource("fcs")
-weapon_right = ExtResource("smg")
-weapon_left = ExtResource("warden_shield")
+weapon_right = ExtResource("beam_rifle")
