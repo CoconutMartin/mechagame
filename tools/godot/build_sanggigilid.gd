@@ -253,6 +253,14 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	stance.mech = root
 	stance.weapon_pose = weapon_animation.get_node("WeaponPose") as WeaponPose
 	stance.weapons = root.get_node("WeaponController") as WeaponController
+	# Jump and landing leg poses (after the stance, before the arm rig: the arms follow the torso).
+	var jump_pose := SkeletalJumpPose.new()
+	jump_pose.name = "JumpPose"
+	visual.add_child(jump_pose)
+	jump_pose.model = model
+	jump_pose.mech = root
+	jump_pose.jump_charge = root.get_node("MechJumpCharge") as MechJumpCharge
+	jump_pose.landing_recovery = root.get_node("MechLandingRecovery") as MechLandingRecovery
 	var rig := SkeletalArmRig.new()
 	rig.name = "ArmRig"
 	visual.add_child(rig)
@@ -267,6 +275,7 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	rig.torso_pose = weapon_animation.get_node("TorsoPose") as TorsoPose
 	rig.weapons = root.get_node("WeaponController") as WeaponController
 	rig.stance = stance
+	rig.jump_pose = jump_pose
 	var weapon_pose := weapon_animation.get_node("WeaponPose") as WeaponPose
 	weapon_pose.aim_anchor = torso.get_node("AimAnchor")
 	var bounce := WeaponBounce.new()

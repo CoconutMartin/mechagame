@@ -30,6 +30,8 @@ extends SkeletonModifier3D
 @export var weapons: WeaponController
 ## Optional. The sniping stance: the head turns back to the aim by its hip turn plus the torso twist.
 @export var stance: SkeletalAimStance
+## Optional. The jump and landing crouch lifts the weapon frame (SkeletalJumpPose.weapon_offset).
+@export var jump_pose: SkeletalJumpPose
 @export var head_bone: StringName = &"head"
 ## In the sniping stance the right elbow tucks toward this direction (torso space: out to the side and
 ## a little down, inside max_lift_deg), like the reference's raised right elbow.
@@ -553,6 +555,10 @@ func _process_modification_with_delta(delta: float) -> void:
 	_head_to_aim()
 	torso.global_transform = (skin * _skeleton.get_bone_global_pose(_skeleton.find_bone(torso_bone)).orthonormalized() \
 			* _torso_offset).orthonormalized()
+	# Jump and landing crouch: the weapon frame (weapons, shield, free hand places) lifts, so the thighs
+	# coming up keep off the arms.
+	if jump_pose != null:
+		torso.global_transform = torso.global_transform.translated_local(jump_pose.weapon_offset())
 	var active: Array[Dictionary] = []
 	for side: Dictionary in _sides:
 		var shoulder := side.shoulder as Node3D
