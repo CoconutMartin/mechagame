@@ -85,6 +85,11 @@ func is_rolling() -> bool:
 	return animation != null and animation.is_playing
 
 
+## True while the mech slides on after a dodge animation (dust from the feet).
+func is_sliding() -> bool:
+	return animation != null and animation.is_sliding()
+
+
 ## True while hopping or recovering. The mech cannot move, boost, or turn.
 func is_busy() -> bool:
 	return is_dodging or _recover_left > 0.0

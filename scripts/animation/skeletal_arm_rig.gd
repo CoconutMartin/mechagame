@@ -531,6 +531,19 @@ func hand_across(right: bool) -> Vector3:
 	return _sides[1 if right else 0].hand_across if _sides.size() == 2 else Vector3.ZERO
 
 
+## The torso frame (weapons, shield, hand places) and the shoulder mounts again from the bones now.
+## A modifier after this one that turns the body (SkeletalDodgeAnimation) calls it, so the weapon stays
+## in the hands.
+func refresh_torso() -> void:
+	if _skeleton == null:
+		return
+	torso.global_transform = (_skeleton.global_transform * _skeleton.get_bone_global_pose(_skeleton.find_bone(torso_bone)).orthonormalized() \
+			* _torso_offset).orthonormalized()
+	if jump_pose != null:
+		torso.global_transform = torso.global_transform.translated_local(jump_pose.weapon_offset())
+	_follow_shoulders()
+
+
 ## Shoulder mounts follow their upper arm bones (after the arm bones got their final turn).
 func _follow_shoulders() -> void:
 	var skin := _skeleton.global_transform

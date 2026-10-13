@@ -23,7 +23,7 @@ func _ready() -> void:
 
 func _physics_process(_delta: float) -> void:
 	for emitter in _emitters:
-		emitter.emitting = mech.is_skidding
+		emitter.emitting = mech.is_skidding or (mech.dodge != null and mech.dodge.is_sliding())
 
 
 func _make_emitter() -> CPUParticles3D:

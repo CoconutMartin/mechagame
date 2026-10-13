@@ -15,9 +15,12 @@ extends Resource
 ## True for a forward-only clip (the roll) used for side dodges too: the body turns toward the dodge
 ## at the start and back at the end.
 @export var turn_to_direction: bool = false
-## Blend into and out of the clip, in seconds of clip time.
+## Blend into the clip, in seconds of clip time.
 @export var blend_in: float = 0.12
-@export var blend_out: float = 0.3
+## After the clip: the mech slides on (its speed fades with this time constant, in seconds) while the
+## body blends from the clip's last pose back to the normal pose over settle_time seconds.
+@export var slide_time: float = 0.35
+@export var settle_time: float = 0.8
 
 
 ## Play time, in seconds.

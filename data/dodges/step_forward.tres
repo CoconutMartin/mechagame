@@ -13,4 +13,3 @@ distance = 12.0
 boost_distance = 16.0
 turn_to_direction = false
 blend_in = 0.1
-blend_out = 0.25

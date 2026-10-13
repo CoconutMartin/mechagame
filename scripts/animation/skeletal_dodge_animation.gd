@@ -9,9 +9,15 @@ extends SkeletonModifier3D
 ## Runs after every other bone modifier, so the clip has the whole body. The clip plays in place; the
 ## mech moves along the clip's own travel curve (root motion), so the body and the ground speed
 ## match. The roll is a forward clip: for a side roll the body turns toward the roll and back.
+## After the clip the mech slides on (its speed fades, dust from the feet) while the body blends back
+## from the clip's last pose over the clip's settle time (user request 2026-10-13: no abrupt end).
+## The arms are not taken from the clips: they keep holding the weapon, and the arm rig moves the
+## torso frame (weapons, shield) with the new torso (user request 2026-10-13: no floating weapon).
 
 @export var model: Node3D
 @export var mech: Mech
+## Moves the torso frame (weapon, shield) with the body after the clip turned it.
+@export var arm_rig: SkeletalArmRig
 @export var roll: DodgeClip = preload("res://data/dodges/roll.tres")
 @export var step_forward: DodgeClip = preload("res://data/dodges/step_forward.tres")
 @export var step_left: DodgeClip = preload("res://data/dodges/step_left.tres")
@@ -22,12 +28,19 @@ extends SkeletonModifier3D
 @export var turn_in: float = 0.12
 @export var turn_back: float = 0.25
 
-## True while a clip plays.
+## Bones the clips do not move: the arms keep holding the weapon.
+const ARM_BONES: Array[String] = ["upper_arm_L", "forearm_L", "hand_L", "upper_arm_R", "forearm_R", "hand_R"]
+
+## True while a clip plays or the mech settles after it.
 var is_playing: bool = false
 ## The clip that plays now (null when none).
 var clip: DodgeClip
 
 var _time: float = 0.0
+## Seconds since the clip ended (the slide and settle).
+var _after: float = 0.0
+## Ground speed kept from the clip (m/s): it fades slower than the clip's own speed.
+var _momentum: float = 0.0
 var _distance: float = 0.0
 ## World direction and body turn (radians, positive = left) of this dodge.
 var _direction: Vector3 = Vector3.ZERO
@@ -46,7 +59,9 @@ func _ready() -> void:
 		var list := []
 		for track in each.animation.get_track_count():
 			var path := each.animation.track_get_path(track)
-			list.append([track, each.animation.track_get_type(track), String(path.get_concatenated_subnames())])
+			var bone := String(path.get_concatenated_subnames())
+			if bone not in ARM_BONES:
+				list.append([track, each.animation.track_get_type(track), bone])
 		_tracks[each] = list
 
 
@@ -70,6 +85,8 @@ func start(chosen: DodgeClip, local_direction: Vector3, from_boost: bool, finish
 	clip = chosen
 	is_playing = true
 	_time = 0.0
+	_after = 0.0
+	_momentum = 0.0
 	_distance = clip.boost_distance if from_boost else clip.distance
 	_direction = (mech.global_basis * local_direction).normalized()
 	# Model space: the mech's left (-X in the leg frame) is +X, reached by turning +90 degrees.
@@ -79,16 +96,27 @@ func start(chosen: DodgeClip, local_direction: Vector3, from_boost: bool, finish
 	_finished_callback = finished
 
 
+## True while the mech slides on after the clip (the feet throw dust).
+func is_sliding() -> bool:
+	return is_playing and _after > 0.0 and _momentum > 2.0
+
+
 func _physics_process(delta: float) -> void:
 	if not is_playing:
 		return
 	var length := clip.animation.length
-	var before := _time
-	_time = minf(_time + delta * clip.speed_scale, length)
-	var moved := (clip.travel.sample(_time / length) - clip.travel.sample(before / length)) * _distance
+	var clip_speed := 0.0
+	if _time < length:
+		var before := _time
+		_time = minf(_time + delta * clip.speed_scale, length)
+		clip_speed = (clip.travel.sample(_time / length) - clip.travel.sample(before / length)) * _distance / maxf(delta, 0.0001)
+	else:
+		_after += delta
+	# The mech keeps its speed: the clip can slow down faster than the momentum fades.
+	_momentum = maxf(clip_speed, _momentum * exp(-delta / maxf(clip.slide_time, 0.01)))
 	mech.root_motion_active = true
-	mech.root_motion_velocity = _direction * (moved / maxf(delta, 0.0001))
-	if _time >= length or mech.is_fallen or mech.is_wrecked:
+	mech.root_motion_velocity = _direction * _momentum
+	if _after >= clip.settle_time or mech.is_fallen or mech.is_wrecked:
 		is_playing = false
 		mech.root_motion_active = false
 		mech.root_motion_velocity = Vector3.ZERO
@@ -99,8 +127,8 @@ func _physics_process(delta: float) -> void:
 func _weight() -> float:
 	if not is_playing:
 		return 0.0
-	var length := clip.animation.length
-	return clampf(minf(_time / (clip.blend_in * clip.speed_scale), (length - _time) / (clip.blend_out * clip.speed_scale)), 0.0, 1.0)
+	var blend_in := clampf(_time / (clip.blend_in * clip.speed_scale), 0.0, 1.0)
+	return blend_in * (1.0 - _after / maxf(clip.settle_time, 0.01))
 
 
 func _process_modification_with_delta(_delta: float) -> void:
@@ -122,7 +150,10 @@ func _process_modification_with_delta(_delta: float) -> void:
 	if _turn != 0.0:
 		var progress := _time / animation.length
 		var amount := smoothstep(0.0, turn_in, progress) * (1.0 - smoothstep(1.0 - turn_back, 1.0, progress))
+		amount *= 1.0 - smoothstep(0.0, 1.0, _after / maxf(clip.settle_time, 0.01))
 		var root := skeleton.find_bone("root")
 		var yaw := Quaternion(Vector3.UP, _turn * amount * weight)
 		skeleton.set_bone_pose_rotation(root, yaw * skeleton.get_bone_pose_rotation(root))
 		skeleton.set_bone_pose_position(root, yaw * skeleton.get_bone_pose_position(root))
+	if arm_rig != null:
+		arm_rig.refresh_torso()

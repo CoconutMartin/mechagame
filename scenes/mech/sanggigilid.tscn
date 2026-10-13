@@ -518,7 +518,8 @@ script = ExtResource("45_l5mie")
 hitboxes = NodePath("../SkeletalHitboxes")
 mech = NodePath("..")
 
-[node name="DodgeAnimation" type="SkeletonModifier3D" parent="Visual" node_paths=PackedStringArray("model", "mech")]
+[node name="DodgeAnimation" type="SkeletonModifier3D" parent="Visual" node_paths=PackedStringArray("model", "mech", "arm_rig")]
 script = ExtResource("46_droll")
 model = NodePath("../Model")
 mech = NodePath("../..")
+arm_rig = NodePath("../ArmRig")
