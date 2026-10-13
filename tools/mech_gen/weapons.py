@@ -195,11 +195,10 @@ BR_K = 6.0 / (1728 - 492)
 BR_GRIP_RIGHT = (0.0, (241 - 368) * BR_K, -(1728 - 1340) * BR_K)
 BR_GRIP_LEFT = (0.0, (241 - 318) * BR_K, -(1728 - 1000) * BR_K)
 BR_MUZZLE = (0.0, 0.0, -6.0)
-## Sanggigilid's shoulder joint distance (torso space, measured in the game: x +-1.348).
-SHOULDER_WIDTH = 2.696
-## Beam Rifle rest (user request 2026-10-13): the hands one shoulder width apart, so the left hand
-## holds the lower rail this far ahead of the pistol grip (the rail runs from z -2.37 to -6.0).
-BR_LEFT_REST = (0.0, BR_GRIP_LEFT[1], BR_GRIP_RIGHT[2] - SHOULDER_WIDTH)
+## Beam Rifle rest (low ready, user request 2026-10-13): the left hand holds the lower rail this far
+## ahead of the pistol grip (the rail runs from z -2.37 to -6.0).
+BR_LEFT_REST_SPACING = 1.0
+BR_LEFT_REST = (0.0, BR_GRIP_LEFT[1], BR_GRIP_RIGHT[2] - BR_LEFT_REST_SPACING)
 SNIPER_GRIP_RIGHT = (0.0, -0.5, -1.4)
 
 
@@ -217,9 +216,9 @@ SNIPER_HANDS = {
     "left_aim": plus((0.0, -0.45, -2.2), (0.115, 0.391, 0.143)),
 }
 BR_HANDS = {
-    "right_rest": plus(BR_GRIP_RIGHT, (0.034, 0.033, -0.238)),
+    "right_rest": plus(BR_GRIP_RIGHT, (-0.331, 0.915, -0.092)),
     "right_aim": plus(BR_GRIP_RIGHT, (-0.043, 0.594, -0.237)),
-    "left_rest": plus(BR_LEFT_REST, (-0.329, 0.114, 0.725)),
+    "left_rest": plus(BR_LEFT_REST, (-0.126, -0.129, 0.543)),
     "left_aim": plus((BR_GRIP_LEFT[0], BR_GRIP_LEFT[1], BR_GRIP_LEFT[2] + 0.8), (0.145, 0.22, 0.07)),
 }
 
@@ -318,13 +317,14 @@ if __name__ == "__main__":
     # Beam Rifle: two hands, right hand on the pistol grip, left hand under the lower rail. Aim = the
     # sniper hold.
     beam_rifle_scene("scenes/weapons/beam_rifle.tscn")
-    # Rest (user requests 2026-10-13): each hand in front of its shoulder joint, the rifle level and
-    # straight across the body (muzzle left), the pistol grip and the rail socket one shoulder width
-    # apart (BR_LEFT_REST), the rifle as close to the body as it goes without clipping, also while
-    # walking, strafing and boosting with the WeaponBounce swing (0.12 m from the torso at rest; the
-    # bounce lets it come 0.07 m nearer). Found by search in the game.
-    br_hand = (SHOULDER_WIDTH / 2, 1.2, -1.75)
-    br_rows = xf_aim((-1.0, 0.0, 0.0), (0.0, 1.0, 0.0), br_hand)
+    # Rest (user request 2026-10-13): a low ready carry (muzzle down about 45 deg, like a rifle low
+    # ready; held across the body near the waist with the elbows down, like drill port arms, but muzzle
+    # down): the pistol grip in front of the right groin, the rifle across the lower torso, the muzzle
+    # down to the left, the shoulders near their hanging rest (upper arms lifted 3 and 19 deg). The left
+    # hand on the rail BR_LEFT_REST_SPACING ahead of the grip. Found by search in the game: no
+    # clipping at rest and while moving (with WeaponBounce).
+    br_hand = (0.5, 0.9, -2.6)
+    br_rows = xf_aim((-0.7071, -0.7071, 0.0), (0.0, 1.0, 0.0), br_hand)
     br_rest = tuple(h - g for h, g in zip(br_hand, apply_rows(br_rows, BR_GRIP_RIGHT)))
     # The same butt place as the sniper (grip sockets, 2026-10-13).
     br_anchor = (1.9, 1.2, -1.5)

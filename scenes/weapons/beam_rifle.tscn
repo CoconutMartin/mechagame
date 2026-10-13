@@ -11,19 +11,19 @@ emitter_path = NodePath("Model/MuzzleBore")
 [node name="Model" parent="." instance=ExtResource("model")]
 
 [node name="GripRight" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.034, -0.5835, -2.1215)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.331, 0.2985, -1.9755)
 
 [node name="GripRightRest" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.034, -0.5835, -2.1215)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.331, 0.2985, -1.9755)
 
 [node name="GripRightAim" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.043, -0.0225, -2.1205)
 
 [node name="GripLeft" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.329, -0.2598, -3.8545)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.126, -0.5028, -2.3405)
 
 [node name="GripLeftRest" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.329, -0.2598, -3.8545)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.126, -0.5028, -2.3405)
 
 [node name="GripLeftAim" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.145, -0.1538, -2.664)
@@ -37,7 +37,7 @@ metadata/grip_radius = 0.16
 metadata/hand_reach = true
 
 [node name="GripSocketLeft" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -0.37379, -4.5795)
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -0.37379, -2.8835)
 metadata/grip_radius = 0.15
 metadata/hand_reach = true
 
