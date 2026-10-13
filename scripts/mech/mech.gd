@@ -106,6 +106,11 @@ enum BoostExit { SKID, LEAP }
 @export var lock_point_height: float = 7.5
 ## SKID: the slide ends at this speed (m/s). Then the heavy steps start, or the walk with a move key.
 @export var skid_end_speed: float = 4.0
+## Akira stop slide (user request 2026-10-13): from the run speed and from the boost speed, the slide
+## time (s) and length (m) to a full stop: (start speed, time, length). Speeds in between blend. The
+## speed falls as (1 - t / time)^k, fast at first and slow at the end, with k set by the length.
+@export var akira_slide_run: Vector3 = Vector3(9.7, 2.0, 7.75)
+@export var akira_slide_boost: Vector3 = Vector3(11.6, 2.25, 10.75)
 ## SKID: stride lengths (meters) of the heavy steps to a stop after the slide, when no move key is held.
 @export var skid_stop_strides: PackedFloat32Array = PackedFloat32Array([0.45, 0.35])
 ## LEAP: upward speed of the leap (m/s).
@@ -204,6 +209,9 @@ var _in_exit_leap: bool = false
 var _skid_stop_plan: PackedFloat32Array = PackedFloat32Array()
 var _skid_slowdown: float = 9.4
 var _skid_start_speed: float = 0.0
+var _akira_time: float = 0.0
+var _akira_duration: float = 1.0
+var _akira_power: float = 1.0
 ## World yaw where the torso (and the mech aim) points.
 var _aim_yaw: float = 0.0
 ## True while the legs turn to follow the torso (standing: until they face it).
@@ -354,6 +362,13 @@ func start_skid(stop_strides: PackedFloat32Array = PackedFloat32Array(), slowdow
 	_skid_slowdown = slowdown if slowdown > 0.0 else skid_deceleration
 	is_brake_skidding = boost_brake
 	_skid_start_speed = get_horizontal_speed()
+	if akira_skid:
+		var blend := clampf(inverse_lerp(akira_slide_run.x, akira_slide_boost.x, _skid_start_speed), 0.0, 1.0)
+		var plan := akira_slide_run.lerp(akira_slide_boost, blend)
+		_akira_time = 0.0
+		_akira_duration = plan.y
+		# Length = start speed x time / (k + 1).
+		_akira_power = maxf(_skid_start_speed * plan.y / maxf(plan.z, 0.1) - 1.0, 0.0)
 	is_exiting_boost = true
 	_exit_deceleration = 0.0
 	_stop_deceleration = 0.0
@@ -363,6 +378,8 @@ func start_skid(stop_strides: PackedFloat32Array = PackedFloat32Array(), slowdow
 
 ## 0 at the skid start, 1 at the skid end (by speed).
 func get_skid_progress() -> float:
+	if akira_skid:
+		return clampf(_akira_time / _akira_duration, 0.0, 1.0)
 	var span := _skid_start_speed - _skid_end()
 	if span <= 0.01:
 		return 1.0
@@ -532,10 +549,18 @@ func _update_skid(delta: float, has_input: bool) -> void:
 	if has_input:
 		akira_skid = false
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
-	horizontal = horizontal.move_toward(Vector3.ZERO, _skid_slowdown * delta)
+	if akira_skid:
+		# The Akira slide speed curve (akira_slide_run / akira_slide_boost).
+		# The speed of the middle of this frame (the slide length comes out right).
+		var left := clampf(1.0 - (_akira_time + delta * 0.5) / _akira_duration, 0.0, 1.0)
+		_akira_time += delta
+		horizontal = horizontal.normalized() * _skid_start_speed * pow(left, _akira_power) \
+				if horizontal.length() > 0.001 else Vector3.ZERO
+	else:
+		horizontal = horizontal.move_toward(Vector3.ZERO, _skid_slowdown * delta)
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
-	if horizontal.length() > _skid_end():
+	if (akira_skid and _akira_time < _akira_duration) or (not akira_skid and horizontal.length() > _skid_end()):
 		return
 	is_skidding = false
 	if akira_skid:
