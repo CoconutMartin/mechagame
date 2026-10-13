@@ -837,6 +837,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Closed (2026-10-12): the Beam Rifle's long stock touched the body. Fixed by the new two-hand rest and the sniping stance (0 points at rest and aim).
 - Closed (2026-10-13): the Akira slide at the end of a full boost or run: the Blender action `biped_run_stop_akira` (already in the .glb) now plays there (see "Akira stop animation").
 - Closed (2026-10-13): the two-hand rifles' hand markers now sit on the grip sockets, with a new rest and aim stance (see "Grip sockets").
+- Open (2026-10-13): test on a computer with a working keyboard and mouse (the tablet's keyboard does not work in Godot). Check: WASD move, G and P open the garage, Space and B jump and dodge, the Beam Rifle and Beam Sniper fire in ADS (RMB or ] held, LMB or [ held then released), and the dodge to walk change (hold W, A or D through a dodge).
 - Closed (2026-10-13): the Beam Sniper's low rest pose put its left hand into the left thigh while walking and boosting. Now it has a close rest in front of the chest (see "Beam Sniper close rest").
 - Closed (2026-10-13): a back dodge animation: Mixamo "Standing Dodge Backward" for every weight (see "Dodge animations").
 - Closed (2026-10-13): leg animations for jumping and landing with a landing impact: built as `SkeletalJumpPose` (see "Jump and landing poses").
