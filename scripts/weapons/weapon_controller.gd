@@ -273,8 +273,9 @@ func _physics_process(_delta: float) -> void:
 		var right_on := right_weapon == active
 		if _two_handed():
 			weapon_pose.wants_raise = input.aim_held or (right_on and (input.left_fire_held or right_weapon.is_busy()))
-			# Sniping stance: no walking while the rifle is raised (user, 2026-10-12).
-			input.stance_lock = weapon_pose.wants_raise or weapon_pose.aim_amount > 0.5
+			# Sniping stance: no walking while the rifle is raised (user, 2026-10-12). The rifle lowers
+			# slowly (WeaponPose.lower_speed), so walking comes back early in the lowering.
+			input.stance_lock = weapon_pose.wants_raise or weapon_pose.aim_amount > 0.85
 		else:
 			weapon_pose.wants_raise = input.fire_held and right_on and right_data.kind == WeaponData.Kind.GUN
 		if input.reload_pressed:

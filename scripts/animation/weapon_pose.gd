@@ -22,9 +22,9 @@ extends Node
 ## Optional. Adds the swing and bounce off the body while moving (two-hand weapons at rest).
 @export var bounce: WeaponBounce
 ## How fast the weapon comes up to aim (1 / seconds).
-@export var raise_speed: float = 4.0
+@export var raise_speed: float = 3.0
 ## How fast the weapon goes down to rest (1 / seconds).
-@export var lower_speed: float = 3.0
+@export var lower_speed: float = 0.8
 ## One-hand gun (no left grip): when the aim goes up or down it turns about this place (the right
 ## elbow, weapon parent space), so the gun and the forearm turn together and the level hold (stock off
 ## the forearm) stays the same. Off (one_hand_elbow_pivot false): about the stock.

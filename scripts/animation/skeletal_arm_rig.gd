@@ -76,8 +76,10 @@ extends SkeletonModifier3D
 ## the rule of 2026-10-12 that the shoulders face forward at neutral). At rest only: it fades out
 ## while aiming.
 @export var max_block_yaw_deg: float = 20.0
-## Fastest elbow swing around the shoulder-to-hand line (degrees per second): no elbow jumps.
-@export var max_elbow_speed_deg: float = 180.0
+## Fastest elbow swing around the shoulder-to-hand line (degrees per second), after all the arm steps:
+## no elbow jumps, and the shoulder blocks do not fling on a quick aim (RMB tap) but swing back over
+## about a second (user request 2026-10-13). The hand stays on its target.
+@export var max_elbow_speed_deg: float = 70.0
 ## How strongly the elbow choice avoids a block turn past max_block_yaw_deg (cost weight).
 @export var block_yaw_weight: float = 10.0
 ## Away from the neutral elbow height the block turn fades out over this many degrees; a raised arm
@@ -317,6 +319,12 @@ func _pose_arm(side: Dictionary) -> void:
 ## Arm IK with the swing limit. The right weapon moves to a limited right hand. A two-hand weapon then
 ## moves back to a limited left hand (if it falls short), and the right arm takes its grip again.
 func _solve_arms(active: Array[Dictionary]) -> void:
+	_solve_arms_once(active)
+	for side in active:
+		_limit_elbow_speed(side.ik as TwoBoneIK, side)
+
+
+func _solve_arms_once(active: Array[Dictionary]) -> void:
 	var left_ik: TwoBoneIK = null
 	var right_ik: TwoBoneIK = null
 	for side in active:
@@ -347,6 +355,29 @@ func _solve_arms(active: Array[Dictionary]) -> void:
 	_tuck_elbow(right_ik)
 	_limit_swing(right_ik, swing_limit(true))
 
+
+
+## Holds the elbow's swing around the shoulder-to-hand line to max_elbow_speed_deg from the last frame.
+func _limit_elbow_speed(ik: TwoBoneIK, side: Dictionary) -> void:
+	var shoulder := ik.root_joint.global_position
+	var reach := ik.target.global_position - shoulder
+	if reach.length_squared() < 0.0001:
+		return
+	reach = reach.normalized()
+	var torso_basis := torso.global_basis.orthonormalized()
+	var now := (ik.mid_joint.global_position - shoulder).normalized()
+	if side.has("last_elbow"):
+		var last: Vector3 = torso_basis * (side.last_elbow as Vector3)
+		var flat_now := now - reach * now.dot(reach)
+		var flat_last := last - reach * last.dot(reach)
+		if flat_now.length_squared() > 0.0001 and flat_last.length_squared() > 0.0001:
+			var back := flat_now.signed_angle_to(flat_last, reach)
+			var limit := deg_to_rad(max_elbow_speed_deg) * _delta
+			var turn := back + clampf(-back, -limit, limit)
+			if absf(turn) > 0.00001:
+				ik.root_joint.global_basis = (Basis(reach, turn) * ik.root_joint.global_basis).orthonormalized()
+				now = (ik.mid_joint.global_position - shoulder).normalized()
+	side.last_elbow = torso_basis.inverse() * now
 
 ## Turns the elbow around the shoulder-to-hand line (the hand stays on its target) to the place
 ## nearest its neutral places: the elbow height of the flat block, and as little block turn as
@@ -384,18 +415,6 @@ func _tuck_elbow(ik: TwoBoneIK) -> void:
 		best = found
 		center = best
 		step /= 5.0
-	# The elbow swings toward the best place at most max_elbow_speed_deg: when two places take turns
-	# as the best (the aim or the steps move the hand), it moves over instead of jumping each frame.
-	var torso_basis := torso.global_basis.orthonormalized()
-	if side.has("last_elbow"):
-		var last: Vector3 = torso_basis * (side.last_elbow as Vector3)
-		var flat_now := now - reach * now.dot(reach)
-		var flat_last := last - reach * last.dot(reach)
-		if flat_now.length_squared() > 0.0001 and flat_last.length_squared() > 0.0001:
-			var at := flat_now.signed_angle_to(flat_last, reach)
-			var limit := deg_to_rad(max_elbow_speed_deg) * _delta
-			best = at + clampf(wrapf(best - at, -PI, PI), -limit, limit)
-	side.last_elbow = torso_basis.inverse() * (Basis(reach, best) * now)
 	if best != 0.0:
 		ik.root_joint.global_basis = (Basis(reach, best) * ik.root_joint.global_basis).orthonormalized()
 
