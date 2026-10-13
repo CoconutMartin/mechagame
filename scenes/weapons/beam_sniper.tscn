@@ -128,10 +128,10 @@ mesh = SubResource("m10")
 surface_material_override/0 = ExtResource("dark")
 
 [node name="GripRight" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.056, -0.141, -1.669)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0.239, -1.563)
 
 [node name="GripRightRest" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.056, -0.141, -1.669)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0.239, -1.563)
 
 [node name="GripRightAim" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.051, -0.073, -1.691)
@@ -152,10 +152,10 @@ metadata/grip_radius = 0.2
 metadata/hand_reach = true
 
 [node name="GripLeft" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.001, -0.76, -2.647)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.079, -0.389, -2.692)
 
 [node name="GripLeftRest" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.001, -0.76, -2.647)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.079, -0.389, -2.692)
 
 [node name="GripLeftAim" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.115, -0.059, -2.057)

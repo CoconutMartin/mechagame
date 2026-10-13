@@ -88,9 +88,9 @@ theme_override_font_sizes/font_size = 14
 text = "W / S walk   A / D strafe   Mouse: aim (the torso turns, the legs follow)
 RMB fire (hip); pile bunker: hold to power up, release to attack   LMB lift shield (sniper: RMB zoom, hold LMB charge, release fire)
 Q / E hold: lock missiles, release: fire (locked volley entrenches)   R reload   V free camera (hold RMB to turn it)   1-4 test loadouts
-Space hold: charge jump jets, release to jump (W or S held: jump that way)
-Space double tap: dodge hop (A / D side, W forward, S or none back; forward while boosting)
-Shift + W: walk 2 steps, run 2 steps, then boost   Ctrl kneel
+Space or B hold: charge jump jets, release to jump (W or S held: jump that way)
+Space or B double tap: dodge hop (A / D side, W forward, S or none back; forward while boosting)
+Shift + W: walk 2 steps, run 2 steps, then boost   Ctrl kneel   G or P garage
 Mouse moves the blue ring inside a small box; past the edge the camera turns
 Yellow dot = camera crosshair   Blue ring = mech aim
 Grid lines: thin = 1 m, thick = 10 m

@@ -32,8 +32,8 @@ Since 2026-10-11 (user request) the game has one mech: **Sanggigilid** (the rigg
 | V (toggle) | Free camera (2026-10-12, replaces the front view): press V, then hold RMB and move the mouse to turn the camera around the mech (pitch -75° to 60°); RMB does not aim or fire then, and the mouse without RMB still turns the mech. The mech aim stays on the torso direction and the crosshair hides. Press V again to go back behind the mech (about 0.33 s blend) | `free_camera` |
 | Mouse | Aim. The torso turns toward the aim at its turn speed and the camera stays behind the torso. The legs follow the torso (since 4a.5) at a steady speed (90°/s moving, 45°/s standing): moving, they always follow; standing, they start when the torso is more than 25° off and then turn all the way (steps in place). The torso stays inside its twist limits (52° left, 64° right of the legs) while the legs catch up | |
 | Arrow keys | Aim, as an alternative to the mouse (user request 2026-10-13): the same as moving the mouse at `MechCameraRig.key_aim_pixels_per_second` (600, about 86°/s sideways); up and down `key_pitch_scale` (2) times the mouse rate. Works with the free aim box, the free camera (with RMB held) and the ADS sensitivity | `aim_left`, `aim_right`, `aim_up`, `aim_down` |
-| Space | Hold on the ground to charge the jump jets, release to jump. No plain jump | `jump` |
-| Space x2 | Double tap (within 0.3 s): dodge hop. A / D = side, W = forward, S or no key = back | `jump` |
+| Space or B | Hold on the ground to charge the jump jets, release to jump. No plain jump | `jump` |
+| Space x2 or B x2 | Double tap (within 0.3 s): dodge hop. A / D = side, W = forward, S or no key = back | `jump` |
 | Ctrl | Kneel (toggle, 1.25 s down, 1.25 s up, camera moves down and up with it). W also stands the mech up: right knee on the ground, left foot forward. No movement while kneeling | `crouch` |
 | Shift | Boost (hold with a move key). Walk 2 steps (skipped if already walking), then always 2 run steps, then boost. Stops when released | `boost` |
 | RMB | One-hand weapons: use the right arm weapon. Two-hand firearm: aim down sight (hold); the mech takes the sniping stance and cannot walk, boost or jump while aiming | `use_right_arm`, `aim` |
@@ -41,6 +41,7 @@ Since 2026-10-11 (user request) the game has one mech: **Sanggigilid** (the rigg
 | Q / E | Left / right back weapon | `fire_back_left`, `fire_back_right` |
 | Tab | Lock-on | `lock_on` |
 | Esc | Free the mouse (click to capture again) | `ui_cancel` |
+| G or P | Garage: open and close (P added 2026-10-13, user request; B also jumps and dodges since then) | `garage` |
 
 ## Scale and maps
 
@@ -686,6 +687,8 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
 - Shoulder block flicker fix (user report 2026-10-13, "the shoulder block flickers from angled to flat nonstop"): the elbow choice (`SkeletalArmRig._tuck_elbow`) scored the block's turn about the up axis as 0 when the upper arm hung within 3 deg of straight down (`_flat_yaw`), so a hanging arm won on some frames only and the block jumped up to 32 deg back and forth. Now the turn fades in smoothly with the lean (no step in the cost), and the elbow swings at most `max_elbow_speed_deg` 180 deg/s around the shoulder-to-hand line (two places that take turns as the best now blend instead of jumping; this also calmed the aim-walk jumps: auto cannon 72 to 18 deg, Beam Rifle 30 to 1 deg). The block may turn up to `max_block_yaw_deg` 20 deg at rest (user: "the shoulder blocks can take some angle"; was 0), fading to 0 while aiming (the aim holds were tuned with flat blocks). Test: largest frame-to-frame block turn standing 0.1 deg, walking 0.6 deg (was 32 deg); all weapons 0 clipping at rest and aim -27, 0, 15 deg.
 - Shoulder fling on a quick aim (user report 2026-10-13, "shoulders fling like pauldrons when I flick RMB; slow the return to about 1 to 1.5 s"): the elbow swing limit now runs once after all the arm steps (`SkeletalArmRig._limit_elbow_speed`, `max_elbow_speed_deg` 70 deg/s; the hand stays on its target), and `WeaponPose` raises at 3 per second (was 4, about 0.33 s) and lowers at 0.8 per second (was 3: about 1.25 s from full aim). The sniping stance walk lock ends when the rifle is 15% down (`aim_amount` 0.85, was 0.5), so walking comes back early in the slow lowering. Test (RMB held 8 frames): the left upper arm swings at most 52 deg (was 80, past the aim pose) and at most 15 deg per frame (was 19); it is back at rest about 0.6 s after the tap (a full aim: about 1.25 s). All weapons 0 clipping at rest and aim; aim-walk jumps: auto cannon 18 deg, SMG 5 deg, the rest under 1 deg.
 
+- Beam Sniper close rest (user request 2026-10-13, closes the thigh contact reminder): the pistol grip socket at (1.0, 1.2, -1.85) torso space, in front of the chest; the muzzle to the left, 10 deg down and 15 deg forward (`beam_sniper.tres` rest_transform; was low across the groin, grip at (0.4, 0.2, -2.4)). The rest hand markers moved to where the fists land on the grip sockets (GripRightRest (-0.1, 0.239, -1.563), GripLeftRest (0.079, -0.389, -2.692); reach 0.00 m). Found by search in the game (148 poses; weapon and hand mesh points inside body meshes in a motion run: stand, walk, stop, strafe both ways, boost, brake stop). Test: the old pose had 3331 points up to 0.53 m deep (left hand into the thighs); the new pose 0, and 0 at aim (-27, 0, 15 deg); the Beam Rifle as a control: 0. Wrist bend at rest: right 81.6 deg (old 80.4), left 19.2 deg (old 30.4).
+
 ### Akira stop animation (user request 2026-10-13: "get biped_run_stop_akira here")
 
 - The action was already in `new_mech_exploded.glb` (100 frames, 3.33 s; the note "not exported yet" was wrong). `SkeletalAkiraStop` (node `AkiraStop` on the mech, made by `build_sanggigilid.gd`) plays it at the end of a run or boost stop when no move key is held (`Mech.akira_stop_animation`; not for the dodge hop's brake skid, not when the skid starts with a key held).
@@ -830,7 +833,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Closed (2026-10-12): the Beam Rifle's long stock touched the body. Fixed by the new two-hand rest and the sniping stance (0 points at rest and aim).
 - Closed (2026-10-13): the Akira slide at the end of a full boost or run: the Blender action `biped_run_stop_akira` (already in the .glb) now plays there (see "Akira stop animation").
 - Closed (2026-10-13): the two-hand rifles' hand markers now sit on the grip sockets, with a new rest and aim stance (see "Grip sockets").
-- Open (2026-10-13): the Beam Sniper's low rest pose: its left hand touches the left thigh while walking and boosting (also without the bounce). Give it a close rest like the Beam Rifle.
+- Closed (2026-10-13): the Beam Sniper's low rest pose put its left hand into the left thigh while walking and boosting. Now it has a close rest in front of the chest (see "Beam Sniper close rest").
 - Closed (2026-10-13): a back dodge animation: Mixamo "Standing Dodge Backward" for every weight (see "Dodge animations").
 - Closed (2026-10-13): leg animations for jumping and landing with a landing impact: built as `SkeletalJumpPose` (see "Jump and landing poses").
 - Open (2026-10-12): let mechs pick up small cars and use them as a large, heavy shield; small cars as throwable objects.

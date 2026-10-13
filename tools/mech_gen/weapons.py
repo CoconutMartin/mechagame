@@ -210,9 +210,9 @@ def plus(a, b):
 # about 0.3 m from the fist hollow, so each marker sits off its grip socket by the gap measured in the
 # game (hand turned to the grip, fist hollow on the socket), at rest and at aim.
 SNIPER_HANDS = {
-    "right_rest": plus(SNIPER_GRIP_RIGHT, (0.056, 0.359, -0.269)),
+    "right_rest": plus(SNIPER_GRIP_RIGHT, (-0.1, 0.739, -0.163)),  # Close rest (2026-10-13).
     "right_aim": plus(SNIPER_GRIP_RIGHT, (-0.051, 0.427, -0.291)),
-    "left_rest": plus((0.0, -0.45, -2.9), (0.001, -0.31, 0.253)),
+    "left_rest": plus((0.0, -0.45, -2.9), (0.079, 0.061, 0.208)),
     "left_aim": plus((0.0, -0.45, -2.2), (0.115, 0.391, 0.143)),
 }
 BR_HANDS = {
@@ -295,9 +295,16 @@ if __name__ == "__main__":
     # body and 15 deg down (was 20 deg down and forward), so the right forearm runs across the pistol
     # grip and the fist closes around it (before: the forearm ran up along the grip, a 50 deg wrist
     # bend). Found by search: wrist bends at most 30 deg, no clipping.
-    two_hand_hand = (0.4, 0.2, -2.4)
-    rest_rows = xf_aim((-0.965, -0.259, 0.034), (0.0, 1.0, 0.0), two_hand_hand)
-    stock_rest = tuple(h - g for h, g in zip(two_hand_hand, apply_rows(rest_rows, SNIPER_GRIP_RIGHT)))
+    # Close rest (user request 2026-10-13: the low rest put the left hand into the left thigh while
+    # walking and boosting): the pistol grip socket at (1.0, 1.2, -1.85) torso space, in front of the
+    # chest; the muzzle to the left, 10 deg down and 15 deg forward. Found by search in the game (148
+    # poses: weapon and hand points inside body meshes while standing, walking, strafing, boosting and
+    # stopping); the poses next to it are clear too.
+    two_hand_hand = (1.0, 1.2, -1.85)
+    sniper_dir = (-math.cos(math.radians(15)) * math.cos(math.radians(10)), -math.sin(math.radians(10)),
+                  -math.sin(math.radians(15)) * math.cos(math.radians(10)))
+    rest_rows = xf_aim(sniper_dir, (0.0, 1.0, 0.0), two_hand_hand)
+    stock_rest = tuple(h - g for h, g in zip(two_hand_hand, apply_rows(rest_rows, (0.0, -0.514, -1.439))))
     # Beam sniper: two hands. Aim = stock at the chest, zoom.
     # Stock in front of the chest (torso space; the torso front is at z -1.6).
     # Sniping stance (user reference 2026-10-12): the rifle level across the turned chest (hips 45 deg,

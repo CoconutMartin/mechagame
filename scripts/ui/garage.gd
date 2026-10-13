@@ -266,7 +266,7 @@ func _build_ui() -> void:
 	reset.pressed.connect(_reset)
 	buttons.add_child(reset)
 	var done := Button.new()
-	done.text = "Close (G)"
+	done.text = "Close (G or P)"
 	done.pressed.connect(close)
 	buttons.add_child(done)
 	_stats = GarageStatPanel.new()
