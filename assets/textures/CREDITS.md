@@ -9,6 +9,7 @@ All textures are CC0 (public domain) from Poly Haven, 1K JPG (color, OpenGL norm
 - `paving_tiles/`: rectangular_paving, https://polyhaven.com/a/rectangular_paving
 - `sidewalk/`: concrete_pavement, https://polyhaven.com/a/concrete_pavement
 - `metal/`: metal_plate, https://polyhaven.com/a/metal_plate
+- `painted_metal/`: green_metal_rust, https://polyhaven.com/a/green_metal_rust (realistic mech skin)
 - `roof_gravel/`: gravel_floor, https://polyhaven.com/a/gravel_floor
 
 Window glass uses a flat material (no texture).

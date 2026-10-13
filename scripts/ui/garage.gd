@@ -271,6 +271,7 @@ func _build_ui() -> void:
 	buttons.add_child(done)
 	_stats = GarageStatPanel.new()
 	right.add_child(_stats)
+	right.add_child(SkinStylePicker.new())
 	right.add_child(GraphicsMenu.new())
 	right.add_child(PS1TuningMenu.new())
 
