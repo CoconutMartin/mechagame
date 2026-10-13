@@ -19,6 +19,13 @@ extends Node
 		Vector2(2.63, 3.2), Vector2(2.80, 1.35), Vector2(3.00, 0.0)])
 ## Footstep times in the animation (s; markers footstep_*): each shakes the camera like a step.
 @export var footstep_times: PackedFloat32Array = PackedFloat32Array([0.267, 1.333, 1.667, 1.933, 2.267, 2.6, 2.933])
+## Playback speed at the start of the pivot steps that turn the body back (after the slide). It eases to
+## full speed at turn_back_end_time. The slide plays at about this speed (1 s of animation over the 2 to
+## 2.25 s slide), so the turn back keeps the same pace (user report 2026-10-13: the torso snapped back).
+@export_range(0.1, 1.0) var turn_back_rate: float = 0.45
+## Animation time (s) where the playback is at full speed again (the body faces forward at 1.75, the
+## first step lands at 1.93).
+@export var turn_back_end_time: float = 2.0
 ## Blend in at the start and out at the end or on a key (seconds).
 @export var blend_in: float = 0.15
 @export var blend_out: float = 0.3
@@ -69,9 +76,11 @@ func _step(delta: float) -> void:
 		# The slide part follows the skid; it never runs ahead of real time.
 		_time = clampf(maxf(_time, mech.get_skid_progress() * slide_end_time), 0.0, minf(before + delta * 3.0, slide_end_time))
 	else:
-		_time = minf(maxf(_time, slide_end_time) + delta, _length)
+		var rate := _rate_at(maxf(_time, slide_end_time))
+		_time = minf(maxf(_time, slide_end_time) + delta * rate, _length)
 		mech.root_motion_active = true
-		mech.root_motion_velocity = _direction * _speed_at(_time)
+		# The steps move the mech at the playback speed, so the planted feet stay put.
+		mech.root_motion_velocity = _direction * _speed_at(_time) * rate
 	for t in footstep_times:
 		if t > before and t <= _time:
 			locomotion.footstep.emit(0.7)
@@ -84,6 +93,11 @@ func _stop() -> void:
 	mech.root_motion_active = false
 	mech.root_motion_velocity = Vector3.ZERO
 	mech.akira_skid = false
+
+
+## Playback speed after the slide: turn_back_rate, easing to 1 at turn_back_end_time.
+func _rate_at(time: float) -> float:
+	return lerpf(turn_back_rate, 1.0, smoothstep(slide_end_time, turn_back_end_time, time))
 
 
 func _speed_at(time: float) -> float:
