@@ -47,8 +47,8 @@ extends SkeletonModifier3D
 @export var judder_speed: float = 9.0
 
 @export_group("Recover")
-## Seconds from the stop to the normal pose.
-@export var recover_time: float = 1.1
+## Seconds from the stop to the normal pose (a move key does not make it faster).
+@export var recover_time: float = 1.5
 ## The rear foot's step: start and end (0 to 1 of the recovery) and lift height (meters).
 @export var step_start: float = 0.15
 @export var step_end: float = 0.6
@@ -94,9 +94,6 @@ func _physics_process(delta: float) -> void:
 		_after = 0.0
 	elif _after >= 0.0:
 		_after += delta
-		# A move key during the recovery: get up faster.
-		if mech.input.move_direction.length_squared() > 0.01:
-			_after += delta * 2.0
 		var landing := step_end * recover_time
 		if locomotion != null and _after - delta < landing and _after >= landing:
 			locomotion.footstep.emit(0.7)  # The rear foot lands.
