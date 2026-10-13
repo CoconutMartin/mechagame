@@ -328,7 +328,10 @@ def lighting():
 
 
 def logic():
-    # PS1 look on the environment (PS1WorldLook, user request 2026-10-12): off for now (user, 2026-10-13).
+    # PS1 look on the environment (PS1WorldLook, user request 2026-10-12): off at first; the garage's PS1
+    # menu switches it (user, 2026-10-13).
+    look = res("res://scripts/effects/ps1_world_look.gd", "Script")
+    node(f'[node name="PS1WorldLook" type="Node" parent="."]\nscript = {look}\n')
     # Sanggigilid is the only mech (2026-10-11): the player, the dummy and the enemy. The loadouts have
     # no mech_scene; the LoadoutSwitcher builds Sanggigilid for them.
     mech = res("res://scenes/mech/sanggigilid.tscn", "PackedScene")

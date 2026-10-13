@@ -54,6 +54,7 @@ static func _from_base(base: BaseMaterial3D, settings: PS1SkinSettings) -> Shade
 	# World-mapped textures: chunky pixels by size in meters; UV textures: across the texture.
 	var pixels := settings.world_pixels_per_meter * repeat_m if mode != 0 else settings.uv_pixels
 	material.set_shader_parameter(&"pixels_per_repeat", maxf(pixels, 1.0))
+	material.set_meta(&"ps1_repeat_m", repeat_m if mode != 0 else 0.0)
 	if base.emission_enabled:
 		var glow := base.emission * base.emission_energy_multiplier
 		material.set_shader_parameter(&"emission", Vector3(glow.r, glow.g, glow.b))
@@ -75,7 +76,23 @@ static func _from_facade(facade: ShaderMaterial, settings: PS1SkinSettings) -> S
 	material.set_shader_parameter(&"map_mode", 1)
 	material.set_shader_parameter(&"uv_scale", Vector3.ONE / repeat_m)
 	material.set_shader_parameter(&"pixels_per_repeat", settings.world_pixels_per_meter * repeat_m)
+	material.set_meta(&"ps1_repeat_m", repeat_m)
 	return material
+
+
+## Sets the tuning values on an environment PS1 material (the PS1 tuning menu).
+static func refresh(material: ShaderMaterial, settings: PS1SkinSettings) -> void:
+	var repeat_m := float(material.get_meta(&"ps1_repeat_m", 0.0))
+	var pixels := settings.world_pixels_per_meter * repeat_m if repeat_m > 0.0 else settings.uv_pixels
+	material.set_shader_parameter(&"pixels_per_repeat", maxf(pixels, 1.0))
+	material.set_shader_parameter(&"color_steps", settings.color_steps)
+	material.set_shader_parameter(&"snap_grid", settings.world_snap_grid)
+
+
+## True for an environment PS1 material.
+static func is_world(material: Material) -> bool:
+	return material is ShaderMaterial and ((material as ShaderMaterial).shader == SOLID \
+			or (material as ShaderMaterial).shader == SEE_THROUGH)
 
 
 static func _new(shader: Shader, settings: PS1SkinSettings) -> ShaderMaterial:

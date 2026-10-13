@@ -36,16 +36,17 @@
 [ext_resource type="Texture2D" path="res://assets/textures/decals/manhole.png" id="r34"]
 [ext_resource type="Texture2D" path="res://assets/textures/decals/cracks.png" id="r35"]
 [ext_resource type="Texture2D" path="res://assets/textures/decals/oil_stain.png" id="r36"]
-[ext_resource type="PackedScene" path="res://scenes/mech/sanggigilid.tscn" id="r37"]
-[ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="r38"]
-[ext_resource type="Resource" path="res://data/loadouts/sanggigilid_beam_rifle.tres" id="r39"]
-[ext_resource type="Script" path="res://scripts/world/mech_spawner.gd" id="r40"]
-[ext_resource type="Script" path="res://scripts/core/mouse_capture.gd" id="r41"]
-[ext_resource type="Script" path="res://scripts/core/loadout_switcher.gd" id="r42"]
-[ext_resource type="Script" path="res://scripts/core/player_respawner.gd" id="r43"]
-[ext_resource type="Script" path="res://scripts/core/debug_damage.gd" id="r44"]
-[ext_resource type="Script" path="res://scripts/ui/garage.gd" id="r45"]
-[ext_resource type="Resource" path="res://data/garage_catalog.tres" id="r46"]
+[ext_resource type="Script" path="res://scripts/effects/ps1_world_look.gd" id="r37"]
+[ext_resource type="PackedScene" path="res://scenes/mech/sanggigilid.tscn" id="r38"]
+[ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="r39"]
+[ext_resource type="Resource" path="res://data/loadouts/sanggigilid_beam_rifle.tres" id="r40"]
+[ext_resource type="Script" path="res://scripts/world/mech_spawner.gd" id="r41"]
+[ext_resource type="Script" path="res://scripts/core/mouse_capture.gd" id="r42"]
+[ext_resource type="Script" path="res://scripts/core/loadout_switcher.gd" id="r43"]
+[ext_resource type="Script" path="res://scripts/core/player_respawner.gd" id="r44"]
+[ext_resource type="Script" path="res://scripts/core/debug_damage.gd" id="r45"]
+[ext_resource type="Script" path="res://scripts/ui/garage.gd" id="r46"]
+[ext_resource type="Resource" path="res://data/garage_catalog.tres" id="r47"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_top_color = Color(0.32, 0.45, 0.62, 1)
@@ -1375,51 +1376,54 @@ cull_mask = 1
 distance_fade_enabled = true
 distance_fade_begin = 100.0
 
+[node name="PS1WorldLook" type="Node" parent="."]
+script = ExtResource("r37")
+
 [node name="MouseCapture" type="Node" parent="."]
-script = ExtResource("r41")
+script = ExtResource("r42")
 
 [node name="Targets" type="Node3D" parent="."]
 
 [node name="DummyMech" type="Node3D" parent="Targets" node_paths=PackedStringArray("player_respawner")]
 transform = Transform3D(-1, 0, -1.2246e-16, 0, 1, 0, 1.2246e-16, 0, -1, -5, 0, -30)
-script = ExtResource("r40")
-mech_scene = ExtResource("r37")
-loadout = ExtResource("r39")
+script = ExtResource("r41")
+mech_scene = ExtResource("r38")
+loadout = ExtResource("r40")
 active = false
 player_respawner = NodePath("../../PlayerRespawner")
 
 [node name="Enemy1" type="Node3D" parent="Targets" node_paths=PackedStringArray("player_respawner")]
 transform = Transform3D(-1, 0, -1.2246e-16, 0, 1, 0, 1.2246e-16, 0, -1, 6, 0, -95)
-script = ExtResource("r40")
-mech_scene = ExtResource("r37")
-loadout = ExtResource("r39")
+script = ExtResource("r41")
+mech_scene = ExtResource("r38")
+loadout = ExtResource("r40")
 pilot = 1
 active = false
 player_respawner = NodePath("../../PlayerRespawner")
 
-[node name="PlayerMech" parent="." instance=ExtResource("r37")]
+[node name="PlayerMech" parent="." instance=ExtResource("r38")]
 transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -5, 0, 36)
 
-[node name="DebugHud" parent="." node_paths=PackedStringArray("mech", "mech_aim") instance=ExtResource("r38")]
+[node name="DebugHud" parent="." node_paths=PackedStringArray("mech", "mech_aim") instance=ExtResource("r39")]
 mech = NodePath("../PlayerMech")
 mech_aim = NodePath("../PlayerMech/MechAim")
 
 [node name="LoadoutSwitcher" type="Node" parent="." node_paths=PackedStringArray("mech", "hud")]
-script = ExtResource("r42")
-mech_scene = ExtResource("r37")
-loadouts = Array[Resource]([ExtResource("r39")])
+script = ExtResource("r43")
+mech_scene = ExtResource("r38")
+loadouts = Array[Resource]([ExtResource("r40")])
 mech = NodePath("../PlayerMech")
 hud = NodePath("../DebugHud")
 
 [node name="PlayerRespawner" type="Node" parent="." node_paths=PackedStringArray("switcher")]
-script = ExtResource("r43")
-switcher = NodePath("../LoadoutSwitcher")
-
-[node name="DebugDamage" type="Node" parent="." node_paths=PackedStringArray("switcher")]
 script = ExtResource("r44")
 switcher = NodePath("../LoadoutSwitcher")
 
-[node name="Garage" type="CanvasLayer" parent="." node_paths=PackedStringArray("switcher")]
+[node name="DebugDamage" type="Node" parent="." node_paths=PackedStringArray("switcher")]
 script = ExtResource("r45")
-catalog = ExtResource("r46")
+switcher = NodePath("../LoadoutSwitcher")
+
+[node name="Garage" type="CanvasLayer" parent="." node_paths=PackedStringArray("switcher")]
+script = ExtResource("r46")
+catalog = ExtResource("r47")
 switcher = NodePath("../LoadoutSwitcher")
