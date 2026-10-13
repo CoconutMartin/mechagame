@@ -41,6 +41,7 @@ Since 2026-10-11 (user request) the game has one mech: **Sanggigilid** (the rigg
 | Q / E | Left / right back weapon | `fire_back_left`, `fire_back_right` |
 | Tab | Lock-on | `lock_on` |
 | Esc | Free the mouse (click to capture again) | `ui_cancel` |
+| [ and ] | The same as LMB and RMB (user request 2026-10-13, for a mouse that fails): [ = `use_left_arm`, ] = `use_right_arm` and `aim`; ] also turns the free camera | `use_left_arm`, `use_right_arm`, `aim` |
 | G or P | Garage: open and close (P added 2026-10-13, user request; B also jumps and dodges since then) | `garage` |
 
 ## Scale and maps

@@ -138,7 +138,7 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Turns a mouse movement (pixels) into free aim and camera turn. In the free camera with RMB held it
 ## turns the free camera only.
 func apply_mouse_motion(relative: Vector2) -> void:
-	if free_camera_on and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+	if free_camera_on and (Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_physical_key_pressed(KEY_BRACKETRIGHT)):
 		var turn_speed := mouse_sensitivity * free_camera_sensitivity_scale
 		_free_yaw -= relative.x * turn_speed
 		_free_pitch = clampf(_free_pitch - relative.y * turn_speed, deg_to_rad(free_camera_min_pitch_deg),
