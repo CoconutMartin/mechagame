@@ -315,7 +315,7 @@ top_level = true
 script = ExtResource("21_lap5g")
 target = NodePath("..")
 free_aim = NodePath("FreeAim")
-pivot_height = 8.3
+pivot_height = 5.9
 start_pitch_deg = -7.0
 
 [node name="FreeAim" type="Node" parent="CameraRig" unique_id=900074096 node_paths=PackedStringArray("mech", "kneel", "shield")]
