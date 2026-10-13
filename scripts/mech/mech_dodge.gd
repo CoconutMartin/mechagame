@@ -8,6 +8,8 @@ extends Node
 ## springs upright. Ending: a short skid (feet slide with dust, two small brake thrusters fire),
 ## then two steps to a stop.
 ## No landing delay.
+## Light and medium mechs with a SkeletalDodgeRoll roll instead of hopping on a forward or side dodge
+## (user request 2026-10-13); the back dodge stays a hop.
 
 signal dodge_started
 signal dodge_ended
@@ -17,6 +19,8 @@ signal dodge_ended
 @export var energy: MechEnergy
 @export var landing_recovery: MechLandingRecovery
 @export var kneel: MechKneel
+## Optional. Forward and side dodges roll (light and medium mechs).
+@export var roll: SkeletalDodgeRoll
 ## Two Space presses closer than this (seconds) start a dodge.
 @export var double_tap_window: float = 0.3
 ## Hop length, in meters.
@@ -76,6 +80,11 @@ func _ready() -> void:
 	mech.landed.connect(_on_landed)
 
 
+## True while a roll (not a hop) plays.
+func is_rolling() -> bool:
+	return roll != null and roll.is_rolling
+
+
 ## True while hopping or recovering. The mech cannot move, boost, or turn.
 func is_busy() -> bool:
 	return is_dodging or _recover_left > 0.0
@@ -94,7 +103,7 @@ func is_animating() -> bool:
 
 ## 0 to 1: how much the legs tuck in (most at the top of the hop).
 func get_tuck() -> float:
-	if not is_dodging:
+	if not is_dodging or is_rolling():
 		return 0.0
 	return 0.5 * sin(_get_air_progress() * PI)
 
@@ -102,6 +111,8 @@ func get_tuck() -> float:
 ## Recovery pose amount: grows toward 1 while the hop comes down, then springs to 0 after the
 ## landing (it can go a little below 0 on the swing past upright).
 func get_recovery_pose() -> float:
+	if is_rolling():
+		return 0.0
 	if is_dodging:
 		return smoothstep(0.0, 1.0, _get_air_progress())
 	return _recover.value
@@ -163,6 +174,9 @@ func _start() -> void:
 		local = Vector3(0.0, 0.0, -1.0)  # W: forward.
 	_local_direction = local
 	direction = (mech.global_basis * local).normalized()
+	if roll != null and roll.can_roll(local):
+		_start_roll()
+		return
 	# Launch speeds for the hop height and length.
 	var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") * mech.gravity_scale
 	var up_speed := sqrt(2.0 * gravity * hop_height)
@@ -180,8 +194,25 @@ func _start() -> void:
 	dodge_started.emit()
 
 
+## The roll: no hop; SkeletalDodgeRoll moves the mech on the ground and calls _end_roll.
+func _start_roll() -> void:
+	is_dodging = true
+	_recovering = false
+	_last_press = -10.0
+	_boost_tap_left = 0.0
+	_suppress_jump = true
+	roll.start(_local_direction, _from_boost, _end_roll)
+	dodge_started.emit()
+
+
+func _end_roll() -> void:
+	is_dodging = false
+	_recover_left = recovery_time
+	dodge_ended.emit()
+
+
 func _on_landed(_fall_speed: float) -> void:
-	if not is_dodging:
+	if not is_dodging or is_rolling():
 		return
 	is_dodging = false
 	# Keep some speed in the hop direction. The braked skid slows it down, then two steps to a stop.

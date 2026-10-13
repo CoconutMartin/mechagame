@@ -35,7 +35,7 @@ func _physics_process(delta: float) -> void:
 		target = air_thrust if airborne or mech.is_lunging else ground_boost_thrust
 	elif airborne and mech.velocity.y > 0.0:
 		target = air_thrust  # Jump jets or dodge hop going up.
-	if dodge != null and dodge.is_dodging:
+	if dodge != null and dodge.is_dodging and not dodge.is_rolling():
 		target = maxf(target, air_thrust)
 	var speed := ignite_speed if target > thrust else fade_speed
 	thrust = move_toward(thrust, target, speed * delta)

@@ -45,6 +45,7 @@
 [ext_resource type="Script" path="res://scripts/effects/char_damage_look.gd" id="43_4n6nv"]
 [ext_resource type="Script" path="res://scripts/mech/mech_hand_control.gd" id="44_x0loa"]
 [ext_resource type="Script" path="res://scripts/effects/ps1_skin_look.gd" id="45_l5mie"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_dodge_roll.gd" id="46_droll"]
 
 [sub_resource type="CapsuleShape3D" id="body_shape"]
 radius = 2.6
@@ -290,8 +291,9 @@ mech = NodePath("..")
 input = NodePath("../MechInput")
 landing_recovery = NodePath("../MechLandingRecovery")
 
-[node name="MechDodge" type="Node" parent="." unique_id=1267475469 node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery", "kneel")]
+[node name="MechDodge" type="Node" parent="." unique_id=1267475469 node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery", "kneel", "roll")]
 script = ExtResource("19_xwnp2")
+roll = NodePath("../Visual/DodgeRoll")
 mech = NodePath("..")
 input = NodePath("../MechInput")
 energy = NodePath("../MechEnergy")
@@ -515,3 +517,8 @@ old_hand_bones = PackedStringArray("hand_", "index_", "middle_", "ring_", "pinky
 script = ExtResource("45_l5mie")
 hitboxes = NodePath("../SkeletalHitboxes")
 mech = NodePath("..")
+
+[node name="DodgeRoll" type="SkeletonModifier3D" parent="Visual" node_paths=PackedStringArray("model", "mech")]
+script = ExtResource("46_droll")
+model = NodePath("../Model")
+mech = NodePath("../..")
