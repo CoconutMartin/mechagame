@@ -51,5 +51,6 @@ func _ready() -> void:
 	material.albedo_texture = DamageSmoke._puff_texture()
 	quad.material = material
 	mesh = quad
+	PixelSmoke.register(self)
 	emitting = true
 	finished.connect(queue_free)

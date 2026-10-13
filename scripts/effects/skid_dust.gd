@@ -57,4 +57,5 @@ func _make_emitter() -> CPUParticles3D:
 	material.vertex_color_use_as_albedo = true
 	quad.material = material
 	emitter.mesh = quad
+	PixelSmoke.register(emitter)
 	return emitter

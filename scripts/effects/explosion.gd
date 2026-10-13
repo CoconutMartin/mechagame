@@ -13,6 +13,8 @@ var _age: float = 0.0
 func _ready() -> void:
 	for child in get_children():
 		if child is CPUParticles3D:
+			if child.name == &"Smoke":
+				PixelSmoke.register(child as CPUParticles3D)
 			(child as CPUParticles3D).emitting = true
 
 
