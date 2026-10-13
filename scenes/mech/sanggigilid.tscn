@@ -315,8 +315,8 @@ top_level = true
 script = ExtResource("21_lap5g")
 target = NodePath("..")
 free_aim = NodePath("FreeAim")
-pivot_height = 6.05
-start_pitch_deg = 0.0
+pivot_height = 8.3
+start_pitch_deg = -20.0
 
 [node name="FreeAim" type="Node" parent="CameraRig" unique_id=900074096 node_paths=PackedStringArray("mech", "kneel", "shield")]
 script = ExtResource("22_p85ka")
@@ -334,7 +334,7 @@ margin = 0.4
 
 [node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm" unique_id=2082299913 node_paths=PackedStringArray("mech", "footsteps", "animation_steps", "dodge")]
 current = true
-fov = 54.4
+fov = 60.0
 far = 2000.0
 script = ExtResource("23_rde4d")
 mech = NodePath("../../../..")

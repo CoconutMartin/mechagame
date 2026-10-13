@@ -109,8 +109,8 @@ enum BoostExit { SKID, LEAP }
 ## Akira stop slide (user request 2026-10-13): from the run speed and from the boost speed, the slide
 ## time (s) and length (m) to a full stop: (start speed, time, length). Speeds in between blend. The
 ## speed falls as (1 - t / time)^k, fast at first and slow at the end, with k set by the length.
-@export var akira_slide_run: Vector3 = Vector3(9.7, 2.2, 19.0)
-@export var akira_slide_boost: Vector3 = Vector3(11.6, 2.2, 20.0)
+@export var akira_slide_run: Vector3 = Vector3(9.7, 3.0, 20.0)
+@export var akira_slide_boost: Vector3 = Vector3(11.6, 3.0, 20.0)
 ## SKID: stride lengths (meters) of the heavy steps to a stop after the slide, when no move key is held.
 @export var skid_stop_strides: PackedFloat32Array = PackedFloat32Array([0.45, 0.35])
 ## LEAP: upward speed of the leap (m/s).
