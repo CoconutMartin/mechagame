@@ -176,6 +176,14 @@ var _lunge_speed: float = 0.0
 var _lunge_left: float = 0.0
 ## True while the current skid uses the brake thrusters (dodge hop ending).
 var is_brake_skidding: bool = false
+## Akira stop animation (SkeletalAkiraStop sets akira_stop_animation): a run or boost stop with no
+## move key slides all the way to 0 (no heavy steps), then the animation's own steps move the mech
+## (root_motion_velocity while root_motion_active).
+@export var akira_stop_animation: bool = false
+var akira_skid: bool = false
+var akira_playing: bool = false
+var root_motion_active: bool = false
+var root_motion_velocity: Vector3 = Vector3.ZERO
 ## Random side of the current skid: +1 = left, -1 = right. Set when a skid starts.
 var skid_side: float = 1.0
 ## False = this skid ends without the Akira slide (back dodge).
@@ -340,6 +348,8 @@ func start_lunge(direction: Vector3, speed: float, distance: float) -> void:
 func start_skid(stop_strides: PackedFloat32Array = PackedFloat32Array(), slowdown: float = 0.0,
 		boost_brake: bool = false, akira: bool = true) -> void:
 	skid_akira = akira
+	akira_skid = akira and akira_stop_animation and not boost_brake \
+			and input.move_direction.length_squared() < 0.01
 	_skid_stop_plan = stop_strides if not stop_strides.is_empty() else skid_stop_strides
 	_skid_slowdown = slowdown if slowdown > 0.0 else skid_deceleration
 	is_brake_skidding = boost_brake
@@ -353,10 +363,15 @@ func start_skid(stop_strides: PackedFloat32Array = PackedFloat32Array(), slowdow
 
 ## 0 at the skid start, 1 at the skid end (by speed).
 func get_skid_progress() -> float:
-	var span := _skid_start_speed - skid_end_speed
+	var span := _skid_start_speed - _skid_end()
 	if span <= 0.01:
 		return 1.0
 	return clampf((_skid_start_speed - get_horizontal_speed()) / span, 0.0, 1.0)
+
+
+## Speed at which the skid ends: the Akira stop slides to a stop.
+func _skid_end() -> float:
+	return 0.05 if akira_skid else skid_end_speed
 
 
 func get_boost_speed() -> float:
@@ -467,6 +482,11 @@ func _update_horizontal(delta: float) -> void:
 		velocity.z = steered.z
 		return
 
+	if root_motion_active and not is_skidding:
+		velocity.x = root_motion_velocity.x
+		velocity.z = root_motion_velocity.z
+		return
+
 	if is_skidding:
 		_update_skid(delta, has_input)
 		return
@@ -509,13 +529,23 @@ func _update_horizontal(delta: float) -> void:
 ## Skid stop: the feet slide and the mech slows fast. At the end: heavy steps to a stop,
 ## or back to walking if a move key is held.
 func _update_skid(delta: float, has_input: bool) -> void:
+	if has_input:
+		akira_skid = false
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
 	horizontal = horizontal.move_toward(Vector3.ZERO, _skid_slowdown * delta)
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
-	if horizontal.length() > skid_end_speed:
+	if horizontal.length() > _skid_end():
 		return
 	is_skidding = false
+	if akira_skid:
+		# The Akira stop: no heavy steps, the animation steps on (SkeletalAkiraStop).
+		akira_skid = false
+		velocity.x = 0.0
+		velocity.z = 0.0
+		is_exiting_boost = false
+		is_brake_skidding = false
+		return
 	is_brake_skidding = false
 	_stop_deceleration = 0.0
 	if has_input:

@@ -33,6 +33,11 @@ signal footstep(strength: float)
 @export var head_scan: StringName = &"Head_Scan"
 ## Head scan strength (0 = off, 1 = full).
 @export_range(0.0, 1.0) var head_scan_amount: float = 1.0
+## One-shot stop animation layer over the cycles (SkeletalAkiraStop sets stop_weight and stop_time).
+@export var stop_animation: StringName = &"biped_run_stop_akira"
+
+var stop_weight: float = 0.0
+var stop_time: float = 0.0
 
 var _speed: float = 0.0
 var _phase: float = 0.0
@@ -66,11 +71,22 @@ func _ready() -> void:
 	var scan := AnimationNodeAnimation.new()
 	scan.animation = head_scan
 	_root.add_node(&"scan", scan)
+	var body := &"move"
+	if player.has_animation(stop_animation):
+		var stop := AnimationNodeAnimation.new()
+		stop.animation = stop_animation
+		_root.add_node(&"stop_anim", stop)
+		_root.add_node(&"seek_stop", AnimationNodeTimeSeek.new())
+		_root.connect_node(&"seek_stop", 0, &"stop_anim")
+		_root.add_node(&"stop", AnimationNodeBlend2.new())
+		_root.connect_node(&"stop", 0, &"move")
+		_root.connect_node(&"stop", 1, &"seek_stop")
+		body = &"stop"
 	var head := AnimationNodeBlend2.new()
 	head.filter_enabled = true
 	head.set_filter_path(head_track, true)
 	_root.add_node(&"head", head)
-	_root.connect_node(&"head", 0, &"move")
+	_root.connect_node(&"head", 0, body)
 	_root.connect_node(&"head", 1, &"scan")
 	_root.connect_node(&"output", 0, &"head")
 	tree.tree_root = _root
@@ -105,13 +121,16 @@ func _process(delta: float) -> void:
 	var landed_forward := _phase < before or (before < 0.5 and _phase >= 0.5)
 	var landed_backward := _phase > before or (before >= 0.5 and _phase < 0.5)
 	var crossed := landed_forward if direction > 0.0 else landed_backward
-	if _speed > idle_blend_speed * 0.5 and mech.is_on_floor() and crossed:
+	if _speed > idle_blend_speed * 0.5 and mech.is_on_floor() and crossed and stop_weight < 0.5:
 		footstep.emit(clampf(_speed / mech.walk_speed, 0.4, 1.0))
 	tree.set(&"parameters/seek_a/seek_request", _phase * len_a)
 	tree.set(&"parameters/seek_b/seek_request", _phase * len_b)
 	tree.set(&"parameters/mix/blend_amount", t)
 	tree.set(&"parameters/move/blend_amount", clampf(_speed / idle_blend_speed, 0.0, 1.0))
 	tree.set(&"parameters/head/blend_amount", head_scan_amount)
+	if _root.has_node(&"stop"):
+		tree.set(&"parameters/stop/blend_amount", stop_weight)
+		tree.set(&"parameters/seek_stop/seek_request", stop_time)
 
 
 ## Stride phase now (0 = left foot lands, 0.5 = right foot lands).

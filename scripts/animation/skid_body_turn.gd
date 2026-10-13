@@ -88,9 +88,14 @@ func _physics_process(delta: float) -> void:
 	if velocity.length() > 0.5:
 		_slide_direction = velocity.normalized()
 	var target := _target if mech.is_skidding else 0.0
+	# The Akira stop animation turns the body itself.
+	if mech.akira_playing:
+		target = 0.0
+		akira_amount = 0.0
+		_hold_left = 0.0
 	var frequency_now := frequency
 	_hold_left = maxf(_hold_left - delta, 0.0)
-	if mech.is_skidding:
+	if mech.is_skidding and not mech.akira_playing:
 		akira_amount = smoothstep(akira_start, akira_end, mech.get_skid_progress()) if mech.skid_akira else 0.0
 		_hold_left = akira_hold_time if akira_amount > 0.0 else 0.0
 	elif _hold_left <= 0.0:

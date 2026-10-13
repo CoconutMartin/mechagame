@@ -142,6 +142,15 @@ func _initialize() -> void:
 	# flick between turned and straight every frame).
 	hips.skid_turn = skid_turn
 
+	# Akira stop animation (biped_run_stop_akira) at the end of a run or boost stop.
+	var akira := SkeletalAkiraStop.new()
+	akira.name = "AkiraStop"
+	root.add_child(akira)
+	akira.owner = root
+	akira.mech = root
+	akira.locomotion = locomotion
+	root.akira_stop_animation = true
+
 	# Walking through buildings: a little damage to the parts inside them, and to the walls.
 	var contact := MechBuildingContact.new()
 	contact.name = "MechBuildingContact"
