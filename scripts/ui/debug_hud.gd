@@ -97,12 +97,12 @@ func _build_text() -> String:
 	text += "PART HP"
 	if health == null:
 		for part_name in stats.part_hp:
-			text += "\n  %s: %d" % [part_name, roundi(stats.part_hp[part_name])]
+			text += "\n  %s: %d" % [_part_label(part_name), roundi(stats.part_hp[part_name])]
 		return text
 	for key: String in health.max_hp:
 		var now: float = health.hp[key]
 		var state := "  DESTROYED" if now <= 0.0 else ""
-		text += "\n  %s: %d / %d%s" % [key, roundi(now), roundi(health.max_hp[key]), state]
+		text += "\n  %s: %d / %d%s" % [_part_label(key), roundi(now), roundi(health.max_hp[key]), state]
 	if health.is_destroyed:
 		text += "\nMECH DESTROYED"
 	return text
@@ -122,3 +122,11 @@ func _weapons_text() -> String:
 		else:
 			lines.append("%s  %s" % [key, (item as WeaponData).display_name])
 	return "\n".join(lines)
+
+
+## Part HP label in the part name style (user request 2026-10-14): "Arm L" -> "Arm (L)".
+func _part_label(key: String) -> String:
+	var words := key.split(" ")
+	if words.size() == 2 and words[1].length() == 1:
+		return "%s (%s)" % [words[0], words[1]]
+	return key

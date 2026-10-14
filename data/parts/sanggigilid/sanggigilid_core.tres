@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("script")
-display_name = "Sagigilid Core"
+display_name = "SGG-101 Torso"
 weight_t = 18.0
 hp = 1600.0
 energy_capacity = 100.0

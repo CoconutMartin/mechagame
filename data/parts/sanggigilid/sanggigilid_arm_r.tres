@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("script")
-display_name = "Sagigilid Arm R"
+display_name = "SGG-101 Arm (R)"
 weight_t = 5.0
 hp = 600.0
 recoil_control = 1.0

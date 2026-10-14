@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("script")
-display_name = "Sagigilid Booster"
+display_name = "SGG-101 Booster"
 weight_t = 3.0
 hp = 200.0
 thrust = 1200.0

@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("script")
-display_name = "Sagigilid Generator"
+display_name = "SGG-101 Generator"
 weight_t = 3.0
 hp = 200.0
 energy_output = 17.5

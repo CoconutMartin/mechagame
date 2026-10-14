@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("script")
-display_name = "Sagigilid FCS"
+display_name = "SGG-101 FCS"
 weight_t = 1.0
 hp = 100.0
 lock_range = 500.0
