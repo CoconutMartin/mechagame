@@ -45,7 +45,6 @@
 [ext_resource type="Script" path="res://scripts/mech/mech_hand_control.gd" id="44_x0loa"]
 [ext_resource type="Script" path="res://scripts/effects/ps1_skin_look.gd" id="45_l5mie"]
 [ext_resource type="Script" path="res://scripts/animation/skeletal_dodge_animation.gd" id="46_droll"]
-[ext_resource type="Script" path="res://scripts/animation/skeletal_brake_stop.gd" id="47_brake"]
 
 [sub_resource type="CapsuleShape3D" id="body_shape"]
 radius = 2.6
@@ -68,11 +67,11 @@ kneel = NodePath("MechKneel")
 dodge = NodePath("MechDodge")
 shield = NodePath("MechShield")
 name_code = "SGG-101"
+boost_exit_style = 2
 walk_speed = 7.735
 back_speed_multiplier = 0.8
 skid_stop_strides = PackedFloat32Array(0.45, 0.35)
 boost_exit_strides = PackedFloat32Array(4.8, 4.8, 3.4, 3.4)
-akira_stop_animation = true
 
 [node name="Collision" type="CollisionShape3D" parent="." unique_id=420522328]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
@@ -517,10 +516,3 @@ script = ExtResource("46_droll")
 model = NodePath("../Model")
 mech = NodePath("../..")
 arm_rig = NodePath("../ArmRig")
-
-[node name="BrakeStop" type="SkeletonModifier3D" parent="Visual" node_paths=PackedStringArray("model", "mech", "arm_rig", "locomotion")]
-script = ExtResource("47_brake")
-model = NodePath("../Model")
-mech = NodePath("../..")
-arm_rig = NodePath("../ArmRig")
-locomotion = NodePath("../../Locomotion")

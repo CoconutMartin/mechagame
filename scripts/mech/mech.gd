@@ -95,11 +95,15 @@ signal landed(fall_speed: float)
 @export var run_speed_multiplier: float = 1.25
 ## Speed gain while boosting (m/s per second).
 @export var boost_acceleration: float = 20.0
-enum BoostExit { SKID, LEAP }
-## How the mech stops a ground boost.
+enum BoostExit { SKID, LEAP, MOMENTUM }
+## How the mech stops a ground boost (and a run).
 ## SKID: feet plant and slide, body leans back, dust, then heavy steps.
 ## LEAP ("revert 1"): a leap that lands on one leg, then 2 medium and 2 small steps.
+## MOMENTUM (user request 2026-10-14): no skid, no body turn; the mech walks out its momentum and
+## slows to a stop over momentum_stop_time (to walk speed with a move key held).
 @export var boost_exit_style: BoostExit = BoostExit.SKID
+## MOMENTUM: seconds from the boost or run speed to a stop.
+@export var momentum_stop_time: float = 2.5
 ## SKID: slowdown while the feet slide (m/s per second).
 @export var skid_deceleration: float = 6.7
 ## A fallen or wrecked mech slides to a stop with this slowdown, in m/s².
@@ -183,7 +187,7 @@ var _lunge_speed: float = 0.0
 var _lunge_left: float = 0.0
 ## True while the current skid uses the brake thrusters (dodge hop ending).
 var is_brake_skidding: bool = false
-## Akira slide speed curve (the build sets akira_stop_animation; SkeletalBrakeStop poses it): a run or boost stop with no
+## Akira slide speed curve (akira_stop_animation; off on Sagigilid since 2026-10-14, see MOMENTUM): a run or boost stop with no
 ## move key slides all the way to 0 (no heavy steps), then the animation's own steps move the mech
 ## (root_motion_velocity while root_motion_active).
 @export var akira_stop_animation: bool = false
@@ -454,7 +458,9 @@ func _update_boost(delta: float) -> void:
 		is_exiting_boost = true
 		_exit_deceleration = 0.0
 		_stop_deceleration = 0.0
-		if boost_exit_style == BoostExit.SKID:
+		if boost_exit_style == BoostExit.MOMENTUM:
+			_start_momentum_stop()
+		elif boost_exit_style == BoostExit.SKID:
 			start_skid()
 		else:
 			# One leap forward that lands on one leg, then medium and small steps to slow down.
@@ -463,8 +469,12 @@ func _update_boost(delta: float) -> void:
 		boost_exit_step.emit()
 	elif was_running and not is_running and not is_boosting and is_on_floor() and not is_skidding \
 			and get_horizontal_speed() > walk_speed * 1.05 and not dodge.is_dodging:
-		# Run stop (user request 2026-10-12): the same skid and Akira slide as the boost stop.
-		start_skid()
+		# Run stop (user request 2026-10-12): the same stop as the boost stop.
+		if boost_exit_style == BoostExit.MOMENTUM:
+			is_exiting_boost = true
+			_start_momentum_stop()
+		else:
+			start_skid()
 
 
 func _update_horizontal(delta: float) -> void:
@@ -566,7 +576,7 @@ func _update_skid(delta: float, has_input: bool) -> void:
 		return
 	is_skidding = false
 	if akira_skid:
-		# The slide stop: no heavy steps, the brake stop pose recovers (SkeletalBrakeStop).
+		# The slide stop: no heavy steps.
 		akira_skid = false
 		velocity.x = 0.0
 		velocity.z = 0.0
@@ -626,6 +636,14 @@ func _get_stop_deceleration() -> float:
 		else:
 			_stop_deceleration = _get_deceleration_for_steps(steps, 0.0)
 	return _stop_deceleration
+
+
+## MOMENTUM stop: one steady slowdown from the speed now to a stop in momentum_stop_time (also used
+## to slow to walk speed when a move key is held).
+func _start_momentum_stop() -> void:
+	var slowdown := maxf(get_horizontal_speed() / maxf(momentum_stop_time, 0.1), 0.3)
+	_exit_deceleration = slowdown
+	_stop_deceleration = slowdown
 
 
 ## Slowdown that brings boost speed down to walk speed over the boost exit strides.

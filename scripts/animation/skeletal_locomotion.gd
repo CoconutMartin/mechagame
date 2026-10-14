@@ -34,7 +34,7 @@ signal footstep(strength: float)
 ## Head scan strength (0 = off, 1 = full).
 @export_range(0.0, 1.0) var head_scan_amount: float = 1.0
 ## One-shot stop animation layer over the cycles (stop_weight and stop_time; unused since the brake
-## stop, SkeletalBrakeStop, replaced the Akira stop animation on 2026-10-13).
+## stop replaced the Akira stop animation on 2026-10-13; the brake stop was removed on 2026-10-14).
 @export var stop_animation: StringName = &"biped_run_stop_akira"
 
 var stop_weight: float = 0.0
