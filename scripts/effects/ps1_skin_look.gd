@@ -11,6 +11,9 @@ extends Node
 ## Body detail sits on each part's rest position (to_rest each frame, like CharDamageLook), so it
 ## stays on the part; weapon meshes are rigid, so theirs is in their own mesh space.
 
+## Meshes in this group keep their own materials (for example the HP panels, MechHpPanels).
+const SKIP_GROUP := &"skin_skip"
+
 @export var hitboxes: SkeletalHitboxes
 ## The mech root: weapon and equipment meshes under it get the skin too.
 @export var mech: Node3D
@@ -87,7 +90,7 @@ func _restore(entry: Dictionary) -> void:
 ## A weapon or equipment mesh (not a body part) under the mech.
 func _skin_equipment(node: Node) -> void:
 	if is_instance_valid(node) and node is MeshInstance3D and not _skinned.has(node) \
-			and not hitboxes.mesh_bones.has(node):
+			and not hitboxes.mesh_bones.has(node) and not node.is_in_group(SKIP_GROUP):
 		_add(node as MeshInstance3D, false, false)
 
 

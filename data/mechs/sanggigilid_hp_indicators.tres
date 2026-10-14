@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="HpIndicatorLayout" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hp_indicator_layout.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/data/hp_indicator_spot.gd" id="2"]
+
+[sub_resource type="Resource" id="arm_r"]
+script = ExtResource("2")
+key = "Arm R"
+bone = &"upper_arm_R"
+size = 0.3
+offset = Vector2(0, 0.3)
+
+[sub_resource type="Resource" id="arm_l"]
+script = ExtResource("2")
+key = "Arm L"
+bone = &"upper_arm_L"
+size = 0.3
+offset = Vector2(0, 0.3)
+
+[resource]
+script = ExtResource("1")
+spots = Array[ExtResource("2")]([SubResource("arm_r"), SubResource("arm_l")])
