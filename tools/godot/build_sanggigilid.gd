@@ -168,14 +168,6 @@ func _initialize() -> void:
 	hitboxes.health = health
 	hitboxes.model = model
 	hitboxes.parts = load(HIT_PARTS)
-	# HP stripes on the armor (user request 2026-10-14), after the hitboxes (it reads their meshes).
-	var hp_marks := MechHpMarks.new()
-	hp_marks.name = "HpMarks"
-	root.add_child(hp_marks)
-	hp_marks.owner = root
-	hp_marks.mech = root
-	hp_marks.hitboxes = hitboxes
-	hp_marks.health = health
 	var death := SkeletalDeath.new()
 	death.name = "SkeletalDeath"
 	root.add_child(death)

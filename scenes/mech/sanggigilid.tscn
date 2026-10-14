@@ -45,7 +45,6 @@
 [ext_resource type="Script" path="res://scripts/mech/mech_hand_control.gd" id="44_x0loa"]
 [ext_resource type="Script" path="res://scripts/effects/ps1_skin_look.gd" id="45_l5mie"]
 [ext_resource type="Script" path="res://scripts/animation/skeletal_dodge_animation.gd" id="46_droll"]
-[ext_resource type="Script" path="res://scripts/effects/mech_hp_marks.gd" id="48_hpmarks"]
 
 [sub_resource type="CapsuleShape3D" id="body_shape"]
 radius = 2.6
@@ -517,9 +516,3 @@ script = ExtResource("46_droll")
 model = NodePath("../Model")
 mech = NodePath("../..")
 arm_rig = NodePath("../ArmRig")
-
-[node name="HpMarks" type="Node" parent="." node_paths=PackedStringArray("mech", "hitboxes", "health")]
-script = ExtResource("48_hpmarks")
-mech = NodePath("..")
-hitboxes = NodePath("../SkeletalHitboxes")
-health = NodePath("../MechHealth")
