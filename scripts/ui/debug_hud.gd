@@ -7,6 +7,10 @@ const NAMES: MechNameCatalog = preload("res://data/names/mech_names.tres")
 @export var mech: Mech
 @export var mech_aim: MechAim
 
+## Test text (speeds, build, part HP, weapon status, controls). Hidden on the mech screen (user request
+## 2026-10-14: no text); the ` key shows and hides it.
+@export var show_text: bool = false
+
 @onready var _info: Label = $Info
 @onready var _energy_bar: ProgressBar = $EnergyBar
 @onready var _build: Label = $Build
@@ -15,6 +19,18 @@ const NAMES: MechNameCatalog = preload("res://data/names/mech_names.tres")
 
 func _ready() -> void:
 	set_mech(mech)
+	_show_text(show_text)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed(&"debug_text"):
+		_show_text(not show_text)
+
+
+func _show_text(on: bool) -> void:
+	show_text = on
+	for path in [^"Info", ^"Build", ^"Weapons", ^"Controls", ^"EnergyBar/EnergyLabel"]:
+		(get_node(path) as CanvasItem).visible = on
 
 
 ## Follows a mech (LoadoutSwitcher calls it after it builds a new one).
@@ -58,8 +74,9 @@ func _process(_delta: float) -> void:
 		"  (EMPTY)" if energy.is_depleted else "",
 		Engine.get_frames_per_second(),
 	]
-	_build.text = _build_text()
-	_weapons_label.text = _weapons_text()
+	if show_text:
+		_build.text = _build_text()
+		_weapons_label.text = _weapons_text()
 	_energy_bar.value = energy.get_fraction() * 100.0
 	_energy_bar.modulate = Color(1.0, 0.35, 0.3) if energy.is_depleted else Color.WHITE
 

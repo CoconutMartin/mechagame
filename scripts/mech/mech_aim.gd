@@ -45,6 +45,10 @@ extends Node
 
 var camera_target: Vector3 = Vector3.ZERO
 var aim_point: Vector3 = Vector3.ZERO
+## What the camera sees under the blue ring (the crosshair's target): the hit collider, or null.
+var target: Object = null
+## Point on the target under the ring (or the far end of the ray).
+var target_point: Vector3 = Vector3.ZERO
 var aim_direction: Vector3 = Vector3.FORWARD
 ## Free aim offset of the mech aim from the crosshair, in degrees: x = yaw (left), y = pitch (up).
 var shot_offset: Vector2 = Vector2.ZERO
@@ -58,6 +62,7 @@ var neutral_amount: float = 0.0
 
 var _noise := FastNoiseLite.new()
 var _time: float = 0.0
+var _last_collider: Object = null
 
 
 func _ready() -> void:
@@ -92,6 +97,8 @@ func _physics_process(delta: float) -> void:
 	# the shots land on the ring at any distance and on the edge of a target too.
 	var ring := get_ring_screen_point()
 	var ring_target := _cast(camera.project_ray_origin(ring), camera.project_ray_normal(ring))
+	target = _last_collider
+	target_point = ring_target
 	var direction := (ring_target - origin).normalized()
 
 	var jitter := deg_to_rad(_get_jitter_deg())
@@ -159,4 +166,5 @@ func _cast(from: Vector3, direction: Vector3) -> Vector3:
 	var to := from + direction * max_range
 	var query := PhysicsRayQueryParameters3D.create(from, to, collision_mask, mech.get_hit_exclude())
 	var hit := mech.get_world_3d().direct_space_state.intersect_ray(query)
+	_last_collider = hit.collider if hit else null
 	return hit.position if hit else to
