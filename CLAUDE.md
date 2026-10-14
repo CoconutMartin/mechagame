@@ -37,3 +37,9 @@ Be concise when explaining unless asked for further clarification.
 
 Use ASD-STE100 Simplified Technical English (STE) for chat replies. Also consider ELI18 and TLDR.
 Apart from that: silence is gold.
+
+## Agents and model routing
+
+Follow the routing policy in AGENTS.md (imported below). Subagent definitions are in `.claude/agents/`.
+
+@AGENTS.md
