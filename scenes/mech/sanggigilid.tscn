@@ -44,8 +44,6 @@
 [ext_resource type="Script" path="res://scripts/effects/char_damage_look.gd" id="43_4n6nv"]
 [ext_resource type="Script" path="res://scripts/mech/mech_hand_control.gd" id="44_x0loa"]
 [ext_resource type="Script" path="res://scripts/effects/ps1_skin_look.gd" id="45_l5mie"]
-[ext_resource type="Script" path="res://scripts/effects/mech_hp_indicators.gd" id="hp_ind_script"]
-[ext_resource type="Resource" path="res://data/mechs/sanggigilid_hp_indicators.tres" id="hp_ind_layout"]
 [ext_resource type="Script" path="res://scripts/animation/skeletal_dodge_animation.gd" id="46_droll"]
 
 [sub_resource type="CapsuleShape3D" id="body_shape"]
@@ -512,12 +510,6 @@ old_hand_bones = PackedStringArray("hand_", "index_", "middle_", "ring_", "pinky
 script = ExtResource("45_l5mie")
 hitboxes = NodePath("../SkeletalHitboxes")
 mech = NodePath("..")
-
-[node name="MechHpIndicators" type="Node" parent="." node_paths=PackedStringArray("hitboxes", "health")]
-script = ExtResource("hp_ind_script")
-hitboxes = NodePath("../SkeletalHitboxes")
-health = NodePath("../MechHealth")
-layout = ExtResource("hp_ind_layout")
 
 [node name="DodgeAnimation" type="SkeletonModifier3D" parent="Visual" node_paths=PackedStringArray("model", "mech", "arm_rig")]
 script = ExtResource("46_droll")

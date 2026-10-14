@@ -16,7 +16,6 @@ const MODEL := "res://models/new_mech/new_mech_exploded.glb"
 const OUT_SCENE := "res://scenes/mech/sanggigilid.tscn"
 ## Part HP and the bones of each part.
 const HIT_PARTS := "res://data/mechs/sanggigilid_hit_parts.tres"
-const HP_INDICATORS := "res://data/mechs/sanggigilid_hp_indicators.tres"
 ## Player mech nodes that belong to the part-built body.
 const REMOVE := ["MechAssembler", "Visual", "Animation", "FootLeveler", "PartBreaker", "PowerDownPose", "MechFall", "BodyGroundClamp", "FallPose", "MechDeath"]
 ## Animation nodes the weapons use: they move to WeaponAnimation before Animation is removed.
@@ -201,13 +200,6 @@ func _initialize() -> void:
 	skin.owner = root
 	skin.hitboxes = hitboxes
 	skin.mech = root
-	var hp_indicators := MechHpIndicators.new()
-	hp_indicators.name = "MechHpIndicators"
-	root.add_child(hp_indicators)
-	hp_indicators.owner = root
-	hp_indicators.hitboxes = hitboxes
-	hp_indicators.health = health
-	hp_indicators.layout = load(HP_INDICATORS)
 
 	var mech_aim := root.get_node("MechAim") as MechAim
 	mech_aim.aim_origin = aim
