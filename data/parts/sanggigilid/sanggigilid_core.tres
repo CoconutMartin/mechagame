@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("script")
-display_name = "Sanggigilid Core"
+display_name = "Sagigilid Core"
 weight_t = 18.0
 hp = 1600.0
 energy_capacity = 100.0

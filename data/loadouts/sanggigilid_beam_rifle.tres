@@ -13,7 +13,7 @@
 
 [resource]
 script = ExtResource("script")
-display_name = "Sanggigilid Beam Rifle"
+display_name = "SGG-101 Sagigilid Beam Rifle"
 head = ExtResource("head")
 core = ExtResource("core")
 arm_left = ExtResource("arm_left")

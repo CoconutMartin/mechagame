@@ -24,6 +24,8 @@ signal landed(fall_speed: float)
 ## Optional. While the shield is up the mech moves slower (MechShield.get_speed_limit).
 @export var shield: MechShield
 
+## Name code in data/names/mech_names.tres (MechNameCatalog), for example "SGG-101" (Sagigilid).
+@export var name_code: String = ""
 ## Total mech weight in tons. MechAssembler sets it from the loadout.
 @export var mass_tons: float = 60.0
 ## Mech height in meters. Sway and footstep shake scale with it (10 m = base). Phase 2 computes it from parts.

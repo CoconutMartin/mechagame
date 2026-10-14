@@ -8,7 +8,7 @@ PARTS = ["head", "core", "arm_left", "arm_right", "legs", "booster", "generator"
 PART_FILE = {"arm_left": "arm_l", "arm_right": "arm_r"}
 LOADOUTS = [
     # The only test loadout (user, 2026-10-13: key 1; the user picks other equipment in the garage).
-    ("sanggigilid_beam_rifle", "Sanggigilid Beam Rifle", {"weapon_right": "beam_rifle"}),
+    ("sanggigilid_beam_rifle", "SGG-101 Sagigilid Beam Rifle", {"weapon_right": "beam_rifle"}),
 ]
 
 

@@ -10,8 +10,9 @@ Check "Reminders for the user" in DESIGN.md. Remind the user of each open item w
 
 ## Mech scope (user rule, 2026-10-11)
 
-The game has one mech: Sanggigilid (rigged, `scenes/mech/sanggigilid.tscn`, built by
-`tools/godot/build_sanggigilid.gd`). All work goes to it. The other mechs were deleted.
+The game has one mech: SGG-101 Sagigilid (in-game name since 2026-10-14; files and code keep the old
+name "sanggigilid"). Rigged, `scenes/mech/sanggigilid.tscn`, built by `tools/godot/build_sanggigilid.gd`.
+All work goes to it. The other mechs were deleted. Mech names: `docs/mech_names.md`.
 
 ## PS1 skin (user rule, 2026-10-11)
 

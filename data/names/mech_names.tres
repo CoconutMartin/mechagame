@@ -1,0 +1,1559 @@
+[gd_resource type="Resource" script_class="MechNameCatalog" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/mech_name_catalog.gd" id="catalog"]
+[ext_resource type="Script" path="res://scripts/data/mech_name.gd" id="name"]
+
+[sub_resource type="Resource" id="n0"]
+script = ExtResource("name")
+name = "Ayuey"
+group = 0
+weight_class = 0
+code = "AYU-101"
+origin = "Visayan"
+meaning = "Lowest oripun rank, household dependent"
+fit = ""
+number_source = ""
+
+[sub_resource type="Resource" id="n1"]
+script = ExtResource("name")
+name = "Sagigilid"
+group = 0
+weight_class = 0
+code = "SGG-101"
+origin = "Tagalog"
+meaning = "Aliping sagigilid, household dependent, no house of their own (Spanish records: \"saguiguilid\")"
+fit = ""
+number_source = ""
+
+[sub_resource type="Resource" id="n2"]
+script = ExtResource("name")
+name = "Namamahay"
+group = 0
+weight_class = 0
+code = "NMH-101"
+origin = "Tagalog"
+meaning = "Aliping namamahay, dependent with their own house"
+fit = ""
+number_source = ""
+
+[sub_resource type="Resource" id="n3"]
+script = ExtResource("name")
+name = "Tumataban"
+group = 0
+weight_class = 0
+code = "TMB-101"
+origin = "Visayan"
+meaning = "Oripun subrank"
+fit = ""
+number_source = ""
+
+[sub_resource type="Resource" id="n4"]
+script = ExtResource("name")
+name = "Tumarampok"
+group = 0
+weight_class = 0
+code = "TRP-101"
+origin = "Visayan"
+meaning = "Oripun subrank"
+fit = ""
+number_source = ""
+
+[sub_resource type="Resource" id="n5"]
+script = ExtResource("name")
+name = "Oripun"
+group = 0
+weight_class = 0
+code = "ORP-101"
+origin = "Visayan"
+meaning = "Dependent class (general term)"
+fit = ""
+number_source = ""
+
+[sub_resource type="Resource" id="n6"]
+script = ExtResource("name")
+name = "Timawa"
+group = 0
+weight_class = 1
+code = "TMW-201"
+origin = "Tagalog / Visayan"
+meaning = "Free commoner; in the Visayas, a warrior vassal of the datu"
+fit = ""
+number_source = ""
+
+[sub_resource type="Resource" id="n7"]
+script = ExtResource("name")
+name = "Maharlika"
+group = 0
+weight_class = 1
+code = "MHL-201"
+origin = "Tagalog"
+meaning = "Free warrior-noble who served the datu in war"
+fit = ""
+number_source = ""
+
+[sub_resource type="Resource" id="n8"]
+script = ExtResource("name")
+name = "Datu"
+group = 0
+weight_class = 2
+code = "DTU-900"
+origin = "Tagalog / Visayan"
+meaning = "Chief of a community (barangay)"
+fit = ""
+number_source = ""
+
+[sub_resource type="Resource" id="n9"]
+script = ExtResource("name")
+name = "Tumao"
+group = 0
+weight_class = 2
+code = "TMO-301"
+origin = "Visayan"
+meaning = "Noble class, kin of the datu"
+fit = ""
+number_source = ""
+
+[sub_resource type="Resource" id="n10"]
+script = ExtResource("name")
+name = "Lakan"
+group = 0
+weight_class = 2
+code = "LKN-301"
+origin = "Tagalog"
+meaning = "Paramount chief over many datus"
+fit = ""
+number_source = ""
+
+[sub_resource type="Resource" id="n11"]
+script = ExtResource("name")
+name = "Rajah"
+group = 0
+weight_class = 2
+code = "RJH-301"
+origin = "Manila, Cebu, others"
+meaning = "Ruler of a large polity"
+fit = ""
+number_source = ""
+
+[sub_resource type="Resource" id="n12"]
+script = ExtResource("name")
+name = "Tala"
+group = 1
+weight_class = 0
+code = "TAL-101"
+origin = "Tagalog"
+meaning = "Goddess of the stars"
+fit = "Scout, flares"
+number_source = ""
+
+[sub_resource type="Resource" id="n13"]
+script = ExtResource("name")
+name = "Hanan"
+group = 1
+weight_class = 0
+code = "HNN-101"
+origin = "Tagalog"
+meaning = "Goddess of the morning"
+fit = "First strike"
+number_source = ""
+
+[sub_resource type="Resource" id="n14"]
+script = ExtResource("name")
+name = "Sidapa"
+group = 1
+weight_class = 0
+code = "SDP-101"
+origin = "Visayan"
+meaning = "God of death, measures lifespans"
+fit = "Assassin"
+number_source = ""
+
+[sub_resource type="Resource" id="n15"]
+script = ExtResource("name")
+name = "Haliya"
+group = 1
+weight_class = 0
+code = "HLY-101"
+origin = "Bicolano"
+meaning = "Masked moon goddess"
+fit = "Stealth"
+number_source = ""
+
+[sub_resource type="Resource" id="n16"]
+script = ExtResource("name")
+name = "Libulan"
+group = 1
+weight_class = 0
+code = "LBL-101"
+origin = "Visayan"
+meaning = "Moon deity"
+fit = "Night ops"
+number_source = ""
+
+[sub_resource type="Resource" id="n17"]
+script = ExtResource("name")
+name = "Manaul"
+group = 1
+weight_class = 0
+code = "MNL-101"
+origin = "Visayan"
+meaning = "King of the birds"
+fit = "Aerial command"
+number_source = ""
+
+[sub_resource type="Resource" id="n18"]
+script = ExtResource("name")
+name = "Mayari"
+group = 1
+weight_class = 1
+code = "MYR-001"
+origin = "Tagalog / Kapampangan"
+meaning = "Moon goddess with one eye"
+fit = "Night sniper, single-eye head"
+number_source = ""
+
+[sub_resource type="Resource" id="n19"]
+script = ExtResource("name")
+name = "Anitun Tabu"
+group = 1
+weight_class = 1
+code = "ATB-201"
+origin = "Tagalog"
+meaning = "Goddess of wind and rain"
+fit = "Missile rain"
+number_source = ""
+
+[sub_resource type="Resource" id="n20"]
+script = ExtResource("name")
+name = "Dumakulem"
+group = 1
+weight_class = 1
+code = "DMK-201"
+origin = "Tagalog"
+meaning = "Guardian of the mountains"
+fit = "Defender"
+number_source = ""
+
+[sub_resource type="Resource" id="n21"]
+script = ExtResource("name")
+name = "Magwayen"
+group = 1
+weight_class = 1
+code = "MGW-201"
+origin = "Visayan"
+meaning = "Goddess of the sea, carries the souls of the dead"
+fit = "Support"
+number_source = ""
+
+[sub_resource type="Resource" id="n22"]
+script = ExtResource("name")
+name = "Darago"
+group = 1
+weight_class = 1
+code = "DRG-201"
+origin = "Bagobo"
+meaning = "War goddess"
+fit = "Assault"
+number_source = ""
+
+[sub_resource type="Resource" id="n23"]
+script = ExtResource("name")
+name = "Lalahon"
+group = 1
+weight_class = 1
+code = "LLH-201"
+origin = "Visayan"
+meaning = "Goddess of fire and volcanoes"
+fit = "Flamers"
+number_source = ""
+
+[sub_resource type="Resource" id="n24"]
+script = ExtResource("name")
+name = "Bathala"
+group = 1
+weight_class = 2
+code = "BTH-001"
+origin = "Tagalog"
+meaning = "Supreme god"
+fit = "Flagship"
+number_source = ""
+
+[sub_resource type="Resource" id="n25"]
+script = ExtResource("name")
+name = "Apolaki"
+group = 1
+weight_class = 2
+code = "APL-301"
+origin = "Tagalog / Pangasinan"
+meaning = "God of the sun and war"
+fit = "Energy assault"
+number_source = ""
+
+[sub_resource type="Resource" id="n26"]
+script = ExtResource("name")
+name = "Amanikable"
+group = 1
+weight_class = 2
+code = "AMK-301"
+origin = "Tagalog"
+meaning = "God of the sea"
+fit = "Amphibious heavy"
+number_source = ""
+
+[sub_resource type="Resource" id="n27"]
+script = ExtResource("name")
+name = "Sitan"
+group = 1
+weight_class = 2
+code = "STN-301"
+origin = "Tagalog"
+meaning = "Keeper of the underworld"
+fit = "Boss frame"
+number_source = ""
+
+[sub_resource type="Resource" id="n28"]
+script = ExtResource("name")
+name = "Kaptan"
+group = 1
+weight_class = 2
+code = "KPT-301"
+origin = "Visayan"
+meaning = "God of the sky"
+fit = "Aerial heavy"
+number_source = ""
+
+[sub_resource type="Resource" id="n29"]
+script = ExtResource("name")
+name = "Kanlaon"
+group = 1
+weight_class = 2
+code = "KNL-2465"
+origin = "Negros"
+meaning = "Supreme god of the volcano"
+fit = "Super-heavy, fire"
+number_source = ""
+
+[sub_resource type="Resource" id="n30"]
+script = ExtResource("name")
+name = "Aring Sinukuan"
+group = 1
+weight_class = 2
+code = "ARS-1026"
+origin = "Kapampangan"
+meaning = "God of Mount Arayat, sun and war"
+fit = "Heavy assault"
+number_source = ""
+
+[sub_resource type="Resource" id="n31"]
+script = ExtResource("name")
+name = "Mandarangan"
+group = 1
+weight_class = 2
+code = "MDR-2954"
+origin = "Bagobo"
+meaning = "War god of Mount Apo"
+fit = "Boss frame"
+number_source = ""
+
+[sub_resource type="Resource" id="n32"]
+script = ExtResource("name")
+name = "Gugurang"
+group = 1
+weight_class = 2
+code = "GGR-2463"
+origin = "Bicolano"
+meaning = "Supreme god inside Mayon Volcano"
+fit = "Super-heavy, fire"
+number_source = ""
+
+[sub_resource type="Resource" id="n33"]
+script = ExtResource("name")
+name = "Kabunian"
+group = 1
+weight_class = 2
+code = "KBN-301"
+origin = "Cordillera"
+meaning = "Supreme god"
+fit = "Flagship"
+number_source = ""
+
+[sub_resource type="Resource" id="n34"]
+script = ExtResource("name")
+name = "Lam-ang"
+group = 2
+weight_class = 1
+code = "LMG-201"
+origin = "Ilocano"
+meaning = "Hero of the Biag ni Lam-ang epic"
+fit = "All-rounder"
+number_source = ""
+
+[sub_resource type="Resource" id="n35"]
+script = ExtResource("name")
+name = "Humadapnon"
+group = 2
+weight_class = 1
+code = "HMD-201"
+origin = "Panay"
+meaning = "Hero of the Hinilawod epic"
+fit = "Melee"
+number_source = ""
+
+[sub_resource type="Resource" id="n36"]
+script = ExtResource("name")
+name = "Bantugan"
+group = 2
+weight_class = 1
+code = "BTG-002"
+origin = "Maranao"
+meaning = "Hero who died and came back to life"
+fit = "Survival frame"
+number_source = ""
+
+[sub_resource type="Resource" id="n37"]
+script = ExtResource("name")
+name = "Agyu"
+group = 2
+weight_class = 1
+code = "AGY-201"
+origin = "Manobo"
+meaning = "Hero who led his people to a new land"
+fit = "Commander"
+number_source = ""
+
+[sub_resource type="Resource" id="n38"]
+script = ExtResource("name")
+name = "Tuwaang"
+group = 2
+weight_class = 1
+code = "TWG-201"
+origin = "Bagobo"
+meaning = "Hero of the Tuwaang epic"
+fit = "Assault"
+number_source = ""
+
+[sub_resource type="Resource" id="n39"]
+script = ExtResource("name")
+name = "Labaw Donggon"
+group = 2
+weight_class = 2
+code = "LBD-301"
+origin = "Panay"
+meaning = "Hero of the Hinilawod epic"
+fit = "Heavy assault"
+number_source = ""
+
+[sub_resource type="Resource" id="n40"]
+script = ExtResource("name")
+name = "Indarapatra"
+group = 2
+weight_class = 2
+code = "IDP-301"
+origin = "Maguindanao"
+meaning = "Hero who killed the monsters of Mindanao"
+fit = "Anti-heavy hunter"
+number_source = ""
+
+[sub_resource type="Resource" id="n41"]
+script = ExtResource("name")
+name = "Tikbalang"
+group = 3
+weight_class = 0
+code = "TKB-101"
+origin = ""
+meaning = "Long-legged forest spirit"
+fit = "Reverse-joint legs"
+number_source = ""
+
+[sub_resource type="Resource" id="n42"]
+script = ExtResource("name")
+name = "Sigbin"
+group = 3
+weight_class = 0
+code = "SGB-101"
+origin = ""
+meaning = "Shadow creature"
+fit = "Stealth"
+number_source = ""
+
+[sub_resource type="Resource" id="n43"]
+script = ExtResource("name")
+name = "Wakwak"
+group = 3
+weight_class = 0
+code = "WKW-101"
+origin = ""
+meaning = "Night flyer"
+fit = "Aerial ambush"
+number_source = ""
+
+[sub_resource type="Resource" id="n44"]
+script = ExtResource("name")
+name = "Manananggal"
+group = 3
+weight_class = 0
+code = "MNG-002"
+origin = ""
+meaning = "Flyer that splits its body in two"
+fit = "Detachable parts"
+number_source = ""
+
+[sub_resource type="Resource" id="n45"]
+script = ExtResource("name")
+name = "Pilandok"
+group = 3
+weight_class = 0
+code = "PLD-101"
+origin = ""
+meaning = "Mouse-deer trickster (Maranao tales)"
+fit = "Decoys, evasion"
+number_source = ""
+
+[sub_resource type="Resource" id="n46"]
+script = ExtResource("name")
+name = "Sarimanok"
+group = 3
+weight_class = 1
+code = "SRM-201"
+origin = ""
+meaning = "Legendary Maranao bird"
+fit = "Flagship, ornate"
+number_source = ""
+
+[sub_resource type="Resource" id="n47"]
+script = ExtResource("name")
+name = "Siyokoy"
+group = 3
+weight_class = 1
+code = "SYK-201"
+origin = ""
+meaning = "Sea creature"
+fit = "Amphibious"
+number_source = ""
+
+[sub_resource type="Resource" id="n48"]
+script = ExtResource("name")
+name = "Anggitay"
+group = 3
+weight_class = 1
+code = "AGT-201"
+origin = ""
+meaning = "Horse-bodied spirit"
+fit = "Quad legs"
+number_source = ""
+
+[sub_resource type="Resource" id="n49"]
+script = ExtResource("name")
+name = "Bakunawa"
+group = 3
+weight_class = 2
+code = "BKN-006"
+origin = ""
+meaning = "Sea serpent that swallowed six of seven moons"
+fit = "Missile archetype"
+number_source = ""
+
+[sub_resource type="Resource" id="n50"]
+script = ExtResource("name")
+name = "Minokawa"
+group = 3
+weight_class = 2
+code = "MNK-301"
+origin = ""
+meaning = "Giant Bagobo bird that swallows the moon"
+fit = "Aerial heavy"
+number_source = ""
+
+[sub_resource type="Resource" id="n51"]
+script = ExtResource("name")
+name = "Kapre"
+group = 3
+weight_class = 2
+code = "KPR-301"
+origin = ""
+meaning = "Tree giant"
+fit = "Tall heavy"
+number_source = ""
+
+[sub_resource type="Resource" id="n52"]
+script = ExtResource("name")
+name = "Bungisngis"
+group = 3
+weight_class = 2
+code = "BGS-001"
+origin = ""
+meaning = "One-eyed giant"
+fit = "Single-eye heavy head"
+number_source = ""
+
+[sub_resource type="Resource" id="n53"]
+script = ExtResource("name")
+name = "Berberoka"
+group = 3
+weight_class = 2
+code = "BBK-301"
+origin = ""
+meaning = "Water ogre"
+fit = "Amphibious heavy"
+number_source = ""
+
+[sub_resource type="Resource" id="n54"]
+script = ExtResource("name")
+name = "Amomongo"
+group = 3
+weight_class = 2
+code = "AMM-301"
+origin = ""
+meaning = "Ape-like creature (Negros)"
+fit = "Melee heavy"
+number_source = ""
+
+[sub_resource type="Resource" id="n55"]
+script = ExtResource("name")
+name = "Galura"
+group = 3
+weight_class = 2
+code = "GLR-301"
+origin = ""
+meaning = "Giant eagle (Kapampangan)"
+fit = "Aerial heavy"
+number_source = ""
+
+[sub_resource type="Resource" id="n56"]
+script = ExtResource("name")
+name = "Naga"
+group = 3
+weight_class = 2
+code = "NGA-301"
+origin = ""
+meaning = "Serpent dragon"
+fit = "Flagship"
+number_source = ""
+
+[sub_resource type="Resource" id="n57"]
+script = ExtResource("name")
+name = "Lawin"
+group = 4
+weight_class = 0
+code = "LWN-088"
+origin = ""
+meaning = "Hawk"
+fit = "Fast striker"
+number_source = "Mount Kitanglad raptor habitat, Lantapan, Bukidnon"
+
+[sub_resource type="Resource" id="n58"]
+script = ExtResource("name")
+name = "Limbas"
+group = 4
+weight_class = 0
+code = "LMB-045"
+origin = ""
+meaning = "Kite (raptor)"
+fit = "Hit-and-run"
+number_source = "Candaba Swamp, Pampanga *"
+
+[sub_resource type="Resource" id="n59"]
+script = ExtResource("name")
+name = "Tutubi"
+group = 4
+weight_class = 0
+code = "TTB-043"
+origin = ""
+meaning = "Dragonfly"
+fit = "Hover, aerial"
+number_source = "Taal Lake, Taal, Batangas *"
+
+[sub_resource type="Resource" id="n60"]
+script = ExtResource("name")
+name = "Putakti"
+group = 4
+weight_class = 0
+code = "PTK-042"
+origin = ""
+meaning = "Wasp"
+fit = "Swarm attacker"
+number_source = "Sierra Madre forest, Baler, Aurora *"
+
+[sub_resource type="Resource" id="n61"]
+script = ExtResource("name")
+name = "Alitaptap"
+group = 4
+weight_class = 0
+code = "ALT-048"
+origin = ""
+meaning = "Firefly"
+fit = "Night ops"
+number_source = "Iwahig River firefly watching, Puerto Princesa"
+
+[sub_resource type="Resource" id="n62"]
+script = ExtResource("name")
+name = "Paniki"
+group = 4
+weight_class = 0
+code = "PNK-084"
+origin = ""
+meaning = "Bat"
+fit = "Night sensor"
+number_source = "Monfort Bat Sanctuary, Samal"
+
+[sub_resource type="Resource" id="n63"]
+script = ExtResource("name")
+name = "Usa"
+group = 4
+weight_class = 0
+code = "UZA-034"
+origin = ""
+meaning = "Deer"
+fit = "Agile legs"
+number_source = "Philippine spotted deer, Negros (Bacolod)"
+
+[sub_resource type="Resource" id="n64"]
+script = ExtResource("name")
+name = "Musang"
+group = 4
+weight_class = 0
+code = "MSG-046"
+origin = ""
+meaning = "Civet"
+fit = "Stealth"
+number_source = "Civet coffee (kape alamid), Amadeo, Cavite"
+
+[sub_resource type="Resource" id="n65"]
+script = ExtResource("name")
+name = "Labuyo"
+group = 4
+weight_class = 0
+code = "LBY-049"
+origin = ""
+meaning = "Wild jungle fowl"
+fit = "Aggressive striker"
+number_source = "Mount Makiling, Los Baños *"
+
+[sub_resource type="Resource" id="n66"]
+script = ExtResource("name")
+name = "Tikling"
+group = 4
+weight_class = 0
+code = "TKL-044"
+origin = ""
+meaning = "Rail bird"
+fit = "Long thin legs"
+number_source = "Rice fields, Muñoz, Nueva Ecija"
+
+[sub_resource type="Resource" id="n67"]
+script = ExtResource("name")
+name = "Tagak"
+group = 4
+weight_class = 0
+code = "TGK-032"
+origin = ""
+meaning = "Heron"
+fit = "Long legs, wading"
+number_source = "Olango Island Wildlife Sanctuary, Lapu-Lapu"
+
+[sub_resource type="Resource" id="n68"]
+script = ExtResource("name")
+name = "Mamag"
+group = 4
+weight_class = 0
+code = "MMG-038"
+origin = ""
+meaning = "Tarsier"
+fit = "Big-eye scout head"
+number_source = "Philippine Tarsier Sanctuary, Corella, Bohol"
+
+[sub_resource type="Resource" id="n69"]
+script = ExtResource("name")
+name = "Buwaya"
+group = 4
+weight_class = 1
+code = "BWY-085"
+origin = ""
+meaning = "Crocodile"
+fit = "Ambush"
+number_source = "Agusan Marsh (home of Lolong), Bunawan"
+
+[sub_resource type="Resource" id="n70"]
+script = ExtResource("name")
+name = "Bayawak"
+group = 4
+weight_class = 1
+code = "BYW-078"
+origin = ""
+meaning = "Monitor lizard"
+fit = "Low profile"
+number_source = "Northern Sierra Madre monitor, Palanan, Isabela"
+
+[sub_resource type="Resource" id="n71"]
+script = ExtResource("name")
+name = "Sawa"
+group = 4
+weight_class = 1
+code = "SWA-048"
+origin = ""
+meaning = "Python"
+fit = "Grapple"
+number_source = "Coron, Palawan *"
+
+[sub_resource type="Resource" id="n72"]
+script = ExtResource("name")
+name = "Ulupong"
+group = 4
+weight_class = 1
+code = "ULP-043"
+origin = ""
+meaning = "Cobra"
+fit = "Corrosive rounds"
+number_source = "Philippine cobra range, Calapan, Mindoro"
+
+[sub_resource type="Resource" id="n73"]
+script = ExtResource("name")
+name = "Alakdan"
+group = 4
+weight_class = 1
+code = "ALK-047"
+origin = ""
+meaning = "Scorpion"
+fit = "Tail weapon"
+number_source = "Subic forest, Zambales *"
+
+[sub_resource type="Resource" id="n74"]
+script = ExtResource("name")
+name = "Pating"
+group = 4
+weight_class = 1
+code = "PTG-032"
+origin = ""
+meaning = "Shark"
+fit = "Aggressive"
+number_source = "Thresher sharks, Malapascua, Daanbantayan"
+
+[sub_resource type="Resource" id="n75"]
+script = ExtResource("name")
+name = "Pagi"
+group = 4
+weight_class = 1
+code = "PAG-056"
+origin = ""
+meaning = "Stingray"
+fit = "Wide, flat frame"
+number_source = "Manta Bowl, Ticao Pass, San Jacinto, Masbate"
+
+[sub_resource type="Resource" id="n76"]
+script = ExtResource("name")
+name = "Kalaw"
+group = 4
+weight_class = 1
+code = "KLW-042"
+origin = ""
+meaning = "Hornbill"
+fit = "Heavy head"
+number_source = "Sierra Madre forest, Infanta, Quezon"
+
+[sub_resource type="Resource" id="n77"]
+script = ExtResource("name")
+name = "Uwak"
+group = 4
+weight_class = 1
+code = "UWK-002"
+origin = ""
+meaning = "Crow"
+fit = "Scout"
+number_source = "Manila (crows live well in cities) *"
+
+[sub_resource type="Resource" id="n78"]
+script = ExtResource("name")
+name = "Kuwago"
+group = 4
+weight_class = 1
+code = "KWG-088"
+origin = ""
+meaning = "Owl"
+fit = "Night sensor"
+number_source = "Bukidnon forest, Valencia *"
+
+[sub_resource type="Resource" id="n79"]
+script = ExtResource("name")
+name = "Banog"
+group = 4
+weight_class = 2
+code = "BNG-082"
+origin = ""
+meaning = "Large eagle"
+fit = "Sniper archetype"
+number_source = "Philippine Eagle Center, Calinan, Davao City"
+
+[sub_resource type="Resource" id="n80"]
+script = ExtResource("name")
+name = "Tamaraw"
+group = 4
+weight_class = 2
+code = "TRW-043"
+origin = ""
+meaning = "Mindoro dwarf buffalo"
+fit = "Charger"
+number_source = "Mounts Iglit-Baco, Sablayan, Mindoro"
+
+[sub_resource type="Resource" id="n81"]
+script = ExtResource("name")
+name = "Kalabaw"
+group = 4
+weight_class = 2
+code = "KLB-044"
+origin = ""
+meaning = "Water buffalo"
+fit = "Load carrier"
+number_source = "Philippine Carabao Center, Muñoz"
+
+[sub_resource type="Resource" id="n82"]
+script = ExtResource("name")
+name = "Baboy-ramo"
+group = 4
+weight_class = 2
+code = "BBR-035"
+origin = ""
+meaning = "Wild boar"
+fit = "Ramming"
+number_source = "Visayan warty pig, Negros (Dumaguete)"
+
+[sub_resource type="Resource" id="n83"]
+script = ExtResource("name")
+name = "Butanding"
+group = 4
+weight_class = 2
+code = "BTD-056"
+origin = ""
+meaning = "Whale shark"
+fit = "Huge, slow"
+number_source = "Donsol, Sorsogon"
+
+[sub_resource type="Resource" id="n84"]
+script = ExtResource("name")
+name = "Dugong"
+group = 4
+weight_class = 2
+code = "DGG-048"
+origin = ""
+meaning = "Sea cow"
+fit = "Amphibious tank"
+number_source = "Calauit, Busuanga, Palawan"
+
+[sub_resource type="Resource" id="n85"]
+script = ExtResource("name")
+name = "Kampilan"
+group = 5
+weight_class = 0
+code = "KMP-095"
+origin = ""
+meaning = "Long sword"
+fit = "Melee archetype"
+number_source = "90 to 100 cm total"
+
+[sub_resource type="Resource" id="n86"]
+script = ExtResource("name")
+name = "Kalis"
+group = 5
+weight_class = 0
+code = "KLS-056"
+origin = ""
+meaning = "Wavy blade"
+fit = "Melee"
+number_source = "46 to 66 cm blade"
+
+[sub_resource type="Resource" id="n87"]
+script = ExtResource("name")
+name = "Barong"
+group = 5
+weight_class = 0
+code = "BRG-056"
+origin = ""
+meaning = "Leaf-shaped blade"
+fit = "Melee"
+number_source = "56 cm total"
+
+[sub_resource type="Resource" id="n88"]
+script = ExtResource("name")
+name = "Sundang"
+group = 5
+weight_class = 0
+code = "SDG-101"
+origin = ""
+meaning = "Visayan short blade"
+fit = "Melee"
+number_source = "No reliable data (generic)"
+
+[sub_resource type="Resource" id="n89"]
+script = ExtResource("name")
+name = "Balarao"
+group = 5
+weight_class = 0
+code = "BLR-030"
+origin = ""
+meaning = "Dagger"
+fit = "Close range"
+number_source = "About 30 cm"
+
+[sub_resource type="Resource" id="n90"]
+script = ExtResource("name")
+name = "Tabak"
+group = 5
+weight_class = 0
+code = "TBK-101"
+origin = ""
+meaning = "Blade"
+fit = "Melee"
+number_source = "General word for blade (generic)"
+
+[sub_resource type="Resource" id="n91"]
+script = ExtResource("name")
+name = "Pana"
+group = 5
+weight_class = 0
+code = "PNA-100"
+origin = ""
+meaning = "Bow"
+fit = "Light ranged"
+number_source = "Bow, about 100 cm (Ata example)"
+
+[sub_resource type="Resource" id="n92"]
+script = ExtResource("name")
+name = "Palaso"
+group = 5
+weight_class = 0
+code = "PLS-101"
+origin = ""
+meaning = "Arrow"
+fit = "Light ranged"
+number_source = "No reliable data (generic)"
+
+[sub_resource type="Resource" id="n93"]
+script = ExtResource("name")
+name = "Sumpit"
+group = 5
+weight_class = 0
+code = "SMP-152"
+origin = ""
+meaning = "Blowgun"
+fit = "Silent sniper"
+number_source = "4 to 6 ft (122 to 183 cm)"
+
+[sub_resource type="Resource" id="n94"]
+script = ExtResource("name")
+name = "Sibat"
+group = 5
+weight_class = 1
+code = "SBT-170"
+origin = ""
+meaning = "Spear"
+fit = "Long-range rifles"
+number_source = "About 170 cm (Moro example)"
+
+[sub_resource type="Resource" id="n95"]
+script = ExtResource("name")
+name = "Bangkaw"
+group = 5
+weight_class = 1
+code = "BGK-201"
+origin = ""
+meaning = "Spear"
+fit = "Lance or rifle"
+number_source = "Over 97 cm, no exact figure (generic)"
+
+[sub_resource type="Resource" id="n96"]
+script = ExtResource("name")
+name = "Gayang"
+group = 5
+weight_class = 1
+code = "GYG-201"
+origin = ""
+meaning = "Throwing spear"
+fit = "Javelin missiles"
+number_source = "No reliable data (generic)"
+
+[sub_resource type="Resource" id="n97"]
+script = ExtResource("name")
+name = "Busog"
+group = 5
+weight_class = 1
+code = "BSG-100"
+origin = ""
+meaning = "Bow"
+fit = "Ranged"
+number_source = "Bow, about 100 cm (Ata example)"
+
+[sub_resource type="Resource" id="n98"]
+script = ExtResource("name")
+name = "Kalasag"
+group = 5
+weight_class = 1
+code = "KSG-150"
+origin = ""
+meaning = "Tall wooden shield"
+fit = "Back-unit shield"
+number_source = "About 150 x 50 cm"
+
+[sub_resource type="Resource" id="n99"]
+script = ExtResource("name")
+name = "Taming"
+group = 5
+weight_class = 1
+code = "TMG-070"
+origin = ""
+meaning = "Round shield"
+fit = "Shield"
+number_source = "About 70 cm diameter"
+
+[sub_resource type="Resource" id="n100"]
+script = ExtResource("name")
+name = "Baluti"
+group = 5
+weight_class = 1
+code = "BLT-079"
+origin = ""
+meaning = "Armor"
+fit = "Plated build"
+number_source = "Moro armor, 79 x 69 cm"
+
+[sub_resource type="Resource" id="n101"]
+script = ExtResource("name")
+name = "Agimat"
+group = 5
+weight_class = 1
+code = "AGM-201"
+origin = ""
+meaning = "Amulet"
+fit = "Lucky frame"
+number_source = "Size varies (generic)"
+
+[sub_resource type="Resource" id="n102"]
+script = ExtResource("name")
+name = "Lantaka"
+group = 5
+weight_class = 2
+code = "LTK-100"
+origin = ""
+meaning = "Bronze swivel cannon"
+fit = "Cannons"
+number_source = "Up to about 100 cm"
+
+[sub_resource type="Resource" id="n103"]
+script = ExtResource("name")
+name = "Lela"
+group = 5
+weight_class = 2
+code = "LLA-140"
+origin = ""
+meaning = "Large bronze cannon"
+fit = "Heavy cannon"
+number_source = "100 to 180 cm"
+
+[sub_resource type="Resource" id="n104"]
+script = ExtResource("name")
+name = "Panabas"
+group = 5
+weight_class = 2
+code = "PNB-091"
+origin = ""
+meaning = "Heavy chopping blade"
+fit = "Heavy melee"
+number_source = "61 to 122 cm"
+
+[sub_resource type="Resource" id="n105"]
+script = ExtResource("name")
+name = "Vinta"
+group = 6
+weight_class = 0
+code = "VNT-007"
+origin = ""
+meaning = "Fast sail boat"
+fit = "Fast mover"
+number_source = "4.5 to 10 m"
+
+[sub_resource type="Resource" id="n106"]
+script = ExtResource("name")
+name = "Paraw"
+group = 6
+weight_class = 0
+code = "PRW-008"
+origin = ""
+meaning = "Outrigger sailboat"
+fit = "Fast mover"
+number_source = "About 7.6 m (regatta class A, 25 ft)"
+
+[sub_resource type="Resource" id="n107"]
+script = ExtResource("name")
+name = "Karakoa"
+group = 6
+weight_class = 1
+code = "KRK-025"
+origin = ""
+meaning = "Visayan warship"
+fit = "Assault carrier"
+number_source = "Up to 25 m"
+
+[sub_resource type="Resource" id="n108"]
+script = ExtResource("name")
+name = "Balangay"
+group = 6
+weight_class = 1
+code = "BLG-015"
+origin = ""
+meaning = "Plank boat"
+fit = "Transport"
+number_source = "About 15 x 4 m"
+
+[sub_resource type="Resource" id="n109"]
+script = ExtResource("name")
+name = "Kuta"
+group = 6
+weight_class = 2
+code = "KTA-301"
+origin = ""
+meaning = "Fort"
+fit = "Tank legs"
+number_source = "No reliable data (generic)"
+
+[sub_resource type="Resource" id="n110"]
+script = ExtResource("name")
+name = "Moog"
+group = 6
+weight_class = 2
+code = "MOG-301"
+origin = ""
+meaning = "Fortress tower"
+fit = "Artillery"
+number_source = "No reliable data (generic)"
+
+[sub_resource type="Resource" id="n111"]
+script = ExtResource("name")
+name = "Tanggulan"
+group = 6
+weight_class = 2
+code = "TGL-301"
+origin = ""
+meaning = "Stronghold"
+fit = "Defender"
+number_source = "No reliable data (generic)"
+
+[sub_resource type="Resource" id="n112"]
+script = ExtResource("name")
+name = "Kidlat"
+group = 7
+weight_class = 0
+code = "KDL-001"
+origin = ""
+meaning = "Lightning"
+fit = "Highest-speed boost"
+number_source = ""
+
+[sub_resource type="Resource" id="n113"]
+script = ExtResource("name")
+name = "Lintik"
+group = 7
+weight_class = 0
+code = "LTN-101"
+origin = ""
+meaning = "Lightning strike"
+fit = "Burst damage"
+number_source = ""
+
+[sub_resource type="Resource" id="n114"]
+script = ExtResource("name")
+name = "Dagitab"
+group = 7
+weight_class = 0
+code = "DGT-101"
+origin = ""
+meaning = "Spark"
+fit = "Energy weapons"
+number_source = ""
+
+[sub_resource type="Resource" id="n115"]
+script = ExtResource("name")
+name = "Hagibis"
+group = 7
+weight_class = 0
+code = "HGB-101"
+origin = ""
+meaning = "Swift rush"
+fit = "Dash melee"
+number_source = ""
+
+[sub_resource type="Resource" id="n116"]
+script = ExtResource("name")
+name = "Anino"
+group = 7
+weight_class = 0
+code = "ANN-101"
+origin = ""
+meaning = "Shadow"
+fit = "Stealth"
+number_source = ""
+
+[sub_resource type="Resource" id="n117"]
+script = ExtResource("name")
+name = "Hamog"
+group = 7
+weight_class = 0
+code = "HMG-101"
+origin = ""
+meaning = "Mist"
+fit = "Smoke screens"
+number_source = ""
+
+[sub_resource type="Resource" id="n118"]
+script = ExtResource("name")
+name = "Bulalakaw"
+group = 7
+weight_class = 0
+code = "BLK-101"
+origin = ""
+meaning = "Shooting star"
+fit = "Boost dive"
+number_source = ""
+
+[sub_resource type="Resource" id="n119"]
+script = ExtResource("name")
+name = "Unos"
+group = 7
+weight_class = 1
+code = "UNS-201"
+origin = ""
+meaning = "Squall"
+fit = "Fast fire"
+number_source = ""
+
+[sub_resource type="Resource" id="n120"]
+script = ExtResource("name")
+name = "Habagat"
+group = 7
+weight_class = 1
+code = "HBG-225"
+origin = ""
+meaning = "Southwest monsoon"
+fit = "Heavy rain of fire"
+number_source = ""
+
+[sub_resource type="Resource" id="n121"]
+script = ExtResource("name")
+name = "Amihan"
+group = 7
+weight_class = 1
+code = "AMH-045"
+origin = ""
+meaning = "Northeast monsoon"
+fit = "Cool, steady"
+number_source = ""
+
+[sub_resource type="Resource" id="n122"]
+script = ExtResource("name")
+name = "Silab"
+group = 7
+weight_class = 1
+code = "SLB-201"
+origin = ""
+meaning = "Flame (Visayan)"
+fit = "Fire weapons"
+number_source = ""
+
+[sub_resource type="Resource" id="n123"]
+script = ExtResource("name")
+name = "Sinag"
+group = 7
+weight_class = 1
+code = "SNG-201"
+origin = ""
+meaning = "Ray of light"
+fit = "Laser weapons"
+number_source = ""
+
+[sub_resource type="Resource" id="n124"]
+script = ExtResource("name")
+name = "Bagyo"
+group = 7
+weight_class = 2
+code = "BGY-301"
+origin = ""
+meaning = "Typhoon"
+fit = "Area damage"
+number_source = ""
+
+[sub_resource type="Resource" id="n125"]
+script = ExtResource("name")
+name = "Daluyong"
+group = 7
+weight_class = 2
+code = "DLY-301"
+origin = ""
+meaning = "Storm surge"
+fit = "Push-back"
+number_source = ""
+
+[sub_resource type="Resource" id="n126"]
+script = ExtResource("name")
+name = "Buhawi"
+group = 7
+weight_class = 2
+code = "BHW-301"
+origin = ""
+meaning = "Whirlwind"
+fit = "Spin attack"
+number_source = ""
+
+[sub_resource type="Resource" id="n127"]
+script = ExtResource("name")
+name = "Lindol"
+group = 7
+weight_class = 2
+code = "LND-301"
+origin = ""
+meaning = "Earthquake"
+fit = "Ground slam"
+number_source = ""
+
+[sub_resource type="Resource" id="n128"]
+script = ExtResource("name")
+name = "Kulog"
+group = 7
+weight_class = 2
+code = "KLG-002"
+origin = ""
+meaning = "Thunder"
+fit = "Loud artillery"
+number_source = ""
+
+[sub_resource type="Resource" id="n129"]
+script = ExtResource("name")
+name = "Liyab"
+group = 7
+weight_class = 2
+code = "LYB-301"
+origin = ""
+meaning = "Blaze"
+fit = "Fire weapons"
+number_source = ""
+
+[sub_resource type="Resource" id="n130"]
+script = ExtResource("name")
+name = "Bato"
+group = 7
+weight_class = 2
+code = "BTO-301"
+origin = ""
+meaning = "Stone"
+fit = "Armor"
+number_source = ""
+
+[sub_resource type="Resource" id="n131"]
+script = ExtResource("name")
+name = "Bakal"
+group = 7
+weight_class = 2
+code = "BKL-301"
+origin = ""
+meaning = "Iron"
+fit = "Armor"
+number_source = ""
+
+[sub_resource type="Resource" id="n132"]
+script = ExtResource("name")
+name = "Tanso"
+group = 7
+weight_class = 2
+code = "TNS-301"
+origin = ""
+meaning = "Bronze"
+fit = "Armor"
+number_source = ""
+
+[sub_resource type="Resource" id="n133"]
+script = ExtResource("name")
+name = "Bundok"
+group = 7
+weight_class = 2
+code = "BDK-301"
+origin = ""
+meaning = "Mountain"
+fit = "Super-heavy"
+number_source = ""
+
+[sub_resource type="Resource" id="n134"]
+script = ExtResource("name")
+name = "Bagani"
+group = 8
+weight_class = 1
+code = "BGA-201"
+origin = ""
+meaning = "Honored Mindanao warrior class"
+fit = "Gunner archetype"
+number_source = ""
+
+[sub_resource type="Resource" id="n135"]
+script = ExtResource("name")
+name = "Mandirigma"
+group = 8
+weight_class = 1
+code = "MDG-201"
+origin = ""
+meaning = "Warrior"
+fit = "All-rounder"
+number_source = ""
+
+[sub_resource type="Resource" id="n136"]
+script = ExtResource("name")
+name = "Bayani"
+group = 8
+weight_class = 1
+code = "BYN-201"
+origin = ""
+meaning = "Warrior, hero"
+fit = "All-rounder"
+number_source = ""
+
+[sub_resource type="Resource" id="n137"]
+script = ExtResource("name")
+name = "Panday"
+group = 8
+weight_class = 1
+code = "PDY-201"
+origin = ""
+meaning = "Smith"
+fit = "Repair support"
+number_source = ""
+
+[sub_resource type="Resource" id="n138"]
+script = ExtResource("name")
+name = "Bantay"
+group = 8
+weight_class = 1
+code = "BTY-201"
+origin = ""
+meaning = "Guard"
+fit = "Defender"
+number_source = ""
+
+[sub_resource type="Resource" id="n139"]
+script = ExtResource("name")
+name = "Umalohokan"
+group = 8
+weight_class = 1
+code = "UMH-201"
+origin = ""
+meaning = "Town crier"
+fit = "Comms, radar"
+number_source = ""
+
+[sub_resource type="Resource" id="n140"]
+script = ExtResource("name")
+name = "Mangangayaw"
+group = 8
+weight_class = 1
+code = "MGY-201"
+origin = ""
+meaning = "Raider"
+fit = "Assault"
+number_source = ""
+
+[resource]
+script = ExtResource("catalog")
+names = Array[ExtResource("name")]([SubResource("n0"), SubResource("n1"), SubResource("n2"), SubResource("n3"), SubResource("n4"), SubResource("n5"), SubResource("n6"), SubResource("n7"), SubResource("n8"), SubResource("n9"), SubResource("n10"), SubResource("n11"), SubResource("n12"), SubResource("n13"), SubResource("n14"), SubResource("n15"), SubResource("n16"), SubResource("n17"), SubResource("n18"), SubResource("n19"), SubResource("n20"), SubResource("n21"), SubResource("n22"), SubResource("n23"), SubResource("n24"), SubResource("n25"), SubResource("n26"), SubResource("n27"), SubResource("n28"), SubResource("n29"), SubResource("n30"), SubResource("n31"), SubResource("n32"), SubResource("n33"), SubResource("n34"), SubResource("n35"), SubResource("n36"), SubResource("n37"), SubResource("n38"), SubResource("n39"), SubResource("n40"), SubResource("n41"), SubResource("n42"), SubResource("n43"), SubResource("n44"), SubResource("n45"), SubResource("n46"), SubResource("n47"), SubResource("n48"), SubResource("n49"), SubResource("n50"), SubResource("n51"), SubResource("n52"), SubResource("n53"), SubResource("n54"), SubResource("n55"), SubResource("n56"), SubResource("n57"), SubResource("n58"), SubResource("n59"), SubResource("n60"), SubResource("n61"), SubResource("n62"), SubResource("n63"), SubResource("n64"), SubResource("n65"), SubResource("n66"), SubResource("n67"), SubResource("n68"), SubResource("n69"), SubResource("n70"), SubResource("n71"), SubResource("n72"), SubResource("n73"), SubResource("n74"), SubResource("n75"), SubResource("n76"), SubResource("n77"), SubResource("n78"), SubResource("n79"), SubResource("n80"), SubResource("n81"), SubResource("n82"), SubResource("n83"), SubResource("n84"), SubResource("n85"), SubResource("n86"), SubResource("n87"), SubResource("n88"), SubResource("n89"), SubResource("n90"), SubResource("n91"), SubResource("n92"), SubResource("n93"), SubResource("n94"), SubResource("n95"), SubResource("n96"), SubResource("n97"), SubResource("n98"), SubResource("n99"), SubResource("n100"), SubResource("n101"), SubResource("n102"), SubResource("n103"), SubResource("n104"), SubResource("n105"), SubResource("n106"), SubResource("n107"), SubResource("n108"), SubResource("n109"), SubResource("n110"), SubResource("n111"), SubResource("n112"), SubResource("n113"), SubResource("n114"), SubResource("n115"), SubResource("n116"), SubResource("n117"), SubResource("n118"), SubResource("n119"), SubResource("n120"), SubResource("n121"), SubResource("n122"), SubResource("n123"), SubResource("n124"), SubResource("n125"), SubResource("n126"), SubResource("n127"), SubResource("n128"), SubResource("n129"), SubResource("n130"), SubResource("n131"), SubResource("n132"), SubResource("n133"), SubResource("n134"), SubResource("n135"), SubResource("n136"), SubResource("n137"), SubResource("n138"), SubResource("n139"), SubResource("n140")])

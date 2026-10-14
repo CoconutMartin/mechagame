@@ -50,6 +50,7 @@ func _initialize() -> void:
 	var root := (load(SOURCE) as PackedScene).instantiate() as Mech
 	root.scene_file_path = ""
 	root.name = "Sanggigilid"
+	root.name_code = "SGG-101"  # Sagigilid (data/names/mech_names.tres).
 	root.walk_speed = WALK_SPEED
 	root.strafe_speed_multiplier = STRAFE_SPEED
 	root.back_speed_multiplier = BACK_SPEED

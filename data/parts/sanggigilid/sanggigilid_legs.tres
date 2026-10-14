@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("script")
-display_name = "Sanggigilid Legs"
+display_name = "Sagigilid Legs"
 weight_t = 16.0
 hp = 1400.0
 leg_type = 0

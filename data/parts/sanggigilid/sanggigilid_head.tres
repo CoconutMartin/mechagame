@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("script")
-display_name = "Sanggigilid Head"
+display_name = "Sagigilid Head"
 weight_t = 4.0
 hp = 400.0
 sensor_range = 600.0

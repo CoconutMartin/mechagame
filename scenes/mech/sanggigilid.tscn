@@ -67,6 +67,7 @@ air_steer = NodePath("MechAirSteer")
 kneel = NodePath("MechKneel")
 dodge = NodePath("MechDodge")
 shield = NodePath("MechShield")
+name_code = "SGG-101"
 walk_speed = 7.735
 back_speed_multiplier = 0.8
 skid_stop_strides = PackedFloat32Array(0.45, 0.35)

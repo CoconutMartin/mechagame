@@ -2,6 +2,8 @@ extends CanvasLayer
 ## Shows live movement values for testing, and the build stats from the loadout (Phase 2):
 ## total weight, load ratio, speeds and the HP of each part.
 
+const NAMES: MechNameCatalog = preload("res://data/names/mech_names.tres")
+
 @export var mech: Mech
 @export var mech_aim: MechAim
 
@@ -80,8 +82,11 @@ func _build_text() -> String:
 	if stats == null and health == null:
 		return "Build: no loadout"
 	var text := "BUILD\n"
+	var entry := NAMES.find_code(mech.name_code) if mech.name_code != "" else null
+	if entry != null:
+		text += "Mech: %s\n" % MechNameCatalog.full_name(entry)
 	if stats == null or mech.get_node_or_null("WeaponMount") != null:
-		# A mech not built from parts (Sanggigilid): its own speeds; the parts give weight and HP only.
+		# A mech not built from parts (Sagigilid): its own speeds; the parts give weight and HP only.
 		if stats != null:
 			text += "Weight: %.1f t\n" % stats.total_weight_t
 		text += "Walk %.1f m/s   Boost %.1f m/s\n" % [mech.walk_speed, mech.get_boost_speed()]
