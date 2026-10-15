@@ -32,6 +32,13 @@ AGENTS.md and the DESIGN.md sections named below first. The previous handoff
    - Do not use the spawner enemies from the `lockable` group as targets: in tests they took no damage
      (probably inactive until the spawner activates them).
    - Hide trees between the camera and the mechs before each capture (a tree blocked many renders).
+   - **Check first:** the last render test (own target 7 m in front, scripted input) logged NO damage
+     for every attack, while the reviewer's earlier headless test (scripts t1 to t6, also lost) got the
+     expected damage on a dummy 6 to 7 m away. Find out whether the attacks start at all in the render
+     test (log `SkeletalMeleeAnimation.is_playing` and `_can_attack()` each frame after the button
+     press, and that `get_nodes_in_group(&"player")[0]` is the rebuilt mech, not the freed one), and
+     whether the strike point reaches the target hit boxes. If the attacks start and still miss, it
+     is a game bug: check the strike windows, `hit_radius` and the target distance.
 2. **Bug: heavy rifle bullet hits the own mech and it flinches.** Not reproduced: bullets exclude all
    own hit boxes (`Mech.get_hit_exclude()`, checked with 6 loadouts) and own shots never damaged the
    player in headless tests. Questions sent to the user (waiting for answers): what was shot at and
