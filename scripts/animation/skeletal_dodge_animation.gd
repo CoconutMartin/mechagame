@@ -91,15 +91,17 @@ func pick(local_direction: Vector3) -> DodgeClip:
 	return step_left if local_direction.x < 0.0 else step_right
 
 
-## Starts a clip. finished is called once when it ends.
-func start(chosen: DodgeClip, local_direction: Vector3, from_boost: bool, finished: Callable) -> void:
+## Starts a clip. finished is called once when it ends. speed_factor scales the dodge length and so
+## its ground speed (the clip timing stays; 0.5 = half the speed, for a heavily compromised leg).
+func start(chosen: DodgeClip, local_direction: Vector3, from_boost: bool, finished: Callable,
+		speed_factor: float = 1.0) -> void:
 	clip = chosen
 	is_playing = true
 	_fading = false
 	_time = 0.0
 	_after = 0.0
 	_momentum = 0.0
-	_distance = clip.boost_distance if from_boost else clip.distance
+	_distance = (clip.boost_distance if from_boost else clip.distance) * speed_factor
 	_direction = (mech.global_basis * local_direction).normalized()
 	# Model space: the mech's left (-X in the leg frame) is +X, reached by turning +90 degrees.
 	_turn = 0.0

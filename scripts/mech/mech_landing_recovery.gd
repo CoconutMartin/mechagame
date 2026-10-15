@@ -4,6 +4,12 @@ extends Node
 ## Falls below min_height: short_fall_delay.
 ## Higher falls: reference_delay x (mass / reference_mass) x (fall height / reference_height),
 ## but never less than short_fall_delay.
+## A dodge that started from a walk ends with the short landing too (start_short_landing, user request
+## 2026-10-15: the quick step lost the landing penalty).
+
+## Every landing from a fall of at least ignore_height, with the fall height in meters (before the
+## dodge and boost exit exceptions below). MechLegStrain hurts a heavily compromised leg with it.
+signal fall_landed(height: float)
 
 @export var mech: Mech
 ## Delay in seconds for the reference mass falling the reference height.
@@ -52,6 +58,8 @@ func _physics_process(delta: float) -> void:
 func _on_landed(_fall_speed: float) -> void:
 	var height := _peak_y - mech.global_position.y
 	_peak_y = mech.global_position.y
+	if height >= ignore_height:
+		fall_landed.emit(height)
 	# The boost exit leap is part of the walk. A fall off an edge during the leap still counts.
 	if height < ignore_height or (mech.is_exiting_boost and height < min_height):
 		return
@@ -64,4 +72,12 @@ func _on_landed(_fall_speed: float) -> void:
 	else:
 		var scaled := reference_delay * (mech.mass_tons / reference_mass) * (height / reference_height)
 		duration = clampf(scaled, short_fall_delay, max_delay)
+	time_left = duration
+
+
+## The landing after a dodge step (no fall): the same no-control time as a short fall, with the
+## smallest landing crouch. The mech walks its momentum out meanwhile (Mech landing steps).
+func start_short_landing() -> void:
+	fall_height = 0.0
+	duration = short_fall_delay
 	time_left = duration

@@ -10,6 +10,10 @@ extends Node
 ## No landing delay.
 ## A mech with a SkeletalDodgeAnimation plays a dodge animation (roll or step) instead of the hop
 ## (user requests 2026-10-13); the clip depends on the direction, the weight class and the speed.
+## A dodge from a walk (the quick step, W + double Space) ends with a landing: the short landing delay
+## and the 3 landing steps (user request 2026-10-15). A dodge from a run or boost keeps its momentum.
+## A shield with WeaponData.blocks_dodge (Hex Shield) stops every dodge. A heavily compromised leg
+## strains on a roll and slows it (MechLegStrain).
 
 signal dodge_started
 signal dodge_ended
@@ -21,6 +25,8 @@ signal dodge_ended
 @export var kneel: MechKneel
 ## Optional. Dodge animations instead of the hop.
 @export var animation: SkeletalDodgeAnimation
+## Damage and slowdown of heavily compromised legs on a roll. Made in _ready when not set.
+@export var leg_strain: MechLegStrain
 ## Two Space presses closer than this (seconds) start a dodge.
 @export var double_tap_window: float = 0.3
 ## Hop length, in meters.
@@ -72,12 +78,31 @@ var _recovering: bool = false
 ## Time left in the double tap window after a Space press during a boost.
 var _boost_tap_left: float = 0.0
 var _from_boost: bool = false
+## True when the dodge started while running or boosting (it keeps its momentum, no landing penalty).
+var _from_fast: bool = false
+## True while the dodge clip is the roll (it ends with no slow-down).
+var _rolling: bool = false
+var _weapons: WeaponController
 
 
 func _ready() -> void:
 	# Before the jump charge (-5) and the Mech (0).
 	process_physics_priority = -6
 	mech.landed.connect(_on_landed)
+	_weapons = mech.get_node_or_null("WeaponController") as WeaponController
+	if leg_strain == null:
+		leg_strain = MechLegStrain.new()
+		leg_strain.name = "LegStrain"
+		leg_strain.mech = mech
+		add_child(leg_strain)
+
+
+## True when the mech carries a shield that stops dodging (WeaponData.blocks_dodge, the Hex Shield).
+## A broken shield (MechShield.enabled false) does not.
+func is_blocked_by_shield() -> bool:
+	if _weapons == null or _weapons.left_data == null or not _weapons.left_data.blocks_dodge:
+		return false
+	return _weapons.mech_shield == null or _weapons.mech_shield.enabled
 
 
 ## True while a dodge animation (not the hop) plays.
@@ -142,7 +167,8 @@ func _physics_process(delta: float) -> void:
 	_boost_tap_left = maxf(_boost_tap_left - delta, 0.0)
 	if not input.jump_held:
 		_suppress_jump = false
-	if input.jump_pressed and mech.is_boosting and mech.is_on_floor() and _boost_tap_left <= 0.0:
+	if input.jump_pressed and mech.is_boosting and mech.is_on_floor() and _boost_tap_left <= 0.0 \
+			and not is_blocked_by_shield():
 		_boost_tap_left = double_tap_window
 	if input.jump_pressed:
 		if _clock - _last_press <= double_tap_window and _can_start():
@@ -161,7 +187,8 @@ func _get_air_progress() -> float:
 
 func _can_start() -> bool:
 	return mech.is_on_floor() and not mech.is_fallen and not is_busy() and not landing_recovery.is_recovering() \
-			and not kneel.is_kneeling and not mech.is_skidding and energy.current >= energy_cost
+			and not kneel.is_kneeling and not mech.is_skidding and energy.current >= energy_cost \
+			and not is_blocked_by_shield()
 
 
 func _start() -> void:
@@ -169,6 +196,7 @@ func _start() -> void:
 	# Direction in the leg frame: -Z forward, +X right.
 	var local := Vector3(0.0, 0.0, 1.0)  # No key: back.
 	_from_boost = mech.is_boosting
+	_from_fast = mech.is_boosting or mech.is_running
 	if mech.is_boosting:
 		local = Vector3(0.0, 0.0, -1.0)  # Boosting: forward.
 	elif input.turn_input > 0.5:
@@ -207,12 +235,22 @@ func _start_animation(clip: DodgeClip) -> void:
 	_last_press = -10.0
 	_boost_tap_left = 0.0
 	_suppress_jump = true
-	animation.start(clip, _local_direction, _from_boost, _end_roll)
+	# A heavily compromised leg: the roll is slower (checked before the roll hurts the leg).
+	var speed_factor := 1.0
+	_rolling = clip == animation.roll
+	if _rolling and leg_strain != null:
+		speed_factor = leg_strain.get_roll_speed_factor()
+		leg_strain.strain_roll()
+	animation.start(clip, _local_direction, _from_boost, _end_roll, speed_factor)
 	dodge_started.emit()
 
 
 func _end_roll() -> void:
 	is_dodging = false
+	# A step dodge from a walk (quick step): the next 3 steps are at the broken leg speed (user rule
+	# 2026-10-15). A roll ends with no stop and no slow-down.
+	if not _from_fast and not _rolling and not mech.is_fallen and not mech.is_wrecked:
+		mech.start_slow_steps()
 	# A move key ended the dodge (SkeletalDodgeAnimation.release_at): walk at once.
 	_recover_left = 0.0 if input.move_direction.length_squared() > 0.01 else recovery_time
 	dodge_ended.emit()

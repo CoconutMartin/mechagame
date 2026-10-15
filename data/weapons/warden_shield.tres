@@ -12,4 +12,5 @@ kind = 4
 shield_area_m2 = 10.886
 shield_scale = 1.2
 shield_hand = Vector3(-2.1000, 1.1000, -2.7400)
+blocks_dodge = true
 scene = ExtResource("scene")
