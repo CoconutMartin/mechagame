@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="HitClip" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hit_clip.gd" id="1"]
+[ext_resource type="Animation" path="res://data/animations/hit_small.res" id="2"]
+
+[resource]
+script = ExtResource("1")
+animation = ExtResource("2")
+min_damage = 0.0

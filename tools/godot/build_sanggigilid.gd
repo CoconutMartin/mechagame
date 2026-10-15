@@ -312,6 +312,14 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	dodge_animation.mech = root
 	dodge_animation.arm_rig = rig
 	(root.get_node("MechDodge") as MechDodge).animation = dodge_animation
+	# Hit reactions after the dodge: the clip has the whole body.
+	var hit_animation := SkeletalHitAnimation.new()
+	hit_animation.name = "HitAnimation"
+	visual.add_child(hit_animation)
+	hit_animation.model = model
+	hit_animation.mech = root
+	hit_animation.health = root.get_node("MechHealth") as MechHealth
+	hit_animation.arm_rig = rig
 	var weapon_pose := weapon_animation.get_node("WeaponPose") as WeaponPose
 	weapon_pose.aim_anchor = torso.get_node("AimAnchor")
 	var bounce := WeaponBounce.new()
