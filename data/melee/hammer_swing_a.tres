@@ -11,4 +11,5 @@ travel = ExtResource("3")
 strikes = PackedVector2Array(1.35, 1.8)
 damage = PackedFloat32Array(260)
 speed_scale = 1.2
-contact_distance = 6.0
+contact_distance = 8.0
+keep_away_distance = 8.0

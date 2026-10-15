@@ -104,8 +104,10 @@ def main():
     mods = [write(f"data/mods/{f}.tres", "ModData", "mod_data", {"display_name": n, "stat": s, "percent": p})
             for f, n, s, p in MODS]
     weapons = {
-        "weapons_right": ["heavy_rifle", "beam_rifle", "beam_sniper", "pile_bunker", "auto_cannon", "smg", "fist", "hammer"],
-        "weapons_left": ["warden_shield", "small_shield", "fist"],
+        "weapons_right": ["heavy_rifle", "beam_rifle", "beam_sniper", "pile_bunker", "auto_cannon", "smg", "shotgun",
+                          "fist", "hammer"],
+        # Left hand (user rules 2026-10-15): shields, one-hand guns, the Pile Bunker and the Fist.
+        "weapons_left": ["warden_shield", "small_shield", "smg", "shotgun", "auto_cannon", "pile_bunker", "fist"],
         "backs_left": ["missile_pod_l", "auto_cannon_shoulder"],
         "backs_right": ["missile_pod_r", "auto_cannon_shoulder"],
     }

@@ -301,10 +301,31 @@ func _physics_process(delta: float) -> void:
 	if _target != null:
 		_direction = _clip_direction()
 	mech.root_motion_active = true
-	mech.root_motion_velocity = _direction * speed + _lunge_direction * _lunge_velocity
+	mech.root_motion_velocity = _keep_away(_direction * speed + _lunge_direction * _lunge_velocity)
 	_strike()
 	if _time >= _end_time:
 		_finish(true)
+
+
+## Removes the part of the motion toward any mech closer than the attack's keep_away_distance.
+func _keep_away(velocity: Vector3) -> Vector3:
+	var limit := _attack.keep_away_distance
+	if limit <= 0.0:
+		return velocity
+	for group in [&"lockable", &"player"]:
+		for node in get_tree().get_nodes_in_group(group):
+			var other := node as Mech
+			if other == null or other == mech or other.is_wrecked:
+				continue
+			var offset := _flat_offset(other)
+			var distance := offset.length()
+			if distance > limit or distance < 0.01:
+				continue
+			var toward := offset / distance
+			var closing := velocity.dot(toward)
+			if closing > 0.0:
+				velocity -= toward * closing
+	return velocity
 
 
 ## The next swing of a fist combo: a new press of a fist button after the swing before hit a target.

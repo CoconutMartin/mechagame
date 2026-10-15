@@ -351,7 +351,8 @@ if __name__ == "__main__":
                                 up_hint=arm_poses.top_side(arm_poses.NEUTRAL_DEG), grip=(0, 0, 0))
     bunker_aim = RIGHT_HAND_AIM
     res("data/weapons/pile_bunker.tres", {"display_name": '"Pile Bunker"', "weight_t": 2.5, "hp": 300.0,
-        "kind": 5, "fire_rate": 0.3333, "damage": 675.0, "magazine": 3, "reload_time": 5.0,
+        "kind": 5, "fire_rate": 0.16667,  # 1 punch per 6 s (user 2026-10-15)
+        "damage": 675.0, "magazine": 3, "reload_time": 5.0,
         "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,
         "shake_trauma": 0.45, "shake_kick": 0.6, "recoil_up_deg": 2.0, "recoil_side_deg": 1.0,
         "rest_transform": bunker_rest, "aim_anchor": v3(bunker_aim),

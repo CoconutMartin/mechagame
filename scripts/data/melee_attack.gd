@@ -25,6 +25,10 @@ extends Resource
 ## Distance between the two mech centers (m) where the strike lands. A target in the aim cone is
 ## approached until this distance (mechs collide at about 5.2 m).
 @export var contact_distance: float = 6.0
+## During the attack the mech moves no closer than this to another mech (center to center, m), so wide
+## swings do not reach into it (user rule 2026-10-15: mechs collide, no clipping). 0 = only the bodies
+## collide (about 5.2 m).
+@export var keep_away_distance: float = 6.0
 
 
 ## Play time, in seconds.
