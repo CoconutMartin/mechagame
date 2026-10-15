@@ -11,7 +11,7 @@ var hp: float = 1000.0
 var mesh: MeshInstance3D
 
 
-func on_hit(damage: float) -> void:
+func on_hit(damage: float, _from: Vector3 = Vector3.INF) -> void:
 	if building != null:
 		building.damage_chunk(self, damage)
 

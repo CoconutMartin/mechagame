@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="JointLimits" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/joint_limits.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+limits = Dictionary[String, Vector2]({
+"torso": Vector2(45, 35),
+"head": Vector2(45, 60),
+"thigh_L": Vector2(100, 25),
+"thigh_R": Vector2(100, 25),
+"shin_L": Vector2(120, 15),
+"shin_R": Vector2(120, 15),
+"foot_L": Vector2(50, 25),
+"foot_R": Vector2(50, 25)
+})

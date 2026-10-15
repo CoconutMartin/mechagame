@@ -2,7 +2,7 @@ class_name PartHitbox
 extends AnimatableBody3D
 ## A hit box on one part of a mech (layer 4, "hitboxes"). It moves with the part (an animatable body:
 ## physics knows its speed, so flying props and rubble bounce off it). Weapons call
-## on_hit(damage) on it, and it sends the damage to MechHealth for its part.
+## on_hit(damage, from) on it, and it sends the damage to MechHealth for its part.
 
 const LAYER := 8
 
@@ -28,6 +28,7 @@ static func create(parent: Node3D, key: String, bounds: AABB, mech_health: MechH
 	return hitbox
 
 
-func on_hit(damage: float) -> void:
+## from: where the hit came from (world position; Vector3.INF = not known).
+func on_hit(damage: float, from: Vector3 = Vector3.INF) -> void:
 	if health != null:
-		health.damage(part_key, damage)
+		health.damage(part_key, damage, from)

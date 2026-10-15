@@ -6,7 +6,7 @@ extends Node
 signal respawned
 
 @export var switcher: LoadoutSwitcher
-## Seconds from the explosion to the new mech.
+## Seconds from the explosion to the new mech (longer while a death clip plays: SkeletalDeath).
 @export var respawn_time: float = 3.0
 
 var _start := Transform3D.IDENTITY
@@ -26,6 +26,14 @@ func _watch(mech: Mech) -> void:
 
 func _on_destroyed(_cause: String) -> void:
 	_left = respawn_time
+	_wait_for_fall.call_deferred()
+
+
+## After SkeletalDeath picked its clip: wait until the fall ends.
+func _wait_for_fall() -> void:
+	var death := switcher.mech.get_node_or_null("SkeletalDeath") as SkeletalDeath if is_instance_valid(switcher.mech) else null
+	if death != null:
+		_left = maxf(_left, death.get_fall_time())
 
 
 func _process(delta: float) -> void:

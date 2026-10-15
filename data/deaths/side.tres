@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="DeathClip" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/death_clip.gd" id="1"]
+[ext_resource type="Animation" path="res://data/animations/death_side.res" id="2"]
+[ext_resource type="Curve" path="res://data/animations/death_side_travel.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+animation = ExtResource("2")
+travel = ExtResource("3")

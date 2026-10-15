@@ -135,7 +135,7 @@ func _impact(point: Vector3, normal: Vector3, body: Object, damage: float) -> vo
 	effect.global_position = point
 	effect.look_at(point + normal, Vector3.UP if absf(normal.y) < 0.99 else Vector3.FORWARD)
 	if body != null and body.has_method(&"on_hit"):
-		body.on_hit(damage)
+		body.on_hit(damage, controller.mech.global_position if controller.mech != null else Vector3.INF)
 	if body is Mech or body is TargetDummy:
 		return
 	# A scorch mark about every 0.3 s along the beam path.

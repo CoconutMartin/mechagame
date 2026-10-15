@@ -45,7 +45,7 @@ func get_lock_point() -> Vector3:
 
 
 ## Called by weapons when they hit.
-func on_hit(damage: float) -> void:
+func on_hit(damage: float, _from: Vector3 = Vector3.INF) -> void:
 	if hp <= 0.0:
 		return
 	_flash = 1.0

@@ -32,6 +32,8 @@ signal destroyed(cause: String)
 var max_hp: Dictionary = {}
 var hp: Dictionary = {}
 var is_destroyed: bool = false
+## Where the last hit came from (world position; Vector3.INF = not known). The death clip uses it.
+var last_hit_from: Vector3 = Vector3.INF
 ## Hitboxes by key.
 var hitboxes: Dictionary = {}
 ## Model nodes of each key after the split (PartBreaker and MechDeath hide or drop them).
@@ -84,10 +86,12 @@ func add_hitbox(key: String, hitbox: PartHitbox) -> void:
 	hitboxes[key] = list
 
 
-## Sends damage to a part. Parts with no HP left take no more damage.
-func damage(key: String, amount: float) -> void:
+## Sends damage to a part. Parts with no HP left take no more damage. from: where the hit came
+## from (world position; Vector3.INF = not known), kept in last_hit_from.
+func damage(key: String, amount: float, from: Vector3 = Vector3.INF) -> void:
 	if is_destroyed or not hp.has(key) or hp[key] <= 0.0 or amount <= 0.0:
 		return
+	last_hit_from = from
 	hp[key] = maxf(hp[key] - amount, 0.0)
 	damaged.emit(key, amount)
 	if hp[key] <= 0.0:

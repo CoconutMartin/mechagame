@@ -54,7 +54,7 @@ func _impact(point: Vector3, normal: Vector3, hit_body: Object = null) -> void:
 		else:
 			effect.look_at(point + normal, Vector3.FORWARD)
 	if hit_body != null and hit_body.has_method(&"on_hit"):
-		hit_body.on_hit(damage)
+		hit_body.on_hit(damage, point - velocity.normalized() * 10.0)
 	if hit_body is GroundSlab and damage >= crater_min_damage and normal.y > 0.7:
 		Crater.spawn(get_parent(), point, crater_radius * sqrt(damage / crater_min_damage), hit_body as Node)
 	if mark_scene != null and not (hit_body is PartHitbox or hit_body is TargetDummy):

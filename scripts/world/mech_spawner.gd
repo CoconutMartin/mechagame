@@ -104,6 +104,14 @@ func _spawn() -> void:
 func _on_destroyed(_cause: String) -> void:
 	mech.remove_from_group(&"lockable")
 	_respawn_left = respawn_time
+	_wait_for_fall.call_deferred()
+
+
+## After SkeletalDeath picked its death clip: the wreck stays until the fall ends.
+func _wait_for_fall() -> void:
+	var death := mech.get_node_or_null("SkeletalDeath") as SkeletalDeath if is_instance_valid(mech) else null
+	if death != null:
+		_respawn_left = maxf(_respawn_left, death.get_fall_time())
 
 
 func _process(delta: float) -> void:

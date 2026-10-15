@@ -4,6 +4,9 @@ extends Node
 ## pose freezes, and it topples over its feet like a falling tree: the way it moves, or backward if
 ## it stands still. A crash shake and dust explosion when it hits the ground. PlayerRespawner then
 ## builds a new one.
+## With a death animation (user request 2026-10-15) a Mixamo death clip plays in place of the tree
+## fall, picked by the cause and the movement (SkeletalDeathAnimation); the crash comes when the body
+## hits the ground.
 
 @export var mech: Mech
 @export var health: MechHealth
@@ -12,6 +15,10 @@ extends Node
 ## Optional. A left arm that follows the animation (its weapon or shield broke) goes to the relaxed
 ## hang when the pose freezes, so it takes no stiff frozen pose.
 @export var weapons: WeaponController
+## Optional. Plays a death clip in place of the tree fall.
+@export var animation: SkeletalDeathAnimation
+## Seconds after the death clip ends before the new mech (PlayerRespawner waits for it).
+@export var after_clip_time: float = 1.5
 ## The node that topples (the body visual, with the model in it).
 @export var visual: Node3D
 ## Seconds from standing to lying on the ground.
@@ -36,13 +43,19 @@ func _ready() -> void:
 	health.destroyed.connect(_on_destroyed)
 
 
-func _on_destroyed(_cause: String) -> void:
+func _on_destroyed(cause: String) -> void:
+	# Pick before the wreck flag: the pick reads the movement.
+	var clip: DeathClip = animation.pick(cause) if animation != null else null
 	mech.is_wrecked = true
 	tree.active = false
 	if weapons != null:
 		weapons.relax_free_left_arm()
 	if camera_shake != null:
 		camera_shake.add_shake(0.6, 0.8)
+	if clip != null:
+		animation.impact.connect(_crash_at, CONNECT_ONE_SHOT)
+		animation.start(clip)
+		return
 	# Fall direction in the mech's own space (forward is -Z).
 	var move := mech.global_basis.inverse() * Vector3(mech.velocity.x, 0.0, mech.velocity.z)
 	var direction := Vector3.BACK
@@ -62,8 +75,21 @@ func _process(delta: float) -> void:
 	var basis := Basis(_axis, deg_to_rad(fall_angle_deg) * amount * amount)
 	visual.transform = Transform3D(basis, _pivot - basis * _pivot)
 	if amount >= 1.0 and not _crashed:
-		_crashed = true
-		var level := get_tree().current_scene if get_tree().current_scene != null else mech.get_parent()
-		PartBreaker.explode_in(level, mech.global_position + mech.global_basis * (_pivot * 4.0) + Vector3.UP, crash_size)
-		if camera_shake != null:
-			camera_shake.add_shake(0.8, 1.2)
+		_crash_at(mech.global_position + mech.global_basis * (_pivot * 4.0) + Vector3.UP)
+
+
+## Seconds from death to the end of the fall (the clip, or the tree fall).
+func get_fall_time() -> float:
+	if animation != null and animation.clip != null:
+		return animation.get_length() + after_clip_time
+	return fall_time
+
+
+func _crash_at(where: Vector3) -> void:
+	if _crashed:
+		return
+	_crashed = true
+	var level := get_tree().current_scene if get_tree().current_scene != null else mech.get_parent()
+	PartBreaker.explode_in(level, where, crash_size)
+	if camera_shake != null:
+		camera_shake.add_shake(0.8, 1.2)

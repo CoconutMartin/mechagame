@@ -84,7 +84,7 @@ func is_moving() -> bool:
 	return not freeze
 
 
-func on_hit(damage: float) -> void:
+func on_hit(damage: float, _from: Vector3 = Vector3.INF) -> void:
 	if done or def == null:
 		return
 	hp -= damage

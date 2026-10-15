@@ -59,4 +59,4 @@ func _on_body_entered(other: Node) -> void:
 	if hitbox == null or _wait > 0.0 or _speed < min_speed:
 		return
 	_wait = cooldown
-	hitbox.on_hit(clampf(_body.mass * _speed * damage_per_ton_speed, min_damage, max_damage))
+	hitbox.on_hit(clampf(_body.mass * _speed * damage_per_ton_speed, min_damage, max_damage), _body.global_position)

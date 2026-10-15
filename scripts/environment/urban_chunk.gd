@@ -23,6 +23,6 @@ var damage_owner: BuildingDamage
 
 
 ## Weapons and blasts call this.
-func on_hit(damage: float) -> void:
+func on_hit(damage: float, _from: Vector3 = Vector3.INF) -> void:
 	if damage_owner != null:
 		damage_owner.damage(self, damage)

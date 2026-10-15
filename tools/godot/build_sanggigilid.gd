@@ -180,6 +180,7 @@ func _initialize() -> void:
 	death.tree = tree
 	death.camera_shake = shake
 	death.visual = visual
+	death.animation = visual.get_node_or_null("DeathAnimation") as SkeletalDeathAnimation
 	death.weapons = root.get_node("WeaponController") as WeaponController
 	var breaker := SkeletalPartBreaker.new()
 	breaker.name = "SkeletalPartBreaker"
@@ -320,6 +321,14 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	hit_animation.mech = root
 	hit_animation.health = root.get_node("MechHealth") as MechHealth
 	hit_animation.arm_rig = rig
+	# Death clips last: they replace the tree fall.
+	var death_animation := SkeletalDeathAnimation.new()
+	death_animation.name = "DeathAnimation"
+	visual.add_child(death_animation)
+	death_animation.model = model
+	death_animation.mech = root
+	death_animation.health = root.get_node("MechHealth") as MechHealth
+	death_animation.arm_rig = rig
 	var weapon_pose := weapon_animation.get_node("WeaponPose") as WeaponPose
 	weapon_pose.aim_anchor = torso.get_node("AimAnchor")
 	var bounce := WeaponBounce.new()
