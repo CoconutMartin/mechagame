@@ -29,6 +29,8 @@ extends Node
 @export var akira_release_deg: float = 3.0
 
 @export_group("Jitter")
+## Aim shake factor per weight class (light 0.25, medium 0.5, heavy 1.0).
+@export var class_tuning: AimClassTuning = AimClassTuning.new()
 ## Aim shake at full walk speed, in degrees.
 @export var walk_jitter_deg: float = 0.0
 ## Aim shake while boosting = walk jitter x this value.
@@ -149,7 +151,7 @@ func get_crosshair_screen_point() -> Vector2:
 
 
 func _get_jitter_deg() -> float:
-	return _get_base_jitter_deg() * lerpf(1.0, kneel_jitter_multiplier, mech.kneel.amount)
+	return _get_base_jitter_deg() * lerpf(1.0, kneel_jitter_multiplier, mech.kneel.amount) * (class_tuning.get_sway_factor(mech) if class_tuning != null else 1.0)
 
 
 func _get_base_jitter_deg() -> float:

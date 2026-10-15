@@ -19,6 +19,9 @@ extends Node3D
 @export var follow_sharpness: float = 14.0
 ## Radians turned per pixel of mouse movement.
 @export var mouse_sensitivity: float = 0.0025
+## Mouse sensitivity factor per weight class (light 1.5, medium 1.3, heavy 1.0). Applies to the mouse,
+## the aim keys and the free camera, and stacks with sensitivity_scale (ADS).
+@export var class_tuning: AimClassTuning = AimClassTuning.new()
 ## Vertical mouse aim speed = mouse sensitivity x this value. 0.3 = 70% slower than horizontal.
 @export var pitch_sensitivity_scale: float = 0.3
 ## Arrow keys (aim_left / aim_right / aim_up / aim_down) aim like a mouse moving this many pixels per
@@ -138,13 +141,14 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Turns a mouse movement (pixels) into free aim and camera turn. In the free camera with RMB held it
 ## turns the free camera only.
 func apply_mouse_motion(relative: Vector2) -> void:
+	var class_factor := class_tuning.get_sensitivity_factor(target as Mech) if class_tuning != null else 1.0
 	if free_camera_on and (Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_physical_key_pressed(KEY_BRACKETRIGHT)):
-		var turn_speed := mouse_sensitivity * free_camera_sensitivity_scale
+		var turn_speed := mouse_sensitivity * free_camera_sensitivity_scale * class_factor
 		_free_yaw -= relative.x * turn_speed
 		_free_pitch = clampf(_free_pitch - relative.y * turn_speed, deg_to_rad(free_camera_min_pitch_deg),
 				deg_to_rad(free_camera_max_pitch_deg))
 		return
-	var sensitivity := mouse_sensitivity * sensitivity_scale
+	var sensitivity := mouse_sensitivity * sensitivity_scale * class_factor
 	var turn := Vector2(-relative.x * sensitivity, -relative.y * sensitivity * pitch_sensitivity_scale)
 	if free_aim != null and free_camera_amount <= 0.0:
 		# The mech aim moves first. The camera turns by the part past the box edge.

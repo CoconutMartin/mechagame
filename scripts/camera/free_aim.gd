@@ -21,6 +21,9 @@ extends Node
 
 ## Optional. The mech, for the sway while moving.
 @export var mech: Mech
+## Sway factor per weight class (light 0.25, medium 0.5, heavy 1.0). Scales every self-moving part of
+## the ring: shot and booster jitter, momentum drag, sway. The recoil kick is not scaled.
+@export var class_tuning: AimClassTuning = AimClassTuning.new()
 
 ## Optional. Kneeling steadies the aim.
 @export var kneel: MechKneel
@@ -133,6 +136,8 @@ func _physics_process(delta: float) -> void:
 	var amount := _jitter + _get_booster_jitter()
 	var shake := Vector2(_noise.get_noise_2d(_time, 0.0), _noise.get_noise_2d(_time, 50.0)) * 2.0 * amount
 	shake += _get_drag(delta)
+	var sway_factor := class_tuning.get_sway_factor(mech) if class_tuning != null else 1.0
+	shake *= sway_factor
 	_smoothed = _smoothed.lerp(offset, 1.0 - exp(-follow_speed * delta))
 	if unsteady <= 0.0:
 		_spring_x = AimSpring.new(_smoothed.x)
@@ -144,7 +149,7 @@ func _physics_process(delta: float) -> void:
 	_spring_x.update(deg_to_rad(offset.x), unsteady_frequency, unsteady_damping, limit, delta)
 	_spring_y.update(deg_to_rad(offset.y), unsteady_frequency, unsteady_damping, limit, delta)
 	_sway_time += delta * unsteady_sway_speed
-	var sway := Vector2(_noise.get_noise_2d(_sway_time, 100.0), _noise.get_noise_2d(_sway_time, 150.0)) * 2.0 * unsteady_sway_deg
+	var sway := Vector2(_noise.get_noise_2d(_sway_time, 100.0), _noise.get_noise_2d(_sway_time, 150.0)) * 2.0 * unsteady_sway_deg * sway_factor
 	var swing := Vector2(rad_to_deg(_spring_x.value), rad_to_deg(_spring_y.value))
 	aim_offset = _smoothed.lerp(swing + sway, unsteady) + shake
 
