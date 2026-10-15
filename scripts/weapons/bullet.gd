@@ -25,6 +25,25 @@ var damage: float = 100.0
 var exclude: Array[RID] = []
 
 var _age: float = 0.0
+## Meters flown since the muzzle.
+var _travelled: float = 0.0
+## The tracer streak behind the bullet (scene: a box from the bullet back along +Z).
+@onready var _tracer: Node3D = get_node_or_null("Tracer")
+@onready var _tracer_length: float = _tracer.position.z * 2.0 if _tracer != null else 0.0
+
+
+func _ready() -> void:
+	_update_tracer()
+
+
+## The streak grows out of the muzzle as the bullet flies (user report 2026-10-15: at the muzzle the
+## full 10.5 m streak reached back through the gun, so bullets seemed to start behind it).
+func _update_tracer() -> void:
+	if _tracer == null or _tracer_length <= 0.0:
+		return
+	var amount := clampf(_travelled / _tracer_length, 0.01, 1.0)
+	_tracer.scale.z = amount
+	_tracer.position.z = _tracer_length * 0.5 * amount
 
 
 func _physics_process(delta: float) -> void:
@@ -41,6 +60,8 @@ func _physics_process(delta: float) -> void:
 		_impact(hit.position, hit.normal, hit.collider)
 		return
 	global_position = to
+	_travelled += from.distance_to(to)
+	_update_tracer()
 	look_at(to + velocity, Vector3.UP if absf(velocity.normalized().y) < 0.99 else Vector3.FORWARD)
 
 

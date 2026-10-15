@@ -2,8 +2,9 @@ class_name BeamRifleWeapon
 extends MechWeapon
 ## A two-hand beam sniper rifle. RMB aims down sight (zoom). Hold LMB to charge (charge_time to
 ## full), release LMB to fire. A charged shot is a sustained beam (like a Kamehameha): it keeps
-## firing along the mech aim for up to discharge_time seconds (full charge), hits every tick, pushes
-## the aim up and shakes the screen. Damage and beam width grow with the charge. A quick tap fires
+## firing along the mech aim for up to discharge_time seconds (full charge), hits every tick and
+## shakes the screen; the aim kicks up when the beam ends (user report 2026-10-15: a kick while the
+## beam fired lifted it off the target, so the charged shot did almost no damage). Damage and beam width grow with the charge. A quick tap fires
 ## a short shot. Uses heat: overheats after a few shots, then cools to zero.
 
 const BEAM := preload("res://scenes/effects/beam_shot.tscn")
@@ -37,6 +38,8 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 @export var emitter_path: NodePath = ^"Emitter"
 
 ## 0 to 1 while LMB is held.
+## Aim kick of the shot, given when the beam ends.
+var _end_kick: float = 0.0
 var charge: float = 0.0
 ## Seconds left in the beam discharge. 0 = not firing.
 var discharge_left: float = 0.0
@@ -90,7 +93,8 @@ func _start_discharge() -> void:
 	_beam.hold = true
 	controller.get_world().add_child(_beam)
 	var kick := lerpf(1.0, full_charge_kick, charge)
-	controller.mech_aim.kick_aim(data.recoil_up_deg * kick * 0.5, data.recoil_side_deg * kick * 0.5, kick)
+	# The aim kick waits for the end of the beam (_end_kick), so the beam stays on the target.
+	_end_kick = kick
 	if controller.camera_shake != null:
 		controller.camera_shake.add_shake(data.shake_trauma * kick * release_shake, data.shake_kick * kick * release_shake)
 	fired.emit()
@@ -116,14 +120,16 @@ func _update_discharge(delta: float) -> void:
 			# Damage per tick adds up to the shot damage x power over the full beam time.
 			var share := tick_time / maxf(discharge_time, tick_time)
 			_impact(hit.position, hit.normal, hit.collider, data.damage * _power * share * 2.0)
-		# The beam pushes the aim up a little and shakes the view while it fires.
+		# The beam shakes the view while it fires.
 		var kick := _power * discharge_shake
-		controller.mech_aim.kick_aim(data.recoil_up_deg * 0.12 * kick, data.recoil_side_deg * 0.2 * kick, 0.3 * kick)
 		if controller.camera_shake != null:
 			controller.camera_shake.add_shake(0.03 * kick, 0.02 * kick)
 	if discharge_left <= 0.0:
 		discharge_left = 0.0
 		controller.torso_pose.action_shake = 0.0
+		if _end_kick > 0.0:
+			controller.mech_aim.kick_aim(data.recoil_up_deg * _end_kick * 0.5, data.recoil_side_deg * _end_kick * 0.5, _end_kick)
+			_end_kick = 0.0
 		if is_instance_valid(_beam):
 			_beam.release()
 		_beam = null

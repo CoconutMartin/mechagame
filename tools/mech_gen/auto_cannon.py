@@ -97,7 +97,7 @@ def res(path, scene, props):
 
 
 # Slow heavy shots.
-FIRING = {"kind": 0, "fire_rate": 1.5, "damage": 220.0, "projectile_speed": 450.0, "spread_deg": 0.3,
+FIRING = {"kind": 0, "fire_rate": 1.5, "damage": 165.0, "projectile_speed": 450.0, "spread_deg": 0.3,
           "recoil_up_deg": 4.0, "recoil_side_deg": 1.5, "shake_trauma": 0.12, "shake_kick": 0.18,
           "magazine": 8, "reload_time": 4.5}
 
