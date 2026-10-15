@@ -1,0 +1,113 @@
+[gd_resource type="Resource" script_class="HpIndicatorLayout" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hp_indicator_layout.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/data/hp_indicator_spot.gd" id="2"]
+
+[sub_resource type="Resource" id="head"]
+script = ExtResource("2")
+key = "Head"
+bone = &"head"
+length = 0.14
+height = 0.14
+cells = 1
+cell_round = 0.02
+offset = Vector2(0, 0.15)
+fit_to_panel = false
+
+[sub_resource type="Resource" id="torso_c"]
+script = ExtResource("2")
+key = "Torso C"
+bone = &"torso"
+length = 0.09
+height = 0.09
+cells = 1
+cell_round = 0.01
+frame_scale = 0.4
+cell_margin = 0.011
+offset = Vector2(0, 0.75)
+fit_to_panel = false
+
+[sub_resource type="Resource" id="torso_r"]
+script = ExtResource("2")
+key = "Torso R"
+bone = &"torso"
+length = 0.09
+height = 0.09
+cells = 1
+cell_round = 0.01
+frame_scale = 0.4
+cell_margin = 0.011
+offset = Vector2(-0.18, 0.6)
+fit_to_panel = false
+
+[sub_resource type="Resource" id="torso_l"]
+script = ExtResource("2")
+key = "Torso L"
+bone = &"torso"
+length = 0.09
+height = 0.09
+cells = 1
+cell_round = 0.01
+frame_scale = 0.4
+cell_margin = 0.011
+offset = Vector2(0.18, 0.6)
+fill_to_left = true
+fit_to_panel = false
+
+[sub_resource type="Resource" id="arm_r"]
+script = ExtResource("2")
+key = "Arm R"
+bone = &"upper_arm_R"
+length = 0.09
+height = 0.09
+cells = 1
+cell_round = 0.01
+frame_scale = 0.4
+cell_margin = 0.011
+offset = Vector2(-0.4, 0.6)
+fit_to_panel = false
+
+[sub_resource type="Resource" id="arm_l"]
+script = ExtResource("2")
+key = "Arm L"
+bone = &"upper_arm_L"
+length = 0.09
+height = 0.09
+cells = 1
+cell_round = 0.01
+frame_scale = 0.4
+cell_margin = 0.011
+offset = Vector2(0.4, 0.6)
+fill_to_left = true
+fit_to_panel = false
+
+[sub_resource type="Resource" id="leg_r"]
+script = ExtResource("2")
+key = "Leg R"
+bone = &"thigh_R"
+length = 0.09
+height = 0.09
+cells = 1
+cell_round = 0.01
+frame_scale = 0.4
+cell_margin = 0.011
+offset = Vector2(0, 0.85)
+fit_to_panel = false
+
+[sub_resource type="Resource" id="leg_l"]
+script = ExtResource("2")
+key = "Leg L"
+bone = &"thigh_L"
+length = 0.09
+height = 0.09
+cells = 1
+cell_round = 0.01
+frame_scale = 0.4
+cell_margin = 0.011
+offset = Vector2(0, 0.85)
+fill_to_left = true
+fit_to_panel = false
+
+[resource]
+script = ExtResource("1")
+spots = Array[ExtResource("2")]([SubResource("head"), SubResource("torso_c"), SubResource("torso_r"), SubResource("torso_l"), SubResource("arm_r"), SubResource("arm_l"), SubResource("leg_r"), SubResource("leg_l")])
