@@ -22,6 +22,11 @@ extends Node3D
 ## Mouse sensitivity factor per weight class (light 1.5, medium 1.3, heavy 1.0). Applies to the mouse,
 ## the aim keys and the free camera, and stacks with sensitivity_scale (ADS).
 @export var class_tuning: AimClassTuning = AimClassTuning.new()
+## Largest lead of the camera aim over the torso, in degrees. The torso turns slowly (Mech.turn_speed_deg):
+## mouse motion past this lead is dropped, so the view stops when the mouse stops (user report
+## 2026-10-15: "the camera is fighting me"; before, the aim ran up to 135 degrees ahead and the view
+## kept turning for seconds).
+@export var max_torso_lead_deg: float = 15.0
 ## Vertical mouse aim speed = mouse sensitivity x this value. 0.3 = 70% slower than horizontal.
 @export var pitch_sensitivity_scale: float = 0.3
 ## Arrow keys (aim_left / aim_right / aim_up / aim_down) aim like a mouse moving this many pixels per
@@ -166,6 +171,7 @@ func _process(delta: float) -> void:
 		var kick := free_aim.take_camera_kick() * deg_to_rad(1.0)
 		_target_yaw += kick.x
 		_target_pitch = clampf(_target_pitch + kick.y, deg_to_rad(min_pitch_deg), deg_to_rad(max_pitch_deg))
+	_limit_torso_lead()
 	var weight := 1.0 - exp(-follow_sharpness * delta)
 	global_position = global_position.lerp(_goal_position(), weight)
 	var max_lag := deg_to_rad(max_aim_lag_deg)
@@ -194,6 +200,19 @@ func _process(delta: float) -> void:
 	var blend := smoothstep(0.0, 1.0, free_camera_amount)
 	rotation = Vector3(0.0, lerp_angle(view_yaw, _free_yaw, blend), 0.0)
 	_pitch_node.rotation = Vector3(lerpf(pitch, _free_pitch, blend), 0.0, 0.0)
+
+
+## Keeps the camera aim within max_torso_lead_deg of the torso aim (not while the mech is down: the
+## camera follows the mouse freely then).
+func _limit_torso_lead() -> void:
+	var mech := target as Mech
+	if mech == null or mech.is_fallen or mech.is_wrecked or max_torso_lead_deg <= 0.0:
+		return
+	var torso_yaw := mech.get_aim_yaw()
+	var lead := wrapf(_target_yaw - torso_yaw, -PI, PI)
+	var limit := deg_to_rad(max_torso_lead_deg)
+	if absf(lead) > limit:
+		_target_yaw = torso_yaw + signf(lead) * limit
 
 
 func _goal_position() -> Vector3:
