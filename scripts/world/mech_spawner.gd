@@ -66,6 +66,7 @@ func _remove_mech() -> void:
 	if is_instance_valid(mech):
 		# Free the name now, so the new mech gets it.
 		mech.name = "OldMech"
+		mech.leave_mech_layer()
 		mech.queue_free()
 	mech = null
 

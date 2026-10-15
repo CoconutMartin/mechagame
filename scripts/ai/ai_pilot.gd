@@ -238,7 +238,8 @@ func _fire(distance: float, sees: bool) -> void:
 	if weapon is BeamRifleWeapon:
 		var rifle := weapon as BeamRifleWeapon
 		if _charge_goal < 0.0:
-			_charge_goal = randf_range(charge_release_min, charge_release_max)
+			# Above 0, so a release goal of 0 still presses the trigger once.
+			_charge_goal = maxf(randf_range(charge_release_min, charge_release_max), 0.05)
 		# Start the charge when ready; once charging, hold until the goal charge and a clear shot.
 		var charging := rifle.charge > 0.0
 		input.left_fire_held = (ready or charging) and not (ready and rifle.charge >= _charge_goal) and rifle.discharge_left <= 0.0

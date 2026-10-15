@@ -57,6 +57,7 @@ func rebuild(loadout: Loadout, place: Transform3D) -> void:
 		builder.set(&"loadout", loadout)
 	new_mech.name = mech.name
 	mech.name = "OldMech"
+	mech.leave_mech_layer()
 	mech.queue_free()
 	parent.add_child(new_mech)
 	parent.move_child(new_mech, index)

@@ -235,11 +235,22 @@ var _settle_sign: float = 0.0
 func _ready() -> void:
 	_aim_yaw = rotation.y
 	set_collision_mask_value(2, collides_with_mechs)
+
+
+## Called before this mech is freed for a replacement at the same place: it stops blocking mechs
+## now, so it does not push the new one away in the frame both exist.
+func leave_mech_layer() -> void:
+	set_collision_layer_value(2, false)
+	set_collision_mask_value(2, false)
 	footsteps.footstep.connect(_on_footstep)
 
 
 func _physics_process(delta: float) -> void:
 	if is_wrecked or is_fallen:
+		# A wreck lies flat but its body stays upright: it leaves the mech layer, so it blocks no one.
+		if is_wrecked and get_collision_layer_value(2):
+			set_collision_layer_value(2, false)
+			set_collision_mask_value(2, false)
 		_update_wreck(delta)
 		return
 	_previous_aim_yaw = _aim_yaw
