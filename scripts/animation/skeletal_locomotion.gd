@@ -5,7 +5,8 @@ extends Node
 ## 9.1 m/s, so a walking mech plays it alone). Every cycle starts with the left foot
 ## landing, so they share one stride phase; the phase moves by speed / stride length, which keeps the
 ## feet with the ground at any speed. Head_Scan plays on the head bone on top of everything.
-## Each foot landing sends the footstep signal (camera shake).
+## Each foot landing sends the footstep signal (camera shake). It also adds SkeletalAnklePitch (heel
+## strike and toe-off) to the skeleton.
 
 ## A foot lands (strength 0.4 to 1, from the speed).
 signal footstep(strength: float)
@@ -14,6 +15,10 @@ signal footstep(strength: float)
 @export var tree: AnimationTree
 ## Optional. Hip turn: while it steps backward the cycles play in reverse.
 @export var hip_turn: SkeletalHipTurn
+## Optional. Ankle pitch while walking: if empty, a SkeletalAnklePitch with its defaults is added to the skeleton.
+@export var ankle_pitch: SkeletalAnklePitch
+## Adds the ankle pitch when no ankle_pitch is set.
+@export var add_ankle_pitch: bool = true
 ## Locomotion cycles from slow to fast, and the ground speed each one was made for in Blender (m/s;
 ## this sets its stride length).
 @export var cycles: Array[StringName] = [&"Walk", &"Slow_Run", &"Jog", &"biped_run_full"]
@@ -92,6 +97,20 @@ func _ready() -> void:
 	_root.connect_node(&"output", 0, &"head")
 	tree.tree_root = _root
 	tree.active = true
+	if ankle_pitch == null and add_ankle_pitch:
+		_add_ankle_pitch()
+
+
+## Adds SkeletalAnklePitch under the skeleton. Deferred, so it comes after the other skeleton modifiers
+## (they move to the skeleton in the same way) and runs last.
+func _add_ankle_pitch() -> void:
+	var skeleton := tree.get_parent().find_child("Skeleton3D", true, false) as Skeleton3D
+	if skeleton == null:
+		return
+	ankle_pitch = SkeletalAnklePitch.new()
+	ankle_pitch.name = "AnklePitch"
+	ankle_pitch.mech = mech
+	skeleton.add_child.call_deferred(ankle_pitch)
 
 
 func _process(delta: float) -> void:
