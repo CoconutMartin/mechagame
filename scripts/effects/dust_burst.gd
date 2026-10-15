@@ -54,7 +54,8 @@ func _ready() -> void:
 	material.albedo_texture = DamageSmoke._puff_texture()
 	quad.material = material
 	mesh = quad
+	# Before register (it reads the opacity), so the look is built once.
+	set_meta(&"opacity", clampf(snappedf(opacity, PixelSmoke.OPACITY_STEP), 0.0, 1.0))
 	PixelSmoke.register(self)
-	PixelSmoke.set_opacity(self, opacity)
 	emitting = true
 	finished.connect(queue_free)

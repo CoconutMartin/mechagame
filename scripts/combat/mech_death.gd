@@ -50,6 +50,7 @@ func _on_destroyed(cause: String) -> void:
 		if MechHealth._has_mesh(weapon):
 			var push := mech.velocity - mech.global_basis.z * weapon_drop_push
 			Debris.drop([weapon] as Array[Node3D], breaker.world(), push)
+	weapons.relax_free_left_arm()
 	if camera_shake != null:
 		camera_shake.add_shake(0.6, 0.8)
 	match cause:

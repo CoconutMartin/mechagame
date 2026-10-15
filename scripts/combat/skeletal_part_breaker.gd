@@ -19,9 +19,10 @@ extends Node
 @export var camera_shake: CameraShake
 ## Part HP fraction where smoke starts.
 @export_range(0.0, 1.0) var smoke_below: float = 0.5
-## Smoke opacity when it starts (at smoke_below), and the HP fraction where it is fully solid
-## (user request 2026-10-15: an almost broken part smokes with no transparency).
+## Smoke opacity when it starts, at smoke_below (user request 2026-10-15: 50%).
 @export_range(0.0, 1.0) var smoke_start_opacity: float = 0.5
+## Part HP fraction at and below which the smoke is fully solid (an almost broken part smokes with no
+## transparency).
 @export_range(0.0, 1.0) var smoke_solid_below: float = 0.1
 ## One leg destroyed: walk speed x this value.
 @export var one_leg_speed_scale: float = 0.4
@@ -49,18 +50,21 @@ func _on_damaged(key: String, _amount: float) -> void:
 		return
 	var place := _part_place(key)
 	if not place.is_empty():
-		var smoke := DamageSmoke.create(place[0], place[1])
-		smoke.set_opacity(_smoke_opacity(fraction))
-		_smoking[key] = smoke
+		_smoking[key] = DamageSmoke.create(place[0], place[1], false, _smoke_opacity(fraction))
 
 
 ## Smoke opacity for a part HP fraction: smoke_start_opacity at smoke_below, solid at smoke_solid_below.
 func _smoke_opacity(fraction: float) -> float:
+	if smoke_below <= smoke_solid_below:
+		return 1.0 if fraction <= smoke_solid_below else smoke_start_opacity
 	var t := inverse_lerp(smoke_below, smoke_solid_below, fraction)
 	return lerpf(smoke_start_opacity, 1.0, clampf(t, 0.0, 1.0))
 
 
 func _on_part_destroyed(key: String) -> void:
+	# A part killed in one hit skips the last damaged update: its light smoke goes solid now.
+	if _smoking.has(key) and is_instance_valid(_smoking[key]):
+		(_smoking[key] as DamageSmoke).set_opacity(1.0)
 	if camera_shake != null:
 		camera_shake.add_shake(0.25, 0.3)
 	var center := get_center(key)

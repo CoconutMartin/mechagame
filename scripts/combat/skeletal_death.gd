@@ -9,6 +9,9 @@ extends Node
 @export var health: MechHealth
 @export var tree: AnimationTree
 @export var camera_shake: CameraShake
+## Optional. A left arm that follows the animation (its weapon or shield broke) goes to the relaxed
+## hang when the pose freezes, so it takes no stiff frozen pose.
+@export var weapons: WeaponController
 ## The node that topples (the body visual, with the model in it).
 @export var visual: Node3D
 ## Seconds from standing to lying on the ground.
@@ -36,6 +39,8 @@ func _ready() -> void:
 func _on_destroyed(_cause: String) -> void:
 	mech.is_wrecked = true
 	tree.active = false
+	if weapons != null:
+		weapons.relax_free_left_arm()
 	if camera_shake != null:
 		camera_shake.add_shake(0.6, 0.8)
 	# Fall direction in the mech's own space (forward is -Z).

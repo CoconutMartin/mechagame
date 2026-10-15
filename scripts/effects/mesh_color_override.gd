@@ -13,7 +13,9 @@ extends Node
 @export var color: Color = Color(0.035, 0.037, 0.04)
 ## Optional texture (on the mesh's own UVs). Empty: plain color.
 @export var texture: Texture2D
+## Metal look of the new material (0 = paint, 1 = bare metal).
 @export_range(0.0, 1.0) var metallic: float = 0.6
+## Surface roughness of the new material (0 = mirror, 1 = matte).
 @export_range(0.0, 1.0) var roughness: float = 0.4
 
 

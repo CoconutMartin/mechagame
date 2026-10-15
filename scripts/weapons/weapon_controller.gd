@@ -171,9 +171,16 @@ func _free_left_target() -> Node3D:
 
 ## Left hand target when what it held broke (a two-hand weapon or the shield). Rigged mechs: none, so
 ## the left arm moves with the animation like the right arm after its weapon breaks (user request
-## 2026-10-15: no limp hang).
+## 2026-10-15: no limp hang). On death relax_free_left_arm puts it in the relaxed hang.
 func _lost_left_target() -> Node3D:
 	return null if animate_free_left_arm else left_hand
+
+
+## The mech is wrecked (MechDeath froze the animation): a left arm that follows the animation goes
+## to the relaxed hang, so it takes no stiff frozen pose (user request 2026-10-15).
+func relax_free_left_arm() -> void:
+	if arm_ik_left != null and arm_ik_left.target == null:
+		arm_ik_left.target = _free_left_target()
 
 
 ## Model nodes of the right weapon (a forearm weapon's model sits on the forearm: get_model()).

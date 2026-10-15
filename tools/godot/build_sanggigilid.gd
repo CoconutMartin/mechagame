@@ -180,6 +180,7 @@ func _initialize() -> void:
 	death.tree = tree
 	death.camera_shake = shake
 	death.visual = visual
+	death.weapons = root.get_node("WeaponController") as WeaponController
 	var breaker := SkeletalPartBreaker.new()
 	breaker.name = "SkeletalPartBreaker"
 	root.add_child(breaker)

@@ -476,13 +476,14 @@ health = NodePath("../MechHealth")
 model = NodePath("../Visual/Model")
 parts = ExtResource("40_v8305")
 
-[node name="SkeletalDeath" type="Node" parent="." unique_id=1252362132 node_paths=PackedStringArray("mech", "health", "tree", "camera_shake", "visual")]
+[node name="SkeletalDeath" type="Node" parent="." unique_id=1252362132 node_paths=PackedStringArray("mech", "health", "tree", "camera_shake", "visual", "weapons")]
 script = ExtResource("41_ghe4c")
 mech = NodePath("..")
 health = NodePath("../MechHealth")
 tree = NodePath("../Visual/Model/AnimationTree")
 camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
 visual = NodePath("../Visual")
+weapons = NodePath("../WeaponController")
 
 [node name="SkeletalPartBreaker" type="Node" parent="." unique_id=889367434 node_paths=PackedStringArray("mech", "health", "hitboxes", "weapons", "camera_shake")]
 script = ExtResource("42_iwtk8")

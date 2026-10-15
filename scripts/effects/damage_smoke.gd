@@ -11,9 +11,12 @@ func set_opacity(value: float) -> void:
 	PixelSmoke.set_opacity(self, value)
 
 
-static func create(parent: Node3D, offset: Vector3 = Vector3.ZERO, is_heavy: bool = false) -> DamageSmoke:
+static func create(parent: Node3D, offset: Vector3 = Vector3.ZERO, is_heavy: bool = false,
+		opacity: float = 1.0) -> DamageSmoke:
 	var smoke := DamageSmoke.new()
 	smoke.heavy = is_heavy
+	# Before _ready (PixelSmoke.register reads it), so the look is built once.
+	smoke.set_meta(&"opacity", clampf(snappedf(opacity, PixelSmoke.OPACITY_STEP), 0.0, 1.0))
 	smoke.position = offset
 	parent.add_child(smoke)
 	return smoke

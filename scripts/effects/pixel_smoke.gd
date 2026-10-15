@@ -11,6 +11,8 @@ extends RefCounted
 
 const GROUP := &"smoke_particles"
 const PUFF_PIXELS := 16
+## Opacity changes smaller than this are not applied (each change builds the look again).
+const OPACITY_STEP := 0.05
 
 static var _puff: ImageTexture
 
@@ -29,9 +31,9 @@ static func apply_all(tree: SceneTree, on: bool) -> void:
 		apply(node as CPUParticles3D, on)
 
 
-## Sets an emitter's opacity (0 = clear, 1 = solid) and applies its look again.
+## Sets an emitter's opacity (0 = clear, 1 = solid, in OPACITY_STEP steps) and applies its look again.
 static func set_opacity(particles: CPUParticles3D, opacity: float) -> void:
-	opacity = clampf(opacity, 0.0, 1.0)
+	opacity = clampf(snappedf(opacity, OPACITY_STEP), 0.0, 1.0)
 	if is_equal_approx(float(particles.get_meta(&"opacity", 1.0)), opacity):
 		return
 	particles.set_meta(&"opacity", opacity)
