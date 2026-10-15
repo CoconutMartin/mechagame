@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/shotgun.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Shotgun"
+weight_t = 2.5
+hp = 250.0
+kind = 0
+slot = 0
+fire_rate = 0.9091
+damage = 9.0
+pellets = 8
+projectile_speed = 350.0
+spread_deg = 6.0
+recoil_up_deg = 3.0
+recoil_side_deg = 1.2
+model_kick_back = 0.6
+model_kick_up_deg = 8.0
+shake_trauma = 0.045
+shake_kick = 0.065
+magazine = 6
+reload_time = 3.0
+rest_transform = Transform3D(1, 0, -0, 0, 0.70711, 0.70711, 0, -0.70711, 0.70711, 3.735, 1.16144, -0.92942)
+aim_anchor = Vector3(3.7350, 1.7829, -0.6708)
+right_pole_rest = Vector3(0.4000, -1.0000, 0.5000)
+right_pole_aim = Vector3(0.4000, -1.0000, 0.5000)
+scene = ExtResource("scene")

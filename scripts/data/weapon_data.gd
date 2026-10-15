@@ -22,6 +22,8 @@ enum Slot { ARM, BACK }
 @export var projectile_speed: float = 400.0
 ## Random spread cone, in degrees.
 @export var spread_deg: float = 0.4
+## Bullets per shot (guns). Each pellet has its own spread and does `damage`. One shot uses one ammo.
+@export var pellets: int = 1
 ## Range in meters (beams and lock-on).
 @export var range_m: float = 1500.0
 
@@ -92,3 +94,6 @@ enum Slot { ARM, BACK }
 ## its blocking place all the time (user's arm drawing, 2026-10-12).
 @export var shield_hand: Vector3 = Vector3(-2.1, -0.82, -1.95)
 
+## True: a mech that carries this shield cannot dodge (no dodge hop, step or roll). The Hex Shield is
+## too big (user rule 2026-10-15).
+@export var blocks_dodge: bool = false

@@ -1,7 +1,7 @@
 class_name GunWeapon
 extends MechWeapon
-## A solid gun (heavy rifle). Fires bullets toward the mech aim point while the trigger is held and
-## the weapon is raised. Uses ammo; reloads when empty (or with R).
+## A solid gun (heavy rifle, SMG, shotgun). Fires `data.pellets` bullets per shot toward the mech aim
+## point while the trigger is held and the weapon is raised. Uses ammo; reloads when empty (or with R).
 
 const BULLET := preload("res://scenes/weapons/bullet.tscn")
 
@@ -24,14 +24,15 @@ func _fire() -> void:
 	var aim := (controller.mech_aim.aim_point - origin).normalized()
 	if aim.is_zero_approx():
 		aim = -_muzzle.global_basis.z
-	var direction := MechWeapon.spread_direction(aim, data.spread_deg)
-	var bullet := BULLET.instantiate() as Bullet
-	bullet.velocity = direction * data.projectile_speed
-	bullet.exclude = controller.mech.get_hit_exclude()
-	bullet.damage = data.damage
-	controller.get_world().add_child(bullet)
-	bullet.global_position = origin
-	bullet.look_at(origin + direction, Vector3.UP if absf(direction.y) < 0.99 else Vector3.FORWARD)
+	for _i in maxi(data.pellets, 1):
+		var direction := MechWeapon.spread_direction(aim, data.spread_deg)
+		var bullet := BULLET.instantiate() as Bullet
+		bullet.velocity = direction * data.projectile_speed
+		bullet.exclude = controller.mech.get_hit_exclude()
+		bullet.damage = data.damage
+		controller.get_world().add_child(bullet)
+		bullet.global_position = origin
+		bullet.look_at(origin + direction, Vector3.UP if absf(direction.y) < 0.99 else Vector3.FORWARD)
 	if _flash != null:
 		_flash.flash()
 	_after_shot()
