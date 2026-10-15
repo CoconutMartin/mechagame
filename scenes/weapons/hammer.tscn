@@ -1,0 +1,39 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/melee_weapon.gd" id="1"]
+
+[sub_resource type="StandardMaterial3D" id="steel"]
+albedo_color = Color(0.32, 0.33, 0.35, 1)
+metallic = 0.6
+roughness = 0.5
+
+[sub_resource type="StandardMaterial3D" id="grip"]
+albedo_color = Color(0.2, 0.17, 0.12, 1)
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="handle"]
+material = SubResource("grip")
+top_radius = 0.22
+bottom_radius = 0.22
+height = 6.0
+radial_segments = 8
+
+[sub_resource type="BoxMesh" id="head"]
+material = SubResource("steel")
+size = Vector3(1.4, 2.6, 1.4)
+
+[node name="Hammer" type="Node3D"]
+script = ExtResource("1")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="Handle" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.25, 0.88, 1.5)
+mesh = SubResource("handle")
+
+[node name="Head" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.88, 4.6)
+mesh = SubResource("head")
+
+[node name="StrikePoint" type="Marker3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.88, 4.6)

@@ -17,6 +17,8 @@
 [ext_resource type="Resource" path="res://data/weapons/smg.tres" id="r13"]
 [ext_resource type="Resource" path="res://data/weapons/warden_shield.tres" id="r14"]
 [ext_resource type="Resource" path="res://data/weapons/small_shield.tres" id="r15"]
+[ext_resource type="Resource" path="res://data/weapons/fist.tres" id="melee_fist"]
+[ext_resource type="Resource" path="res://data/weapons/hammer.tres" id="melee_hammer"]
 [ext_resource type="Resource" path="res://data/weapons/missile_pod_l.tres" id="r16"]
 [ext_resource type="Resource" path="res://data/weapons/auto_cannon_shoulder.tres" id="r17"]
 [ext_resource type="Resource" path="res://data/weapons/missile_pod_r.tres" id="r18"]
@@ -49,8 +51,8 @@ legs = Array[LegPart]([ExtResource("r4")])
 boosters = Array[BoosterPart]([ExtResource("r5")])
 generators = Array[GeneratorPart]([ExtResource("r6")])
 fcs = Array[FcsPart]([ExtResource("r7")])
-weapons_right = Array[WeaponData]([ExtResource("r8"), ExtResource("r9"), ExtResource("r10"), ExtResource("r11"), ExtResource("r12"), ExtResource("r13")])
-weapons_left = Array[WeaponData]([ExtResource("r14"), ExtResource("r15")])
+weapons_right = Array[WeaponData]([ExtResource("r8"), ExtResource("r9"), ExtResource("r10"), ExtResource("r11"), ExtResource("r12"), ExtResource("r13"), ExtResource("melee_fist"), ExtResource("melee_hammer")])
+weapons_left = Array[WeaponData]([ExtResource("r14"), ExtResource("r15"), ExtResource("melee_fist")])
 backs_left = Array[WeaponData]([ExtResource("r16"), ExtResource("r17")])
 backs_right = Array[WeaponData]([ExtResource("r18"), ExtResource("r17")])
 plates = Array[PlateData]([ExtResource("r19"), ExtResource("r20"), ExtResource("r21"), ExtResource("r22"), ExtResource("r23"), ExtResource("r24"), ExtResource("r25"), ExtResource("r26"), ExtResource("r27"), ExtResource("r28")])

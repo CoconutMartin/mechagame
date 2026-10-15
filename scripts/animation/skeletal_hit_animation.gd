@@ -19,6 +19,9 @@ extends SkeletonModifier3D
 @export var health: MechHealth
 ## Moves the torso frame (weapon, shield) with the body after the clip turned it.
 @export var arm_rig: SkeletalArmRig
+## Optional. No hit clip starts while a melee attack plays (user decision 2026-10-15: the attack
+## keeps its step; stuns and knock-downs still end it).
+@export var melee: SkeletalMeleeAnimation
 ## Smallest first.
 @export var clips: Array[HitClip] = [
 	preload("res://data/hits/small.tres"),
@@ -27,6 +30,10 @@ extends SkeletonModifier3D
 ]
 ## How far the clip can bend and twist each joint (the clip pose is held inside these limits).
 @export var limits: JointLimits = preload("res://data/mechs/sanggigilid_joint_limits.tres")
+## Strength of the flinch from the environment (walking through buildings, flying props and debris:
+## hit kind &"environment"), 0 to 1 of a normal hit reaction (user request 2026-10-15: about 4%).
+## These flinches do not stop the legs.
+@export_range(0.0, 1.0) var environment_flinch: float = 0.04
 ## Seconds after a clip in which a hit of the same size or smaller plays no clip.
 @export var cooldown: float = 0.5
 
@@ -39,6 +46,10 @@ var clip: HitClip
 var _time: float = 0.0
 ## Damage taken this frame.
 var _pending: float = 0.0
+## Environment damage taken this frame (a weak flinch, see environment_flinch).
+var _pending_environment: float = 0.0
+## True while the clip is an environment flinch.
+var _environment_only: bool = false
 var _cooldown_left: float = 0.0
 ## Weight when a dodge cut the clip; it fades out over the clip's blend_out.
 var _cut_weight: float = 0.0
@@ -64,7 +75,10 @@ func _ready() -> void:
 
 
 func _on_damaged(_key: String, amount: float) -> void:
-	_pending += amount
+	if health.last_hit_kind == &"environment":
+		_pending_environment += amount
+	else:
+		_pending += amount
 
 
 ## The biggest clip for this damage (null when it is too small for every clip).
@@ -87,8 +101,11 @@ func _physics_process(delta: float) -> void:
 	if is_playing and mech.dodge != null and mech.dodge.is_dodging:
 		_cut()
 	if _pending > 0.0:
-		_try_start(pick(_pending))
-		_pending = 0.0
+		_try_start(pick(_pending), false)
+	elif _pending_environment > 0.0:
+		_try_start(pick(_pending_environment), true)
+	_pending = 0.0
+	_pending_environment = 0.0
 	if not is_playing:
 		return
 	if mech.is_fallen:
@@ -99,19 +116,26 @@ func _physics_process(delta: float) -> void:
 		_time = clip.animation.length
 		_end()
 		return
-	# Full body: the legs stop.
-	mech.root_motion_active = true
-	mech.root_motion_velocity = Vector3.ZERO
+	# Full body: the legs stop (not for a flinch from the environment).
+	if not _environment_only:
+		mech.root_motion_active = true
+		mech.root_motion_velocity = Vector3.ZERO
 
 
-func _try_start(chosen: HitClip) -> void:
+## environment: the damage came from the environment (a weak flinch; a real hit replaces it).
+func _try_start(chosen: HitClip, environment: bool) -> void:
 	if chosen == null or mech.is_fallen or not mech.is_on_floor():
+		return
+	if melee != null and melee.is_playing:
 		return
 	if mech.dodge != null and mech.dodge.is_dodging:
 		return
-	var bigger := clip == null or clips.find(chosen) > clips.find(clip)
+	if environment and is_playing and not _environment_only:
+		return
+	var bigger := clip == null or clips.find(chosen) > clips.find(clip) or (_environment_only and not environment)
 	if (is_playing or _cooldown_left > 0.0) and not bigger:
 		return
+	_environment_only = environment
 	clip = chosen
 	is_playing = true
 	_time = 0.0
@@ -121,8 +145,9 @@ func _try_start(chosen: HitClip) -> void:
 func _end() -> void:
 	is_playing = false
 	_cooldown_left = cooldown
-	mech.root_motion_active = false
-	mech.root_motion_velocity = Vector3.ZERO
+	if not _environment_only:
+		mech.root_motion_active = false
+		mech.root_motion_velocity = Vector3.ZERO
 
 
 ## A dodge started: the dodge owns the body and the root motion now.
@@ -159,7 +184,7 @@ func _weight() -> float:
 
 
 func _process_modification_with_delta(_delta: float) -> void:
-	var weight := smoothstep(0.0, 1.0, _weight())
+	var weight := smoothstep(0.0, 1.0, _weight()) * (environment_flinch if _environment_only else 1.0)
 	if weight <= 0.0:
 		return
 	var skeleton := get_skeleton()

@@ -31,6 +31,9 @@ extends SkeletonModifier3D
 @export var stun_damage: float = 300.0
 ## Damage in one frame (all parts) that knocks the mech down.
 @export var knock_damage: float = 500.0
+## Environment damage (hit kind &"environment") counts at this part (user request 2026-10-15: the
+## environment flinch is about 4% of a hit).
+@export_range(0.0, 1.0) var environment_scale: float = 0.04
 ## A knock-down hit from inside this angle around the mech's back (degrees) is "from behind".
 @export var behind_angle_deg: float = 60.0
 
@@ -80,6 +83,9 @@ func is_staggered() -> bool:
 
 
 func _on_damaged(key: String, amount: float) -> void:
+	# Walking through buildings, flying props and debris count at the weak flinch strength.
+	if health.last_hit_kind == &"environment":
+		amount *= environment_scale
 	_frame_total += amount
 	if key == "Head" or key == "Torso C":
 		_frame_core += amount

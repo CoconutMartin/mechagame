@@ -159,6 +159,7 @@ func _initialize() -> void:
 	contact.health = root.get_node("MechHealth") as MechHealth
 
 	var shake := root.get_node("CameraRig/Pitch/SpringArm/Camera") as CameraShake
+	_set_camera(root)
 	shake.animation_steps = locomotion
 
 	_add_weapon_rig(root, visual, model, weapon_animation, markers)
@@ -314,6 +315,15 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	dodge_animation.mech = root
 	dodge_animation.arm_rig = rig
 	(root.get_node("MechDodge") as MechDodge).animation = dodge_animation
+	# Melee attacks after the dodge (arms included: the melee weapons free the arms from IK).
+	var melee_animation := SkeletalMeleeAnimation.new()
+	melee_animation.name = "MeleeAnimation"
+	visual.add_child(melee_animation)
+	melee_animation.model = model
+	melee_animation.mech = root
+	melee_animation.health = root.get_node("MechHealth") as MechHealth
+	melee_animation.weapons = root.get_node("WeaponController") as WeaponController
+	melee_animation.arm_rig = rig
 	# Hit reactions after the dodge: the clip has the whole body.
 	var hit_animation := SkeletalHitAnimation.new()
 	hit_animation.name = "HitAnimation"
@@ -322,6 +332,7 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	hit_animation.mech = root
 	hit_animation.health = root.get_node("MechHealth") as MechHealth
 	hit_animation.arm_rig = rig
+	hit_animation.melee = melee_animation
 	# Stuns and knock-downs after the hit reactions (they take over from them).
 	var stagger_animation := SkeletalStaggerAnimation.new()
 	stagger_animation.name = "StaggerAnimation"
@@ -418,3 +429,18 @@ func _add_hands(root: Mech, visual: Node3D, model: Node3D, health: MechHealth, h
 			control.hand_right = hand
 		else:
 			control.hand_left = hand
+
+
+## Camera for Sanggigilid (kept here so a rebuild keeps them; user requests 2026-10-13 to 2026-10-15,
+## see DESIGN.md "Current camera tuning"): pivot 7.3 m, spring 12.3 m, side offset 6.75 m (about 0.5 m
+## of space left of the left shoulder), FOV 53, crosshair 9% above the center, camera tilt -5 degrees
+## (aim start pitch 0.1 plus the 5.1 degree crosshair tilt).
+func _set_camera(root: Mech) -> void:
+	var rig := root.get_node("CameraRig") as MechCameraRig
+	rig.pivot_height = 7.3
+	rig.start_pitch_deg = 0.1
+	var arm := root.get_node("CameraRig/Pitch/SpringArm") as SpringArm3D
+	arm.position.x = 6.75
+	arm.spring_length = 12.3
+	(root.get_node("CameraRig/Pitch/SpringArm/Camera") as Camera3D).fov = 53.0
+	(root.get_node("MechAim") as MechAim).screen_offset_up = 0.09

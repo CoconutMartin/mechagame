@@ -5,7 +5,7 @@ extends PartData
 ## Solid guns (rifle, missiles) use ammo and reloads. Beam weapons (sniper beam, blade) use heat:
 ## each use adds heat; at full heat the weapon overheats and must cool down to zero (the "reload").
 
-enum Kind { GUN, BEAM_RIFLE, BLADE, MISSILE_POD, SHIELD, PILE_BUNKER }
+enum Kind { GUN, BEAM_RIFLE, BLADE, MISSILE_POD, SHIELD, PILE_BUNKER, FIST, HAMMER }
 enum Slot { ARM, BACK }
 
 @export var kind: Kind = Kind.GUN

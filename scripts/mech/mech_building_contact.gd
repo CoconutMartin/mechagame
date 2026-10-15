@@ -51,7 +51,7 @@ func _physics_process(delta: float) -> void:
 					var light := chunk.kind == UrbanChunk.Kind.GLASS or chunk.kind == UrbanChunk.Kind.DOOR
 					smashed += 0.25 if light else 1.0
 		if inside:
-			health.damage(key, part_damage_per_second * pace * interval + part_damage_per_chunk * smashed)
+			health.damage(key, part_damage_per_second * pace * interval + part_damage_per_chunk * smashed, Vector3.INF, &"environment")
 	for chunk: UrbanChunk in chunks:
 		if is_instance_valid(chunk) and chunk.damage_owner != null:
 			chunk.damage_owner.break_chunk(chunk)

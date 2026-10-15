@@ -52,6 +52,8 @@ var one_hand_hold: bool = false
 
 var right_weapon: MechWeapon
 var back_left: MechWeapon
+## A fist on the left arm (melee; the other left arm items are the shield).
+var left_weapon: MechWeapon
 var back_right: MechWeapon
 var right_data: WeaponData
 var left_data: WeaponData
@@ -75,7 +77,10 @@ func mount(loadout: Loadout, attach: Callable) -> void:
 	hold_offset = loadout.arm_right.hold_offset if loadout.arm_right is ArmPart else Vector3.ZERO
 	if right_data != null and right_data.scene != null:
 		right_weapon = _add_weapon(right_data, "RightWeapon")
-		_wire_right(right_data)
+		if is_melee_kind(right_data):
+			_wire_melee(right_weapon as MeleeWeapon, false)
+		else:
+			_wire_right(right_data)
 	var has_shield := left_data != null and left_data.kind == WeaponData.Kind.SHIELD
 	if has_shield:
 		shield_nodes.assign(attach.call(left_data.scene))
@@ -83,6 +88,9 @@ func mount(loadout: Loadout, attach: Callable) -> void:
 	_set_shield_enabled(has_shield)
 	if not has_shield and not _two_handed():
 		arm_ik_left.target = _free_left_target()
+	if left_data != null and left_data.kind == WeaponData.Kind.FIST and left_data.scene != null and not _two_handed():
+		left_weapon = _add_weapon(left_data, "LeftWeapon")
+		_wire_melee(left_weapon as MeleeWeapon, true)
 	if loadout.back_left != null and loadout.back_left.scene != null:
 		back_left = _add_weapon(loadout.back_left, "BackLeft")
 	if loadout.back_right != null and loadout.back_right.scene != null:
@@ -124,6 +132,29 @@ func _wire_right(data: WeaponData) -> void:
 		weapon_pose.left_pole_rest = data.left_pole_rest
 		weapon_pose.left_pole_aim = data.left_pole_aim
 		arm_ik_left.target = weapon_pose.left_grip_target
+
+
+## True for the melee weapons that play attack clips (fist, hammer; user request 2026-10-15).
+static func is_melee_kind(data: WeaponData) -> bool:
+	return data != null and (data.kind == WeaponData.Kind.FIST or data.kind == WeaponData.Kind.HAMMER)
+
+
+## A fist or the hammer: the model goes on the hand and the arm follows the animation (no grip IK,
+## no aim pose). The hammer frees both arms.
+func _wire_melee(weapon: MeleeWeapon, left: bool) -> void:
+	weapon.is_left = left
+	weapon.attach_to_hand()
+	if left:
+		arm_ik_left.target = null
+		return
+	arm_ik_right.target = null
+	for node: Node in [weapon_pose, weapon_recoil, arm_ik_right]:
+		node.process_mode = Node.PROCESS_MODE_DISABLED
+	camera_ads.enabled = false
+	torso_pose.aim_twist_deg = 0.0
+	torso_pose.aim_tilt_deg = 0.0
+	if weapon.data.two_handed:
+		arm_ik_left.target = null
 
 
 func _wire_shield(data: WeaponData) -> void:
@@ -195,7 +226,7 @@ func right_weapon_nodes() -> Array[Node3D]:
 
 ## True when the left hand holds the right weapon (two-hand weapon).
 func two_handed_left_grip() -> bool:
-	return right_data != null and right_data.two_handed
+	return right_data != null and right_data.two_handed and not is_melee_kind(right_data)
 
 
 ## The shield is gone (broken, or the left arm is gone).
@@ -213,8 +244,15 @@ func lose_shield() -> void:
 ## The left arm is gone: no shield, and the left arm IK stops.
 func lose_left_arm() -> void:
 	lose_shield()
+	if left_weapon != null:
+		left_weapon.set_trigger(false)
+		left_weapon.process_mode = Node.PROCESS_MODE_DISABLED
+		var model := (left_weapon as MeleeWeapon).get_model()
+		if is_instance_valid(model):
+			model.queue_free()
+		left_weapon = null
 	arm_ik_left.process_mode = Node.PROCESS_MODE_DISABLED
-	if _two_handed() and right_weapon != null:
+	if _two_handed() and right_weapon != null and not right_weapon is MeleeWeapon:
 		_hold_one_hand()
 
 
@@ -263,14 +301,20 @@ func _two_handed() -> bool:
 func _physics_process(_delta: float) -> void:
 	if mech.is_wrecked or mech.is_fallen:
 		# Down, stunned or dead: no weapon fires (a trigger held before stays released).
-		for weapon: MechWeapon in [right_weapon, back_left, back_right]:
+		for weapon: MechWeapon in [right_weapon, left_weapon, back_left, back_right]:
 			if weapon != null:
 				weapon.set_trigger(false)
 		weapon_pose.wants_raise = false
 		return
 	var wants := {}
 	if right_weapon != null:
-		wants[right_weapon] = input.left_fire_held if _two_handed() else input.fire_held
+		if right_data.kind == WeaponData.Kind.HAMMER:
+			# The hammer: either mouse button (user request 2026-10-15).
+			wants[right_weapon] = input.fire_held or input.left_fire_held
+		else:
+			wants[right_weapon] = input.left_fire_held if _two_handed() else input.fire_held
+	if left_weapon != null:
+		wants[left_weapon] = input.left_fire_held
 	if back_left != null:
 		wants[back_left] = input.back_left_held
 	if back_right != null:
@@ -288,7 +332,7 @@ func _physics_process(_delta: float) -> void:
 				or (weapon is MissilePodWeapon and active is MissilePodWeapon)
 		weapon.set_trigger(wants[weapon] and allowed)
 	input.stance_lock = false
-	if right_weapon != null:
+	if right_weapon != null and not right_weapon is MeleeWeapon:
 		var right_on := right_weapon == active
 		if _two_handed():
 			weapon_pose.wants_raise = input.aim_held or (right_on and (input.left_fire_held or right_weapon.is_busy()))

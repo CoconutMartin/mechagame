@@ -29,7 +29,8 @@ static func create(parent: Node3D, key: String, bounds: AABB, mech_health: MechH
 
 
 ## from: where the hit came from (world position; Vector3.INF = not known). kind: &"punch" (pile
-## bunker), &"blast" (explosion) or &"" (anything else).
+## bunker), &"blast" (explosion), &"melee" (fists, hammer), &"environment" (buildings, flying props,
+## debris) or &"" (anything else).
 func on_hit(damage: float, from: Vector3 = Vector3.INF, kind: StringName = &"") -> void:
 	if health != null:
 		health.damage(part_key, damage, from, kind)
