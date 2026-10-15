@@ -28,7 +28,7 @@ static func apply(world: World3D, center: Vector3, radius: float, damage: float,
 		nearest[body] = minf(nearest.get(body, INF), distance)
 	for body: Object in nearest:
 		var falloff := lerpf(1.0, 0.3, clampf(nearest[body] / radius, 0.0, 1.0))
-		body.on_hit(damage * falloff, center)
+		body.on_hit(damage * falloff, center, &"blast")
 
 
 ## Distance from point to the surface of one shape of body (0 inside it). Boxes are exact; other

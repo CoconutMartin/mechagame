@@ -75,17 +75,18 @@ func _ready() -> void:
 		_impact_times[each] = _find_impact(each.animation, to_model)
 
 
-## The clip for this death (cause: the part that killed the mech).
-func pick(cause: String) -> DeathClip:
+## The clip for this death (cause: the part that killed the mech). standing: the mech stands still
+## whatever its speed (a stun moves it with the stagger clip).
+func pick(cause: String, standing: bool = false) -> DeathClip:
 	if cause == "Groin" or (not health.is_part_alive("Leg L") and not health.is_part_alive("Leg R")):
 		return legs
-	if mech.is_running or mech.is_boosting:
+	if not standing and (mech.is_running or mech.is_boosting):
 		return run
-	if mech.get_horizontal_speed() > walk_speed:
+	if not standing and mech.get_horizontal_speed() > walk_speed:
 		return walk
-	if (mech.kneel != null and mech.kneel.is_kneeling) or (mech.jump_charge != null and mech.jump_charge.is_charging):
+	if not standing and ((mech.kneel != null and mech.kneel.is_kneeling) or (mech.jump_charge != null and mech.jump_charge.is_charging)):
 		return crouch
-	if _from_behind():
+	if health.last_hit_from_behind(behind_angle_deg):
 		return behind
 	if (cause == "Head" or cause == "Torso C") and _side_heavily_damaged():
 		return side
@@ -151,19 +152,6 @@ func _find_impact(animation: Animation, to_model: Transform3D) -> float:
 				return time
 			time += 1.0 / 30.0
 	return animation.length
-
-
-func _from_behind() -> bool:
-	var from := health.last_hit_from
-	if not from.is_finite():
-		return false
-	var to_source := from - mech.global_position
-	to_source.y = 0.0
-	var back := mech.global_basis.z
-	back.y = 0.0
-	if to_source.length_squared() < 0.01 or back.length_squared() < 0.01:
-		return false
-	return to_source.normalized().dot(back.normalized()) >= cos(deg_to_rad(behind_angle_deg))
 
 
 func _side_heavily_damaged() -> bool:

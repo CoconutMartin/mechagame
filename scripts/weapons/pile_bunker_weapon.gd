@@ -301,7 +301,7 @@ func _fire_stake(point: Vector3, normal: Vector3, body: Object, forward: Vector3
 	effect.look_at(point + normal, Vector3.UP if absf(normal.y) < 0.99 else Vector3.FORWARD)
 	effect.scale = Vector3.ONE * 2.0 * force
 	if body != null and body.has_method(&"on_hit"):
-		body.on_hit(data.damage * force, controller.mech.global_position if controller.mech != null else Vector3.INF)
+		body.on_hit(data.damage * force, controller.mech.global_position if controller.mech != null else Vector3.INF, &"punch")
 	# Strong force: the mech is pushed back, big screen shake and aim kick.
 	var mech := controller.mech
 	var back := Vector3(-forward.x, 0.0, -forward.z).normalized() * push_back_speed * force

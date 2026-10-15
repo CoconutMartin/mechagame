@@ -17,6 +17,8 @@ extends Node
 @export var weapons: WeaponController
 ## Optional. Plays a death clip in place of the tree fall.
 @export var animation: SkeletalDeathAnimation
+## Optional. A mech that dies while it is down (knocked down) stays down: no clip, no fall.
+@export var stagger: SkeletalStaggerAnimation
 ## Seconds after the death clip ends before the new mech (PlayerRespawner waits for it).
 @export var after_clip_time: float = 1.5
 ## The node that topples (the body visual, with the model in it).
@@ -45,13 +47,18 @@ func _ready() -> void:
 
 func _on_destroyed(cause: String) -> void:
 	# Pick before the wreck flag: the pick reads the movement.
-	var clip: DeathClip = animation.pick(cause) if animation != null else null
+	var down := stagger != null and stagger.is_down
+	var stunned := stagger != null and stagger.is_staggered()
+	var clip: DeathClip = animation.pick(cause, stunned) if animation != null and not down else null
 	mech.is_wrecked = true
 	tree.active = false
 	if weapons != null:
 		weapons.relax_free_left_arm()
 	if camera_shake != null:
 		camera_shake.add_shake(0.6, 0.8)
+	if down:
+		_crash_at(mech.global_position + Vector3.UP)
+		return
 	if clip != null:
 		animation.impact.connect(_crash_at, CONNECT_ONE_SHOT)
 		animation.start(clip)
@@ -80,6 +87,8 @@ func _process(delta: float) -> void:
 
 ## Seconds from death to the end of the fall (the clip, or the tree fall).
 func get_fall_time() -> float:
+	if stagger != null and stagger.is_down and animation != null and animation.clip == null:
+		return after_clip_time
 	if animation != null and animation.clip != null:
 		return animation.get_length() + after_clip_time
 	return fall_time

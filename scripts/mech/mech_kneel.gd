@@ -23,6 +23,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# Staggered or knocked down (SkeletalStaggerAnimation): no kneel key.
+	if mech.is_fallen:
+		return
 	if input.crouch_pressed:
 		_wants = not _wants
 	elif _wants and input.forward_held:
@@ -32,3 +35,10 @@ func _physics_process(delta: float) -> void:
 		_wants = false
 	amount = move_toward(amount, 1.0 if _wants else 0.0, kneel_speed * delta)
 	is_kneeling = _wants or amount > 0.05
+
+
+## Ends the kneel at once (a knock-down from the kneel: the mech gets up standing).
+func stand_now() -> void:
+	_wants = false
+	amount = 0.0
+	is_kneeling = false

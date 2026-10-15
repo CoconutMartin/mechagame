@@ -262,6 +262,11 @@ func _two_handed() -> bool:
 
 func _physics_process(_delta: float) -> void:
 	if mech.is_wrecked or mech.is_fallen:
+		# Down, stunned or dead: no weapon fires (a trigger held before stays released).
+		for weapon: MechWeapon in [right_weapon, back_left, back_right]:
+			if weapon != null:
+				weapon.set_trigger(false)
+		weapon_pose.wants_raise = false
 		return
 	var wants := {}
 	if right_weapon != null:

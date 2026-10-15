@@ -47,7 +47,7 @@ func get_full_charge_time() -> float:
 
 
 func _physics_process(delta: float) -> void:
-	if not mech.is_on_floor() or landing_recovery.is_recovering() or kneel.is_kneeling or dodge.blocks_jump():
+	if not mech.is_on_floor() or mech.is_fallen or landing_recovery.is_recovering() or kneel.is_kneeling or dodge.blocks_jump():
 		_reset()
 		return
 	_remember_direction(delta)

@@ -160,7 +160,7 @@ func _get_air_progress() -> float:
 
 
 func _can_start() -> bool:
-	return mech.is_on_floor() and not is_busy() and not landing_recovery.is_recovering() \
+	return mech.is_on_floor() and not mech.is_fallen and not is_busy() and not landing_recovery.is_recovering() \
 			and not kneel.is_kneeling and not mech.is_skidding and energy.current >= energy_cost
 
 

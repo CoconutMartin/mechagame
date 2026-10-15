@@ -34,6 +34,8 @@ var hp: Dictionary = {}
 var is_destroyed: bool = false
 ## Where the last hit came from (world position; Vector3.INF = not known). The death clip uses it.
 var last_hit_from: Vector3 = Vector3.INF
+## What the last hit was: &"punch" (pile bunker), &"blast" or &"". The stagger uses it.
+var last_hit_kind: StringName = &""
 ## Hitboxes by key.
 var hitboxes: Dictionary = {}
 ## Model nodes of each key after the split (PartBreaker and MechDeath hide or drop them).
@@ -87,11 +89,13 @@ func add_hitbox(key: String, hitbox: PartHitbox) -> void:
 
 
 ## Sends damage to a part. Parts with no HP left take no more damage. from: where the hit came
-## from (world position; Vector3.INF = not known), kept in last_hit_from.
-func damage(key: String, amount: float, from: Vector3 = Vector3.INF) -> void:
+## from (world position; Vector3.INF = not known), kept in last_hit_from. kind: &"punch", &"blast" or
+## &"" (PartHitbox.on_hit), kept in last_hit_kind.
+func damage(key: String, amount: float, from: Vector3 = Vector3.INF, kind: StringName = &"") -> void:
 	if is_destroyed or not hp.has(key) or hp[key] <= 0.0 or amount <= 0.0:
 		return
 	last_hit_from = from
+	last_hit_kind = kind
 	hp[key] = maxf(hp[key] - amount, 0.0)
 	damaged.emit(key, amount)
 	if hp[key] <= 0.0:
@@ -111,6 +115,20 @@ func break_part(key: String) -> void:
 	hp[key] = 0.0
 	_remove_hitboxes(key)
 	part_destroyed.emit(key)
+
+
+## True when the last hit came from inside max_angle_deg around the mech's back (false when its
+## direction is not known).
+func last_hit_from_behind(max_angle_deg: float) -> bool:
+	if mech == null or not last_hit_from.is_finite():
+		return false
+	var to_source := last_hit_from - mech.global_position
+	to_source.y = 0.0
+	var back := mech.global_basis.z
+	back.y = 0.0
+	if to_source.length_squared() < 0.01 or back.length_squared() < 0.01:
+		return false
+	return to_source.normalized().dot(back.normalized()) >= cos(deg_to_rad(max_angle_deg))
 
 
 ## Takes a part away with no signals (it went with another part, for example the arm with its side
