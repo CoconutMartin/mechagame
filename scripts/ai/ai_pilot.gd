@@ -7,6 +7,8 @@ extends Node
 ##   Strafe: it steps left or right and changes side every few seconds.
 ##   Fire: it holds the trigger when it can see the target, the target is in range, and the torso
 ##         is turned to it. The aim point wanders around the target (it is not a perfect shot).
+##         A two-hand rifle fires on LMB like the player's (RMB only aims, so the AI does not use
+##         it); a charge rifle (beam rifle) is held to a random charge, then released.
 ##   Shield: it lifts the shield now and then, more often when it is hurt.
 ##   Dodge: now and then a dodge hop to the side it strafes to.
 ##   Search (user request): when it cannot see the target, it walks to where it last saw it (the
@@ -35,6 +37,10 @@ extends Node
 @export var aim_error: float = 2.2
 ## Seconds before it reacts to a target it just saw.
 @export var reaction_time: float = 0.8
+
+## Charge rifles: the AI releases LMB at a random charge in this range (0 to 1).
+@export_range(0.0, 1.0) var charge_release_min: float = 0.4
+@export_range(0.0, 1.0) var charge_release_max: float = 1.0
 
 @export_group("Moves")
 ## Seconds between strafe side changes (random in this range).
@@ -74,6 +80,9 @@ var _stuck_for: float = 0.0
 var _unstick_left: float = 0.0
 var _searching: bool = false
 var _hold_left: float = 0.0
+var _weapons: WeaponController
+## Charge the AI releases the charge rifle at (below 0: not picked yet).
+var _charge_goal: float = -1.0
 
 
 func _ready() -> void:
@@ -81,6 +90,7 @@ func _ready() -> void:
 	process_physics_priority = -10
 	input.process_mode = Node.PROCESS_MODE_DISABLED
 	mech_aim.use_ai_target = true
+	_weapons = mech.get_node_or_null("WeaponController") as WeaponController
 	_strafe_side = 1.0 if randf() < 0.5 else -1.0
 
 
@@ -222,14 +232,30 @@ func _search(delta: float) -> void:
 
 
 func _fire(distance: float, sees: bool) -> void:
-	if not sees or distance > fire_range or _shield_left > 0.0:
-		return
 	var error := absf(wrapf(input.aim_yaw - mech.get_aim_yaw(), -PI, PI))
-	input.fire_held = error < deg_to_rad(fire_angle_deg)
+	var ready := sees and distance <= fire_range and _shield_left <= 0.0 and error < deg_to_rad(fire_angle_deg)
+	var weapon := _weapons.right_weapon if _weapons != null else null
+	if weapon is BeamRifleWeapon:
+		var rifle := weapon as BeamRifleWeapon
+		if _charge_goal < 0.0:
+			_charge_goal = randf_range(charge_release_min, charge_release_max)
+		# Start the charge when ready; once charging, hold until the goal charge and a clear shot.
+		var charging := rifle.charge > 0.0
+		input.left_fire_held = (ready or charging) and not (ready and rifle.charge >= _charge_goal) and rifle.discharge_left <= 0.0
+		if charging and not input.left_fire_held:
+			_charge_goal = -1.0
+	elif _weapons != null and _weapons.right_data != null and _weapons.right_data.two_handed:
+		input.left_fire_held = ready
+	else:
+		input.fire_held = ready
 
 
 ## Now and then the shield comes up for a moment (more often when hurt).
 func _shield(delta: float) -> void:
+	# No shield: nothing to lift, and the fire is never paused for it.
+	if _weapons != null and _weapons.shield_nodes.is_empty():
+		_shield_left = 0.0
+		return
 	_shield_left = maxf(_shield_left - delta, 0.0)
 	var hurt := 1.0 - mech.health.get_fraction("Torso C") if mech.health != null else 0.0
 	if _shield_left <= 0.0 and randf() < shield_chance * (1.0 + 2.0 * hurt) * delta:

@@ -92,8 +92,8 @@ if __name__ == "__main__":
     # Fast, light shots: 10 per second, small kick.
     res("data/weapons/smg.tres", {
         "display_name": '"SMG"', "weight_t": 1.5, "hp": 250.0, "kind": 0, "slot": 0,
-        "fire_rate": 10.0, "damage": 26.25, "projectile_speed": 380.0, "spread_deg": 1.2,
-        "recoil_up_deg": 0.6, "recoil_side_deg": 0.5, "model_kick_back": 0.25, "model_kick_up_deg": 2.0,
+        "fire_rate": 10.0, "damage": 26.25, "projectile_speed": 380.0, "spread_deg": 3.5,
+        "recoil_up_deg": 0.6, "recoil_side_deg": 0.9, "model_kick_back": 0.25, "model_kick_up_deg": 2.0,
         "shake_trauma": 0.02, "shake_kick": 0.03, "magazine": 45, "reload_time": 2.5,
         "rest_transform": gun_on_forearm_rest(GRIP, OUT_DEG), "aim_anchor": v3(gun_aim_anchor(GRIP, OUT_DEG)),
         "right_pole_rest": v3((0.4, -1.0, 0.5)), "right_pole_aim": v3((0.4, -1.0, 0.5))},

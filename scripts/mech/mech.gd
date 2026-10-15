@@ -30,6 +30,8 @@ signal landed(fall_speed: float)
 @export var mass_tons: float = 60.0
 ## Mech height in meters. Sway and footstep shake scale with it (10 m = base). Phase 2 computes it from parts.
 @export var height_m: float = 10.0
+## Mech bodies block each other (user request 2026-10-15): the body also collides with layer 2.
+@export var collides_with_mechs: bool = true
 
 @export_group("Ground")
 ## Top forward walking speed in m/s.
@@ -232,6 +234,7 @@ var _settle_sign: float = 0.0
 
 func _ready() -> void:
 	_aim_yaw = rotation.y
+	set_collision_mask_value(2, collides_with_mechs)
 	footsteps.footstep.connect(_on_footstep)
 
 
