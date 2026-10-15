@@ -34,6 +34,14 @@ extends SkeletonModifier3D
 ## hit kind &"environment"), 0 to 1 of a normal hit reaction (user request 2026-10-15: about 4%).
 ## These flinches do not stop the legs.
 @export_range(0.0, 1.0) var environment_flinch: float = 0.04
+## Environment damage that adds up to one bigger flinch (the small hit clip). Default: the small hit
+## threshold.
+@export var accumulated_threshold: float = 75.0
+## Strength of that bigger flinch, 0 to 1 of a normal hit reaction (user request 2026-10-15: about 15%).
+@export_range(0.0, 1.0) var accumulated_flinch: float = 0.15
+## Seconds for the added-up environment damage to fall from the threshold to zero when no new
+## environment damage comes.
+@export var accumulated_decay_time: float = 3.0
 ## Seconds after a clip in which a hit of the same size or smaller plays no clip.
 @export var cooldown: float = 0.5
 
@@ -50,6 +58,10 @@ var _pending: float = 0.0
 var _pending_environment: float = 0.0
 ## True while the clip is an environment flinch.
 var _environment_only: bool = false
+## Strength of the environment flinch that plays now.
+var _flinch_strength: float = 0.0
+## Environment damage added up; it plays the bigger flinch at the threshold and decays over time.
+var _accumulated: float = 0.0
 var _cooldown_left: float = 0.0
 ## Weight when a dodge cut the clip; it fades out over the clip's blend_out.
 var _cut_weight: float = 0.0
@@ -100,10 +112,14 @@ func _physics_process(delta: float) -> void:
 	_cut_left = maxf(_cut_left - delta, 0.0)
 	if is_playing and mech.dodge != null and mech.dodge.is_dodging:
 		_cut()
+	_accumulated = maxf(_accumulated - accumulated_threshold / maxf(accumulated_decay_time, 0.01) * delta, 0.0) + _pending_environment
 	if _pending > 0.0:
 		_try_start(pick(_pending), false)
+	elif _accumulated >= accumulated_threshold and clips.size() > 0:
+		if _try_start(clips[0], true, accumulated_flinch):
+			_accumulated = 0.0
 	elif _pending_environment > 0.0:
-		_try_start(pick(_pending_environment), true)
+		_try_start(pick(_pending_environment), true, environment_flinch)
 	_pending = 0.0
 	_pending_environment = 0.0
 	if not is_playing:
@@ -122,24 +138,28 @@ func _physics_process(delta: float) -> void:
 		mech.root_motion_velocity = Vector3.ZERO
 
 
-## environment: the damage came from the environment (a weak flinch; a real hit replaces it).
-func _try_start(chosen: HitClip, environment: bool) -> void:
+## environment: the damage came from the environment (a weak flinch at the given strength; a real hit
+## replaces it, and a stronger flinch replaces a weaker one). Returns true when the clip starts.
+func _try_start(chosen: HitClip, environment: bool, strength: float = 1.0) -> bool:
 	if chosen == null or mech.is_fallen or not mech.is_on_floor():
-		return
+		return false
 	if melee != null and melee.is_playing:
-		return
+		return false
 	if mech.dodge != null and mech.dodge.is_dodging:
-		return
+		return false
 	if environment and is_playing and not _environment_only:
-		return
+		return false
 	var bigger := clip == null or clips.find(chosen) > clips.find(clip) or (_environment_only and not environment)
+	bigger = bigger or (environment and _environment_only and strength > _flinch_strength)
 	if (is_playing or _cooldown_left > 0.0) and not bigger:
-		return
+		return false
 	_environment_only = environment
+	_flinch_strength = strength
 	clip = chosen
 	is_playing = true
 	_time = 0.0
 	_cut_left = 0.0
+	return true
 
 
 func _end() -> void:
@@ -184,7 +204,7 @@ func _weight() -> float:
 
 
 func _process_modification_with_delta(_delta: float) -> void:
-	var weight := smoothstep(0.0, 1.0, _weight()) * (environment_flinch if _environment_only else 1.0)
+	var weight := smoothstep(0.0, 1.0, _weight()) * (_flinch_strength if _environment_only else 1.0)
 	if weight <= 0.0:
 		return
 	var skeleton := get_skeleton()

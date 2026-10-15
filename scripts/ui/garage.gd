@@ -36,7 +36,7 @@ const PARTS := [
 ]
 ## [loadout property, label, catalog list, "none" allowed]
 const WEAPONS := [
-	["weapon_right", "Right arm", "weapons_right", false], ["weapon_left", "Left arm", "weapons_left", true],
+	["weapon_right", "Right arm", "weapons_right", true], ["weapon_left", "Left arm", "weapons_left", true],
 	["back_left", "Back L", "backs_left", true], ["back_right", "Back R", "backs_right", true],
 ]
 const PLATE_SLOTS := ["Head", "Core", "Arm L", "Arm R", "Legs"]

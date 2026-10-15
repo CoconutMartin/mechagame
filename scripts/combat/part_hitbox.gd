@@ -18,6 +18,10 @@ static func create(parent: Node3D, key: String, bounds: AABB, mech_health: MechH
 	hitbox.health = mech_health
 	hitbox.collision_layer = LAYER
 	hitbox.collision_mask = 0
+	# Not synced to physics: with sync on, the body follows only changes of its own local transform
+	# (the animation), not the walk of the mech above it, so a moving mech (an AI enemy) kept its
+	# hitboxes where it was spawned and shots passed through it.
+	hitbox.sync_to_physics = false
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
 	box.size = bounds.size.max(Vector3.ONE * 0.2)
