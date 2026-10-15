@@ -12,9 +12,16 @@ var _age: float = 0.0
 
 func _ready() -> void:
 	for child in get_children():
+		if child is CPUParticles3D and child.name == &"Smoke":
+			PixelSmoke.register(child as CPUParticles3D)
+	# The creator places the effect after add_child: a burst started in _ready would come out at the
+	# world origin (the ImpactSpark bug, 2026-10-15). It starts at the end of the frame.
+	_start.call_deferred()
+
+
+func _start() -> void:
+	for child in get_children():
 		if child is CPUParticles3D:
-			if child.name == &"Smoke":
-				PixelSmoke.register(child as CPUParticles3D)
 			(child as CPUParticles3D).emitting = true
 
 

@@ -13,6 +13,13 @@ var _age: float = 0.0
 
 
 func _ready() -> void:
+	# The creator sets the place and the turn after add_child. CPUParticles3D that start in _ready
+	# make their one-shot burst at once, at the world origin (user report 2026-10-15: sparks near
+	# the mech's foot where the map origin is). So the burst waits until the end of the frame.
+	_start.call_deferred()
+
+
+func _start() -> void:
 	sparks.emitting = true
 	if dust != null:
 		dust.emitting = true

@@ -57,5 +57,7 @@ func _ready() -> void:
 	# Before register (it reads the opacity), so the look is built once.
 	set_meta(&"opacity", clampf(snappedf(opacity, PixelSmoke.OPACITY_STEP), 0.0, 1.0))
 	PixelSmoke.register(self)
-	emitting = true
+	# create() places the burst after add_child: start at the end of the frame, at that place (a
+	# burst started here came out at the world origin, the ImpactSpark bug of 2026-10-15).
+	set_deferred(&"emitting", true)
 	finished.connect(queue_free)
