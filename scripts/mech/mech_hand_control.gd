@@ -73,9 +73,12 @@ func _process(delta: float) -> void:
 	var gun := weapons.right_weapon if weapons.right_weapon != null and is_instance_valid(weapons.right_weapon) else null
 	var two_hand := gun != null and weapons.two_handed_left_grip()
 	var socket_r := _socket(gun, ^"GripSocketRight")
-	var socket_l := _socket(gun, ^"GripSocketLeft") if two_hand else null
-	_update_side("R", socket_r, weapons.arm_ik_right, ^"GripRight", delta)
-	_update_side("L", socket_l, weapons.arm_ik_left, ^"GripLeft", delta)
+	# A one-hand gun in the left hand (user rule 2026-10-15): its GripSocketRight fits the left fist too.
+	var left_gun := weapons.left_weapon if weapons.left_weapon != null and is_instance_valid(weapons.left_weapon) \
+			and not weapons.left_weapon is MeleeWeapon else null
+	var socket_l := _socket(gun, ^"GripSocketLeft") if two_hand else _socket(left_gun, ^"GripSocketRight")
+	_update_side("R", socket_r, weapons.arm_ik_right, ^"GripRight", gun, delta)
+	_update_side("L", socket_l, weapons.arm_ik_left, ^"GripLeft", gun if two_hand else left_gun, delta)
 	if is_instance_valid(hand_right) and hand_right.visible:
 		if socket_r != null:
 			hand_right.set_grip(socket_r.global_position, socket_r.global_basis.y, _radius(socket_r, grip_radius))
@@ -88,7 +91,7 @@ func _process(delta: float) -> void:
 			hand_right.mode = MechHand.Mode.FIST if moving else MechHand.Mode.RELAXED
 	if is_instance_valid(hand_left) and hand_left.visible:
 		if socket_l != null:
-			var place := _left_socket_place(socket_l, gun)
+			var place := _left_socket_place(socket_l, gun) if two_hand else socket_l.global_transform.orthonormalized()
 			hand_left.set_grip(place.origin, place.basis.y, _radius(socket_l, forestock_radius))
 		elif two_hand:
 			var grip := _grip_pose(grip_bones[0])
@@ -112,7 +115,7 @@ func _radius(socket: Node3D, fallback: float) -> float:
 
 ## The socket frame where the hand is now: the left socket moves with the left hand marker.
 func _socket_place(side: String, socket: Node3D) -> Transform3D:
-	if side == "L":
+	if side == "L" and weapons.two_handed_left_grip():
 		return _left_socket_place(socket, weapons.right_weapon)
 	return socket.global_transform.orthonormalized()
 
@@ -136,13 +139,12 @@ func _left_socket_place(socket: Node3D, weapon: Node3D) -> Transform3D:
 
 ## A weapon with this side's socket: the arm reaches for a HandTarget node (a child of the weapon, so
 ## the arm rig still moves the weapon with a limited hand); the old marker comes back without one.
-func _update_side(side: String, socket: Node3D, ik: TwoBoneIK, marker_path: NodePath, delta: float) -> void:
+func _update_side(side: String, socket: Node3D, ik: TwoBoneIK, marker_path: NodePath, weapon: Node3D, delta: float) -> void:
 	var state: Dictionary = _sides[side]
 	state.socket = socket
 	state.weight = move_toward(state.weight, 1.0 if socket != null else 0.0, socket_blend_speed * delta)
 	if ik == null:
 		return
-	var weapon := weapons.right_weapon
 	var target := state.target as Node3D if is_instance_valid(state.target) else null
 	var old_weapon := state.weapon as Node3D if is_instance_valid(state.weapon) else null
 	if socket == null or not bool(socket.get_meta(&"hand_reach", true)):

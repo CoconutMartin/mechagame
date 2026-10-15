@@ -96,9 +96,10 @@ var _delta: float = 1.0 / 60.0
 ## Shoulder mount place in its upper arm bone's space: [mount, bone, offset].
 var _mount_offsets: Array = []
 ## The right weapon's transform from WeaponPose, and the moved one this rig set (the weapon moves to
-## a limited hand; WeaponPose sets it again on its next physics frame).
-var _weapon_base: Transform3D
-var _weapon_moved: Transform3D
+## a limited hand; WeaponPose sets it again on its next physics frame). Index 0: the left gun or
+## pile bunker (user rule 2026-10-15), index 1: the right weapon.
+var _weapon_base: Array[Transform3D] = [Transform3D.IDENTITY, Transform3D.IDENTITY]
+var _weapon_moved: Array[Transform3D] = [Transform3D.IDENTITY, Transform3D.IDENTITY]
 
 
 func _ready() -> void:
@@ -335,16 +336,20 @@ func _solve_arms_once(active: Array[Dictionary]) -> void:
 		else:
 			right_ik = ik_right
 	if right_ik != null:
-		_restore_weapon()
+		_restore_weapon(weapons.right_weapon if weapons != null else null, 1)
 		right_ik.solve()
 		_tuck_elbow(right_ik)
 		_limit_swing(right_ik, swing_limit(true))
-		_move_weapon_to_hand(right_ik)
+		_move_weapon_to_hand(weapons.right_weapon if weapons != null else null, right_ik, 1)
 	if left_ik == null:
 		return
+	# A gun or the pile bunker in the left hand moves to a limited left hand like the right one.
+	var left_gun := _left_gun()
+	_restore_weapon(left_gun, 0)
 	left_ik.solve()
 	_tuck_elbow(left_ik)
 	_limit_swing(left_ik, swing_limit(false))
+	_move_weapon_to_hand(left_gun, left_ik, 0)
 	var weapon := weapons.right_weapon if weapons != null else null
 	if right_ik == null or weapon == null or not weapon.is_ancestor_of(left_ik.target):
 		return
@@ -352,7 +357,7 @@ func _solve_arms_once(active: Array[Dictionary]) -> void:
 	if gap.length_squared() < 0.0001:
 		return
 	weapon.global_position += gap
-	_weapon_moved = weapon.transform
+	_weapon_moved[1] = weapon.transform
 	right_ik.solve()
 	_tuck_elbow(right_ik)
 	_limit_swing(right_ik, swing_limit(true))
@@ -454,8 +459,10 @@ func _block_yaw(dir: Vector3, neutral: Vector3, up: Vector3) -> float:
 ## The block turn limit (radians): max_block_yaw_deg at rest, fading to 0 while aiming (the aim holds
 ## were tuned with flat, forward blocks).
 func _block_limit() -> float:
-	var aim := smoothstep(0.0, 1.0, weapon_pose.aim_amount) if weapon_pose != null else 0.0
-	return deg_to_rad(max_block_yaw_deg) * (1.0 - aim)
+	var amount := weapon_pose.aim_amount if weapon_pose != null else 0.0
+	if weapons != null and weapons.left_pose != null:
+		amount = maxf(amount, weapons.left_pose.aim_amount)
+	return deg_to_rad(max_block_yaw_deg) * (1.0 - smoothstep(0.0, 1.0, amount))
 
 
 ## Where an arm's hand (palm socket) is now.
@@ -505,24 +512,31 @@ func _limit_swing(ik: TwoBoneIK, limit: float) -> void:
 	ik.mid_joint.global_basis = _joint_basis(ik.mid_joint.global_position, ik.target.global_position, side)
 
 
-func _restore_weapon() -> void:
-	var weapon := weapons.right_weapon if weapons != null else null
+## The left hand's gun or pile bunker (not a fist: it follows the animation), or null.
+func _left_gun() -> Node3D:
+	var weapon := weapons.left_weapon if weapons != null else null
+	if weapon == null or not is_instance_valid(weapon) or weapon is MeleeWeapon:
+		return null
+	return weapon
+
+
+## side: 0 = left, 1 = right.
+func _restore_weapon(weapon: Node3D, side: int) -> void:
 	if weapon == null:
 		return
-	if not weapon.transform.is_equal_approx(_weapon_moved):
-		_weapon_base = weapon.transform
-	weapon.transform = _weapon_base
+	if not weapon.transform.is_equal_approx(_weapon_moved[side]):
+		_weapon_base[side] = weapon.transform
+	weapon.transform = _weapon_base[side]
 
 
-## A limited right hand does not reach the grip: the weapon moves so its grip is in the hand.
-func _move_weapon_to_hand(ik: TwoBoneIK) -> void:
-	var weapon := weapons.right_weapon if weapons != null else null
-	if weapon == null or not weapon.is_ancestor_of(ik.target):
+## A limited hand does not reach the grip: the weapon moves so its grip is in the hand.
+func _move_weapon_to_hand(weapon: Node3D, ik: TwoBoneIK, side: int) -> void:
+	if weapon == null or ik.target == null or not weapon.is_ancestor_of(ik.target):
 		return
 	var gap := _hand(ik) - ik.target.global_position
 	if gap.length_squared() > 0.000001:
 		weapon.global_position += gap
-	_weapon_moved = weapon.transform
+	_weapon_moved[side] = weapon.transform
 
 
 ## The way through a closed fist (index to pinky), in the elbow joint node's space (Vector3.ZERO

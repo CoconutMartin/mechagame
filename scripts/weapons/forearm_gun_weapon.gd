@@ -1,6 +1,8 @@
 class_name ForearmGunWeapon
 extends GunWeapon
-## A gun held like a baton under the right forearm (Auto Cannon, new mech). The root is the fist target
+## A gun held like a baton under the right forearm (Auto Cannon, new mech); in the left hand (user rule
+## 2026-10-15) the same under the left forearm: it asks its controller for the arm that holds it
+## (WeaponController.holding_arm_ik()). The root is the fist target
 ## for the arm IK (GripRight); the model ("Mount", with the muzzle) moves under the forearm: the butt
 ## behind the elbow, the grip handle in the palm, the muzzle past the hand. Held like a tonfa, straight
 ## under the fist (the user's arm drawing, 2026-10-12): the handle goes up through the fist, the body
@@ -34,7 +36,7 @@ func _update(delta: float) -> void:
 ## Keeps the model under the right forearm (moved there once; placed every frame, because the arm
 ## rig sets the forearm length after the first frame).
 func _attach_to_forearm() -> void:
-	var ik := controller.arm_ik_right
+	var ik := controller.holding_arm_ik()
 	if ik.mid_joint == null:
 		return
 	if _mount.get_parent() != ik.mid_joint:
@@ -53,13 +55,14 @@ func _attach_to_forearm() -> void:
 		var rig := controller.mech.find_child("ArmRig", true, false)
 		if rig == null or not rig.has_method(&"hand_across"):
 			return
-		var across: Vector3 = rig.call(&"hand_across", true)
+		var across: Vector3 = rig.call(&"hand_across", not controller.left_arm_view)
 		if across.is_zero_approx():
 			return  # The rig is not set up yet (first frame).
 		up = across - Vector3.DOWN * across.dot(Vector3.DOWN)
 	up = up.normalized()
 	var aim := controller.weapon_pose.aim_amount if controller.weapon_pose != null else 0.0
-	up = Basis(Vector3.UP, deg_to_rad(lerpf(rest_roll_deg, aim_roll_deg, smoothstep(0.0, 1.0, aim)))) * up
+	var roll := deg_to_rad(lerpf(rest_roll_deg, aim_roll_deg, smoothstep(0.0, 1.0, aim)))
+	up = Basis(Vector3.UP, -roll if controller.left_arm_view else roll) * up
 	var back := Vector3.UP
 	var basis := Basis(up.cross(back), up, back)
 	_mount.transform = Transform3D(basis, Vector3(0.0, -ik.lower_length, 0.0) - basis * grip.position)

@@ -4,7 +4,9 @@ extends CanvasLayer
 ## The game pauses and a camera circles the player mech. Every change rebuilds the mech at once
 ## at its place (full HP), so the look and the stats show the new build.
 ##   Frame: head, core, arms, legs, booster, generator, FCS (GarageCatalog).
-##   Weapons: right arm, left arm (shield or none; none with a two-hand weapon), back units.
+##   Weapons: right arm, left arm (shield, fist, one-hand gun, pile bunker or none; none with a
+##   two-hand weapon), back units. Melee weapons may not be doubled, except the fist: an arm's pile
+##   bunker entry is greyed out in the other arm's list while the other arm holds one.
 ##   Plates: 0 to 3 per part (light or heavy), shown as armor slabs (PlateMounter).
 ##   Mods: up to max_mods.
 ##   Test targets: spawn or remove the enemy (AI) and the dummy mech.
@@ -124,6 +126,11 @@ func _on_changed(_index: int = 0) -> void:
 	if two_hand:
 		_edit.weapon_left = null
 		left.select(0)
+	# No doubled melee weapon (the greyed entries stop it in the lists; this stops a loadout set by code).
+	if _is_single_melee(_edit.weapon_left) and _same_kind(_edit.weapon_left, _edit.weapon_right):
+		_edit.weapon_left = null
+		left.select(0)
+	_grey_doubled_melee()
 	var plates: Array[PlateData] = []
 	for slot in PLATE_SLOTS.size():
 		for i in PlateMounter.MAX_PLATES:
@@ -170,12 +177,37 @@ func _show_loadout(loadout: Loadout) -> void:
 	for weapon in WEAPONS:
 		_select(weapon[0], loadout.get(weapon[0]))
 	(_pickers["weapon_left"] as OptionButton).disabled = loadout.weapon_right != null and loadout.weapon_right.two_handed
+	_grey_doubled_melee()
 	for slot in PLATE_SLOTS.size():
 		var of_slot := loadout.plates.filter(func(p: PlateData) -> bool: return p.slot == slot)
 		for i in PlateMounter.MAX_PLATES:
 			_select("plate_%d_%d" % [slot, i], of_slot[i] if i < of_slot.size() else null)
 	for i in max_mods:
 		_select("mod_%d" % i, loadout.mods[i] if i < loadout.mods.size() else null)
+
+
+## A melee weapon that only one arm may hold (every melee weapon but the fist).
+static func _is_single_melee(weapon: WeaponData) -> bool:
+	if weapon == null:
+		return false
+	return weapon.kind in [WeaponData.Kind.PILE_BUNKER, WeaponData.Kind.BLADE, WeaponData.Kind.HAMMER]
+
+
+static func _same_kind(a: WeaponData, b: WeaponData) -> bool:
+	return a != null and b != null and a.kind == b.kind
+
+
+## Greys out the entries of a single-use melee weapon in one arm's list while the other arm holds it
+## (user rule 2026-10-15: no Pile Bunker in both hands). A greyed entry cannot be picked.
+func _grey_doubled_melee() -> void:
+	var pairs := [["weapon_left", "weapon_right"], ["weapon_right", "weapon_left"]]
+	for pair: Array in pairs:
+		var picker: OptionButton = _pickers[pair[0]]
+		var other: WeaponData = _picked(pair[1]) as WeaponData
+		var items: Array = _items[pair[0]]
+		for i in items.size():
+			var item := items[i] as WeaponData
+			picker.set_item_disabled(i, _is_single_melee(item) and _same_kind(item, other))
 
 
 func _select(key: String, item: Resource) -> void:

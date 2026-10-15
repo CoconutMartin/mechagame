@@ -9,6 +9,9 @@ extends MechWeapon
 ## arm pulls back, then the arm punches forward. When the front of the pile bunker touches something,
 ## the stake (the "needle") fires out with a strong force. No contact = no shot (no ammo used).
 ## Uses ammo (one stake cartridge per shot) and the lunge uses energy.
+## Left hand (user rule 2026-10-15): the same weapon mirrored. Its controller is the left view
+## (WeaponController.left_arm_view): the model sits on the left forearm, the poses and the torso turns
+## mirror (the right shoulder leads the charge), and the punch goes along the left shoulder's line.
 
 const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 
@@ -109,6 +112,8 @@ var _twist: float = 0.0
 var _stake_rest := Vector3.ZERO
 ## The point the charge and the punch go for (world): the blue ring when the attack starts.
 var _aim_point := Vector3.ZERO
+## True for a pile bunker in the left hand (set in setup()).
+var is_left: bool = false
 
 @onready var _mount: Node3D = $Mount
 @onready var _stake: Node3D = $Mount/Stake
@@ -117,16 +122,28 @@ var _aim_point := Vector3.ZERO
 
 
 func _ready() -> void:
-	_guard = _pose_from(guard_position, guard_direction)
-	_windup = _pose_from(windup_position, windup_direction)
-	_punch = _pose_from(punch_position, punch_direction)
-	_action = _guard
+	_make_poses()
 	_stake_rest = _stake.position
 	# The drum and the nose ring glow with the stored power.
 	_glow.color = Color(1.0, 0.55, 0.2)
 	add_child(_glow)
 	var drum: Array[MeshInstance3D] = [$Mount/Drum as MeshInstance3D]
 	_glow.setup(drum, $Mount/NoseRing as MeshInstance3D, _nose)
+
+
+## Called by WeaponController after the node is added: a left view means the left hand.
+func setup(weapon_data: WeaponData, weapon_controller: WeaponController) -> void:
+	super(weapon_data, weapon_controller)
+	if weapon_controller.left_arm_view != is_left:
+		is_left = weapon_controller.left_arm_view
+		_make_poses()
+
+
+func _make_poses() -> void:
+	_guard = _pose_from(guard_position, guard_direction)
+	_windup = _pose_from(windup_position, windup_direction)
+	_punch = _pose_from(punch_position, punch_direction)
+	_action = _guard
 
 
 func is_melee() -> bool:
@@ -142,7 +159,8 @@ func cancel() -> void:
 	if state == State.IDLE:
 		return
 	controller.mech.is_lunging = false
-	controller.mech_shield.force_up = false
+	if not is_left:
+		controller.mech_shield.force_up = false
 	_next(State.RECOVER)
 
 
@@ -153,11 +171,18 @@ func get_model() -> Node3D:
 
 ## Moves the model onto the right forearm (once, after WeaponController has wired the arm IK).
 func _attach_to_forearm() -> void:
-	var forearm := controller.arm_ik_right.mid_joint
+	var forearm := controller.holding_arm_ik().mid_joint
 	if forearm == null or _mount.get_parent() == forearm:
 		return
 	_mount.reparent(forearm, false)
-	_mount.transform = Transform3D(Basis.from_euler(mount_rotation_deg * PI / 180.0), mount_position)
+	var basis := Basis.from_euler(mount_rotation_deg * PI / 180.0)
+	var place := mount_position
+	if is_left:
+		# The left elbow node is the right one mirrored with its Z axis turned round (the arm rig's joint
+		# frames are proper rotations on both sides), so the same model place is flip * place * mirror.
+		basis = Basis.from_scale(Vector3(1.0, 1.0, -1.0)) * basis * Basis.from_scale(Vector3(-1.0, 1.0, 1.0))
+		place.z = -place.z
+	_mount.transform = Transform3D(basis, place)
 
 func _update(delta: float) -> void:
 	_attach_to_forearm()
@@ -214,8 +239,9 @@ func _update(delta: float) -> void:
 				state = State.IDLE
 	_update_stake(delta)
 	# Charge with the shield up. The lunge moves the mech, so the shield does not slow it down.
-	controller.mech_shield.force_up = state == State.CHARGE
-	controller.torso_pose.action_twist_deg = _twist
+	if not is_left:
+		controller.mech_shield.force_up = state == State.CHARGE
+	controller.torso_pose.action_twist_deg = _twist * (-1.0 if is_left else 1.0)
 
 
 func _next(next_state: State) -> void:
@@ -318,15 +344,15 @@ func _fire_stake(point: Vector3, normal: Vector3, body: Object, forward: Vector3
 ## worked out again each frame.
 func _aimed_punch() -> Transform3D:
 	var torso := controller.torso
-	var shoulder := controller.arm_ik_right.root_joint.position
+	var shoulder := controller.holding_arm_ik().root_joint.position
 	var local := torso.global_transform.affine_inverse() * _aim_point
 	var direction := (local - shoulder).normalized()
-	var ahead := punch_direction.normalized()
+	var ahead := _side(punch_direction).normalized()
 	var angle := ahead.angle_to(direction)
 	var limit := deg_to_rad(punch_cone_deg)
 	if angle > limit:
 		direction = ahead.slerp(direction, limit / angle).normalized()
-	return _pose_from(shoulder + direction * punch_reach, direction)
+	return _pose_at(shoulder + direction * punch_reach, direction)
 
 
 func get_pose(rest: Transform3D, aim: Transform3D, t: float) -> Transform3D:
@@ -334,8 +360,18 @@ func get_pose(rest: Transform3D, aim: Transform3D, t: float) -> Transform3D:
 	return normal.interpolate_with(_action, smoothstep(0.0, 1.0, _pose_weight))
 
 
+## A right arm place or direction on this arm's side (mirrored for the left hand).
+func _side(vector: Vector3) -> Vector3:
+	return WeaponController.mirror_point(vector) if is_left else vector
+
+
 ## Transform whose -Z (stake direction) points along direction, at position.
 func _pose_from(point: Vector3, direction: Vector3) -> Transform3D:
+	return _pose_at(_side(point), _side(direction))
+
+
+## Same, with the place and direction already on this arm's side.
+func _pose_at(point: Vector3, direction: Vector3) -> Transform3D:
 	var up := Vector3.UP if absf(direction.normalized().y) < 0.95 else Vector3.BACK
 	return Transform3D(Basis.looking_at(direction.normalized(), up), point)
 

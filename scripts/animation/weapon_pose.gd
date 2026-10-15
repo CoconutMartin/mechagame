@@ -7,6 +7,7 @@ extends Node
 ## The arms follow their IK targets with TwoBoneIK. For a two-hand weapon this script also moves the
 ## left hand between two grip markers on the weapon. For a one-hand weapon the left arm is free
 ## (ShieldPose moves it). It also blends the elbow directions.
+## A one-hand gun or the pile bunker in the left hand has its own WeaponPose (left_arm true).
 ## Phase 3: WeaponController can set the weapon, its rest transform, aim anchor and raise state at
 ## start (use_weapon_data). A MechWeapon can change the pose (for example the blade swing).
 
@@ -45,6 +46,10 @@ extends Node
 @export var left_grip_aim: Node3D
 @export var arm_ik_left: TwoBoneIK
 @export var arm_ik_right: TwoBoneIK
+## True: this pose holds a one-hand weapon in the LEFT hand (a second WeaponPose made by
+## WeaponController, user rule 2026-10-15). The places and elbow directions it gets are already
+## mirrored; only the arm whose elbow it steers changes (arm_ik_left).
+@export var left_arm: bool = false
 ## Elbow directions in the rest pose: both elbows out to the side.
 @export var left_pole_rest: Vector3 = Vector3(-1.0, -0.4, 0.3)
 @export var right_pole_rest: Vector3 = Vector3(1.0, 0.0, 0.5)
@@ -92,7 +97,8 @@ func _physics_process(delta: float) -> void:
 	if bounce != null:
 		weapon.position += bounce.offset * bounce.amount()
 
-	arm_ik_right.pole_direction = right_pole_rest.lerp(right_pole_aim, t)
+	var hold_ik := arm_ik_left if left_arm else arm_ik_right
+	hold_ik.pole_direction = right_pole_rest.lerp(right_pole_aim, t)
 	if right_grip_target != null and right_grip_rest != null and right_grip_aim != null:
 		right_grip_target.position = right_grip_rest.position.lerp(right_grip_aim.position, t)
 	if left_grip_target == null:

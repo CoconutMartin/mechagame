@@ -4,7 +4,10 @@ extends Node
 ## Right arm weapon: a model under the torso, posed by WeaponPose, held by the right hand.
 ##   One-hand gun: RMB raises and fires (hip fire). Blade: RMB lunge slash.
 ##   Two-hand weapon: RMB aims down sight (zoom), LMB fires. The left hand holds the weapon.
-## Left arm: a shield (LMB lifts it). Back units: missile pods, Q = left, E = right.
+## Left arm: a shield (LMB lifts it), a fist, or (user rule 2026-10-15) a one-hand gun or the pile
+## bunker: LMB uses it like RMB uses the right arm weapon. The left weapon has its own WeaponPose and
+## WeaponRecoil (made here) and a left view of this controller (left_view) that its scripts use.
+## Back units: missile pods, Q = left, E = right.
 ## Left arm lost with a two-hand weapon: the right hand holds it alone, low at the hip like the
 ## one-hand rifle, and the aim ring is unsteady (FreeAim.unsteady). The keys stay the same.
 ## Only one weapon works at a time: the first one whose button is pressed stays active until it is
@@ -55,8 +58,18 @@ var one_hand_hold: bool = false
 
 var right_weapon: MechWeapon
 var back_left: MechWeapon
-## A fist on the left arm (melee; the other left arm items are the shield).
+## What the left hand holds when it is not a shield: a fist, a one-hand gun or the pile bunker.
 var left_weapon: MechWeapon
+## The left weapon's own pose and recoil (a gun or the pile bunker; made on first use).
+var left_pose: WeaponPose
+var left_recoil: WeaponRecoil
+## True on the view node (left_view): a stand-in controller for the left weapon. Weapon scripts read
+## weapon_pose, weapon_recoil and holding_arm_ik() from their controller, so a left weapon gets
+## the left ones. It shares everything else with the real controller and does no work of its own.
+var left_arm_view: bool = false
+var left_view: WeaponController
+## Left arm hold offset (ArmPart.hold_offset of the left arm), torso space.
+var left_hold_offset: Vector3 = Vector3.ZERO
 var back_right: MechWeapon
 var right_data: WeaponData
 var left_data: WeaponData
@@ -78,6 +91,7 @@ func mount(loadout: Loadout, attach: Callable) -> void:
 	right_data = loadout.weapon_right
 	left_data = loadout.weapon_left
 	hold_offset = loadout.arm_right.hold_offset if loadout.arm_right is ArmPart else Vector3.ZERO
+	left_hold_offset = loadout.arm_left.hold_offset if loadout.arm_left is ArmPart else Vector3.ZERO
 	if right_data != null and right_data.scene != null:
 		right_weapon = _add_weapon(right_data, "RightWeapon")
 		if is_melee_kind(right_data):
@@ -94,17 +108,22 @@ func mount(loadout: Loadout, attach: Callable) -> void:
 	if left_data != null and left_data.kind == WeaponData.Kind.FIST and left_data.scene != null and not _two_handed():
 		left_weapon = _add_weapon(left_data, "LeftWeapon")
 		_wire_melee(left_weapon as MeleeWeapon, true)
+	elif can_hold_left(left_data, right_data):
+		_make_left_view()
+		left_weapon = _add_weapon(left_data, "LeftWeapon", left_view)
+		_wire_left_weapon(left_data)
 	if loadout.back_left != null and loadout.back_left.scene != null:
 		back_left = _add_weapon(loadout.back_left, "BackLeft")
 	if loadout.back_right != null and loadout.back_right.scene != null:
 		back_right = _add_weapon(loadout.back_right, "BackRight")
 
 
-func _add_weapon(data: WeaponData, node_name: String) -> MechWeapon:
+## owner_controller: the controller the weapon talks to (the left view for a left weapon).
+func _add_weapon(data: WeaponData, node_name: String, owner_controller: WeaponController = null) -> MechWeapon:
 	var weapon := data.scene.instantiate() as MechWeapon
 	weapon.name = node_name
 	torso.add_child(weapon)
-	weapon.setup(data, self)
+	weapon.setup(data, owner_controller if owner_controller != null else self)
 	return weapon
 
 
@@ -158,6 +177,91 @@ func _wire_melee(weapon: MeleeWeapon, left: bool) -> void:
 	torso_pose.aim_tilt_deg = 0.0
 	if weapon.data.two_handed:
 		arm_ik_left.target = null
+
+
+## True when the left hand can hold this weapon besides the shields and the fist (user rule
+## 2026-10-15): a one-hand gun, or the pile bunker when the right hand holds no pile bunker (melee
+## weapons may not be doubled, except the fist). Never beside a two-hand weapon.
+static func can_hold_left(left: WeaponData, right: WeaponData) -> bool:
+	if left == null or left.scene == null or left.two_handed:
+		return false
+	if right != null and right.two_handed:
+		return false
+	match left.kind:
+		WeaponData.Kind.GUN:
+			return true
+		WeaponData.Kind.PILE_BUNKER:
+			return right == null or right.kind != WeaponData.Kind.PILE_BUNKER
+	return false
+
+
+## A place mirrored across the mech's middle plane (torso space: x is right).
+static func mirror_point(point: Vector3) -> Vector3:
+	return Vector3(-point.x, point.y, point.z)
+
+
+## A transform mirrored across the middle plane, as a pose of the same (unmirrored) model on the
+## other side: the places mirror, the turns mirror, and the model keeps its handedness.
+static func mirror_pose(pose: Transform3D) -> Transform3D:
+	var flip := Basis.from_scale(Vector3(-1.0, 1.0, 1.0))
+	return Transform3D(flip * pose.basis * flip, mirror_point(pose.origin))
+
+
+## The arm IK of the arm that holds this controller's weapons: the left arm on the left view.
+func holding_arm_ik() -> TwoBoneIK:
+	return arm_ik_left if left_arm_view else arm_ik_right
+
+
+## Makes the left weapon's own WeaponPose and WeaponRecoil (next to the right ones) and the left
+## view that the left weapon's scripts use as their controller.
+func _make_left_view() -> void:
+	var parent := weapon_pose.get_parent()
+	left_recoil = WeaponRecoil.new()
+	left_recoil.name = "LeftWeaponRecoil"
+	parent.add_child(left_recoil)
+	left_pose = WeaponPose.new()
+	left_pose.name = "LeftWeaponPose"
+	left_pose.left_arm = true
+	left_pose.use_weapon_data = true
+	left_pose.mech_aim = mech_aim
+	left_pose.input = input
+	left_pose.arm_ik_left = arm_ik_left
+	left_pose.arm_ik_right = arm_ik_right
+	left_pose.recoil = left_recoil
+	left_pose.one_hand_elbow_pivot = weapon_pose.one_hand_elbow_pivot
+	left_pose.one_hand_pivot = mirror_point(weapon_pose.one_hand_pivot)
+	parent.add_child(left_pose)
+	left_view = WeaponController.new()
+	left_view.name = "LeftView"
+	left_view.left_arm_view = true
+	for property in ["mech", "input", "mech_aim", "arm_ik_left", "arm_ik_right", "camera_ads", "torso_pose",
+			"camera_shake", "mech_shield", "shield_pose", "shield_mount", "torso", "left_hand", "free_aim"]:
+		left_view.set(property, get(property))
+	left_view.weapon_pose = left_pose
+	left_view.weapon_recoil = left_recoil
+	left_view.process_mode = Node.PROCESS_MODE_DISABLED
+	add_child(left_view)
+
+
+## A one-hand gun or the pile bunker in the left hand: its pose, recoil and hand target are the
+## mirror of the right ones, and the left arm reaches for its grip.
+func _wire_left_weapon(data: WeaponData) -> void:
+	var rest := mirror_pose(data.rest_transform).translated(left_hold_offset)
+	left_pose.weapon = left_weapon
+	left_pose.rest_transform = rest
+	left_pose.aim_origin = mirror_point(data.aim_anchor) + left_hold_offset
+	left_pose.right_pole_rest = mirror_point(data.right_pole_rest)
+	left_pose.right_pole_aim = mirror_point(data.right_pole_aim)
+	left_weapon.transform = rest
+	var grip := left_weapon.get_node("GripRight") as Node3D
+	var hand := Marker3D.new()
+	hand.name = "GripLeft"
+	hand.position = mirror_point(grip.position)
+	left_weapon.add_child(hand)
+	arm_ik_left.target = hand
+	left_recoil.bind(left_weapon)
+	left_recoil.kick_back = data.model_kick_back
+	left_recoil.kick_up_deg = data.model_kick_up_deg
 
 
 func _wire_shield(data: WeaponData) -> void:
@@ -269,10 +373,23 @@ func lose_left_arm() -> void:
 	if left_weapon != null:
 		left_weapon.set_trigger(false)
 		left_weapon.process_mode = Node.PROCESS_MODE_DISABLED
-		var model := (left_weapon as MeleeWeapon).get_model()
+		if left_weapon is PileBunkerWeapon:
+			(left_weapon as PileBunkerWeapon).cancel()
+		if active == left_weapon:
+			active = null
+		var model: Node3D = left_weapon.call(&"get_model") if left_weapon.has_method(&"get_model") else null
 		if is_instance_valid(model):
 			model.queue_free()
+		# A gun or the pile bunker is its own node on the frame; a fist is only a model on the hand.
+		if not left_weapon is MeleeWeapon:
+			left_weapon.queue_free()
 		left_weapon = null
+	if left_pose != null:
+		left_pose.weapon = null
+		left_pose.wants_raise = false
+		left_pose.aim_amount = 0.0
+		for node: Node in [left_pose, left_recoil]:
+			node.process_mode = Node.PROCESS_MODE_DISABLED
 	arm_ik_left.process_mode = Node.PROCESS_MODE_DISABLED
 	if _two_handed() and right_weapon != null and not right_weapon is MeleeWeapon:
 		_hold_one_hand()
@@ -327,6 +444,8 @@ func _physics_process(_delta: float) -> void:
 			if weapon != null:
 				weapon.set_trigger(false)
 		weapon_pose.wants_raise = false
+		if left_pose != null:
+			left_pose.wants_raise = false
 		return
 	var wants := {}
 	if right_weapon != null:
@@ -350,12 +469,10 @@ func _physics_process(_delta: float) -> void:
 				active = weapon
 				break
 	for weapon in wants:
-		var allowed: bool = weapon == active or weapon.is_melee() \
-				or (weapon is MissilePodWeapon and active is MissilePodWeapon)
-		weapon.set_trigger(wants[weapon] and allowed)
+		weapon.set_trigger(wants[weapon] and _may_fire(weapon))
 	input.stance_lock = false
 	if right_weapon != null and not right_weapon is MeleeWeapon:
-		var right_on := right_weapon == active
+		var right_on := _may_fire(right_weapon)
 		if _two_handed():
 			weapon_pose.wants_raise = input.aim_held or (right_on and (input.left_fire_held or right_weapon.is_busy()))
 			# Sniping stance: no walking while the rifle is raised (user, 2026-10-12). The rifle lowers
@@ -365,15 +482,38 @@ func _physics_process(_delta: float) -> void:
 			weapon_pose.wants_raise = input.fire_held and right_on and right_data.kind == WeaponData.Kind.GUN
 		if input.reload_pressed:
 			right_weapon.start_reload()
+	# A one-hand gun in the left hand: raised while LMB is held, like the right one on RMB.
+	if left_weapon != null and left_pose != null and not left_weapon is MeleeWeapon:
+		left_pose.wants_raise = input.left_fire_held and _may_fire(left_weapon) and left_data.kind == WeaponData.Kind.GUN
+		if input.reload_pressed:
+			left_weapon.start_reload()
 	if input.reload_pressed:
 		for pod in [back_left, back_right]:
 			if pod != null:
 				pod.start_reload()
 
 
+## The two arm guns (right and left hand) work together (dual guns, user rule 2026-10-15), like the
+## two missile pods. Every other weapon works alone.
+func _is_arm_gun(weapon: MechWeapon) -> bool:
+	return weapon is GunWeapon and (weapon == right_weapon or weapon == left_weapon)
+
+
+## True when the weapon may fire now: it is the active one, a melee weapon, or it works together with
+## the active one (the missile pods, the two arm guns).
+func _may_fire(weapon: MechWeapon) -> bool:
+	return weapon == active or weapon.is_melee() \
+			or (weapon is MissilePodWeapon and active is MissilePodWeapon) \
+			or (_is_arm_gun(weapon) and _is_arm_gun(active))
+
+
 func _still_in_use(weapon: MechWeapon, wants: Dictionary) -> bool:
 	if wants.get(weapon, false) or _is_busy(weapon):
 		return true
+	if _is_arm_gun(weapon):
+		for other in wants:
+			if other != weapon and _is_arm_gun(other) and (wants[other] or _is_busy(other)):
+				return true
 	if weapon is MissilePodWeapon:
 		for other in wants:
 			if other is MissilePodWeapon and (wants[other] or _is_busy(other)):
@@ -390,7 +530,9 @@ func get_hud_slots() -> Array:
 	var slots := []
 	if right_weapon != null:
 		slots.append(["R", right_weapon])
-	if left_data != null:
+	if left_weapon != null and not left_weapon is MeleeWeapon:
+		slots.append(["L", left_weapon])
+	elif left_data != null:
 		slots.append(["L", left_data])
 	if back_left != null:
 		slots.append(["Q", back_left])
