@@ -311,7 +311,7 @@ func _pose_arm(side: Dictionary) -> void:
 	_skeleton.set_bone_pose_rotation(upper, (parent_pose.basis.inverse() * upper_basis).get_rotation_quaternion())
 	_skeleton.set_bone_pose_rotation(fore, (upper_basis.inverse() * fore_basis).get_rotation_quaternion())
 	# A holding hand closes; the free (relaxed) left hand stays open.
-	if weapons == null or ik.target != weapons.free_left_hand:
+	if weapons == null or (ik.target != weapons.free_left_hand and ik.target != weapons.free_right_hand):
 		for bone: int in side.fingers:
 			_skeleton.set_bone_pose_rotation(bone, side.fingers[bone])
 	shoulder.global_basis = (skin.basis.orthonormalized() * upper_basis * (side.upper_offset as Basis).inverse()).orthonormalized()

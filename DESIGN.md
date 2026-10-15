@@ -900,6 +900,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Physics engine: Jolt.
 
 - Hitboxes follow a walking mech (fix 2026-10-15): `PartHitbox` sets `sync_to_physics = false`. With sync on (Jolt, Godot 4.7.2) the physics body moved only with its own local transform (the bone animation), so a walking mech left its hitboxes at its spawn place, and shots and melee passed through AI enemies. Keep it off.
+- Broken hand weapon (user report 2026-10-15: "shoulders at a wide V"): on the rigged mech both arms now hang relaxed at the sides after the weapon breaks. The right hand goes to `RightHandRelaxed` (the mirror of `LeftHandRelaxed`, made by `WeaponController` when the scene has none), and a lost left hand (shield or two-hand weapon broke) goes to the relaxed left hand. This replaces the 2026-10-15 rule that a lost left hand follows the animation (the walk clip holds the arms out in a V). The arms do not swing with the walk yet (next step).
 - Garage (user request 2026-10-15): the right arm weapon list has "None" too (the left list had it), so both hands can be empty.
 - Test tool: `tools/godot/render_melee.gd` plays every fist and hammer attack against a target 7 m away, logs the damage, and saves frames when a window is open (`MELEE_ONLY`, `MELEE_OUT`, `MELEE_TRACE`).
 

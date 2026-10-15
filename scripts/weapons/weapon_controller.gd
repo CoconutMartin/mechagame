@@ -35,6 +35,9 @@ extends Node
 ## Optional. With animate_free_left_arm: the free left hand goes to this marker (a relaxed hang)
 ## in place of the animation.
 @export var free_left_hand: Node3D
+## Optional. The free right hand (the right weapon broke) goes to this marker (a relaxed hang). Empty:
+## a marker is made at the mirror place of free_left_hand.
+@export var free_right_hand: Node3D
 
 @export_group("One-hand hold")
 ## Right hand (GripRight) place in the aim pose, torso space. The one-hand rifle hip hold.
@@ -180,6 +183,7 @@ func lose_right_weapon() -> void:
 	right_weapon.process_mode = Node.PROCESS_MODE_DISABLED
 	if two_handed_left_grip():
 		arm_ik_left.target = _lost_left_target()
+	var relaxed_right := _free_right_target()
 	right_weapon = null
 	right_data = null
 	weapon_pose.aim_amount = 0.0
@@ -187,8 +191,14 @@ func lose_right_weapon() -> void:
 	one_hand_hold = false
 	if free_aim != null:
 		free_aim.unsteady = 0.0
-	for node: Node in [weapon_pose, weapon_recoil, arm_ik_right]:
+	for node: Node in [weapon_pose, weapon_recoil]:
 		node.process_mode = Node.PROCESS_MODE_DISABLED
+	# Rigged mech: the right arm hangs relaxed like the free left arm (user report 2026-10-15: no wide V).
+	if relaxed_right != null:
+		arm_ik_right.target = relaxed_right
+		arm_ik_right.process_mode = Node.PROCESS_MODE_INHERIT
+	else:
+		arm_ik_right.process_mode = Node.PROCESS_MODE_DISABLED
 	torso_pose.aim_twist_deg = 0.0
 	torso_pose.aim_tilt_deg = 0.0
 	torso_pose.action_twist_deg = 0.0
@@ -200,11 +210,23 @@ func _free_left_target() -> Node3D:
 	return free_left_hand if animate_free_left_arm else left_hand
 
 
-## Left hand target when what it held broke (a two-hand weapon or the shield). Rigged mechs: none, so
-## the left arm moves with the animation like the right arm after its weapon breaks (user request
-## 2026-10-15: no limp hang). On death relax_free_left_arm puts it in the relaxed hang.
+## Right hand target when the right weapon broke. Rigged mechs: the relaxed hang, the mirror of the
+## free left hand (a marker made on first use). Part-built mechs: none (the arm IK stops).
+func _free_right_target() -> Node3D:
+	if not animate_free_left_arm:
+		return null
+	if free_right_hand == null and free_left_hand != null:
+		free_right_hand = Marker3D.new()
+		free_right_hand.name = "RightHandRelaxed"
+		free_left_hand.get_parent().add_child(free_right_hand)
+		free_right_hand.position = Vector3(-free_left_hand.position.x, free_left_hand.position.y, free_left_hand.position.z)
+	return free_right_hand
+
+
+## Left hand target when what it held broke (a two-hand weapon or the shield): the relaxed hang
+## on a rigged mech (user report 2026-10-15: the animation arm stood out in a wide V).
 func _lost_left_target() -> Node3D:
-	return null if animate_free_left_arm else left_hand
+	return _free_left_target()
 
 
 ## The mech is wrecked (MechDeath froze the animation): a left arm that follows the animation goes
