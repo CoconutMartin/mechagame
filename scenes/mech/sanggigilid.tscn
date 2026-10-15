@@ -45,6 +45,7 @@
 [ext_resource type="Script" path="res://scripts/mech/mech_hand_control.gd" id="44_x0loa"]
 [ext_resource type="Script" path="res://scripts/effects/ps1_skin_look.gd" id="45_l5mie"]
 [ext_resource type="Script" path="res://scripts/effects/mech_hp_indicators.gd" id="hp_ind_script"]
+[ext_resource type="Script" path="res://scripts/effects/mesh_color_override.gd" id="joint_color_script"]
 [ext_resource type="Resource" path="res://data/mechs/sanggigilid_hp_indicators.tres" id="hp_ind_layout"]
 [ext_resource type="Script" path="res://scripts/animation/skeletal_dodge_animation.gd" id="46_droll"]
 
@@ -507,6 +508,11 @@ hand_right = NodePath("../Visual/HandAttachR/MechHandR")
 hand_left = NodePath("../Visual/HandAttachL/MechHandL")
 grip_bones = PackedStringArray("grip_L", "grip_R")
 old_hand_bones = PackedStringArray("hand_", "index_", "middle_", "ring_", "pinky_", "thumb_", "grip_")
+
+[node name="JointColor" type="Node" parent="." node_paths=PackedStringArray("model")]
+script = ExtResource("joint_color_script")
+model = NodePath("../Visual/Model")
+mesh_names = PackedStringArray("Arm_L_Shoulder_Joint", "Arm_R_Shoulder_Joint", "Leg_L_Hip_Joint", "Leg_R_Hip_Joint", "Waist_Joint")
 
 [node name="PS1SkinLook" type="Node" parent="." unique_id=298985190 node_paths=PackedStringArray("hitboxes", "mech")]
 script = ExtResource("45_l5mie")

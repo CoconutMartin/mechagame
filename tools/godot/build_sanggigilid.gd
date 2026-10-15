@@ -17,6 +17,8 @@ const OUT_SCENE := "res://scenes/mech/sanggigilid.tscn"
 ## Part HP and the bones of each part.
 const HIT_PARTS := "res://data/mechs/sanggigilid_hit_parts.tres"
 const HP_INDICATORS := "res://data/mechs/sanggigilid_hp_indicators.tres"
+const BALL_JOINTS: Array[String] = ["Arm_L_Shoulder_Joint", "Arm_R_Shoulder_Joint", "Leg_L_Hip_Joint",
+		"Leg_R_Hip_Joint", "Waist_Joint"]
 ## Player mech nodes that belong to the part-built body.
 const REMOVE := ["MechAssembler", "Visual", "Animation", "FootLeveler", "PartBreaker", "PowerDownPose", "MechFall", "BodyGroundClamp", "FallPose", "MechDeath"]
 ## Animation nodes the weapons use: they move to WeaponAnimation before Animation is removed.
@@ -195,6 +197,13 @@ func _initialize() -> void:
 	char_look.hitboxes = hitboxes
 	char_look.weapons = root.get_node("WeaponController") as WeaponController
 	_add_hands(root, visual, model, health, hitboxes)
+	# Black ball joints (user request 2026-10-15). Before the skin, which reads their material.
+	var joint_color := MeshColorOverride.new()
+	joint_color.name = "JointColor"
+	root.add_child(joint_color)
+	joint_color.owner = root
+	joint_color.model = model
+	joint_color.mesh_names = PackedStringArray(BALL_JOINTS)
 	var skin := PS1SkinLook.new()
 	skin.name = "PS1SkinLook"
 	root.add_child(skin)
