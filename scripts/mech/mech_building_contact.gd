@@ -11,10 +11,13 @@ const BUILDING_LAYER := 16
 @export var mech: Mech
 @export var health: MechHealth
 ## Damage per second to each part inside a building at walking speed (0.3 x this when slow, more when
-## running or boosting: x speed / walk speed).
-@export var part_damage_per_second: float = 12.0
-## Damage to a part for each chunk it smashes (walls, columns; glass and doors count a quarter).
-@export var part_damage_per_chunk: float = 4.0
+## running or boosting: x speed / walk speed). 0 since 2026-10-15 (contact damage only).
+@export var part_damage_per_second: float = 0.0
+## Damage to a part for each chunk it smashes. 1 since 2026-10-15 (the user raises it when buildings get
+## inner structure).
+@export var part_damage_per_chunk: float = 1.0
+## Glass and door chunks count this much of a normal chunk (1 = the same since 2026-10-15).
+@export var light_chunk_factor: float = 1.0
 ## Below this speed (m/s) nothing happens (standing inside a building).
 @export var min_speed: float = 0.5
 ## Seconds between checks.
@@ -49,7 +52,7 @@ func _physics_process(delta: float) -> void:
 				if not chunks.has(chunk):
 					chunks[chunk] = true
 					var light := chunk.kind == UrbanChunk.Kind.GLASS or chunk.kind == UrbanChunk.Kind.DOOR
-					smashed += 0.25 if light else 1.0
+					smashed += light_chunk_factor if light else 1.0
 		if inside:
 			health.damage(key, part_damage_per_second * pace * interval + part_damage_per_chunk * smashed, Vector3.INF, &"environment")
 	for chunk: UrbanChunk in chunks:

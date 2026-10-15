@@ -7,6 +7,8 @@ extends Node
 
 const HITBOX_LAYER := 8
 
+## Scales all debris damage. 0 since 2026-10-15 (no debris damage; the user may raise it later).
+@export var damage_factor: float = 0.0
 ## Damage per ton per m/s of the debris speed, and the limits of one hit.
 @export var damage_per_ton_speed: float = 2.0
 @export var min_damage: float = 2.0
@@ -56,7 +58,7 @@ func _physics_process(delta: float) -> void:
 
 func _on_body_entered(other: Node) -> void:
 	var hitbox := other as PartHitbox
-	if hitbox == null or _wait > 0.0 or _speed < min_speed:
+	if hitbox == null or damage_factor <= 0.0 or _wait > 0.0 or _speed < min_speed:
 		return
 	_wait = cooldown
-	hitbox.on_hit(clampf(_body.mass * _speed * damage_per_ton_speed, min_damage, max_damage), _body.global_position, &"environment")
+	hitbox.on_hit(clampf(_body.mass * _speed * damage_per_ton_speed, min_damage, max_damage) * damage_factor, _body.global_position, &"environment")
