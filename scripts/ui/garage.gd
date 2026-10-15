@@ -7,7 +7,6 @@ extends CanvasLayer
 ##   Weapons: right arm, left arm (shield, fist, one-hand gun, pile bunker or none; none with a
 ##   two-hand weapon), back units. Melee weapons may not be doubled, except the fist: an arm's pile
 ##   bunker entry is greyed out in the other arm's list while the other arm holds one.
-##   Plates: 0 to 3 per part (light or heavy), shown as armor slabs (PlateMounter).
 ##   Mods: up to max_mods.
 ##   Test targets: spawn or remove the enemy (AI) and the dummy mech.
 ## Stats show the change from the build the garage opened with (GarageStatPanel).
@@ -41,7 +40,6 @@ const WEAPONS := [
 	["weapon_right", "Right arm", "weapons_right", true], ["weapon_left", "Left arm", "weapons_left", true],
 	["back_left", "Back L", "backs_left", true], ["back_right", "Back R", "backs_right", true],
 ]
-const PLATE_SLOTS := ["Head", "Core", "Arm L", "Arm R", "Legs"]
 
 
 func _ready() -> void:
@@ -131,13 +129,8 @@ func _on_changed(_index: int = 0) -> void:
 		_edit.weapon_left = null
 		left.select(0)
 	_grey_doubled_melee()
-	var plates: Array[PlateData] = []
-	for slot in PLATE_SLOTS.size():
-		for i in PlateMounter.MAX_PLATES:
-			var plate := _picked("plate_%d_%d" % [slot, i]) as PlateData
-			if plate != null:
-				plates.append(plate)
-	_edit.plates = plates
+	# No plating (user request 2026-10-15: the plating option is removed).
+	_edit.plates.clear()
 	var mods: Array[ModData] = []
 	for i in max_mods:
 		var mod := _picked("mod_%d" % i) as ModData
@@ -178,10 +171,6 @@ func _show_loadout(loadout: Loadout) -> void:
 		_select(weapon[0], loadout.get(weapon[0]))
 	(_pickers["weapon_left"] as OptionButton).disabled = loadout.weapon_right != null and loadout.weapon_right.two_handed
 	_grey_doubled_melee()
-	for slot in PLATE_SLOTS.size():
-		var of_slot := loadout.plates.filter(func(p: PlateData) -> bool: return p.slot == slot)
-		for i in PlateMounter.MAX_PLATES:
-			_select("plate_%d_%d" % [slot, i], of_slot[i] if i < of_slot.size() else null)
 	for i in max_mods:
 		_select("mod_%d" % i, loadout.mods[i] if i < loadout.mods.size() else null)
 
@@ -253,19 +242,6 @@ func _build_ui() -> void:
 	var weapons := _section(list, "WEAPONS")
 	for weapon in WEAPONS:
 		_add_picker(weapons, weapon[0], weapon[1], catalog.get(weapon[2]), weapon[3])
-	var plates := _section(list, "PLATES (up to 3 per part)")
-	for slot in PLATE_SLOTS.size():
-		var choices := catalog.plates.filter(func(p: PlateData) -> bool: return p.slot == slot)
-		var row := HBoxContainer.new()
-		plates.add_child(row)
-		var label := Label.new()
-		label.text = PLATE_SLOTS[slot]
-		label.custom_minimum_size = Vector2(90, 0)
-		row.add_child(label)
-		for i in PlateMounter.MAX_PLATES:
-			var picker := _make_picker("plate_%d_%d" % [slot, i], choices, true, true)
-			picker.custom_minimum_size = Vector2(98, 0)
-			row.add_child(picker)
 	var mods := _section(list, "MODS (up to %d)" % max_mods)
 	for i in max_mods:
 		_add_picker(mods, "mod_%d" % i, "Mod %d" % (i + 1), catalog.mods, true)
@@ -277,8 +253,7 @@ func _build_ui() -> void:
 		toggle.button_pressed = spawner.active
 		toggle.toggled.connect(spawner.set_active)
 		targets.add_child(toggle)
-		if spawner.pilot == MechSpawner.Pilot.AI:
-			_add_enemy_weapon_picker(targets, spawner)
+		_add_target_weapon_picker(targets, spawner)
 
 	# The right column scrolls: stats, graphics and the PS1 look do not fit a short screen.
 	var right_scroll := ScrollContainer.new()
@@ -310,15 +285,16 @@ func _build_ui() -> void:
 	right.add_child(PS1TuningMenu.new())
 
 
-## The AI enemy's right arm weapon. Only guns and beam rifles: the AI keeps its distance and holds
-## the trigger, so it cannot use melee weapons or the pile bunker.
-func _add_enemy_weapon_picker(parent: Control, spawner: MechSpawner) -> void:
+## A test target's right arm weapon. The AI enemy: only guns and beam rifles (the AI keeps its distance
+## and holds the trigger, so it cannot use melee weapons or the pile bunker). The dummy: any weapon.
+func _add_target_weapon_picker(parent: Control, spawner: MechSpawner) -> void:
+	var is_ai := spawner.pilot == MechSpawner.Pilot.AI
 	var choices: Array = catalog.weapons_right.filter(func(w: WeaponData) -> bool:
-		return w.kind == WeaponData.Kind.GUN or w.kind == WeaponData.Kind.BEAM_RIFLE)
+		return not is_ai or w.kind == WeaponData.Kind.GUN or w.kind == WeaponData.Kind.BEAM_RIFLE)
 	var row := HBoxContainer.new()
 	parent.add_child(row)
 	var label := Label.new()
-	label.text = "Enemy weapon"
+	label.text = "Enemy weapon" if is_ai else "Dummy weapon"
 	label.custom_minimum_size = Vector2(90, 0)
 	row.add_child(label)
 	var picker := OptionButton.new()
