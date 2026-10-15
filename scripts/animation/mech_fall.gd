@@ -23,6 +23,9 @@ enum State { IDLE, STEPS, FALL, IMPACT, SETTLE, ROLL, REPOSITION, LIE, GET_UP }
 @export var dodge: MechDodge
 ## The right arm lower bone: the held weapon hangs from it while the mech is down.
 @export var elbow_right: Node3D
+## The left arm lower bone: a gun in the left hand hangs from it (user rule 2026-10-15). Empty: the
+## ElbowL node under the torso's ShoulderL.
+@export var elbow_left: Node3D
 @export var torso: Node3D
 
 @export_group("Fall")
@@ -128,10 +131,14 @@ func fall(direction: Vector3 = Vector3.ZERO, steps: Vector3 = Vector3.ZERO, get_
 	_sway = 0.0
 	if not mech.is_wrecked:
 		mech.start_fall()
-		# The held weapon hangs from the hand while the mech is down.
+		# The held weapons hang from the hands while the mech is down.
 		var weapon := _right_weapon()
 		if weapon != null and elbow_right != null:
 			weapon.reparent(elbow_right, true)
+		var left_gun := _left_weapon()
+		var left_elbow := _elbow_left()
+		if left_gun != null and left_elbow != null:
+			left_gun.reparent(left_elbow, true)
 	freeze_animation()
 	_set_state(State.STEPS if _step_side != Vector3.ZERO and step_count > 0 else State.FALL)
 
@@ -347,9 +354,9 @@ func _finish() -> void:
 	angle = 0.0
 	state = State.IDLE
 	mech.end_fall()
-	var weapon := _right_weapon()
-	if weapon != null and torso != null and weapon.get_parent() != torso:
-		weapon.reparent(torso, true)
+	for weapon: Node3D in [_right_weapon(), _left_weapon()]:
+		if weapon != null and torso != null and weapon.get_parent() != torso:
+			weapon.reparent(torso, true)
 	if animation != null:
 		for child in animation.get_children():
 			if child.has_method(&"reset_after_fall"):
@@ -366,6 +373,20 @@ func _set_state(next: State) -> void:
 func _right_weapon() -> Node3D:
 	var controller := mech.get_node_or_null("WeaponController") as WeaponController
 	return controller.right_weapon if controller != null else null
+
+
+## A gun or the pile bunker in the left hand (a fist is only a model on the hand: it stays).
+func _left_weapon() -> Node3D:
+	var controller := mech.get_node_or_null("WeaponController") as WeaponController
+	if controller == null or controller.left_weapon == null or controller.left_weapon is MeleeWeapon:
+		return null
+	return controller.left_weapon
+
+
+func _elbow_left() -> Node3D:
+	if elbow_left != null:
+		return elbow_left
+	return torso.get_node_or_null(^"ShoulderL/ElbowL") as Node3D if torso != null else null
 
 
 ## Landing: a mech whose legs broke in the air falls over; a living mech with one leg left falls

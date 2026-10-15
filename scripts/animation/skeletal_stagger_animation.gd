@@ -13,6 +13,10 @@ extends SkeletonModifier3D
 ## Runs before the hit animation (process priority): the hit clip sees Mech.is_fallen and stays out.
 ## A kneeling mech is not stunned (only knocked down).
 ## On death the pose holds; a mech that is down plays no death clip (SkeletalDeath).
+## Face down knock-down (user request 2026-10-15): the hands let go of their guns and rifles
+## (WeaponController.drop_hand_weapons). The arms of those hands follow the clip (they push the body up in
+## the get-up). After the get-up WeaponPickup takes the weapons back; the mech stays "fallen" until then.
+## A knock-down on the back keeps the weapons in the hands.
 
 @export var model: Node3D
 @export var mech: Mech
@@ -39,6 +43,8 @@ extends SkeletonModifier3D
 
 ## True while the mech is on the ground (a knock-down fall or the get-up).
 var is_down: bool = false
+## Takes the dropped weapons back after the get-up (made at start, before the arm rig).
+var pickup: WeaponPickup
 
 ## Clips that play one after the other (the fall, then the get-up).
 var _queue: Array[ActionClip] = []
@@ -56,8 +62,9 @@ var _frame_total: float = 0.0
 var _frame_core: float = 0.0
 var _frame_punch: bool = false
 var _frame_blast: bool = false
-## Clip -> [[track, type, bone name], ...].
+## Clip -> [[track, type, bone name, arm side ("L", "R" or "")], ...].
 var _tracks := {}
+var _weapons: WeaponController
 
 
 func _ready() -> void:
@@ -71,10 +78,29 @@ func _ready() -> void:
 		var list := []
 		for track in each.animation.get_track_count():
 			var bone := String(each.animation.track_get_path(track).get_concatenated_subnames())
-			if bone not in SkeletalDodgeAnimation.ARM_BONES:
-				list.append([track, each.animation.track_get_type(track), bone])
+			# The arm tracks play only on an arm that holds nothing (its weapon lies on the ground).
+			var arm_side := ""
+			if bone in SkeletalDodgeAnimation.ARM_BONES:
+				arm_side = "L" if bone.ends_with("_L") else "R"
+			list.append([track, each.animation.track_get_type(track), bone, arm_side])
 		_tracks[each] = list
 	health.damaged.connect(_on_damaged)
+	_weapons = mech.get_node_or_null("WeaponController") as WeaponController
+	_install_pickup.call_deferred()
+
+
+## Makes the weapon pick-up and puts it in the skeleton before the arm rig (the arms follow the crouch).
+func _install_pickup() -> void:
+	var skeleton := get_skeleton()
+	if skeleton == null or _weapons == null:
+		return
+	pickup = WeaponPickup.new()
+	pickup.name = "WeaponPickup"
+	pickup.mech = mech
+	pickup.weapons = _weapons
+	skeleton.add_child(pickup)
+	if arm_rig != null and arm_rig.get_parent() == skeleton:
+		skeleton.move_child(pickup, arm_rig.get_index())
 
 
 ## True while a stun or knock-down plays (the hit animation stays out).
@@ -135,6 +161,7 @@ func _decide() -> void:
 			_start([fall_kneeling, getup_back], true)
 		elif health.last_hit_from_behind(behind_angle_deg):
 			_start([fall_forward, getup_face_down], true)
+			_drop_weapons([fall_forward, getup_face_down])
 		else:
 			_start([fall_back, getup_back], true)
 	elif _clip == null and mech.is_on_floor() and not (mech.kneel != null and mech.kneel.is_kneeling):
@@ -148,7 +175,26 @@ func _clear_frame() -> void:
 	_frame_blast = false
 
 
+## Face down: the hands let go of their weapons. They fly to the ground near the place where the mech
+## stands after the clips (it moves along their travel).
+func _drop_weapons(clips: Array[ActionClip]) -> void:
+	if _weapons == null or not _weapons.has_droppable_weapon():
+		return
+	var point := mech.global_position
+	for each in clips:
+		if each.travel == null:
+			continue
+		var direction := each.get_direction()
+		var world := mech.global_basis * Vector3(-direction.x, 0.0, -direction.z)
+		world.y = 0.0
+		point += world.normalized() * each.get_distance() * (each.travel.sample(1.0) - each.travel.sample(0.0))
+	_weapons.drop_hand_weapons(point, -mech.global_basis.z)
+
+
 func _start(clips: Array[ActionClip], down: bool) -> void:
+	# A pick-up in progress stops (a weapon in the hand goes back to its place first).
+	if pickup != null:
+		pickup.interrupt()
 	_from_clip = _clip
 	_from_time = _time
 	_queue = clips.duplicate()
@@ -179,6 +225,10 @@ func _next() -> void:
 	_clip = null
 	_from_clip = null
 	is_down = false
+	# Weapons on the ground: the pick-up goes on with the mech down (it ends the fall itself).
+	if pickup != null and _weapons != null and _weapons.is_hand_weapon_dropped():
+		pickup.begin()
+		return
 	mech.end_fall()
 
 
@@ -206,7 +256,10 @@ func _process_modification_with_delta(_delta: float) -> void:
 		return
 	var skeleton := get_skeleton()
 	var from_blend := 1.0 - smoothstep(0.0, 1.0, _blend_in()) if _from_clip != null else 0.0
+	var free_arm := {"L": _weapons != null and _weapons.is_arm_free(false), "R": _weapons != null and _weapons.is_arm_free(true)}
 	for entry: Array in _tracks[_clip]:
+		if entry[3] != "" and not free_arm[entry[3]]:
+			continue
 		var bone := skeleton.find_bone(entry[2])
 		if bone < 0:
 			continue

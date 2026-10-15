@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="MeleeAttack" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/melee_attack.gd" id="1"]
+[ext_resource type="Animation" path="res://data/animations/melee_straight.res" id="2"]
+
+[resource]
+script = ExtResource("1")
+animation = ExtResource("2")
+strikes = PackedVector2Array(0.3, 0.55)
+damage = PackedFloat32Array(100)
+

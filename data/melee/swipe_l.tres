@@ -10,3 +10,4 @@ animation = ExtResource("2")
 travel = ExtResource("3")
 strikes = PackedVector2Array(1.2, 1.45)
 damage = PackedFloat32Array(260)
+left_arm = true

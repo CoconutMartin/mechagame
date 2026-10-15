@@ -2,9 +2,13 @@
 
 [ext_resource type="Script" path="res://scripts/data/melee_attack.gd" id="1"]
 [ext_resource type="Animation" path="res://data/animations/melee_straight_mirror.res" id="2"]
+[ext_resource type="Resource" path="res://data/melee/straight_r_chain.tres" id="3"]
+[ext_resource type="Resource" path="res://data/melee/uppercut_l.tres" id="4"]
 
 [resource]
 script = ExtResource("1")
 animation = ExtResource("2")
 strikes = PackedVector2Array(0.3, 0.55)
 damage = PackedFloat32Array(100)
+left_arm = true
+follow_ups = Array[ExtResource("1")]([ExtResource("3"), ExtResource("4")])

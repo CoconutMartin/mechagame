@@ -10,6 +10,12 @@ extends SkeletonModifier3D
 ## B, landing: at contact the legs compress fast (a spring, with a small overshoot) as deep as the fall
 ##   was high (full at land_full_height, the top of a full jump), wider feet, the torso drops and leans;
 ##   the pose holds through the landing recovery (MechLandingRecovery) and lets go in its last part.
+## Clips (user request 2026-10-15): three Mixamo clips play over B0 and B (JumpClipDirector decides when,
+## AirClipBody puts them on the body with the feet on the floor): Jumping_Down from the top of a jump or
+## the walk off an edge, Falling_To_Landing timed so its touchdown frame meets the real touchdown, and
+## after a fall of hard_fall_height or more Landing_position (a crouch held through the recovery).
+## Falls under min_fall_height and the dodge step landing keep the coded landing crouch (B); A and A2
+## stay coded.
 ## The legs use a two-bone solve (the ankle on its target, the knee toward the front, the foot flat).
 ## The arms keep their weapon holds (SkeletalArmRig runs after this node and follows the torso).
 ## A skeleton modifier must be a child of the Skeleton3D; this node moves itself there at start. Keep
@@ -66,6 +72,24 @@ extends SkeletonModifier3D
 ## forward) at the deepest crouch, so the thighs coming up keep off the arms (SkeletalArmRig).
 @export var weapon_lift: Vector3 = Vector3(0.0, 0.8, -0.15)
 
+@export_group("Clips")
+## Jumping_Down: the start of a fall (holds its pose while the mech is in the air).
+@export var fall_start_clip: AirClip = preload("res://data/jump_clips/fall_start.tres")
+## Falling_To_Landing: the end of a fall; its touchdown frame meets the real touchdown.
+@export var fall_end_clip: AirClip = preload("res://data/jump_clips/fall_end.tres")
+## Landing_position: the hard landing crouch.
+@export var hard_landing_clip: AirClip = preload("res://data/jump_clips/hard_landing.tres")
+## Falls shorter than this (m) play no clip and keep the coded landing crouch (the landing recovery's
+## min_height: its short fall delay).
+@export var min_fall_height: float = 1.0
+## Falls of this height (m) or more land with the hard landing clip, shorter ones with the end of
+## Falling_To_Landing (about one second of jump charge: 3 m).
+@export var hard_fall_height: float = 3.0
+## Seconds in the air before the fall clip may start.
+@export var fall_clip_delay: float = 0.1
+## Ground layer for the ray that predicts the touchdown (1 = world).
+@export_flags_3d_physics var ground_mask: int = 1
+
 @export_group("Bones")
 @export var pelvis_bone: StringName = &"pelvis"
 @export var leg_bones_left: PackedStringArray = ["thigh_L", "shin_L", "foot_L"]
@@ -77,6 +101,12 @@ var launch: float = 0.0
 var air: float = 0.0
 var landing: float = 0.0
 
+## The clip layers (null until the skeleton is there).
+var director: JumpClipDirector
+## Crouch depth of the clip pose now (0 to 1), for the weapon lift.
+var clip_depth: float = 0.0
+
+var _clip_body: AirClipBody
 var _landing_speed: float = 0.0
 var _air_time: float = 0.0
 var _last_recovery_left: float = 0.0
@@ -89,26 +119,70 @@ func _ready() -> void:
 
 ## Weapon offset now (torso space): weapon_lift by the crouch or landing depth.
 func weapon_offset() -> Vector3:
-	return weapon_lift * clampf(maxf(crouch, landing), 0.0, 1.0)
+	return weapon_lift * clampf(maxf(maxf(crouch, landing), clip_depth), 0.0, 1.0)
 
 
 func _process_modification_with_delta(delta: float) -> void:
 	if mech == null:
 		return
-	_update_weights(delta)
-	if crouch <= 0.001 and launch <= 0.001 and air <= 0.001 and absf(landing) <= 0.001:
-		return
 	var skeleton := get_skeleton()
+	if director == null:
+		_setup_clips(skeleton)
+	director.update(delta)
+	_update_weights(delta)
+	var coded := crouch > 0.001 or launch > 0.001 or air > 0.001 or absf(landing) > 0.001
+	if not coded and not director.is_active():
+		clip_depth = 0.0
+		return
 	var pelvis := skeleton.find_bone(pelvis_bone)
 	var legs := [_leg(skeleton, leg_bones_left), _leg(skeleton, leg_bones_right)]
 	var parent := skeleton.get_bone_global_pose(skeleton.get_bone_parent(pelvis))
 	var now := skeleton.get_bone_global_pose(pelvis)
 	var upper: float = legs[0].upper
 	var lower: float = legs[0].lower
-	if mech.is_on_floor():
-		_pose_ground(skeleton, pelvis, parent, now, legs, upper, lower)
-	else:
-		_pose_air(skeleton, now, legs, upper, lower)
+	if coded:
+		if mech.is_on_floor():
+			_pose_ground(skeleton, pelvis, parent, now, legs, upper, lower)
+		else:
+			_pose_air(skeleton, now, legs, upper, lower)
+	_pose_clips(skeleton, parent, now, legs)
+
+
+func _setup_clips(skeleton: Skeleton3D) -> void:
+	_clip_body = AirClipBody.new()
+	_clip_body.setup(skeleton)
+	director = JumpClipDirector.new()
+	director.mech = mech
+	director.landing_recovery = landing_recovery
+	director.fall_start = fall_start_clip
+	director.fall_end = fall_end_clip
+	director.hard_landing = hard_landing_clip
+	director.min_fall_height = min_fall_height
+	director.hard_fall_height = hard_fall_height
+	director.start_delay = fall_clip_delay
+	director.ground_mask = ground_mask
+
+
+## The clip layers over the coded pose, then the feet are kept out of the floor.
+func _pose_clips(skeleton: Skeleton3D, parent: Transform3D, now: Transform3D, legs: Array) -> void:
+	clip_depth = 0.0
+	if not director.is_active():
+		return
+	var floor_height := (skeleton.global_transform.affine_inverse() * mech.global_position).y
+	var anchor := ((legs[0].ankle as Vector3) + (legs[1].ankle as Vector3)) * 0.5
+	var yaw := atan2(now.basis.z.x, now.basis.z.z) - atan2(parent.basis.z.x, parent.basis.z.z)
+	var all := director.clips()
+	for i in JumpClipDirector.LAYERS:
+		var weight := director.weights[i]
+		if weight <= 0.001:
+			continue
+		var clip := all[i]
+		var level := floor_height
+		if clip.lift_scale > 0.0:
+			level += _clip_body.clip_height(clip, director.times[i]) * clip.lift_scale
+		var depth := _clip_body.apply(clip, director.times[i], weight, anchor, yaw, level)
+		clip_depth = maxf(clip_depth, depth * weight)
+	_clip_body.keep_feet_up(floor_height)
 
 
 func _update_weights(delta: float) -> void:
@@ -128,7 +202,7 @@ func _update_weights(delta: float) -> void:
 	# B: a new landing starts the impact spring toward the depth of the fall, held through the recovery.
 	var target := 0.0
 	if landing_recovery != null and landing_recovery.is_recovering() and on_floor and free:
-		var depth := clampf(landing_recovery.fall_height / land_full_height, land_min_scale, land_max_scale)
+		var depth := clampf(landing_recovery.fall_height / land_full_height, land_min_scale, land_max_scale) * director.coded_landing
 		var left := landing_recovery.get_fraction()
 		target = depth * smoothstep(0.0, land_release_part, left)
 		if landing_recovery.time_left > _last_recovery_left + 0.0001:

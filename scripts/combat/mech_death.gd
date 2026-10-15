@@ -27,7 +27,7 @@ extends Node
 @export_range(0.0, 1.0) var side_explode_below: float = 0.5
 ## Groin destroyed: the fallen upper body explodes after this many seconds.
 @export var upper_explode_delay: float = 1.5
-## Speed of the dropped weapon away from the hand (forward), m/s.
+## Speed of the dropped weapon away from the hand (forward), m/s. A left gun drops with it.
 @export var weapon_drop_push: float = 1.0
 ## Push of parts blown off by an explosion, m/s.
 @export var blow_push: float = 9.0
@@ -50,6 +50,11 @@ func _on_destroyed(cause: String) -> void:
 		if MechHealth._has_mesh(weapon):
 			var push := mech.velocity - mech.global_basis.z * weapon_drop_push
 			Debris.drop([weapon] as Array[Node3D], breaker.world(), push)
+	# The limp left hand lets go of a gun too (user rule 2026-10-15: guns in the left hand).
+	var left_nodes := weapons.lose_left_gun()
+	if not left_nodes.is_empty() and MechHealth._has_mesh(left_nodes[0]):
+		var left_push := mech.velocity - mech.global_basis.z * weapon_drop_push - mech.global_basis.x * weapon_drop_push * 0.5
+		Debris.drop(left_nodes, breaker.world(), left_push)
 	weapons.relax_free_left_arm()
 	if camera_shake != null:
 		camera_shake.add_shake(0.6, 0.8)

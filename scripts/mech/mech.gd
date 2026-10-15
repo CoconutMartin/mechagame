@@ -243,6 +243,10 @@ func _ready() -> void:
 	_aim_yaw = rotation.y
 	set_collision_mask_value(2, collides_with_mechs)
 	footsteps.footstep.connect(_on_footstep)
+	# Empty hands swing with the walk (user request 2026-10-15).
+	var arm_swing := FreeArmSwing.new()
+	arm_swing.name = "FreeArmSwing"
+	add_child.call_deferred(arm_swing)
 
 
 ## Called before this mech is freed for a replacement at the same place: it stops blocking mechs
