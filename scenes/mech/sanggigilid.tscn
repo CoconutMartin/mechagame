@@ -46,6 +46,7 @@
 [ext_resource type="Script" path="res://scripts/effects/ps1_skin_look.gd" id="45_l5mie"]
 [ext_resource type="Script" path="res://scripts/effects/mech_hp_indicators.gd" id="hp_ind_script"]
 [ext_resource type="Script" path="res://scripts/effects/mesh_color_override.gd" id="joint_color_script"]
+[ext_resource type="Texture2D" path="res://assets/textures/ps1/joint_metal.png" id="joint_metal_tex"]
 [ext_resource type="Resource" path="res://data/mechs/sanggigilid_hp_indicators.tres" id="hp_ind_layout"]
 [ext_resource type="Script" path="res://scripts/animation/skeletal_dodge_animation.gd" id="46_droll"]
 
@@ -513,6 +514,10 @@ old_hand_bones = PackedStringArray("hand_", "index_", "middle_", "ring_", "pinky
 script = ExtResource("joint_color_script")
 model = NodePath("../Visual/Model")
 mesh_names = PackedStringArray("Arm_L_Shoulder_Joint", "Arm_R_Shoulder_Joint", "Leg_L_Hip_Joint", "Leg_R_Hip_Joint", "Waist_Joint")
+color = Color(0.36, 0.365, 0.35, 1)
+texture = ExtResource("joint_metal_tex")
+metallic = 1.0
+roughness = 0.5
 
 [node name="PS1SkinLook" type="Node" parent="." unique_id=298985190 node_paths=PackedStringArray("hitboxes", "mech")]
 script = ExtResource("45_l5mie")

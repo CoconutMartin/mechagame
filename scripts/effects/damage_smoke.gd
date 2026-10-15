@@ -6,6 +6,11 @@ extends CPUParticles3D
 var heavy: bool = false
 
 
+## How see-through the puffs are: 0 = clear, 1 = solid (PixelSmoke.set_opacity).
+func set_opacity(value: float) -> void:
+	PixelSmoke.set_opacity(self, value)
+
+
 static func create(parent: Node3D, offset: Vector3 = Vector3.ZERO, is_heavy: bool = false) -> DamageSmoke:
 	var smoke := DamageSmoke.new()
 	smoke.heavy = is_heavy

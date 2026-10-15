@@ -25,6 +25,8 @@ const NOT_CARRYING := [UrbanChunk.Kind.GLASS, UrbanChunk.Kind.DOOR]
 @export var rubble_per_m3: float = 1.2
 @export var min_rubble: int = 2
 @export var max_rubble: int = 6
+## Opacity of the dust when a chunk breaks (0 = clear, 1 = solid; user request 2026-10-15: 50%).
+@export_range(0.0, 1.0) var dust_opacity: float = 0.5
 ## Rubble piece size as a part of the chunk's smallest side... largest side.
 @export var rubble_min_scale: float = 0.18
 @export var rubble_max_scale: float = 0.35
@@ -143,7 +145,7 @@ func shatter(place: Transform3D, size: Vector3, color: Color, velocity: Vector3,
 	var world := _world()
 	color.a = 1.0
 	if not glass and (not light or randf() < 0.3):
-		DustBurst.create(world, place.origin, size)
+		DustBurst.create(world, place.origin, size, dust_opacity)
 	var volume := size.x * size.y * size.z
 	var count := 1 if light else clampi(roundi(volume * rubble_per_m3), min_rubble, max_rubble)
 	var smallest := minf(size.x, minf(size.y, size.z))

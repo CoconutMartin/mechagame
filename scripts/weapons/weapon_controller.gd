@@ -148,7 +148,7 @@ func lose_right_weapon() -> void:
 	right_weapon.set_trigger(false)
 	right_weapon.process_mode = Node.PROCESS_MODE_DISABLED
 	if two_handed_left_grip():
-		arm_ik_left.target = _free_left_target()
+		arm_ik_left.target = _lost_left_target()
 	right_weapon = null
 	right_data = null
 	weapon_pose.aim_amount = 0.0
@@ -167,6 +167,13 @@ func lose_right_weapon() -> void:
 ## Left hand target when the left hand holds nothing.
 func _free_left_target() -> Node3D:
 	return free_left_hand if animate_free_left_arm else left_hand
+
+
+## Left hand target when what it held broke (a two-hand weapon or the shield). Rigged mechs: none, so
+## the left arm moves with the animation like the right arm after its weapon breaks (user request
+## 2026-10-15: no limp hang).
+func _lost_left_target() -> Node3D:
+	return null if animate_free_left_arm else left_hand
 
 
 ## Model nodes of the right weapon (a forearm weapon's model sits on the forearm: get_model()).
@@ -193,7 +200,7 @@ func lose_shield() -> void:
 	_set_shield_enabled(false)
 	mech_shield.force_up = false
 	if animate_free_left_arm and not _two_handed():
-		arm_ik_left.target = free_left_hand
+		arm_ik_left.target = _lost_left_target()
 
 
 ## The left arm is gone: no shield, and the left arm IK stops.

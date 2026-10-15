@@ -4,11 +4,14 @@ extends CPUParticles3D
 
 ## Box size the dust starts from, in meters (the chunk size).
 var box: Vector3 = Vector3(4.0, 4.0, 4.0)
+## Dust opacity: 1 = solid, 0 = clear (PixelSmoke.set_opacity).
+var opacity: float = 1.0
 
 
-static func create(world: Node, point: Vector3, size: Vector3) -> DustBurst:
+static func create(world: Node, point: Vector3, size: Vector3, alpha: float = 1.0) -> DustBurst:
 	var dust := DustBurst.new()
 	dust.box = size
+	dust.opacity = alpha
 	world.add_child(dust)
 	dust.global_position = point
 	return dust
@@ -52,5 +55,6 @@ func _ready() -> void:
 	quad.material = material
 	mesh = quad
 	PixelSmoke.register(self)
+	PixelSmoke.set_opacity(self, opacity)
 	emitting = true
 	finished.connect(queue_free)

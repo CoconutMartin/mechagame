@@ -197,13 +197,18 @@ func _initialize() -> void:
 	char_look.hitboxes = hitboxes
 	char_look.weapons = root.get_node("WeaponController") as WeaponController
 	_add_hands(root, visual, model, health, hitboxes)
-	# Black ball joints (user request 2026-10-15). Before the skin, which reads their material.
+	# Ball joints like the connectors (user requests 2026-10-15). Before the skin, which reads their material.
 	var joint_color := MeshColorOverride.new()
 	joint_color.name = "JointColor"
 	root.add_child(joint_color)
 	joint_color.owner = root
 	joint_color.model = model
 	joint_color.mesh_names = PackedStringArray(BALL_JOINTS)
+	# Textured like the joint connectors (their mean color is about 0.2 grey; the texture is about 0.55).
+	joint_color.color = Color(0.36, 0.365, 0.35)
+	joint_color.texture = load("res://assets/textures/ps1/joint_metal.png")
+	joint_color.metallic = 1.0
+	joint_color.roughness = 0.5
 	var skin := PS1SkinLook.new()
 	skin.name = "PS1SkinLook"
 	root.add_child(skin)

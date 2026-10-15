@@ -24,6 +24,8 @@ const HITBOX_MASK := 8
 		_update_preview()
 ## Adds a 2 m door on the +Z face, to show human scale.
 @export var add_door: bool = false
+## Opacity of the dust when a block breaks (0 = clear, 1 = solid; user request 2026-10-15: 50%).
+@export_range(0.0, 1.0) var dust_opacity: float = 0.5
 
 @export_group("Blocks")
 ## Wanted block size, in meters. The real size divides the building evenly.
@@ -144,7 +146,7 @@ func damage_chunk(chunk: BuildingChunk, amount: float) -> void:
 func shatter(place: Transform3D, block: Vector3, color: Color, velocity: Vector3, hurts: bool) -> void:
 	var world := _world()
 	color.a = 1.0
-	DustBurst.create(world, place.origin, block)
+	DustBurst.create(world, place.origin, block, dust_opacity)
 	for i in rubble_per_chunk:
 		var piece := block * randf_range(rubble_min_scale, rubble_max_scale)
 		var offset := Vector3(randf_range(-0.3, 0.3) * block.x, randf_range(-0.3, 0.3) * block.y,

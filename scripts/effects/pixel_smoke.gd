@@ -5,6 +5,9 @@ extends RefCounted
 ## with TAA or cut the mech with jumping edges. A puff keeps its color and shrinks to nothing at
 ## the end of its life (it does not fade). Each emitter keeps its soft look as metadata, so the garage
 ## toggle (SmokeChoice) switches emitters that already exist too.
+## Opacity (user request 2026-10-15): an emitter's "opacity" metadata (0 to 1, default 1; set_opacity)
+## makes its puffs see-through. Below 1 the pixel puffs blend at that opacity (the edges stay hard,
+## the puff texture alpha is 0 or 1).
 
 const GROUP := &"smoke_particles"
 const PUFF_PIXELS := 16
@@ -26,26 +29,40 @@ static func apply_all(tree: SceneTree, on: bool) -> void:
 		apply(node as CPUParticles3D, on)
 
 
+## Sets an emitter's opacity (0 = clear, 1 = solid) and applies its look again.
+static func set_opacity(particles: CPUParticles3D, opacity: float) -> void:
+	opacity = clampf(opacity, 0.0, 1.0)
+	if is_equal_approx(float(particles.get_meta(&"opacity", 1.0)), opacity):
+		return
+	particles.set_meta(&"opacity", opacity)
+	if particles.has_meta(&"soft_mesh"):
+		apply(particles, SmokeChoice.pixel_on())
+
+
 static func apply(particles: CPUParticles3D, on: bool) -> void:
 	var soft_mesh := particles.get_meta(&"soft_mesh") as Mesh
 	var soft_ramp := particles.get_meta(&"soft_ramp") as Gradient
 	var soft_curve := particles.get_meta(&"soft_curve") as Curve
+	var opacity := float(particles.get_meta(&"opacity", 1.0))
 	if not on:
 		particles.mesh = soft_mesh
-		particles.color_ramp = soft_ramp
+		particles.color_ramp = _faded_ramp(soft_ramp, opacity)
 		particles.scale_amount_curve = soft_curve
 		return
-	particles.mesh = _pixel_mesh(soft_mesh)
-	particles.color_ramp = _solid_ramp(soft_ramp)
+	particles.mesh = _pixel_mesh(soft_mesh, opacity < 1.0)
+	particles.color_ramp = _solid_ramp(soft_ramp, opacity)
 	particles.scale_amount_curve = _shrink_curve(soft_curve)
 
 
-static func _pixel_mesh(soft: Mesh) -> QuadMesh:
+static func _pixel_mesh(soft: Mesh, see_through: bool = false) -> QuadMesh:
 	var quad := QuadMesh.new()
 	quad.size = (soft as QuadMesh).size if soft is QuadMesh else Vector2.ONE
 	var material := StandardMaterial3D.new()
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	material.alpha_scissor_threshold = 0.5
+	if see_through:
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	else:
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		material.alpha_scissor_threshold = 0.5
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	material.vertex_color_use_as_albedo = true
@@ -55,15 +72,29 @@ static func _pixel_mesh(soft: Mesh) -> QuadMesh:
 	return quad
 
 
-## The soft ramp's colors, fully solid (the scissor cuts at half alpha, so a fade would pop).
-static func _solid_ramp(soft: Gradient) -> Gradient:
+## The soft ramp's colors at one alpha for the whole life (solid at 1: the scissor cuts at half
+## alpha, so a fade would pop).
+static func _solid_ramp(soft: Gradient, opacity: float = 1.0) -> Gradient:
 	var ramp := Gradient.new()
 	if soft == null:
 		return ramp
 	ramp.offsets = soft.offsets
 	var colors := soft.colors
 	for i in colors.size():
-		colors[i].a = 1.0
+		colors[i].a = opacity
+	ramp.colors = colors
+	return ramp
+
+
+## The soft ramp with its alpha times opacity.
+static func _faded_ramp(soft: Gradient, opacity: float) -> Gradient:
+	if soft == null or opacity >= 1.0:
+		return soft
+	var ramp := Gradient.new()
+	ramp.offsets = soft.offsets
+	var colors := soft.colors
+	for i in colors.size():
+		colors[i].a *= opacity
 	ramp.colors = colors
 	return ramp
 
