@@ -147,10 +147,13 @@ func _fall_after_leg_loss() -> void:
 	if not mech.is_on_floor():
 		fall.fall_on_landing()
 		return
-	var bunker := weapons.right_weapon as PileBunkerWeapon
-	if bunker != null and bunker.is_busy():
-		bunker.cancel()
-		fall.fall()
+	# A pile bunker in either hand (the left one since 2026-10-15).
+	for weapon: MechWeapon in [weapons.right_weapon, weapons.left_weapon]:
+		var bunker := weapon as PileBunkerWeapon
+		if bunker != null and bunker.is_busy():
+			bunker.cancel()
+			fall.fall()
+			return
 
 
 ## The booster (backpack) explodes: no more boost. Its fuel blast damages the torso: fuel_damage x

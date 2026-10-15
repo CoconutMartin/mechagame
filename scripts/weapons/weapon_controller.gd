@@ -375,6 +375,8 @@ func lose_left_arm() -> void:
 		left_weapon.process_mode = Node.PROCESS_MODE_DISABLED
 		if left_weapon is PileBunkerWeapon:
 			(left_weapon as PileBunkerWeapon).cancel()
+			# The bunker no longer runs, so its torso twist would stay (review 2026-10-15).
+			torso_pose.action_twist_deg = 0.0
 		if active == left_weapon:
 			active = null
 		var model: Node3D = left_weapon.call(&"get_model") if left_weapon.has_method(&"get_model") else null
