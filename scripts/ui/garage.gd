@@ -245,6 +245,8 @@ func _build_ui() -> void:
 		toggle.button_pressed = spawner.active
 		toggle.toggled.connect(spawner.set_active)
 		targets.add_child(toggle)
+		if spawner.pilot == MechSpawner.Pilot.AI:
+			_add_enemy_weapon_picker(targets, spawner)
 
 	# The right column scrolls: stats, graphics and the PS1 look do not fit a short screen.
 	var right_scroll := ScrollContainer.new()
@@ -274,6 +276,27 @@ func _build_ui() -> void:
 	right.add_child(SkinStylePicker.new())
 	right.add_child(GraphicsMenu.new())
 	right.add_child(PS1TuningMenu.new())
+
+
+## The AI enemy's right arm weapon. Only guns and beam rifles: the AI keeps its distance and holds
+## the trigger, so it cannot use melee weapons or the pile bunker.
+func _add_enemy_weapon_picker(parent: Control, spawner: MechSpawner) -> void:
+	var choices: Array = catalog.weapons_right.filter(func(w: WeaponData) -> bool:
+		return w.kind == WeaponData.Kind.GUN or w.kind == WeaponData.Kind.BEAM_RIFLE)
+	var row := HBoxContainer.new()
+	parent.add_child(row)
+	var label := Label.new()
+	label.text = "Enemy weapon"
+	label.custom_minimum_size = Vector2(90, 0)
+	row.add_child(label)
+	var picker := OptionButton.new()
+	picker.clip_text = true
+	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for weapon: WeaponData in choices:
+		picker.add_item(weapon.display_name)
+	picker.select(maxi(choices.find(spawner.get_right_weapon()), 0))
+	picker.item_selected.connect(func(index: int) -> void: spawner.set_right_weapon(choices[index]))
+	row.add_child(picker)
 
 
 func _section(parent: Control, text: String) -> VBoxContainer:

@@ -57,6 +57,38 @@ func set_active(value: bool) -> void:
 	_reset()
 
 
+## The right arm weapon the mech is built with (the loadout's, or the mech scene's own).
+func get_right_weapon() -> WeaponData:
+	var base := loadout if loadout != null else _scene_loadout(mech_scene)
+	return base.weapon_right if base != null else null
+
+
+## Gives the mech another right arm weapon (garage test targets) and builds it again. A two-hand
+## weapon clears the left hand.
+func set_right_weapon(weapon: WeaponData) -> void:
+	var base := loadout if loadout != null else _scene_loadout(mech_scene)
+	if base == null:
+		return
+	loadout = base.duplicate() as Loadout
+	loadout.weapon_right = weapon
+	if weapon != null and weapon.two_handed:
+		loadout.weapon_left = null
+	if active:
+		_reset()
+
+
+## The loadout saved in a mech scene (its WeaponMount or MechAssembler), or null.
+static func _scene_loadout(scene: PackedScene) -> Loadout:
+	if scene == null:
+		return null
+	var state := scene.get_state()
+	for node in state.get_node_count():
+		for property in state.get_node_property_count(node):
+			if state.get_node_property_name(node, property) == &"loadout":
+				return state.get_node_property_value(node, property) as Loadout
+	return null
+
+
 ## Name for the garage buttons.
 func get_label() -> String:
 	return "Enemy (AI)" if pilot == Pilot.AI else "Dummy"
