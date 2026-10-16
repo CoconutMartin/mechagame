@@ -21,13 +21,15 @@ extends Node3D
 var velocity: Vector3 = Vector3.ZERO
 ## Damage on a hit (at full damage range).
 var damage: float = 100.0
-## The weapon's data: its range (the bullet ends there) and damage falloff (WeaponData.damage_factor).
-## Null: no falloff, the bullet ends after lifetime.
+## The weapon's data: its damage falloff by the distance from the muzzle to the hit
+## (WeaponData.damage_factor). Null: no falloff.
 var weapon_data: WeaponData
 ## Bodies the bullet does not hit (the mech that fired it).
 var exclude: Array[RID] = []
 
 var _age: float = 0.0
+## Where the bullet started (the muzzle), set on its first physics frame.
+var _origin: Vector3 = Vector3.INF
 ## Meters flown since the muzzle.
 var _travelled: float = 0.0
 ## The tracer streak behind the bullet (scene: a box from the bullet back along +Z).
@@ -51,9 +53,11 @@ func _update_tracer() -> void:
 
 func _physics_process(delta: float) -> void:
 	_age += delta
-	if _age > lifetime or (weapon_data != null and _travelled >= weapon_data.range_m):
+	if _age > lifetime:
 		queue_free()
 		return
+	if not _origin.is_finite():
+		_origin = global_position
 	velocity.y -= gravity * delta
 	var from := global_position
 	var to := from + velocity * delta
@@ -68,9 +72,12 @@ func _physics_process(delta: float) -> void:
 	look_at(to + velocity, Vector3.UP if absf(velocity.normalized().y) < 0.99 else Vector3.FORWARD)
 
 
-## Damage now, after the falloff for the distance flown.
-func get_damage() -> float:
-	return damage * (weapon_data.damage_factor(_travelled) if weapon_data != null else 1.0)
+## Damage of a hit at a point, after the range falloff (distance from the muzzle to the point). The
+## falloff is applied here only once; MechHealth subtracts the result from the part.
+func get_damage(point: Vector3) -> float:
+	if weapon_data == null or not _origin.is_finite():
+		return damage
+	return damage * weapon_data.damage_factor(_origin.distance_to(point))
 
 
 func _impact(point: Vector3, normal: Vector3, hit_body: Object = null) -> void:
@@ -82,9 +89,10 @@ func _impact(point: Vector3, normal: Vector3, hit_body: Object = null) -> void:
 			effect.look_at(point + normal, Vector3.UP)
 		else:
 			effect.look_at(point + normal, Vector3.FORWARD)
+	var hit_damage := get_damage(point)
 	if hit_body != null and hit_body.has_method(&"on_hit"):
-		hit_body.on_hit(get_damage(), point - velocity.normalized() * 10.0)
-	if hit_body is GroundSlab and get_damage() >= crater_min_damage and normal.y > 0.7:
+		hit_body.on_hit(hit_damage, point - velocity.normalized() * 10.0)
+	if hit_body is GroundSlab and hit_damage >= crater_min_damage and normal.y > 0.7:
 		Crater.spawn(get_parent(), point, crater_radius * sqrt(damage / crater_min_damage), hit_body as Node)
 	if mark_scene != null and not (hit_body is PartHitbox or hit_body is TargetDummy):
 		var mark := mark_scene.instantiate() as Node3D

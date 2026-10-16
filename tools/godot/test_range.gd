@@ -1,18 +1,17 @@
 extends SceneTree
-## Effective range test (user choice 2026-10-16). For each gun in WEAPONS, fires single bullets at a
-## damage receiver from several distances and logs the damage that arrives (full up to the effective
-## range, then down to falloff_min at range_m, nothing past range_m). Headless:
+## Damage falloff integration test (spec "weapon_damage_falloff_implementation_spec.md", 2026-10-16).
+## Fires real bullets (scenes/weapons/bullet.tscn, as GunWeapon sets them up: damage, weapon_data) at a
+## mech part hitbox (PartHitbox -> MechHealth.damage) from several distances, and checks the part HP
+## lost against base damage x WeaponData.damage_factor(muzzle-to-impact distance): the falloff is
+## applied once, before the part takes it. Exits with code 1 on any failure. Headless:
 ##   godot --headless --path . --script res://tools/godot/test_range.gd
 
-const WEAPONS := ["smg", "shotgun", "heavy_rifle", "auto_cannon"]
+const WEAPONS := ["shotgun", "smg", "heavy_rifle", "auto_cannon", "auto_cannon_shoulder"]
 const BULLET := preload("res://scenes/weapons/bullet.tscn")
+## The part box is this deep; the bullet hits its front face.
+const BOX_DEPTH := 2.0
 
-
-class Receiver extends StaticBody3D:
-	var total: float = 0.0
-
-	func on_hit(damage: float, _from: Vector3 = Vector3.INF, _kind: StringName = &"") -> void:
-		total += damage
+var _failures: int = 0
 
 
 func _initialize() -> void:
@@ -22,21 +21,22 @@ func _initialize() -> void:
 func _run() -> void:
 	var world := Node3D.new()
 	root.add_child(world)
-	var receiver := Receiver.new()
-	var shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = Vector3(40, 40, 2)
-	shape.shape = box
-	receiver.add_child(shape)
-	receiver.collision_layer = 8  # hitboxes
-	world.add_child(receiver)
+	var holder := Node3D.new()
+	world.add_child(holder)
+	var health := MechHealth.new()  # Not in the tree: only its part HP is used.
+	health.add_part("Torso C", 1.0e9)
+	var hitbox := PartHitbox.create(holder, "Torso C", AABB(Vector3(-20, -20, -BOX_DEPTH * 0.5), Vector3(40, 40, BOX_DEPTH)), health)
+	health.add_hitbox("Torso C", hitbox)
 	for name in WEAPONS:
 		var data := load("res://data/weapons/%s.tres" % name) as WeaponData
-		var line := "%s (effective %d m, max %d m, damage %.1f):" % [name, data.effective_range_m, data.range_m, data.damage]
-		for distance in [20.0, data.effective_range_m * 0.9, (data.effective_range_m + data.range_m) * 0.5, data.range_m * 0.98, data.range_m * 1.1]:
-			receiver.total = 0.0
-			receiver.global_position = Vector3(0, 0, -distance)
+		var s := data.effective_range_m
+		var e := data.falloff_end_m
+		var line := "%s (S %d m, E %d m, M %.2f, damage %.2f):" % [name, s, e, data.falloff_min, data.damage]
+		for distance in [5.0, s, (s + e) * 0.5, e, e + 20.0, 400.0]:
+			# The front face of the part is `distance` meters from the muzzle.
+			holder.global_position = Vector3(0, 0, -(distance + BOX_DEPTH * 0.5))
 			await physics_frame
+			var before: float = health.hp["Torso C"]
 			var bullet := BULLET.instantiate() as Bullet
 			bullet.gravity = 0.0
 			bullet.velocity = Vector3.FORWARD * data.projectile_speed
@@ -46,6 +46,13 @@ func _run() -> void:
 			bullet.global_position = Vector3.ZERO
 			for i in int(distance / data.projectile_speed * 60.0) + 30:
 				await physics_frame
-			line += "  %d m: %.1f (%.0f%%)" % [distance, receiver.total, receiver.total / data.damage * 100.0]
+			var lost: float = before - health.hp["Torso C"]
+			var want := data.damage * data.damage_factor(distance)
+			var ok := absf(lost - want) <= maxf(0.01 * want, 0.01)
+			if not ok:
+				_failures += 1
+				print("FAIL: %s at %.1f m: part lost %.3f, want %.3f" % [name, distance, lost, want])
+			line += "  %.1f m: %.2f (%.1f%%)" % [distance, lost, lost / data.damage * 100.0]
 		print(line)
-	quit()
+	print("RESULT: %d failures" % _failures)
+	quit(1 if _failures > 0 else 0)

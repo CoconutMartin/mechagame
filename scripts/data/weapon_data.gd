@@ -24,13 +24,16 @@ enum Slot { ARM, BACK }
 @export var spread_deg: float = 0.4
 ## Bullets per shot (guns). Each pellet has its own spread and does `damage`. One shot uses one ammo.
 @export var pellets: int = 1
-## Range in meters: the most a bullet or beam flies (and the lock-on range). Past effective_range_m the
-## damage falls to falloff_min at range_m (user choice 2026-10-16).
+## Range in meters: the most a beam reaches (and the lock-on range).
 @export var range_m: float = 1500.0
-## Full damage up to this distance (meters). 0 = no falloff.
+## Damage falloff (spec "weapon_damage_falloff_implementation_spec.md", 2026-10-16): full damage up to
+## effective_range_m (S), then linear down to falloff_min (M) at falloff_end_m (E), and M beyond E.
+## effective_range_m 0 = no falloff. Distance is from the muzzle to the impact point.
 @export var effective_range_m: float = 0.0
-## Part of the damage that is left at range_m (0 to 1).
-@export_range(0.0, 1.0) var falloff_min: float = 0.4
+## End of the falloff (meters); must be more than effective_range_m.
+@export var falloff_end_m: float = 0.0
+## Part of the damage that is left at and beyond falloff_end_m (0 to 1).
+@export_range(0.0, 1.0) var falloff_min: float = 1.0
 
 @export_group("Recoil")
 ## Aim kick per shot, in degrees (FreeAim).
@@ -103,9 +106,17 @@ enum Slot { ARM, BACK }
 @export var blocks_dodge: bool = false
 
 
-## Damage factor at a distance: 1 up to effective_range_m, then down to falloff_min at range_m.
+## Damage factor at a distance (meters): 1 up to effective_range_m, then linear down to falloff_min at
+## falloff_end_m, and falloff_min beyond it. A weapon without falloff, or with falloff_end_m not more
+## than effective_range_m (a warning), gives 1.
 func damage_factor(distance: float) -> float:
-	if effective_range_m <= 0.0 or distance <= effective_range_m:
+	if effective_range_m <= 0.0:
 		return 1.0
-	var t := clampf((distance - effective_range_m) / maxf(range_m - effective_range_m, 0.01), 0.0, 1.0)
-	return lerpf(1.0, falloff_min, t)
+	if falloff_end_m <= effective_range_m:
+		push_warning("%s: falloff_end_m (%.1f) must be more than effective_range_m (%.1f); no falloff used"
+				% [display_name if display_name != "" else resource_path, falloff_end_m, effective_range_m])
+		return 1.0
+	if is_nan(distance):
+		return 1.0
+	var t := clampf((distance - effective_range_m) / (falloff_end_m - effective_range_m), 0.0, 1.0)
+	return lerpf(1.0, clampf(falloff_min, 0.0, 1.0), t)
