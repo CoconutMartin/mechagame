@@ -14,6 +14,9 @@ extends SkeletonModifier3D
 ## A move key hands the mech back to the player from release_at of the clip on (user request
 ## 2026-10-13: no wait for the neutral pose): the dodge ends, the mech walks on from its dodge speed
 ## and the body blends from the clip into the walk over release_fade.
+## Shield dash (user request 2026-10-16): with the Hex Shield (WeaponData.blocks_dodge) MechDodge plays
+## shield_dash ("Shield_Dash" of models/ual/UAL2_Standard_RM.glb, tools/godot/retarget_mixamo.gd UAL mode)
+## instead of a dodge. It always goes forward. ShieldBash can stop it with halt() when the shield hits a mech.
 ## The arms are not taken from the clips: they keep holding the weapon, and the arm rig moves the
 ## torso frame (weapons, shield) with the new torso (user request 2026-10-13: no floating weapon).
 
@@ -26,6 +29,8 @@ extends SkeletonModifier3D
 @export var step_left: DodgeClip = preload("res://data/dodges/step_left.tres")
 @export var step_right: DodgeClip = preload("res://data/dodges/step_right.tres")
 @export var step_back: DodgeClip = preload("res://data/dodges/step_back.tres")
+## Hex Shield dash (MechDodge picks it when the shield blocks the dodge).
+@export var shield_dash: DodgeClip = preload("res://data/dodges/shield_dash.tres")
 ## Side roll: the body turns toward the roll during this part of the clip (0 to 1) and turns back
 ## during the last turn_back part.
 @export var turn_in: float = 0.12
@@ -48,6 +53,8 @@ var _time: float = 0.0
 var _after: float = 0.0
 ## Ground speed kept from the clip (m/s): it fades slower than the clip's own speed.
 var _momentum: float = 0.0
+## True after halt(): the clip goes on but the mech no longer moves.
+var _halted: bool = false
 var _distance: float = 0.0
 ## World direction and body turn (radians, positive = left) of this dodge.
 var _direction: Vector3 = Vector3.ZERO
@@ -64,7 +71,7 @@ var _fade_left: float = 0.0
 func _ready() -> void:
 	if get_skeleton() == null:
 		reparent.call_deferred(model.find_child("Skeleton3D", true, false), false)
-	for each: DodgeClip in [roll, step_forward, step_left, step_right, step_back]:
+	for each: DodgeClip in [roll, step_forward, step_left, step_right, step_back, shield_dash]:
 		if each == null:
 			continue
 		var list := []
@@ -101,6 +108,7 @@ func start(chosen: DodgeClip, local_direction: Vector3, from_boost: bool, finish
 	_time = 0.0
 	_after = 0.0
 	_momentum = 0.0
+	_halted = false
 	_distance = (clip.boost_distance if from_boost else clip.distance) * speed_factor
 	_direction = (mech.global_basis * local_direction).normalized()
 	# Model space: the mech's left (-X in the leg frame) is +X, reached by turning +90 degrees.
@@ -108,6 +116,23 @@ func start(chosen: DodgeClip, local_direction: Vector3, from_boost: bool, finish
 	if clip.turn_to_direction and absf(local_direction.x) > 0.5:
 		_turn = PI * 0.5 if local_direction.x < 0.0 else -PI * 0.5
 	_finished_callback = finished
+
+
+## True while the shield dash clip plays or the mech settles after it.
+func is_shield_dash() -> bool:
+	return is_playing and clip != null and clip == shield_dash
+
+
+## Ground speed of the dodge now, in m/s.
+func get_speed() -> float:
+	return 0.0 if _halted else _momentum
+
+
+## Stops the mech at once (the shield bash hit a mech). The clip and its settle go on.
+func halt() -> void:
+	_halted = true
+	_momentum = 0.0
+	mech.root_motion_velocity = Vector3.ZERO
 
 
 ## True while the mech slides on after the clip (the feet throw dust).
@@ -136,6 +161,8 @@ func _physics_process(delta: float) -> void:
 		_after += delta
 	# The mech keeps its speed: the clip can slow down faster than the momentum fades.
 	_momentum = maxf(clip_speed, _momentum * exp(-delta / maxf(clip.slide_time, 0.01)))
+	if _halted:
+		_momentum = 0.0
 	mech.root_motion_active = true
 	mech.root_motion_velocity = _direction * _momentum
 	if _after >= clip.settle_time or mech.is_fallen or mech.is_wrecked:

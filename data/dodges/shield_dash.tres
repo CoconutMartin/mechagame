@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="DodgeClip" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dodge_clip.gd" id="1"]
+[ext_resource type="Animation" path="res://data/animations/shield_dash.res" id="2"]
+[ext_resource type="Curve" path="res://data/animations/shield_dash_travel.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+animation = ExtResource("2")
+travel = ExtResource("3")
+speed_scale = 1.0
+distance = 3.5
+boost_distance = 5.0
+turn_to_direction = false
+blend_in = 0.08
+slide_time = 0.3
+settle_time = 0.4

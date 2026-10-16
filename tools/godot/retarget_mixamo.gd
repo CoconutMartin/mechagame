@@ -15,6 +15,14 @@ extends SceneTree
 ## the clip's own axis (+Z forward, +X left).
 ##
 ## Run: godot --headless --path . --script res://tools/godot/retarget_mixamo.gd -- <fbx> <out anim .res> <out curve .tres>
+##
+## UAL mode (user request 2026-10-16, the shield dash): when the first argument ends with ".glb" it is a
+## Unreal-style library (models/ual/UAL2_Standard_RM.glb, bones pelvis, spine_03, upperarm_l ...) and
+## the clip is picked by name. The same rest-pose copy runs with MAP_UAL. Run:
+##   godot --headless --path . --script res://tools/godot/retarget_mixamo.gd -- <glb> <clip name> <out anim .res> <out curve .tres>
+## The arms are left out of MAP_UAL on purpose: the dodge never plays arm tracks (the arms keep holding
+## the weapon and the shield). Shield_Dash starts side-on (left shoulder leading, about -96 degrees); the stance turn is
+## taken out as for Mixamo clips, so the mech faces forward.
 
 const MODEL := "res://models/new_mech/new_mech_exploded.glb"
 const FPS := 30.0
@@ -37,10 +45,37 @@ const MAP := {
 	"forearm_R": ["RightForeArm", "hand_R", "RightHand", ""],
 	"hand_R": ["RightHand", "", "", "forearm_R"],
 }
+## UAL bones (Unreal mannequin names) -> same layout as MAP. Legs, pelvis, spine and head only.
+const MAP_UAL := {
+	"pelvis": ["pelvis", "", "", ""],
+	"torso": ["spine_03", "", "", ""],
+	"head": ["Head", "", "", ""],
+	"thigh_L": ["thigh_l", "shin_L", "calf_l", ""],
+	"shin_L": ["calf_l", "foot_L", "foot_l", ""],
+	"foot_L": ["foot_l", "", "", "shin_L"],
+	"thigh_R": ["thigh_r", "shin_R", "calf_r", ""],
+	"shin_R": ["calf_r", "foot_R", "foot_r", ""],
+	"foot_R": ["foot_r", "", "", "shin_R"],
+}
+## Source bone name prefix (Mixamo: "mixamorig_"), hips bone, left and right shoulder bones.
+var _prefix := "mixamorig_"
+var _hips_name := "Hips"
+var _shoulders := ["LeftArm", "RightArm"]
 
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
+	var map: Dictionary = MAP
+	var clip_name := ""
+	var ual: bool = (args[0] as String).ends_with(".glb")
+	if ual:
+		# <glb> <clip name> <out anim> <out curve>: the same layout as the Mixamo call after the clip name.
+		map = MAP_UAL
+		clip_name = args[1]
+		args = PackedStringArray([args[0], args[2], args[3]])
+		_prefix = ""
+		_hips_name = "pelvis"
+		_shoulders = ["upperarm_l", "upperarm_r"]
 	var source_root := (load(args[0]) as PackedScene).instantiate() as Node3D
 	var target_root := (load(MODEL) as PackedScene).instantiate() as Node3D
 	get_root().add_child(source_root)
@@ -49,25 +84,27 @@ func _initialize() -> void:
 	var player := source_root.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
 	var source := source_root.find_child("Skeleton3D", true, false) as Skeleton3D
 	var target := target_root.find_child("Skeleton3D", true, false) as Skeleton3D
-	var source_anim := player.get_animation(player.get_animation_list()[0])
+	if clip_name == "":
+		clip_name = player.get_animation_list()[0]
+	var source_anim := player.get_animation(clip_name)
 	player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
-	player.play(player.get_animation_list()[0])
+	player.play(clip_name)
 
 	var source_rest := _rest_globals(source)
 	var target_rest := _rest_globals(target)
-	var hips := _src(source, "Hips")
+	var hips := _src(source, _hips_name)
 	var scale := target_rest[target.find_bone("pelvis")].origin.y / source_rest[hips].origin.y
 	# Align rotations (world) from the rest directions.
 	var align := {}
-	for bone: String in MAP:
-		var entry: Array = MAP[bone]
+	for bone: String in map:
+		var entry: Array = map[bone]
 		if entry[1] == "":
 			continue
 		var t_dir := (target_rest[target.find_bone(entry[1])].origin - target_rest[target.find_bone(bone)].origin).normalized()
 		var s_dir := (source_rest[_src(source, entry[2])].origin - source_rest[_src(source, entry[0])].origin).normalized()
 		align[bone] = Quaternion(t_dir, s_dir)
-	for bone: String in MAP:
-		var use: String = MAP[bone][3]
+	for bone: String in map:
+		var use: String = map[bone][3]
 		if use != "":
 			align[bone] = align[use]
 
@@ -75,7 +112,7 @@ func _initialize() -> void:
 	anim.length = source_anim.length
 	anim.step = 1.0 / FPS
 	var tracks := {}
-	for bone: String in MAP:
+	for bone: String in map:
 		var track := anim.add_track(Animation.TYPE_ROTATION_3D)
 		anim.track_set_path(track, NodePath("MechRig/Skeleton3D:" + bone))
 		tracks[bone] = track
@@ -88,9 +125,11 @@ func _initialize() -> void:
 	# Stance turn: the average of the hips and shoulder facing at the first frame (Mixamo dodges stand
 	# in a boxer stance, turned about 60 degrees from the travel axes).
 	var hips_face := source.get_bone_global_pose(hips).basis.z
-	var shoulders := source.get_bone_global_pose(_src(source, "LeftArm")).origin - source.get_bone_global_pose(_src(source, "RightArm")).origin
+	var shoulders := source.get_bone_global_pose(_src(source, _shoulders[0])).origin - source.get_bone_global_pose(_src(source, _shoulders[1])).origin
 	var shoulder_face := shoulders.cross(Vector3.UP)
 	var stance_yaw := (atan2(hips_face.x, hips_face.z) + atan2(shoulder_face.x, shoulder_face.z)) * 0.5
+	print("stance yaw %.1f deg (hips %.1f, shoulders %.1f)" % [rad_to_deg(stance_yaw), rad_to_deg(atan2(hips_face.x, hips_face.z)),
+			rad_to_deg(atan2(shoulder_face.x, shoulder_face.z))])
 	var unturn := Quaternion(Vector3.UP, -stance_yaw)
 	var frames := int(ceil(source_anim.length * FPS))
 	var offsets: Array[Vector3] = []
@@ -105,8 +144,8 @@ func _initialize() -> void:
 			var parent := target.get_bone_parent(b)
 			var parent_global: Transform3D = globals[parent] if parent >= 0 else Transform3D.IDENTITY
 			var local := target.get_bone_rest(b)
-			if MAP.has(name):
-				var s := _src(source, MAP[name][0])
+			if map.has(name):
+				var s := _src(source, map[name][0])
 				var change := unturn * source.get_bone_global_pose(s).basis.get_rotation_quaternion() \
 						* source_rest[s].basis.get_rotation_quaternion().inverse()
 				var aligned: Quaternion = align.get(name, Quaternion.IDENTITY)
@@ -137,8 +176,13 @@ func _initialize() -> void:
 	var curve := Curve.new()
 	curve.min_value = -0.5
 	curve.max_value = 1.5
+	var best := 0.0
 	for i in offsets.size():
 		var along := (offsets[i] - offsets[0]).dot(travel_direction) / farthest.length()
+		if ual:
+			# A dash never goes back: the curve keeps its highest value (the hips lean back after the lunge).
+			best = maxf(best, along)
+			along = best
 		curve.add_point(Vector2(float(i) / float(offsets.size() - 1), along), 0.0, 0.0, Curve.TANGENT_LINEAR, Curve.TANGENT_LINEAR)
 	curve.set_meta(&"travel_m", farthest.length())
 	# Model space: +Z forward, +X left.
@@ -150,7 +194,7 @@ func _initialize() -> void:
 
 
 func _src(skeleton: Skeleton3D, name: String) -> int:
-	return skeleton.find_bone("mixamorig_" + name)
+	return skeleton.find_bone(_prefix + name)
 
 
 func _rest_globals(skeleton: Skeleton3D) -> Array[Transform3D]:

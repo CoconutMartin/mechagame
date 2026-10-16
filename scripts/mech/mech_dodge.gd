@@ -12,8 +12,10 @@ extends Node
 ## (user requests 2026-10-13); the clip depends on the direction, the weight class and the speed.
 ## A dodge from a walk (the quick step, W + double Space) ends with a landing: the short landing delay
 ## and the 3 landing steps (user request 2026-10-15). A dodge from a run or boost keeps its momentum.
-## A shield with WeaponData.blocks_dodge (Hex Shield) stops every dodge. A heavily compromised leg
-## strains on a roll and slows it (MechLegStrain).
+## A shield with WeaponData.blocks_dodge (Hex Shield) turns every dodge into a shield dash (user request
+## 2026-10-16): the mech dashes forward behind the raised shield, bashes a mech in its way (ShieldBash)
+## and stops. A mech with that shield and no SkeletalDodgeAnimation cannot dodge. A heavily compromised
+## leg strains on a roll or a shield dash and slows it (MechLegStrain).
 
 signal dodge_started
 signal dodge_ended
@@ -27,6 +29,10 @@ signal dodge_ended
 @export var animation: SkeletalDodgeAnimation
 ## Damage and slowdown of heavily compromised legs on a roll. Made in _ready when not set.
 @export var leg_strain: MechLegStrain
+## The hit of the shield dash. Made in _ready when not set.
+@export var shield_bash: ShieldBash
+## The shield comes up this fast during the dash (1 / seconds; MechShield.raise_speed is slower).
+@export var dash_shield_raise_speed: float = 6.0
 ## Two Space presses closer than this (seconds) start a dodge.
 @export var double_tap_window: float = 0.3
 ## Hop length, in meters.
@@ -82,6 +88,8 @@ var _from_boost: bool = false
 var _from_fast: bool = false
 ## True while the dodge clip is the roll (it ends with no slow-down).
 var _rolling: bool = false
+## True while the dodge clip is the shield dash (the shield is held up).
+var _dashing: bool = false
 var _weapons: WeaponController
 
 
@@ -95,14 +103,30 @@ func _ready() -> void:
 		leg_strain.name = "LegStrain"
 		leg_strain.mech = mech
 		add_child(leg_strain)
+	if shield_bash == null:
+		shield_bash = ShieldBash.new()
+		shield_bash.name = "ShieldBash"
+		shield_bash.mech = mech
+		shield_bash.dodge = self
+		add_child(shield_bash)
 
 
-## True when the mech carries a shield that stops dodging (WeaponData.blocks_dodge, the Hex Shield).
-## A broken shield (MechShield.enabled false) does not.
-func is_blocked_by_shield() -> bool:
+## True when the mech carries a shield that turns the dodge into a dash (WeaponData.blocks_dodge, the
+## Hex Shield). A broken shield (MechShield.enabled false) does not.
+func has_dash_shield() -> bool:
 	if _weapons == null or _weapons.left_data == null or not _weapons.left_data.blocks_dodge:
 		return false
 	return _weapons.mech_shield == null or _weapons.mech_shield.enabled
+
+
+## True when the dodge input starts the shield dash.
+func is_shield_dash() -> bool:
+	return has_dash_shield() and animation != null and animation.shield_dash != null
+
+
+## True when the mech carries a dodge-blocking shield and cannot dash either (no dodge animation).
+func is_blocked_by_shield() -> bool:
+	return has_dash_shield() and not is_shield_dash()
 
 
 ## True while a dodge animation (not the hop) plays.
@@ -165,6 +189,10 @@ func _physics_process(delta: float) -> void:
 			_recover.value = 0.0
 			_recovering = false
 	_boost_tap_left = maxf(_boost_tap_left - delta, 0.0)
+	if _dashing and _weapons != null and _weapons.mech_shield != null:
+		# MechShield (later in the frame) moves the shield up slower: the dash lifts it faster.
+		var shield := _weapons.mech_shield
+		shield.amount = move_toward(shield.amount, 1.0, dash_shield_raise_speed * delta)
 	if not input.jump_held:
 		_suppress_jump = false
 	if input.jump_pressed and mech.is_boosting and mech.is_on_floor() and _boost_tap_left <= 0.0 \
@@ -205,9 +233,12 @@ func _start() -> void:
 		local = Vector3(1.0, 0.0, 0.0)  # D: right.
 	elif input.forward_held:
 		local = Vector3(0.0, 0.0, -1.0)  # W: forward.
+	var dash := is_shield_dash()
+	if dash:
+		local = Vector3(0.0, 0.0, -1.0)  # The shield dash always goes forward.
 	_local_direction = local
 	direction = (mech.global_basis * local).normalized()
-	var clip := animation.pick(local) if animation != null else null
+	var clip := animation.shield_dash if dash else (animation.pick(local) if animation != null else null)
 	if clip != null:
 		_start_animation(clip)
 		return
@@ -237,16 +268,26 @@ func _start_animation(clip: DodgeClip) -> void:
 	_suppress_jump = true
 	# A heavily compromised leg: the roll is slower (checked before the roll hurts the leg).
 	var speed_factor := 1.0
-	_rolling = clip == animation.roll
+	# The shield dash counts as a roll for the legs and the end (user rule 2026-10-16).
+	_dashing = clip == animation.shield_dash
+	_rolling = clip == animation.roll or _dashing
 	if _rolling and leg_strain != null:
 		speed_factor = leg_strain.get_roll_speed_factor()
 		leg_strain.strain_roll()
 	animation.start(clip, _local_direction, _from_boost, _end_roll, speed_factor)
+	if _dashing:
+		shield_bash.begin()
+		if _weapons != null and _weapons.mech_shield != null:
+			_weapons.mech_shield.force_up = true
 	dodge_started.emit()
 
 
 func _end_roll() -> void:
 	is_dodging = false
+	if _dashing:
+		_dashing = false
+		if _weapons != null and _weapons.mech_shield != null:
+			_weapons.mech_shield.force_up = false
 	# A step dodge from a walk (quick step): the next 3 steps are at the broken leg speed (user rule
 	# 2026-10-15). A roll ends with no stop and no slow-down.
 	if not _from_fast and not _rolling and not mech.is_fallen and not mech.is_wrecked:

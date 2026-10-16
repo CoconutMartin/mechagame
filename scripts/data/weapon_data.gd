@@ -94,6 +94,5 @@ enum Slot { ARM, BACK }
 ## its blocking place all the time (user's arm drawing, 2026-10-12).
 @export var shield_hand: Vector3 = Vector3(-2.1, -0.82, -1.95)
 
-## True: a mech that carries this shield cannot dodge (no dodge hop, step or roll). The Hex Shield is
-## too big (user rule 2026-10-15).
+## True: the dodge input starts a shield dash instead of a dodge (Hex Shield, user rule 2026-10-16).
 @export var blocks_dodge: bool = false
