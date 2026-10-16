@@ -1,6 +1,6 @@
 # Handoff: weapons, melee, animation and fixes (next session)
 
-Written 2026-10-16. Branch: `claude/modest-goodall-mft3bs` (all work committed and pushed, 19 commits
+Written 2026-10-16. Branch: `claude/modest-goodall-mft3bs` (all work committed and pushed, 25 commits
 since `88d9099`). Read CLAUDE.md, AGENTS.md, this file and the DESIGN.md sections named below first.
 DESIGN.md is about 150 KB: read the bullets just above "## Reminders for the user" (this session's
 work, newest first) and the reminders list. The previous handoff (`docs/HANDOFF_melee_and_fixes.md`)
@@ -10,8 +10,9 @@ is done.
 
 - Hitboxes follow walking mechs (`PartHitbox.sync_to_physics = false`). This was why AI enemies took
   no damage and were not a target (white brackets).
-- AI fires two-hand rifles on LMB and charges the beam rifle. Garage dropdowns for the AI enemy's and
-  the dummy's weapon.
+- AI fires two-hand rifles on LMB and charges the beam rifle, and flies Fist, War Hammer and Pile Bunker
+  (`AIMelee`: closes in, picks the attack direction by situation). Garage dropdowns for the AI enemy's
+  and the dummy's weapon.
 - Mechs collide (`Mech.collides_with_mechs`); wrecks and replaced mechs leave layer 2. Melee keeps a
   distance (`MeleeAttack.keep_away_distance`, 6 m, hammer swings 8 m).
 - Left hand: one-hand guns, Pile Bunker, Fist, shields; two-hand weapons grey out the left picker;
@@ -24,16 +25,19 @@ is done.
   empty hand swing (`FreeArmSwing`), relaxed arms after a weapon breaks.
 - Face-down knock-down drops hand guns and rifles; get-up and pick-up (`WeaponDrop`, `WeaponPickup`).
   All mechs drop hand weapons on death.
-- Dodge: damaged leg strain (`MechLegStrain`), quick step slow steps (3 steps at 0.4x), Hex Shield
-  blocks the dodge. The new roll FBX was tried and reverted (the file stays in the library).
+- Dodge: damaged leg strain (`MechLegStrain`), quick step slow steps (3 steps at 0.4x). With the Hex
+  Shield the dodge input does a shield dash with a bash (`ShieldBash`; "Shield_Dash" from the UAL2 GLB,
+  retargeted with `retarget_mixamo.gd` in UAL mode). The new roll FBX was tried, reverted and deleted.
 - Aim by weight class (`AimClassTuning`), camera aim leads the torso by 15 degrees at most.
 - Environment damage: 1 HP per smashed chunk only; collapse blast 125 (was 250).
 - Fixes: sparks, explosions and dust bursts spawned at the world origin; `Mech._ready` lost its
-  footstep connection for a few commits (boost start steps); plating removed from the garage.
+  footstep connection for a few commits (boost start steps); a charged beam rifle cannot fire while
+  the mech is down.
+- Plating removed from the game (garage, data, `Loadout.plates`, stats); old hammer combo data deleted.
 
 ## Open: not in the DESIGN.md reminders (the pipeline)
 
-See the list in the chat answer of 2026-10-16; the same items are below so they survive the session.
+The list the user answered on 2026-10-16, item by item.
 
 User answers (2026-10-16):
 1. ADS flinch, 2. heavy rifle self-hit, 3. R reload: resolved.
