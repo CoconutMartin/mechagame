@@ -16,6 +16,4 @@ extends Resource
 @export var weapons_left: Array[WeaponData] = []
 @export var backs_left: Array[WeaponData] = []
 @export var backs_right: Array[WeaponData] = []
-## All plates (light and heavy for each slot).
-@export var plates: Array[PlateData] = []
 @export var mods: Array[ModData] = []

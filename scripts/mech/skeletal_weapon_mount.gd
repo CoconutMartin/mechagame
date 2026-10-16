@@ -2,7 +2,7 @@ class_name SkeletalWeaponMount
 extends Node
 ## Mounts the loadout weapons on a rigged (skeletal) mech. It does the weapon part of MechAssembler:
 ## weapon and shield scenes go onto the weapon frame of SkeletalArmRig (Torso, ShoulderL/R,
-## ElbowL/R). The mech keeps its own body and speeds. The loadout parts (with plates and mods) give
+## ElbowL/R). The mech keeps its own body and speeds. The loadout parts (with mods) give
 ## the part HP: mech.stats is set here, before MechHealth starts (keep this node before it).
 ## Keep this node before the weapon nodes, so the weapons exist before the others start.
 

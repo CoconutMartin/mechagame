@@ -1,6 +1,6 @@
 class_name Loadout
 extends Resource
-## A full mech build: parts, weapons, plates and mods. MechAssembler builds a mech from it.
+## A full mech build: parts, weapons and mods. MechAssembler builds a mech from it.
 
 @export var display_name: String = ""
 ## Mech scene for this loadout, for a mech that is not built from parts (a rigged, skeletal-animation
@@ -19,7 +19,6 @@ extends Resource
 @export var fcs: FcsPart
 @export var weapon_left: WeaponData
 @export var weapon_right: WeaponData
-@export var plates: Array[PlateData] = []
 @export var mods: Array[ModData] = []
 
 

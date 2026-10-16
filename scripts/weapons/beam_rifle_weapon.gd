@@ -69,6 +69,14 @@ func is_busy() -> bool:
 
 func _update(delta: float) -> void:
 	_glow.level = 1.0 if discharge_left > 0.0 else charge
+	# Knocked down (or wrecked): no beam and no charge (user rule 2026-10-16). A beam that fires stops,
+	# and a charge is lost, so releasing the trigger on the ground fires nothing.
+	if controller.mech.is_fallen or controller.mech.is_wrecked:
+		if discharge_left > 0.0:
+			discharge_left = 0.0
+			_end_discharge()
+		charge = 0.0
+		return
 	if discharge_left > 0.0:
 		_update_discharge(delta)
 		return
@@ -126,13 +134,18 @@ func _update_discharge(delta: float) -> void:
 			controller.camera_shake.add_shake(0.03 * kick, 0.02 * kick)
 	if discharge_left <= 0.0:
 		discharge_left = 0.0
-		controller.torso_pose.action_shake = 0.0
-		if _end_kick > 0.0:
-			controller.mech_aim.kick_aim(data.recoil_up_deg * _end_kick * 0.5, data.recoil_side_deg * _end_kick * 0.5, _end_kick)
-			_end_kick = 0.0
-		if is_instance_valid(_beam):
-			_beam.release()
-		_beam = null
+		_end_discharge()
+
+
+## The beam ends: the aim kick comes now and the beam fades.
+func _end_discharge() -> void:
+	controller.torso_pose.action_shake = 0.0
+	if _end_kick > 0.0:
+		controller.mech_aim.kick_aim(data.recoil_up_deg * _end_kick * 0.5, data.recoil_side_deg * _end_kick * 0.5, _end_kick)
+		_end_kick = 0.0
+	if is_instance_valid(_beam):
+		_beam.release()
+	_beam = null
 
 
 func _impact(point: Vector3, normal: Vector3, body: Object, damage: float) -> void:

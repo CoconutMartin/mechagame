@@ -35,37 +35,22 @@ is done.
 
 See the list in the chat answer of 2026-10-16; the same items are below so they survive the session.
 
-Waiting on the user:
-1. ADS flinch "buffered" bug: not reproduced (hit clips start at once in ADS). The stale hitbox bug
-   may have caused it. User to retest with the new build.
-2. Heavy rifle self-hit: user said "skip for now". Not investigated further.
-3. R reload: R is bound and reloads both hand guns and the pods. User to say which weapon fails.
-4. UAL1/UAL2 GLB clips (`Shield_Dash` and others): need a new bone map in `retarget_mixamo.gd`
-   (Unreal skeleton). User to choose a use for `Shield_Dash` (Pile Bunker charge or a shield dash).
-5. Leg strain never destroys a leg (stops at 1 HP, `MechLegStrain.can_destroy_leg`): agent's choice,
-   not confirmed by the user.
+User answers (2026-10-16):
+1. ADS flinch, 2. heavy rifle self-hit, 3. R reload: resolved.
+4. Shield dash: built with the Hex Shield (the dodge input; a shield bash). See DESIGN.md.
+5. Leg strain never destroys a leg: confirmed.
+7. Long rifle under the body and the Auto Cannon pop: OK. A charged beam cannot fire while down: done.
+8. Knocked-down capsule, 11. melee notes, 12. no weapon HP lamps: OK, no change.
+10. AI melee with direction logic: built. See DESIGN.md.
+14. Unused files: deleted (plating removed from the game).
 
-Known gaps and risks (not tested or not done):
-6. Jump clips: the falls under 1 m (coded landing) were not tested in a run; the hard landing crouch
-   may push the thighs into missile pods, a shield or the Pile Bunker; the waist aim twist is off
-   while a clip is at full weight; feet hover 0.1 to 0.16 m in the landing clips.
-7. Weapon pick-up: a long rifle may lie partly under the body; a small pop of the Auto Cannon model
-   at the end of the lift; a charged beam rifle knocked on the back still fires on release; not
-   checked: a mech that dies during the pick-up (the weapon on the ground).
-8. A knocked-down (fallen, not wrecked) mech keeps its upright collision capsule: an invisible wall
-   for about 2 to 5 s.
-9. Left hand: the left Auto Cannon was not checked for clipping; the left Pile Bunker stake was not
-   seen in a clean side view; the gun model is not mirrored (intended).
-10. AI: it cannot use melee weapons or the Pile Bunker (excluded from its dropdown); it never fires a
-    left hand weapon.
-11. Melee: with no target the hammer swing carries the mech about 6 m; the HUD shows no melee cooldown
-    (proposal: `MeleeWeapon.get_status_text()` returns `SkeletalMeleeAnimation.get_cooldown_left()`);
-    `weapon_controller.gd` still maps LMB to the hammer (harmless: the melee node ignores it).
-12. Weapons ("Weapon R", "Weapon L", "Shield", backs) have no HP indicator lamps.
-13. Camera lead limit (15 degrees) and the torso turn speed: user to check the feel in play.
-14. Unused files to clean up with the user's OK: `data/melee/hammer_combo_a.tres`,
-    `hammer_combo_d.tres` (old `split_time`), plate data and `PlateMounter` (plating removed from the
-    UI), `models/mixamo/library/New_dodge_roll_animation.fbx` (reverted roll).
+Carried over (still open):
+- 6. Jump clips: falls under 1 m not tested; the hard landing crouch may push the thighs into missile
+  pods, a shield or the Pile Bunker; the waist aim twist is off while a clip is at full weight; the
+  feet hover 0.1 to 0.16 m in the landing clips.
+- 9. Left hand: the left Auto Cannon was not checked for clipping; the left Pile Bunker stake was not
+  seen in a clean side view.
+- 13. Camera lead limit (15 degrees) and the torso turn speed: check the feel in play.
 
 ## How to work here
 

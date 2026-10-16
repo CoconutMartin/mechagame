@@ -23,16 +23,6 @@
 [ext_resource type="Resource" path="res://data/weapons/missile_pod_l.tres" id="r16"]
 [ext_resource type="Resource" path="res://data/weapons/auto_cannon_shoulder.tres" id="r17"]
 [ext_resource type="Resource" path="res://data/weapons/missile_pod_r.tres" id="r18"]
-[ext_resource type="Resource" path="res://data/plates/head_plate_light.tres" id="r19"]
-[ext_resource type="Resource" path="res://data/plates/head_plate_heavy.tres" id="r20"]
-[ext_resource type="Resource" path="res://data/plates/core_plate_light.tres" id="r21"]
-[ext_resource type="Resource" path="res://data/plates/core_plate_heavy.tres" id="r22"]
-[ext_resource type="Resource" path="res://data/plates/arm_l_plate_light.tres" id="r23"]
-[ext_resource type="Resource" path="res://data/plates/arm_l_plate_heavy.tres" id="r24"]
-[ext_resource type="Resource" path="res://data/plates/arm_r_plate_light.tres" id="r25"]
-[ext_resource type="Resource" path="res://data/plates/arm_r_plate_heavy.tres" id="r26"]
-[ext_resource type="Resource" path="res://data/plates/leg_plate_light.tres" id="r27"]
-[ext_resource type="Resource" path="res://data/plates/leg_plate_heavy.tres" id="r28"]
 [ext_resource type="Resource" path="res://data/mods/boost_tuning.tres" id="r29"]
 [ext_resource type="Resource" path="res://data/mods/lightweight_frame.tres" id="r30"]
 [ext_resource type="Resource" path="res://data/mods/reinforced_frame.tres" id="r31"]
@@ -56,5 +46,4 @@ weapons_right = Array[WeaponData]([ExtResource("r8"), ExtResource("r9"), ExtReso
 weapons_left = Array[WeaponData]([ExtResource("r14"), ExtResource("r15"), ExtResource("r13"), ExtResource("shotgun"), ExtResource("r12"), ExtResource("r11"), ExtResource("melee_fist")])
 backs_left = Array[WeaponData]([ExtResource("r16"), ExtResource("r17")])
 backs_right = Array[WeaponData]([ExtResource("r18"), ExtResource("r17")])
-plates = Array[PlateData]([ExtResource("r19"), ExtResource("r20"), ExtResource("r21"), ExtResource("r22"), ExtResource("r23"), ExtResource("r24"), ExtResource("r25"), ExtResource("r26"), ExtResource("r27"), ExtResource("r28")])
 mods = Array[ModData]([ExtResource("r29"), ExtResource("r30"), ExtResource("r31"), ExtResource("r32"), ExtResource("r33"), ExtResource("r34"), ExtResource("r35"), ExtResource("r36")])

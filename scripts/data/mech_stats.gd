@@ -23,5 +23,5 @@ var recoil_multiplier: float = 1.0
 var lock_range: float = 500.0
 var max_locks: int = 4
 var lock_on_speed: float = 1.0
-## Max HP of each part (with plates and mods). Keys: "Head", "Core", "Arm L", "Arm R", "Legs".
+## Max HP of each part (with mods). Keys: "Head", "Core", "Arm L", "Arm R", "Legs".
 var part_hp: Dictionary = {}

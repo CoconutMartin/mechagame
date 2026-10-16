@@ -103,10 +103,9 @@ func close() -> void:
 
 # ---- Editing ----
 
-## A copy with its own plate and mod lists, so edits never change a saved loadout.
+## A copy with its own mod list, so edits never change a saved loadout.
 static func _copy(loadout: Loadout) -> Loadout:
 	var copy := loadout.duplicate() as Loadout
-	copy.plates = loadout.plates.duplicate()
 	copy.mods = loadout.mods.duplicate()
 	return copy
 
@@ -129,8 +128,6 @@ func _on_changed(_index: int = 0) -> void:
 		_edit.weapon_left = null
 		left.select(0)
 	_grey_doubled_melee()
-	# No plating (user request 2026-10-15: the plating option is removed).
-	_edit.plates.clear()
 	var mods: Array[ModData] = []
 	for i in max_mods:
 		var mod := _picked("mod_%d" % i) as ModData
@@ -324,14 +321,13 @@ func _add_picker(parent: Control, key: String, text: String, items: Array, allow
 	label.text = text
 	label.custom_minimum_size = Vector2(90, 0)
 	row.add_child(label)
-	var picker := _make_picker(key, items, allow_none, false)
+	var picker := _make_picker(key, items, allow_none)
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(picker)
 
 
 ## An OptionButton with "None" (if allowed) and the display names of the items.
-## short: plates show only "Light" or "Heavy".
-func _make_picker(key: String, items: Array, allow_none: bool, short: bool) -> OptionButton:
+func _make_picker(key: String, items: Array, allow_none: bool) -> OptionButton:
 	var picker := OptionButton.new()
 	picker.clip_text = true
 	var entries: Array = []
@@ -340,10 +336,7 @@ func _make_picker(key: String, items: Array, allow_none: bool, short: bool) -> O
 		picker.add_item("None")
 	for item: Resource in items:
 		entries.append(item)
-		var text: String = item.get("display_name")
-		if short:
-			text = "Heavy" if "heavy" in text.to_lower() else "Light"
-		picker.add_item(text)
+		picker.add_item(item.get("display_name") as String)
 	_pickers[key] = picker
 	_items[key] = entries
 	picker.item_selected.connect(_on_changed)

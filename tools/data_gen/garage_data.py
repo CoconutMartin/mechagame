@@ -1,4 +1,4 @@
-"""Garage data (Sanggigilid only since 2026-10-11): the Sanggigilid body parts, armor plates, mods and
+"""Garage data (Sanggigilid only since 2026-10-11): the Sanggigilid body parts, mods and
 the garage catalog. The parts have no models (Sanggigilid is one rigged model); their HP sets the
 part HP of the matching body parts (MechHealth hit keys, see SkeletalWeaponMount), their other
 values feed the garage stat panel.
@@ -29,19 +29,6 @@ SANGGIGILID = {
     "fcs": dict(weight_t=1.0, hp=100, lock_range=500, max_locks=4, aim_assist=0.0),
 }
 
-# Plates: file, name, slot (0 head, 1 core, 2 arm L, 3 arm R, 4 legs), HP, weight, thickness.
-PLATES = [
-    ("head_plate_light", "Head Plate (light)", 0, 80, 0.5, 0.16),
-    ("head_plate_heavy", "Head Plate (heavy)", 0, 150, 1.0, 0.28),
-    ("core_plate_light", "Core Plate (light)", 1, 300, 2.0, 0.18),
-    ("core_plate_heavy", "Core Plate (heavy)", 1, 550, 4.0, 0.32),
-    ("arm_l_plate_light", "Arm L Plate (light)", 2, 120, 0.8, 0.16),
-    ("arm_l_plate_heavy", "Arm L Plate (heavy)", 2, 220, 1.5, 0.28),
-    ("arm_r_plate_light", "Arm R Plate (light)", 3, 120, 0.8, 0.16),
-    ("arm_r_plate_heavy", "Arm R Plate (heavy)", 3, 220, 1.5, 0.28),
-    ("leg_plate_light", "Leg Plate (light)", 4, 250, 2.0, 0.18),
-    ("leg_plate_heavy", "Leg Plate (heavy)", 4, 450, 3.5, 0.32),
-]
 # Mods: file, name, stat (ModData.Stat), percent.
 # Stat: 0 weight, 1 speed, 2 boost thrust, 3 energy capacity, 4 energy output, 5 turn speed,
 # 6 jump height, 7 part HP, 8 recoil.
@@ -98,9 +85,6 @@ def main():
         fields.update({k: (float(x) if isinstance(x, (int, float)) and k not in ("leg_type", "max_locks") else x)
                        for k, x in stats.items()})
         parts[part].append(write(f"data/parts/sanggigilid/sanggigilid_{part}.tres", cls, script, fields))
-    plates = [write(f"data/plates/{f}.tres", "PlateData", "plate_data",
-                    {"display_name": n, "slot": s, "hp": float(hp), "weight_t": float(w), "thickness": float(t)})
-              for f, n, s, hp, w, t in PLATES]
     mods = [write(f"data/mods/{f}.tres", "ModData", "mod_data", {"display_name": n, "stat": s, "percent": p})
             for f, n, s, p in MODS]
     weapons = {
@@ -116,7 +100,6 @@ def main():
              "generators": parts["generator"], "fcs": parts["fcs"]}
     for key, names in weapons.items():
         lists[key] = [f"res://data/weapons/{n}.tres" for n in names]
-    lists["plates"] = plates
     lists["mods"] = mods
     # Catalog: every resource once as an ext_resource, then the typed arrays.
     ids = {}
@@ -130,7 +113,7 @@ def main():
     types = {"heads": "HeadPart", "cores": "CorePart", "arms_left": "ArmPart", "arms_right": "ArmPart",
              "legs": "LegPart", "boosters": "BoosterPart", "generators": "GeneratorPart", "fcs": "FcsPart",
              "weapons_right": "WeaponData", "weapons_left": "WeaponData", "backs_left": "WeaponData",
-             "backs_right": "WeaponData", "plates": "PlateData", "mods": "ModData"}
+             "backs_right": "WeaponData", "mods": "ModData"}
     lines += ["", "[resource]", 'script = ExtResource("script")']
     for key, paths in lists.items():
         items = ", ".join(f'ExtResource("{ids[p]}")' for p in paths)

@@ -6,7 +6,7 @@ extends Node
 ##    names of frame nodes (the sockets, for example Torso, ShoulderL, ElbowL, Lower, HipL, KneeL; a
 ##    Blender model may add "_part" to the name). The children of each group move to the frame node
 ##    with the same name, with their local transforms. PartRigging gives imported nodes their roles.
-## 2. Part variants get their look (PartLook) and the armor plates are added (PlateMounter).
+## 2. Part variants get their look (PartLook).
 ## 3. StatCalculator computes the final stats and MechStatApplier sets them on the mech.
 ## Keep this node before Visual and the logic nodes, so the parts exist before the others start.
 
@@ -36,12 +36,6 @@ func _ready() -> void:
 			var nodes: Array[Node3D] = part_nodes.get(key, [] as Array[Node3D])
 			nodes.append_array(added)
 			part_nodes[key] = nodes
-	# Armor plates (Phase 5): slabs on the parts. They break and fall with their part.
-	var plates := PlateMounter.mount(frame, loadout)
-	for key: String in plates:
-		var nodes: Array[Node3D] = part_nodes.get(key, [] as Array[Node3D])
-		nodes.append_array(plates[key])
-		part_nodes[key] = nodes
 	if weapon_controller != null:
 		weapon_controller.mount(loadout, attach)
 	var torso_pose := mech.find_child("TorsoPose", true, false) as TorsoPose

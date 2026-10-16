@@ -1,6 +1,6 @@
 class_name StatCalculator
 extends RefCounted
-## Computes final mech stats from a Loadout: parts, weapons, plates and mods.
+## Computes final mech stats from a Loadout: parts, weapons and mods.
 ## Phase 6 adds pilot skills here.
 
 
@@ -18,12 +18,10 @@ static func compute(loadout: Loadout) -> MechStats:
 	var stats := MechStats.new()
 	var mods := _mod_totals(loadout.mods)
 
-	# Weight: parts, weapons and plates.
+	# Weight: parts and weapons.
 	var weight := 0.0
 	for part in loadout.get_parts():
 		weight += part.weight_t
-	for plate in loadout.plates:
-		weight += plate.weight_t
 	stats.total_weight_t = weight * _mod(mods, ModData.Stat.WEIGHT)
 
 	var legs := loadout.legs
@@ -65,24 +63,14 @@ static func compute(loadout: Loadout) -> MechStats:
 	if loadout.head != null:
 		stats.lock_on_speed = loadout.head.lock_on_speed
 
-	# Part HP with plates.
+	# Part HP (the plating was removed 2026-10-16).
 	var hp_mod := _mod(mods, ModData.Stat.PART_HP)
-	var slots := {
-		PlateData.Slot.HEAD: ["Head", loadout.head],
-		PlateData.Slot.CORE: ["Core", loadout.core],
-		PlateData.Slot.ARM_LEFT: ["Arm L", loadout.arm_left],
-		PlateData.Slot.ARM_RIGHT: ["Arm R", loadout.arm_right],
-		PlateData.Slot.LEGS: ["Legs", loadout.legs],
-	}
-	for slot in slots:
-		var part: PartData = slots[slot][1]
-		if part == null:
-			continue
-		var hp := part.hp
-		for plate in loadout.plates:
-			if plate.slot == slot:
-				hp += plate.hp
-		stats.part_hp[slots[slot][0]] = hp * hp_mod
+	var slots := [["Head", loadout.head], ["Core", loadout.core], ["Arm L", loadout.arm_left],
+			["Arm R", loadout.arm_right], ["Legs", loadout.legs]]
+	for slot: Array in slots:
+		var part: PartData = slot[1]
+		if part != null:
+			stats.part_hp[slot[0]] = part.hp * hp_mod
 	return stats
 
 
