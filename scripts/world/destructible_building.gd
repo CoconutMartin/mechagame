@@ -44,7 +44,7 @@ const HITBOX_MASK := 8
 
 @export_group("Falling blocks")
 ## Damage of a falling block to mechs near its impact (full at the center, 30% at the edge).
-@export var fall_damage: float = 250.0
+@export var fall_damage: float = 125.0  # 250 before 2026-10-15 (user: -50%, to balance later)
 ## Radius of that damage, in meters.
 @export var fall_radius: float = 6.0
 

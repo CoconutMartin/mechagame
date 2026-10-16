@@ -33,6 +33,8 @@ extends Node
 @export var min_fall_speed: float = 1.0
 ## Flash size of the crash at the end of the fall (m).
 @export var crash_size: float = 6.0
+## Speed of the dropped weapons away from the hands (forward), m/s.
+@export var weapon_drop_push: float = 1.0
 
 var _falling: bool = false
 var _time: float = 0.0
@@ -53,6 +55,7 @@ func _on_destroyed(cause: String) -> void:
 	mech.is_wrecked = true
 	tree.active = false
 	if weapons != null:
+		_drop_weapons()
 		weapons.relax_free_left_arm()
 	if camera_shake != null:
 		camera_shake.add_shake(0.6, 0.8)
@@ -71,6 +74,27 @@ func _on_destroyed(cause: String) -> void:
 	_axis = Vector3.UP.cross(direction).normalized()
 	_pivot = direction * pivot_distance
 	_falling = true
+
+
+## The hands let go of their weapons (user request 2026-10-15): guns and rifles in either hand, and the
+## War Hammer, drop to the ground as debris. The Pile Bunker (on the forearm), shields and fists stay.
+func _drop_weapons() -> void:
+	var world := get_tree().current_scene if get_tree().current_scene != null else mech.get_parent()
+	var push := mech.velocity - mech.global_basis.z * weapon_drop_push
+	var right := weapons.right_weapon
+	var right_nodes: Array[Node3D] = []
+	if weapons.can_drop(right):
+		right_nodes.append(right)
+	elif right is MeleeWeapon and right.data.kind == WeaponData.Kind.HAMMER:
+		var model := (right as MeleeWeapon).get_model()
+		if is_instance_valid(model):
+			right_nodes.append(model)
+	if not right_nodes.is_empty():
+		weapons.lose_right_weapon()
+		Debris.drop(right_nodes, world, push)
+	var left_nodes := weapons.lose_left_gun()
+	if not left_nodes.is_empty():
+		Debris.drop(left_nodes, world, push - mech.global_basis.x * weapon_drop_push * 0.5)
 
 
 func _process(delta: float) -> void:

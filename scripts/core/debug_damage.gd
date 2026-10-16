@@ -13,7 +13,7 @@ extends Node
 const KEYS := {KEY_F1: ["Head"], KEY_F2: ["Torso C"], KEY_F3: ["Torso L"], KEY_F4: ["Torso R"],
 		KEY_F5: ["Arm L"], KEY_F6: ["Arm R"], KEY_F7: ["Groin"], KEY_F8: ["Leg L"], KEY_F9: ["Leg R"],
 		KEY_F10: ["Shield"], KEY_F11: ["Back L", "Back R"], KEY_F12: ["Booster"],
-		KEY_INSERT: ["Weapon R"]}
+		KEY_INSERT: ["Weapon R"], KEY_DELETE: ["Weapon L"]}
 
 
 func _unhandled_input(event: InputEvent) -> void:

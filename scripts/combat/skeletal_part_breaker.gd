@@ -6,7 +6,7 @@ extends Node
 ##   Arm: falls off with its weapon (right) or its shield (left). That weapon is lost.
 ##   Side torso: explodes, its shoulder and its arm fall off with the arm's weapon, and the back unit
 ##        on that side falls off.
-##   Shield, back unit, Weapon R (the right arm weapon: gun or pile bunker): falls off, the arm stays.
+##   Shield, back unit, Weapon R / Weapon L (a hand gun or pile bunker): falls off, the arm stays.
 ##   Leg: explodes and smokes. One leg left: walks 60% slower; boost speed stays.
 ##   Center torso, groin: explode (the mech dies).
 ## Falling parts are the skinned meshes frozen at their pose now, in rigid debris.
@@ -97,6 +97,11 @@ func _on_part_destroyed(key: String) -> void:
 			var nodes := weapons.right_weapon_nodes()
 			weapons.lose_right_weapon()
 			_drop_nodes(nodes, mech.global_basis.x - mech.global_basis.z)
+		"Weapon L":
+			PartBreaker.explode_in(_world(), center, 2.0)
+			var nodes := weapons.left_weapon_nodes()
+			weapons.lose_left_weapon()
+			_drop_nodes(nodes, -mech.global_basis.x - mech.global_basis.z)
 		"Leg L", "Leg R":
 			PartBreaker.explode_in(_world(), center, 3.0)
 			_heavy_smoke(key)
@@ -120,6 +125,10 @@ func _break_arm(key: String) -> void:
 		nodes = weapons.shield_nodes.duplicate()
 		if health.is_part_alive("Shield"):
 			health.remove_part("Shield")
+		# A left gun or Pile Bunker falls with the arm (before lose_left_arm, which frees it).
+		nodes.append_array(weapons.lose_left_weapon())
+		if health.is_part_alive("Weapon L"):
+			health.remove_part("Weapon L")
 		weapons.lose_left_arm()
 	else:
 		nodes = weapons.right_weapon_nodes()

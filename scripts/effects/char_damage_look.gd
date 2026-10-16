@@ -75,6 +75,8 @@ func _meshes(key: String) -> Array[MeshInstance3D]:
 	match key:
 		"Weapon R":
 			roots = weapons.right_weapon_nodes()
+		"Weapon L":
+			roots = weapons.left_weapon_nodes()
 		"Shield":
 			roots = weapons.shield_nodes
 		"Back L":

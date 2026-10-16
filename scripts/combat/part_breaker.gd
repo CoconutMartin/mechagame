@@ -73,6 +73,10 @@ func _on_part_destroyed(key: String) -> void:
 			var nodes := weapons.right_weapon_nodes()
 			weapons.lose_right_weapon()
 			drop(nodes, mech.global_basis.x - mech.global_basis.z)
+		"Weapon L":
+			var nodes := weapons.left_weapon_nodes()
+			weapons.lose_left_weapon()
+			drop(nodes, -mech.global_basis.x - mech.global_basis.z)
 		"Booster":
 			_break_booster()
 
@@ -85,6 +89,10 @@ func break_arm(key: String, away: Vector3) -> void:
 		nodes += weapons.shield_nodes
 		if health.is_part_alive("Shield"):
 			health.remove_part("Shield")
+		# A left gun or Pile Bunker falls with the arm (before lose_left_arm, which frees it).
+		nodes += weapons.lose_left_weapon()
+		if health.is_part_alive("Weapon L"):
+			health.remove_part("Weapon L")
 		weapons.lose_left_arm()
 	else:
 		nodes += weapons.right_weapon_nodes()

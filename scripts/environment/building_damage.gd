@@ -35,7 +35,7 @@ const NOT_CARRYING := [UrbanChunk.Kind.GLASS, UrbanChunk.Kind.DOOR]
 ## Most falling chunk bodies at once in the level; more unsupported chunks break where they are.
 @export var max_falling: int = 60
 ## Damage to mech hitboxes where a falling chunk lands (full at the center), and the radius.
-@export var fall_damage: float = 250.0
+@export var fall_damage: float = 125.0  # 250 before 2026-10-15 (user: -50%, to balance later)
 @export var fall_radius: float = 6.0
 ## Towers: part of a floor's wall and column volume that, broken, brings everything above it down.
 @export_range(0.1, 1.0) var collapse_fraction: float = 0.6

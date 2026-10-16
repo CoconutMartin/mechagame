@@ -3,7 +3,8 @@ extends Node
 ## HP of each mech part (Phase 4). Builds a hitbox for each part from the part models, takes the
 ## damage that hitboxes and blasts send, and tells PartBreaker and MechDeath what broke.
 ## Keys: "Head", "Torso C", "Torso L", "Torso R", "Arm L", "Arm R", "Groin", "Leg L", "Leg R",
-## "Booster" (backpack), "Shield", "Back L", "Back R", "Weapon R" (the right arm weapon).
+## "Booster" (backpack), "Shield", "Back L", "Back R", "Weapon R" (the right arm weapon), "Weapon L" (a left
+## hand gun or Pile Bunker).
 ## The core part is split by position into center, left and right torso; the legs part into
 ## groin (pelvis) and the two legs. Every weapon (gun, pile bunker, shield, missile pod) is a part
 ## with its own HP (WeaponData.hp).
@@ -69,6 +70,9 @@ func _ready() -> void:
 			max_hp["Back R"] = weapons.back_right.data.hp
 		if weapons.right_weapon != null:
 			max_hp["Weapon R"] = weapons.right_data.hp
+		# A left hand gun or Pile Bunker has its own HP (user request 2026-10-15).
+		if weapons.has_left_weapon_part():
+			max_hp["Weapon L"] = weapons.left_data.hp
 	hp = max_hp.duplicate()
 	_split_segments()
 	for key: String in segment_nodes:
@@ -192,6 +196,9 @@ func _split_segments() -> void:
 			_add_node("Shield", node)
 	for node in weapons.right_weapon_nodes():
 		_add_node("Weapon R", node)
+	if hp.has("Weapon L"):
+		for node in weapons.left_weapon_nodes():
+			_add_node("Weapon L", node)
 	if weapons.back_left != null:
 		_add_node("Back L", weapons.back_left)
 	if weapons.back_right != null:

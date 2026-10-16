@@ -367,6 +367,47 @@ func right_weapon_nodes() -> Array[Node3D]:
 	return _weapon_nodes(right_weapon if right_weapon != null else _dropped_weapon(dropped_right))
 
 
+## Model nodes of the left hand gun or Pile Bunker ("Weapon L", user request 2026-10-15); empty for a
+## fist, a shield or an empty hand.
+func left_weapon_nodes() -> Array[Node3D]:
+	var weapon := left_weapon if left_weapon != null else _dropped_weapon(dropped_left)
+	if weapon == null or weapon is MeleeWeapon:
+		return []
+	return _weapon_nodes(weapon)
+
+
+## True when the left hand holds a weapon with its own HP part ("Weapon L"): a gun or the Pile Bunker.
+func has_left_weapon_part() -> bool:
+	return left_weapon != null and not left_weapon is MeleeWeapon
+
+
+## The left hand weapon broke ("Weapon L"): it stops, the arm stays and hangs relaxed. Returns the nodes
+## to drop as debris.
+func lose_left_weapon() -> Array[Node3D]:
+	var weapon := left_weapon
+	if weapon == null or weapon is MeleeWeapon:
+		return []
+	var nodes := left_weapon_nodes()
+	if active == weapon:
+		active = null
+	weapon.set_trigger(false)
+	if weapon is PileBunkerWeapon:
+		(weapon as PileBunkerWeapon).cancel()
+		torso_pose.action_twist_deg = 0.0
+	weapon.process_mode = Node.PROCESS_MODE_DISABLED
+	left_weapon = null
+	left_data = null
+	if left_pose != null:
+		left_pose.weapon = null
+		left_pose.wants_raise = false
+		left_pose.aim_amount = 0.0
+		for node: Node in [left_pose, left_recoil]:
+			node.process_mode = Node.PROCESS_MODE_DISABLED
+	if not _two_handed():
+		arm_ik_left.target = _lost_left_target()
+	return nodes
+
+
 ## Model nodes of a weapon (a forearm weapon's model sits on the forearm: get_model()).
 func _weapon_nodes(weapon: MechWeapon) -> Array[Node3D]:
 	var nodes: Array[Node3D] = []
