@@ -8,3 +8,4 @@ script = ExtResource("1")
 animation = ExtResource("2")
 min_damage = 40.0
 min_stagger = 2.0
+speed_scale = 2.5

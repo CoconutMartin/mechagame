@@ -78,7 +78,6 @@ func _run() -> void:
 			_hits.clips[0].get_length(), stream.size(), stream])
 	# Stagger at 100: the stun clip plays, not a flinch; then the protection.
 	await _calm()
-	# 0.5 s apart: hits inside the 0.3 s knock window would knock the mech down instead.
 	for i in 3:
 		MechStability.hit_body(_hitbox, 28.0, 0, 0.0, from)
 		await _frames(30)

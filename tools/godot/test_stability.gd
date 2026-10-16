@@ -2,7 +2,7 @@ extends SceneTree
 ## Stagger meter unit test (MechStability; user choice 2026-10-16: the arcade stagger spec "B" with the
 ## crouch brace). Checks buildup, the decay delay and rate, one stagger at the threshold, the reset,
 ## the protection window (points ignored, not kept), the weight class and brace scales, the per-shot
-## caps (shotgun pellets, missile volley), the knock-down window, frame-rate independence, bad input,
+## caps (shotgun pellets, missile volley), the single-shot knock-down and the window, frame-rate independence, bad input,
 ## and the stagger values and fire cooldowns in data/weapons. Exits with code 1 on any failure.
 ##   godot --headless --path . --script res://tools/godot/test_stability.gd
 
@@ -154,13 +154,32 @@ func _test_knock_down() -> void:
 	second.add_hit(30.0, 11, 30.0)
 	second.advance(0.1)
 	second.add_hit(30.0, 12, 30.0)
-	_check(knocks[0] == 2, "two missile volleys within 0.3 s (60): knock-down (knocks %d)" % knocks[0])
+	_check(knocks[0] == 1, "two missile volleys within 0.3 s (60): no knock-down, one shot only (knocks %d)" % knocks[0])
+	var twin := _meter(true)
+	twin.knocked_down.connect(func(_from: Vector3) -> void: knocks[0] += 1)
+	twin.add_hit(28.0)
+	twin.add_hit(28.0)
+	_check(knocks[0] == 1, "two auto cannon hits at once (56): no knock-down (knocks %d)" % knocks[0])
+	var bunker := _meter(true)
+	bunker.knocked_down.connect(func(_from: Vector3) -> void: knocks[0] += 1)
+	var bunker_id := MechStability.new_shot_id()
+	bunker.add_hit(30.0, bunker_id, 60.0)
+	bunker.add_hit(30.0, bunker_id, 60.0)
+	_check(knocks[0] == 2, "one shot of 60 in two parts: knock-down (knocks %d)" % knocks[0])
+	var window := _meter(true)
+	window.single_shot_knock = false
+	window.knocked_down.connect(func(_from: Vector3) -> void: knocks[0] += 1)
+	window.add_hit(28.0)
+	window.advance(0.1)
+	window.add_hit(28.0)
+	_check(knocks[0] == 3, "single_shot_knock off: two hits within 0.3 s knock down (knocks %d)" % knocks[0])
 	var slow := _meter(true)
+	slow.single_shot_knock = false
 	slow.knocked_down.connect(func(_from: Vector3) -> void: knocks[0] += 1)
 	slow.add_hit(28.0)
 	slow.advance(0.5)
 	slow.add_hit(28.0)
-	_check(knocks[0] == 2, "two auto cannon hits 0.5 s apart: no knock-down")
+	_check(knocks[0] == 3, "single_shot_knock off: two hits 0.5 s apart: no knock-down")
 
 
 ## The same hits and time give the same meter at 30, 60 and 144 frames per second.

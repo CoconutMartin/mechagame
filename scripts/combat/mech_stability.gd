@@ -6,8 +6,9 @@ extends Node
 ## (shotgun pellets, a beam's ticks, a missile volley) add up to at most that shot's cap. The meter
 ## falls after decay_delay seconds with no new points. At threshold the mech staggers once (signal
 ## staggered), the meter goes to 0 and for protection_time seconds new points are ignored (not kept).
-## Many points in a short time (knock_points within knock_window) knock the mech down instead (signal
-## knocked_down): the War Hammer, a full Pile Bunker, two missile pods. Damage is not changed here.
+## One big shot (knock_points or more from one shot) knocks the mech down instead (signal knocked_down):
+## the War Hammer, a full Pile Bunker (user choice 2026-10-17: only big single hits; two Auto Cannon
+## hits or two missile volleys at once only fill the meter). Damage is not changed here.
 ## SkeletalStaggerAnimation adds this node to its mech and plays the clips.
 
 ## The mech staggers (the meter reached threshold). from: where the hit came from (Vector3.INF = not known).
@@ -33,8 +34,11 @@ signal hit_taken(points: float, from: Vector3)
 @export var heavy_scale: float = 0.65
 ## Incoming points scale while the mech kneels (the brace; 0.75 = 25% less).
 @export_range(0.0, 1.0) var brace_scale: float = 0.75
-## Points (after scaling) within knock_window seconds that knock the mech down instead of a stagger.
+## Points (after scaling) that knock the mech down instead of a stagger.
 @export var knock_points: float = 45.0
+## True: only the points of one shot count toward knock_points. False: all hits within knock_window add up.
+@export var single_shot_knock: bool = true
+## Seconds in which hits add up toward knock_points (only when single_shot_knock is off).
 @export var knock_window: float = 0.3
 
 ## The mech this meter belongs to (its weight class and kneel). Null: medium, no brace.
@@ -103,22 +107,28 @@ func add_hit(points: float, shot_id: int = 0, cap: float = 0.0, from: Vector3 = 
 	if not is_finite(points) or points <= 0.0:
 		return 0.0
 	var scaled := points * get_scale()
-	if shot_id != 0 and cap > 0.0:
-		var scaled_cap := cap * get_scale()
+	var shot_total := 0.0
+	if shot_id != 0:
 		var so_far: float = _shots.get(shot_id, [0.0, _clock])[0]
-		scaled = minf(scaled, maxf(scaled_cap - so_far, 0.0))
-		_shots[shot_id] = [so_far + scaled, _clock]
+		if cap > 0.0:
+			scaled = minf(scaled, maxf(cap * get_scale() - so_far, 0.0))
+		shot_total = so_far + scaled
+		_shots[shot_id] = [shot_total, _clock]
+	else:
+		shot_total = scaled
 	if scaled <= 0.0:
 		return 0.0
 	hit_taken.emit(scaled, from)
 	if is_protected():
 		return 0.0
 	_recent.append([_clock, scaled])
-	var window_sum := 0.0
-	for entry: Array in _recent:
-		if _clock - float(entry[0]) <= knock_window:
-			window_sum += float(entry[1])
-	if knock_points > 0.0 and window_sum >= knock_points:
+	var knock_sum := shot_total
+	if not single_shot_knock:
+		knock_sum = 0.0
+		for entry: Array in _recent:
+			if _clock - float(entry[0]) <= knock_window:
+				knock_sum += float(entry[1])
+	if knock_points > 0.0 and knock_sum >= knock_points:
 		_reset_after_stagger()
 		knocked_down.emit(from)
 		return scaled

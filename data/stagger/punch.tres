@@ -10,4 +10,5 @@ script = ExtResource("1")
 animation = ExtResource("2")
 travel = ExtResource("3")
 limits = ExtResource("4")
+speed_scale = 1.5
 blend_out = 0.25
