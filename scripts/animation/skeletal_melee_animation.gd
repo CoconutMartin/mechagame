@@ -167,6 +167,19 @@ func get_cooldown_left() -> float:
 	return _cooldown_left
 
 
+## True when an attack may start now: no swing plays, the cooldown is over and the mech is free (for the AI).
+func is_ready() -> bool:
+	return not is_playing and _cooldown_left <= 0.0 and _can_attack()
+
+
+## Seconds since the swing hit a target while the next swing of a fist combo can still start (a fist
+## button press now continues it); -1 when it cannot (for the AI).
+func get_combo_wait() -> float:
+	if not is_playing or not _landed or _since_hit > combo_window or _step + 1 >= _sequence.size() or _time >= _end_time:
+		return -1.0
+	return _since_hit
+
+
 ## The mouse button of a melee weapon was pressed: starts the attack for the move key. The next swings
 ## of a fist combo are read in _watch_combo_input.
 func request(weapon: MeleeWeapon) -> void:

@@ -282,12 +282,13 @@ func _build_ui() -> void:
 	right.add_child(PS1TuningMenu.new())
 
 
-## A test target's right arm weapon. The AI enemy: only guns and beam rifles (the AI keeps its distance
-## and holds the trigger, so it cannot use melee weapons or the pile bunker). The dummy: any weapon.
+## A test target's right arm weapon. The AI enemy: guns, beam rifles, Fist, War Hammer and Pile Bunker
+## (the weapons AIPilot can fly). The dummy: any weapon.
 func _add_target_weapon_picker(parent: Control, spawner: MechSpawner) -> void:
 	var is_ai := spawner.pilot == MechSpawner.Pilot.AI
 	var choices: Array = catalog.weapons_right.filter(func(w: WeaponData) -> bool:
-		return not is_ai or w.kind == WeaponData.Kind.GUN or w.kind == WeaponData.Kind.BEAM_RIFLE)
+		return not is_ai or w.kind in [WeaponData.Kind.GUN, WeaponData.Kind.BEAM_RIFLE, WeaponData.Kind.FIST,
+				WeaponData.Kind.HAMMER, WeaponData.Kind.PILE_BUNKER])
 	var row := HBoxContainer.new()
 	parent.add_child(row)
 	var label := Label.new()

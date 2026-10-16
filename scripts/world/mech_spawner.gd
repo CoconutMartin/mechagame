@@ -63,15 +63,20 @@ func get_right_weapon() -> WeaponData:
 	return base.weapon_right if base != null else null
 
 
-## Gives the mech another right arm weapon (garage test targets) and builds it again. A two-hand
-## weapon clears the left hand.
+## Gives the mech another right arm weapon (garage test targets) and builds it again. A Fist also
+## goes to the left hand (combos and A hooks need both fists). A two-hand weapon clears the left hand,
+## and so does any other pick when the left hand holds a fist.
 func set_right_weapon(weapon: WeaponData) -> void:
 	var base := loadout if loadout != null else _scene_loadout(mech_scene)
 	if base == null:
 		return
 	loadout = base.duplicate() as Loadout
 	loadout.weapon_right = weapon
-	if weapon != null and weapon.two_handed:
+	if weapon != null and weapon.kind == WeaponData.Kind.FIST:
+		loadout.weapon_left = weapon
+	elif weapon != null and weapon.two_handed:
+		loadout.weapon_left = null
+	elif loadout.weapon_left != null and loadout.weapon_left.kind == WeaponData.Kind.FIST:
 		loadout.weapon_left = null
 	if active:
 		_reset()

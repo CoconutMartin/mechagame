@@ -11,6 +11,8 @@ extends Node
 ##         it); a charge rifle (beam rifle) is held to a random charge, then released.
 ##   Shield: it lifts the shield now and then, more often when it is hurt.
 ##   Dodge: now and then a dodge hop to the side it strafes to.
+##   Melee (user request 2026-10-16): with a Fist, War Hammer or Pile Bunker in the right hand the
+##   AIMelee part flies instead of the range keeping and the fire (it closes in and picks the attack).
 ##   Search (user request): when it cannot see the target, it walks to where it last saw it (the
 ##   target's place at that time), then on toward the target. It boosts when that is far. When it is
 ##   stuck on a wall it steps sideways for a moment. It does not fire while searching.
@@ -83,6 +85,8 @@ var _hold_left: float = 0.0
 var _weapons: WeaponController
 ## Charge the AI releases the charge rifle at (below 0: not picked yet).
 var _charge_goal: float = -1.0
+## The melee part (made when the right weapon is a Fist, War Hammer or Pile Bunker).
+var _melee: AIMelee
 
 
 func _ready() -> void:
@@ -124,10 +128,28 @@ func _physics_process(delta: float) -> void:
 		_searching = false
 		_hold_left = hold_after_search
 	_stuck_for = 0.0
+	if _use_melee():
+		_melee.drive(target, flat, distance, delta)
+		# A dodge hop only while it waits for the next attack.
+		if not _melee.is_committed() and not _melee.is_ready():
+			_dodge(delta)
+		return
 	_move(flat, distance, delta)
 	_fire(distance, sees)
 	_shield(delta)
 	_dodge(delta)
+
+
+## True when the right weapon is a melee weapon (the AIMelee part is made on the first use).
+func _use_melee() -> bool:
+	if not AIMelee.handles(_weapons):
+		return false
+	if _melee == null:
+		_melee = AIMelee.new()
+		_melee.name = "AIMelee"
+		add_child(_melee)
+		_melee.setup(mech, input, _weapons)
+	return true
 
 
 func _clear_buttons() -> void:

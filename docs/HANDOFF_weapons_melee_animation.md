@@ -37,11 +37,11 @@ See the list in the chat answer of 2026-10-16; the same items are below so they 
 
 User answers (2026-10-16):
 1. ADS flinch, 2. heavy rifle self-hit, 3. R reload: resolved.
-4. Shield dash with the Hex Shield (the dodge input; a shield bash): in progress.
+4. Shield dash with the Hex Shield (the dodge input; a shield bash): done, approved. See DESIGN.md.
 5. Leg strain never destroys a leg: confirmed.
 7. Long rifle under the body and the Auto Cannon pop: OK. A charged beam cannot fire while down: done.
 8. Knocked-down capsule, 11. melee notes, 12. no weapon HP lamps: OK, no change.
-10. AI melee with direction logic: in progress.
+10. AI melee with direction logic: done, approved. See DESIGN.md. Not traced: in one hammer duel the player took about 10,800 "blast" damage (likely building collapses).
 14. Unused files: deleted (plating removed from the game).
 
 Carried over (still open):
