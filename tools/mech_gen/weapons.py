@@ -90,6 +90,24 @@ RIFLE_GRIP_RAKE = 20.0
 RIFLE_GRIP_RADIUS = 0.105
 RIFLE_GRIP = arm_poses.palm_socket(RIFLE_GRIP_HOLD_POINT)
 RIFLE_REST = gun_on_forearm_rest(RIFLE_GRIP, RIFLE_OUT_DEG)
+# One-hand hold on the SGG-101 (user report 2026-10-16: the arm drawing's hand place is out of reach of
+# its arm, so the arm stretched out to the side and the hand looked off the forearm): the rest grip goes
+# to ONE_HAND_GRIP (torso space) and the aim anchor to ONE_HAND_AIM_X; the SMG and Shotgun .tres files
+# got the same places by hand.
+ONE_HAND_GRIP = (2.55, -0.2, -1.9)
+ONE_HAND_AIM_X = 2.55
+RIFLE_REST_GRIP = (3.5253, -0.449447, -1.659444)  # where RIFLE_REST put the grip socket (measured)
+
+
+def shifted_rest(rest, old_grip, new_grip):
+    """Rest transform text moved so the grip goes from old_grip to new_grip (torso space)."""
+    v = [float(x) for x in rest[rest.index("(") + 1:rest.rindex(")")].split(",")]
+    for i in range(3):
+        v[9 + i] += new_grip[i] - old_grip[i]
+    return "Transform3D(" + ", ".join(f"{x:.5g}" for x in v) + ")"
+
+
+RIFLE_REST = shifted_rest(RIFLE_REST, RIFLE_REST_GRIP, ONE_HAND_GRIP)
 MATS = {
     "rifle": "res://materials/warden/rifle.tres", "dark": "res://materials/warden/rifle_dark.tres",
     "armor": "res://materials/warden/armor.tres", "joint": "res://materials/warden/joint.tres",
@@ -278,6 +296,7 @@ if __name__ == "__main__":
     common = {"slot": 0}
     # Heavy rifle: one hand (arm drawing poses above).
     RIFLE_HIP = gun_aim_anchor(RIFLE_GRIP, RIFLE_OUT_DEG)
+    RIFLE_HIP = (ONE_HAND_AIM_X, RIFLE_HIP[1], RIFLE_HIP[2])
     res("data/weapons/heavy_rifle.tres", {"display_name": '"Heavy Rifle"', "weight_t": 2.0, "hp": 300.0,
         "kind": 0, "fire_rate": 0.5, "damage": 90.0, "projectile_speed": 400.0, "spread_deg": 0.4,
         "range_m": 1240.0, "effective_range_m": 620.0,

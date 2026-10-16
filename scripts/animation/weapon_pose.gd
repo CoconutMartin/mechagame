@@ -31,6 +31,10 @@ extends Node
 ## the forearm) stays the same. Off (one_hand_elbow_pivot false): about the stock.
 @export var one_hand_elbow_pivot: bool = true
 @export var one_hand_pivot: Vector3 = Vector3(2.18, 1.16, -0.05)
+## One-hand weapons (user report 2026-10-16: the hand left the wrist): the weapon moves toward the
+## shoulder until its grip is at most this part of the arm length (upper arm + forearm) from it, so the
+## arm reaches the grip and the hand stays on the wrist. The aim direction does not change.
+@export_range(0.5, 1.0) var max_reach_share: float = 0.92
 
 @export_group("Hands")
 ## Optional (two-hand rifles): the right hand IK target slides between a rest and an aim place on the
@@ -98,6 +102,8 @@ func _physics_process(delta: float) -> void:
 		weapon.position += bounce.offset * bounce.amount()
 
 	var hold_ik := arm_ik_left if left_arm else arm_ik_right
+	if left_grip_target == null and not weapon is ForearmGunWeapon:
+		_keep_in_reach(hold_ik)
 	hold_ik.pole_direction = right_pole_rest.lerp(right_pole_aim, t)
 	if right_grip_target != null and right_grip_rest != null and right_grip_aim != null:
 		right_grip_target.position = right_grip_rest.position.lerp(right_grip_aim.position, t)
@@ -105,3 +111,17 @@ func _physics_process(delta: float) -> void:
 		return  # One-hand weapon: the left arm is free.
 	left_grip_target.position = left_grip_rest.position.lerp(left_grip_aim.position, t)
 	arm_ik_left.pole_direction = left_pole_rest.lerp(left_pole_aim, t)
+
+
+## Moves a one-hand weapon toward the shoulder when its grip is out of the arm's reach.
+func _keep_in_reach(ik: TwoBoneIK) -> void:
+	if ik == null or ik.root_joint == null:
+		return
+	var grip := weapon.get_node_or_null(^"GripLeft" if left_arm else ^"GripRight") as Node3D
+	if grip == null:
+		return
+	var to_grip := grip.global_position - ik.root_joint.global_position
+	var reach := (ik.upper_length + ik.lower_length) * max_reach_share
+	var distance := to_grip.length()
+	if distance > reach:
+		weapon.global_position -= to_grip / distance * (distance - reach)
