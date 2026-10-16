@@ -116,6 +116,8 @@ func _update_launches(delta: float) -> void:
 	missile.launch(-tube.global_basis.z * 30.0 + Vector3.UP * 10.0, target if is_instance_valid(target) else null,
 			aim_point, data.projectile_speed, data.missile_turn_deg, controller.mech.get_hit_exclude())
 	missile.damage = data.damage
+	# Long enough to reach the max range (MWO LRM 1000 m) at the top speed.
+	missile.lifetime = maxf(missile.lifetime, data.range_m / maxf(data.projectile_speed, 1.0) + 2.0)
 
 
 func _find_candidate() -> Node3D:

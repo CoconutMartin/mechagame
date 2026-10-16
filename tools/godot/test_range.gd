@@ -1,5 +1,5 @@
 extends SceneTree
-## Damage falloff and max range integration test (2026-10-16).
+## Damage falloff and max range integration test (user choice 2026-10-16: MechWarrior Online ranges).
 ## Fires real bullets (scenes/weapons/bullet.tscn, as GunWeapon sets them up: damage, weapon_data) at a
 ## mech part hitbox (PartHitbox -> MechHealth.damage) from several distances, and checks the part HP
 ## lost against base damage x WeaponData.damage_factor(muzzle-to-impact distance): the falloff is
@@ -31,9 +31,9 @@ func _run() -> void:
 	for name in WEAPONS:
 		var data := load("res://data/weapons/%s.tres" % name) as WeaponData
 		var s := data.effective_range_m
-		var e := data.falloff_end_m
-		var line := "%s (S %d m, E %d m, M %.2f, max %d m, damage %.2f):" % [name, s, e, data.falloff_min, data.range_m, data.damage]
-		for distance in [5.0, s, (s + e) * 0.5, e - 1.0, data.range_m - 5.0, data.range_m + 20.0]:
+		var e := data.range_m
+		var line := "%s (optimal %d m, max %d m, damage %.2f):" % [name, s, e, data.damage]
+		for distance in [5.0, s, (s + e) * 0.5, e - 20.0, e + 20.0]:
 			# The front face of the part is `distance` meters from the muzzle.
 			holder.global_position = Vector3(0, 0, -(distance + BOX_DEPTH * 0.5))
 			await physics_frame
