@@ -6,4 +6,4 @@
 [resource]
 script = ExtResource("1")
 animation = ExtResource("2")
-min_damage = 0.0
+min_damage = 40.0

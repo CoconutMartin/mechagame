@@ -30,6 +30,7 @@ func _fire() -> void:
 		bullet.velocity = direction * data.projectile_speed
 		bullet.exclude = controller.mech.get_hit_exclude()
 		bullet.damage = data.damage
+		bullet.weapon_data = data
 		controller.get_world().add_child(bullet)
 		bullet.global_position = origin
 		bullet.look_at(origin + direction, Vector3.UP if absf(direction.y) < 0.99 else Vector3.FORWARD)

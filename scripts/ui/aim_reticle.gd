@@ -26,12 +26,18 @@ var weapons: WeaponController
 @export var crosshair_size: float = 6.0
 ## Draw the camera crosshair (yellow dot). Hidden since 4c (user request).
 @export var show_crosshair: bool = false
+## Out of effective range (user choice 2026-10-16): when the target is farther than the longest
+## effective range of the hand weapons, the brackets fade to this opacity and the distance shows
+## out_of_range_text.
+@export_range(0.0, 1.0) var out_of_range_alpha: float = 0.35
+@export var out_of_range_text: String = "FAR"
 
 var _screen_position: Vector2 = Vector2.ZERO
 var _visible_on_screen: bool = false
 var _crosshair_position: Vector2 = Vector2.ZERO
 var _distance: float = -1.0
 var _status: float = -1.0
+var _out_of_range: bool = false
 
 
 func _ready() -> void:
@@ -53,7 +59,20 @@ func _process(_delta: float) -> void:
 	var target: Object = mech_aim.target if is_instance_valid(mech_aim.target) else null
 	_distance = mech_aim.aim_origin.global_position.distance_to(mech_aim.target_point) if target != null else -1.0
 	_status = _target_status(target)
+	var effective := get_effective_range()
+	_out_of_range = _distance >= 0.0 and effective > 0.0 and _distance > effective
 	queue_redraw()
+
+
+## Longest effective range of the hand weapons (meters), or 0 when none has a falloff.
+func get_effective_range() -> float:
+	if weapons == null:
+		return 0.0
+	var best := 0.0
+	for data: WeaponData in [weapons.right_data, weapons.left_data]:
+		if data != null and data.effective_range_m > 0.0:
+			best = maxf(best, data.effective_range_m)
+	return best
 
 
 ## Average part HP (0 to 1) of what the crosshair is on, or -1 for a thing with no HP.
@@ -88,6 +107,9 @@ func _draw() -> void:
 		return
 	var p := _screen_position
 	var tint := status_colors.sample(_status) if _status >= 0.0 else color
+	var text_tint := tint
+	if _out_of_range:
+		tint.a *= out_of_range_alpha
 	var view := get_viewport_rect().size
 	var half := Vector2(view.x * half_size.x, view.y * half_size.y)
 	var tick := half.x * tick_share
@@ -98,10 +120,12 @@ func _draw() -> void:
 		draw_line(top, top - Vector2(sx * tick, 0.0), tint, line_width)
 		draw_line(bottom, bottom - Vector2(sx * tick, 0.0), tint, line_width)
 	var text := "%d m" % roundi(_distance) if _distance >= 0.0 else "--- m"
+	if _out_of_range:
+		text += " " + out_of_range_text
 	var font := get_theme_default_font()
 	var place := p + Vector2(half.x - tick, -half.y - 6.0)
 	draw_string_outline(font, place, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, distance_font_size, 4, Color(0, 0, 0, 0.8))
-	draw_string(font, place, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, distance_font_size, tint)
+	draw_string(font, place, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, distance_font_size, text_tint)
 
 
 ## Missile lock-on: the lock box around the mech aim, brackets on locked targets, and a closing

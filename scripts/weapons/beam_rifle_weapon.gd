@@ -127,7 +127,8 @@ func _update_discharge(delta: float) -> void:
 		if not hit.is_empty():
 			# Damage per tick adds up to the shot damage x power over the full beam time.
 			var share := tick_time / maxf(discharge_time, tick_time)
-			_impact(hit.position, hit.normal, hit.collider, data.damage * _power * share * 2.0)
+			var falloff := data.damage_factor(origin.distance_to(hit.position))
+			_impact(hit.position, hit.normal, hit.collider, data.damage * _power * share * 2.0 * falloff)
 		# The beam shakes the view while it fires.
 		var kick := _power * discharge_shake
 		if controller.camera_shake != null:

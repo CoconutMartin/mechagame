@@ -19,8 +19,11 @@ extends Node3D
 @export var crater_radius: float = 1.0
 
 var velocity: Vector3 = Vector3.ZERO
-## Damage on a hit.
+## Damage on a hit (at full damage range).
 var damage: float = 100.0
+## The weapon's data: its range (the bullet ends there) and damage falloff (WeaponData.damage_factor).
+## Null: no falloff, the bullet ends after lifetime.
+var weapon_data: WeaponData
 ## Bodies the bullet does not hit (the mech that fired it).
 var exclude: Array[RID] = []
 
@@ -48,7 +51,7 @@ func _update_tracer() -> void:
 
 func _physics_process(delta: float) -> void:
 	_age += delta
-	if _age > lifetime:
+	if _age > lifetime or (weapon_data != null and _travelled >= weapon_data.range_m):
 		queue_free()
 		return
 	velocity.y -= gravity * delta
@@ -65,6 +68,11 @@ func _physics_process(delta: float) -> void:
 	look_at(to + velocity, Vector3.UP if absf(velocity.normalized().y) < 0.99 else Vector3.FORWARD)
 
 
+## Damage now, after the falloff for the distance flown.
+func get_damage() -> float:
+	return damage * (weapon_data.damage_factor(_travelled) if weapon_data != null else 1.0)
+
+
 func _impact(point: Vector3, normal: Vector3, hit_body: Object = null) -> void:
 	if impact_scene != null:
 		var effect := impact_scene.instantiate() as Node3D
@@ -75,8 +83,8 @@ func _impact(point: Vector3, normal: Vector3, hit_body: Object = null) -> void:
 		else:
 			effect.look_at(point + normal, Vector3.FORWARD)
 	if hit_body != null and hit_body.has_method(&"on_hit"):
-		hit_body.on_hit(damage, point - velocity.normalized() * 10.0)
-	if hit_body is GroundSlab and damage >= crater_min_damage and normal.y > 0.7:
+		hit_body.on_hit(get_damage(), point - velocity.normalized() * 10.0)
+	if hit_body is GroundSlab and get_damage() >= crater_min_damage and normal.y > 0.7:
 		Crater.spawn(get_parent(), point, crater_radius * sqrt(damage / crater_min_damage), hit_body as Node)
 	if mark_scene != null and not (hit_body is PartHitbox or hit_body is TargetDummy):
 		var mark := mark_scene.instantiate() as Node3D
