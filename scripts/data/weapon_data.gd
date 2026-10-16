@@ -24,11 +24,12 @@ enum Slot { ARM, BACK }
 @export var spread_deg: float = 0.4
 ## Bullets per shot (guns). Each pellet has its own spread and does `damage`. One shot uses one ammo.
 @export var pellets: int = 1
-## Range in meters: the most a beam reaches (and the lock-on range).
+## Max range in meters (user choice 2026-10-16: MechWarrior 5 / MechWarrior Online ranges): a bullet ends
+## and a beam stops here, and the lock-on reaches this far. Past it the crosshair stays white.
 @export var range_m: float = 1500.0
-## Damage falloff (spec "weapon_damage_falloff_implementation_spec.md", 2026-10-16): full damage up to
-## effective_range_m (S), then linear down to falloff_min (M) at falloff_end_m (E), and M beyond E.
-## effective_range_m 0 = no falloff. Distance is from the muzzle to the impact point.
+## Damage falloff: full damage up to effective_range_m (S, the optimal range), then linear down to
+## falloff_min (M) at falloff_end_m (E), and M beyond E. effective_range_m 0 = no falloff. Distance is
+## from the muzzle to the impact point. MW5 model: E = range_m and M = 0.
 @export var effective_range_m: float = 0.0
 ## End of the falloff (meters); must be more than effective_range_m.
 @export var falloff_end_m: float = 0.0

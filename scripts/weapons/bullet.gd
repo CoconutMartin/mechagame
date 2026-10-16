@@ -22,7 +22,8 @@ var velocity: Vector3 = Vector3.ZERO
 ## Damage on a hit (at full damage range).
 var damage: float = 100.0
 ## The weapon's data: its damage falloff by the distance from the muzzle to the hit
-## (WeaponData.damage_factor). Null: no falloff.
+## (WeaponData.damage_factor), and its max range (the bullet ends there). Null: no falloff, the bullet
+## ends after lifetime.
 var weapon_data: WeaponData
 ## Bodies the bullet does not hit (the mech that fired it).
 var exclude: Array[RID] = []
@@ -53,7 +54,8 @@ func _update_tracer() -> void:
 
 func _physics_process(delta: float) -> void:
 	_age += delta
-	if _age > lifetime:
+	if _age > lifetime or (weapon_data != null and _origin.is_finite()
+			and _origin.distance_to(global_position) >= weapon_data.range_m):
 		queue_free()
 		return
 	if not _origin.is_finite():
