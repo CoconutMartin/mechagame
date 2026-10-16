@@ -34,8 +34,8 @@ const NOT_CARRYING := [UrbanChunk.Kind.GLASS, UrbanChunk.Kind.DOOR]
 @export var rubble_speed: float = 5.0
 ## Most falling chunk bodies at once in the level; more unsupported chunks break where they are.
 @export var max_falling: int = 60
-## Damage to mech hitboxes where a falling chunk lands (full at the center), and the radius.
-@export var fall_damage: float = 125.0  # 250 before 2026-10-15 (user: -50%, to balance later)
+## Damage to mech hitboxes where a falling chunk lands (full at the center), and the radius. 0 = off.
+@export var fall_damage: float = 0.0  # off since 2026-10-16 (user); 125 on 2026-10-15, 250 before
 @export var fall_radius: float = 6.0
 ## Towers: part of a floor's wall and column volume that, broken, brings everything above it down.
 @export_range(0.1, 1.0) var collapse_fraction: float = 0.6
@@ -158,7 +158,7 @@ func shatter(place: Transform3D, size: Vector3, color: Color, velocity: Vector3,
 		var offset := Vector3(randf_range(-0.4, 0.4) * size.x, randf_range(-0.4, 0.4) * size.y, randf_range(-0.4, 0.4) * size.z)
 		var away := (offset.normalized() + Vector3.UP * 0.5) * rubble_speed * randf_range(0.5, 1.0)
 		Rubble.spawn(world, place * offset, piece, color * randf_range(0.85, 1.05), velocity * 0.3 + away)
-	if hurts:
+	if hurts and fall_damage > 0.0:
 		Blast.apply(generator.get_world_3d(), place.origin, fall_radius, fall_damage, [], HITBOX_MASK)
 
 
