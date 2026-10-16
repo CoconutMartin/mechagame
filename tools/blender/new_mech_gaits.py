@@ -34,6 +34,7 @@ GRIP = {"index": (55, 65, 45), "middle": (55, 65, 45), "ring": (58, 65, 45), "pi
 # swing_keys: leg shapes the swing foot passes through, as (t in the swing, thigh angle from vertical,
 # knee bend, foot pitch), degrees; thigh + = forward, foot pitch + = heel up. The swing then ignores lift,
 # peak, reach and early; the hips are raised in frames where a foot would go below the ground.
+# settle: once the swing foot is ahead of the hip it only goes down (no second rise before it lands).
 # width: foot distance from the centre line, as a part of the rest stance (user: 30% closer, 2026-10-09).
 # fist / fist_sw: finger curl (part of the grip) and its swing. arm_out: arms held out to the side (degrees),
 # so the hands clear high knees.
@@ -42,11 +43,12 @@ GAITS = {
                  heel=10, toe=15, lift=0.30, arm_bias=0, arm=15, elbow=18, elbow_sw=8, fist=0.2, fist_sw=0.3),
     "Slow_Run": dict(cycle=45, width=0.7, duty=0.42, stride=1.4, touch=0.38, drop_extra=0.05, bob=-0.10, sway=0.03, lean=6, yaw=3,
                      roll=1.0,
-                     heel=8, toe=20, lift=0.70, arm_bias=6, arm=22, arm_out=12, elbow=32, elbow_sw=8, fist=0.45, fist_sw=0.1),
+                     heel=8, toe=20, lift=0.70, arm_bias=6, arm=22, arm_out=12, elbow=32, elbow_sw=8, fist=0.45, fist_sw=0.1,
+                     settle=True),
     # Jog: the game's walking speed (9.1 m/s), so the skeletal mech plays one cycle (no blend) when it walks.
     "Jog": dict(cycle=30, width=0.65, duty=0.34, stride=9.1 / 4.93, touch=0.38, drop_extra=0.05, bob=-0.12, sway=0.03,
                 lean=9, yaw=3, roll=1.0, heel=6, toe=22, lift=0.9, arm_bias=6, arm=26, arm_out=12, elbow=36,
-                elbow_sw=8, fist=0.6, fist_sw=0.0),
+                elbow_sw=8, fist=0.6, fist_sw=0.0, settle=True),
 }
 
 
@@ -206,6 +208,28 @@ class Builder:
             t = (ph - duty) / (1 - duty)
             if "swing_keys" in g:
                 return keyed_swing(s, t, (ph - (0.0 if s == "L" else 0.5)) % 1.0, 1 - duty)
+            return free_swing(s, ph, t)
+
+        def free_swing(s, ph, t):
+            """Swing foot at swing time t (0..1). settle (user report 2026-10-16: the foot rose a second
+            time before it landed, a "double bounce"): after the highest point of the swing the foot only
+            goes down. Its height is the lower of the lowest free-path height since that point and a smooth
+            fall from that point to the landing."""
+            pos, pitch = free_path(s, ph, t)
+            if not g.get("settle", False):
+                return pos, pitch
+            ph0 = ph - t * (1 - duty)  # swing start
+            heights = [free_path(s, ph0 + k / 40 * (1 - duty), k / 40)[0].z for k in range(41)]
+            top = max(range(41), key=lambda k: heights[k]) / 40
+            if t <= top:
+                return pos, pitch
+            z = min(heights[k] for k in range(41) if top <= k / 40 <= t)
+            z = min(z, pos.z)
+            land = free_path(s, ph0 + (1 - duty), 1.0)[0].z
+            fall = heights[int(round(top * 40))] + (land - heights[int(round(top * 40))]) * smooth((t - top) / (1 - top))
+            return Vector((pos.x, pos.y, min(z, fall))), pitch
+
+        def free_path(s, ph, t):
             p0 = self.planted(s, touch - stance, g["toe"], g.get("width", 1.0))
             p1 = self.planted(s, touch, -g["heel"], g.get("width", 1.0))
             r = g.get("reach", 1.0)

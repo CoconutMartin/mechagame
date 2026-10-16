@@ -242,7 +242,24 @@ func _hide_old_hands() -> void:
 
 
 func _on_part_destroyed(key: String) -> void:
+	# The part breaker takes the hand off first (it falls with the arm); this hides a hand it left.
 	if key == "Arm R" and is_instance_valid(hand_right):
 		hand_right.visible = false
 	elif key == "Arm L" and is_instance_valid(hand_left):
 		hand_left.visible = false
+
+
+## Lets go of a hand (its arm broke): this node stops driving it and returns it at its pose now, so
+## it can fall with the arm. Null if the hand is gone.
+func take_hand(side: String) -> MechHand:
+	var hand := hand_right if side == "R" else hand_left
+	if not is_instance_valid(hand):
+		return null
+	if side == "R":
+		hand_right = null
+	else:
+		hand_left = null
+	if _sides.has(side):
+		_sides[side].hand = null
+	hand.visible = true
+	return hand

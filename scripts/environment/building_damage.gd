@@ -162,6 +162,16 @@ func shatter(place: Transform3D, size: Vector3, color: Color, velocity: Vector3,
 		Blast.apply(generator.get_world_3d(), place.origin, fall_radius, fall_damage, [], HITBOX_MASK)
 
 
+## True while a chunk stands in the building (not broken, not fallen).
+func is_standing(chunk: UrbanChunk) -> bool:
+	return _links.has(chunk)
+
+
+## True once any chunk of the building broke (its occluder is off for good).
+func has_broken() -> bool:
+	return _broken_any
+
+
 ## Chunks left standing (for tests).
 func get_chunk_count() -> int:
 	return _links.size()

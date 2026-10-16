@@ -17,6 +17,8 @@ extends Node
 ## The mech's weapons (a destroyed arm or side torso loses its weapons).
 @export var weapons: WeaponController
 @export var camera_shake: CameraShake
+## Optional. The jointed hands: a broken arm takes its hand with it.
+@export var hand_control: MechHandControl
 ## Part HP fraction where smoke starts.
 @export_range(0.0, 1.0) var smoke_below: float = 0.5
 ## Smoke opacity when it starts, at smoke_below (user request 2026-10-15: 50%).
@@ -33,6 +35,8 @@ var _smoking: Dictionary = {}
 
 
 func _ready() -> void:
+	if hand_control == null and mech != null:
+		hand_control = mech.get_node_or_null("MechHandControl") as MechHandControl
 	health.damaged.connect(_on_damaged)
 	health.part_destroyed.connect(_on_part_destroyed)
 
@@ -117,7 +121,12 @@ func _on_part_destroyed(key: String) -> void:
 ## An arm falls off with what it holds: the right arm with its weapon, the left arm with its shield
 ## (a two-hand weapon stays in the right hand alone).
 func _break_arm(key: String) -> void:
-	_drop(key, _side_out(key))
+	var extra: Array[Node3D] = []
+	if hand_control != null:
+		var hand := hand_control.take_hand("L" if key == "Arm L" else "R")
+		if hand != null:
+			extra.append(hand)
+	_drop(key, _side_out(key), extra)
 	if weapons == null:
 		return
 	var nodes: Array[Node3D] = []
@@ -181,8 +190,9 @@ func get_center(key: String) -> Vector3:
 
 
 ## The part's meshes fall off: each becomes a plain (not skinned) mesh at its pose now, in debris.
-func _drop(key: String, away: Vector3) -> void:
-	var nodes: Array[Node3D] = []
+## extra: more nodes in the same piece (a jointed hand), at their place now.
+func _drop(key: String, away: Vector3, extra: Array[Node3D] = []) -> void:
+	var nodes: Array[Node3D] = extra.duplicate()
 	for mesh: MeshInstance3D in hitboxes.part_meshes.get(key, []):
 		if not is_instance_valid(mesh) or not hitboxes.skeleton.is_ancestor_of(mesh):
 			continue

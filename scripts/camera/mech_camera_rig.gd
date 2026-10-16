@@ -115,6 +115,7 @@ func _ready() -> void:
 	_target_pitch = deg_to_rad(start_pitch_deg)
 	_pitch_spring.value = _target_pitch
 	global_position = _goal_position()
+	_add_wall_see_through()
 
 
 ## Scales the camera to the mech size. MechAssembler (before this node) has already moved the frame
@@ -222,3 +223,18 @@ func _goal_position() -> Vector3:
 		# The camera goes down and up with the kneel.
 		height -= kneel_height_drop * smoothstep(0.0, 1.0, mech.kneel.amount)
 	return target.get_global_transform_interpolated().origin + Vector3.UP * height
+
+
+## Hides building pieces between the camera and the mech (CameraWallSeeThrough).
+func _add_wall_see_through() -> void:
+	var camera: Camera3D = null
+	for node in _pitch_node.find_children("*", "Camera3D", true, false):
+		camera = node as Camera3D
+		break
+	if camera == null or target == null:
+		return
+	var see_through := CameraWallSeeThrough.new()
+	see_through.name = "WallSeeThrough"
+	see_through.camera = camera
+	see_through.mech = target
+	add_child(see_through)
