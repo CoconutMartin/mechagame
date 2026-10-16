@@ -792,10 +792,11 @@ func _is_arm_gun(weapon: MechWeapon) -> bool:
 
 
 ## True when the weapon may fire now: it is the active one, a melee weapon, or it works together with
-## the active one (the missile pods, the two arm guns).
+## the active one (the missile pods, the two arm guns, the two shoulder cannons: user rule 2026-10-16).
 func _may_fire(weapon: MechWeapon) -> bool:
 	return weapon == active or weapon.is_melee() \
 			or (weapon is MissilePodWeapon and active is MissilePodWeapon) \
+			or (weapon is ShoulderGunWeapon and active is ShoulderGunWeapon) \
 			or (_is_arm_gun(weapon) and _is_arm_gun(active))
 
 
@@ -809,6 +810,10 @@ func _still_in_use(weapon: MechWeapon, wants: Dictionary) -> bool:
 	if weapon is MissilePodWeapon:
 		for other in wants:
 			if other is MissilePodWeapon and (wants[other] or _is_busy(other)):
+				return true
+	if weapon is ShoulderGunWeapon:
+		for other in wants:
+			if other != weapon and other is ShoulderGunWeapon and (wants[other] or _is_busy(other)):
 				return true
 	return false
 

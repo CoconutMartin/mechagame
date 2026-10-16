@@ -39,6 +39,8 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 
 ## 0 to 1 while LMB is held.
 ## Aim kick of the shot, given when the beam ends.
+## Shot id of the beam that fires now (its stagger cap, MechStability).
+var _stagger_shot: int = 0
 var _end_kick: float = 0.0
 var charge: float = 0.0
 ## Seconds left in the beam discharge. 0 = not firing.
@@ -96,6 +98,7 @@ func _start_discharge() -> void:
 	_power = lerpf(min_power, 1.0, charge)
 	discharge_left = maxf(discharge_time * charge, min_discharge)
 	_tick = 0.0
+	_stagger_shot = MechStability.new_shot_id()
 	_beam = BEAM.instantiate() as BeamShot
 	_beam.width *= lerpf(0.5, 1.6, charge)
 	_beam.hold = true
@@ -129,6 +132,10 @@ func _update_discharge(delta: float) -> void:
 			var share := tick_time / maxf(discharge_time, tick_time)
 			var falloff := data.damage_factor(origin.distance_to(hit.position))
 			_impact(hit.position, hit.normal, hit.collider, data.damage * _power * share * 2.0 * falloff)
+			# Stagger: the beam's points over its ticks, capped at the points of one full shot.
+			if data.stagger_points > 0.0:
+				MechStability.hit_body(hit.collider, data.stagger_points * _power * share * 2.0, _stagger_shot,
+						data.stagger_points * _power, controller.mech.global_position)
 		# The beam shakes the view while it fires.
 		var kick := _power * discharge_shake
 		if controller.camera_shake != null:

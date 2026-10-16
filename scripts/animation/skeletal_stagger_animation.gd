@@ -1,9 +1,11 @@
 class_name SkeletalStaggerAnimation
 extends SkeletonModifier3D
 ## Stuns and knock-downs (user request 2026-10-15): retargeted Mixamo clips (ActionClip). User rules:
-##   Stun: 300 damage or more to the head and center torso in one hit (one frame), or a pile bunker
-##   hit to a torso part: "Receive torso punch" (a stagger; the mech stays standing).
-##   Knock-down: 500 damage or more in one hit, or a blast while the mech is in the air. The fall
+##   Stun (stagger): the mech's stagger meter (MechStability, made here; user choice 2026-10-16, it
+##   replaces the old "300 damage to the head and center torso" rule) reached its threshold:
+##   "Receive torso punch" (the mech stays standing).
+##   Knock-down: MechStability.knocked_down (many stagger points in a short time; it replaces the old
+##   "500 damage in one hit" rule), or a blast while the mech is in the air. The fall
 ##   comes from the hit direction: from the front (or not known) the mech falls on its back
 ##   ("Stunned"); from behind it falls face down (the fall of "Dying - central torso destroyed");
 ##   while kneeling it falls on its back ("Hit while kneeling, on back"). Then it gets up with the
@@ -31,13 +33,8 @@ extends SkeletonModifier3D
 @export var getup_back: ActionClip = preload("res://data/stagger/getup_back.tres")
 @export var getup_face_down: ActionClip = preload("res://data/stagger/getup_face_down.tres")
 @export_group("Rules")
-## Damage to the head and center torso in one frame that stuns.
-@export var stun_damage: float = 300.0
-## Damage in one frame (all parts) that knocks the mech down.
-@export var knock_damage: float = 500.0
-## Environment damage (hit kind &"environment") counts at this part (user request 2026-10-15: the
-## environment flinch is about 4% of a hit).
-@export_range(0.0, 1.0) var environment_scale: float = 0.04
+## Optional. The stagger meter; when empty one with its defaults is made at start.
+@export var stability: MechStability
 ## A knock-down hit from inside this angle around the mech's back (degrees) is "from behind".
 @export var behind_angle_deg: float = 60.0
 
@@ -57,10 +54,9 @@ var _direction: Vector3 = Vector3.ZERO
 var _frozen: bool = false
 ## A knock-down from the kneel: MechKneel stands once the fall clip has the full body.
 var _stand_after_blend: bool = false
-## Damage this frame.
-var _frame_total: float = 0.0
-var _frame_core: float = 0.0
-var _frame_punch: bool = false
+## This frame: the meter staggered or knocked down the mech, a blast hit it.
+var _frame_stagger: bool = false
+var _frame_knock: bool = false
 var _frame_blast: bool = false
 ## Clip -> [[track, type, bone name, arm side ("L", "R" or "")], ...].
 var _tracks := {}
@@ -85,6 +81,14 @@ func _ready() -> void:
 			list.append([track, each.animation.track_get_type(track), bone, arm_side])
 		_tracks[each] = list
 	health.damaged.connect(_on_damaged)
+	if stability == null:
+		stability = MechStability.new()
+		stability.name = "Stability"
+		mech.add_child.call_deferred(stability)
+	stability.mech = mech
+	health.stability = stability
+	stability.staggered.connect(func(_from: Vector3) -> void: _frame_stagger = true)
+	stability.knocked_down.connect(func(_from: Vector3) -> void: _frame_knock = true)
 	_weapons = mech.get_node_or_null("WeaponController") as WeaponController
 	_install_pickup.call_deferred()
 
@@ -108,15 +112,7 @@ func is_staggered() -> bool:
 	return _clip != null and not _frozen
 
 
-func _on_damaged(key: String, amount: float) -> void:
-	# Walking through buildings, flying props and debris count at the weak flinch strength.
-	if health.last_hit_kind == &"environment":
-		amount *= environment_scale
-	_frame_total += amount
-	if key == "Head" or key == "Torso C":
-		_frame_core += amount
-	if health.last_hit_kind == &"punch" and key.begins_with("Torso"):
-		_frame_punch = true
+func _on_damaged(_key: String, _amount: float) -> void:
 	if health.last_hit_kind == &"blast":
 		_frame_blast = true
 
@@ -149,8 +145,8 @@ func _physics_process(delta: float) -> void:
 
 ## Starts a stun or a knock-down from this frame's damage.
 func _decide() -> void:
-	var knock := _frame_total >= knock_damage or (_frame_blast and not mech.is_on_floor())
-	var stun := _frame_core >= stun_damage or _frame_punch
+	var knock := _frame_knock or (_frame_blast and not mech.is_on_floor())
+	var stun := _frame_stagger
 	_clear_frame()
 	if is_down or (not knock and not stun):
 		return
@@ -169,9 +165,8 @@ func _decide() -> void:
 
 
 func _clear_frame() -> void:
-	_frame_total = 0.0
-	_frame_core = 0.0
-	_frame_punch = false
+	_frame_stagger = false
+	_frame_knock = false
 	_frame_blast = false
 
 

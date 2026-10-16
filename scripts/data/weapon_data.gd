@@ -31,6 +31,15 @@ enum Slot { ARM, BACK }
 ## 0 = no falloff (full damage up to range_m).
 @export var effective_range_m: float = 0.0
 
+@export_group("Stagger")
+## Stagger points per hit (MechStability; user choice 2026-10-16, the arcade stagger spec "B"). Big hits
+## stagger more. Shotgun: per pellet. Beam: for the whole beam. Pile Bunker: at no power (full power x2).
+@export var stagger_points: float = 0.0
+## Most stagger points one shot gives (all pellets of a shotgun blast, all missiles of a volley). 0 = no cap.
+@export var stagger_cap_per_shot: float = 0.0
+## Fist: stagger points of the last swing of a combo (0 = stagger_points).
+@export var stagger_finisher_points: float = 0.0
+
 @export_group("Recoil")
 ## Aim kick per shot, in degrees (FreeAim).
 @export var recoil_up_deg: float = 2.0

@@ -72,6 +72,10 @@ func _run() -> void:
 		var spot := player.global_position + direction * distance
 		enemy.global_position = Vector3(spot.x, player.global_position.y, spot.z)
 		enemy.velocity = Vector3.ZERO
+		# CUE_STAGGER: stagger points put on the enemy's meter first (to see the stability bar).
+		if OS.get_environment("CUE_STAGGER") != "" and enemy.health.stability != null:
+			enemy.health.stability.knock_points = 0.0
+			enemy.health.stability.add_hit(float(OS.get_environment("CUE_STAGGER")))
 		await _frames(20)
 		var status: float = reticle.get("_status")
 		var reach := reticle.get_weapon_range()

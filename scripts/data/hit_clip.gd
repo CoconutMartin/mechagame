@@ -7,6 +7,10 @@ extends Resource
 ## Damage of one hit (all parts hit in the same frame added up) that plays this clip, or more.
 ## User thresholds (2026-10-15): small up to 75, medium 76 to 150, large 151 and more.
 @export var min_damage: float = 76.0
+## Weapon hits (user choice 2026-10-16, the arcade stagger spec "B": big hits flinch bigger): stagger
+## points of one hit (MechStability.hit_taken, all hits in the same frame added up) that play this clip.
+## min_damage stays for environment damage (it has no stagger points).
+@export var min_stagger: float = 15.0
 ## How much of the clip's bend and turn plays: 1 = all of the Mixamo motion, 0.5 = half way from
 ## the rest pose (the pelvis height change too).
 @export_range(0.0, 1.0) var strength: float = 1.0

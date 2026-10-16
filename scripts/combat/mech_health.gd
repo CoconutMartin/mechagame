@@ -39,6 +39,8 @@ var last_hit_from: Vector3 = Vector3.INF
 var last_hit_kind: StringName = &""
 ## Hitboxes by key.
 var hitboxes: Dictionary = {}
+## The mech's stagger meter (MechStability; set by SkeletalStaggerAnimation). Null: no stagger.
+var stability: MechStability
 ## Model nodes of each key after the split (PartBreaker and MechDeath hide or drop them).
 var segment_nodes: Dictionary = {}
 

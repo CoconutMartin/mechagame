@@ -21,6 +21,8 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export var damage: float = 150.0
 ## Damage kind passed to PartHitbox.on_hit.
 @export var hit_kind: StringName = &"punch"
+## Stagger points of the bash (MechStability). 100 = the threshold: a bash always staggers (as before).
+@export var stagger_points: float = 100.0
 ## The target slides this far (meters) in push_time seconds, slowing down evenly (it moves by its position:
 ## the full body hit reaction holds the target's own speed at zero).
 @export var push_distance: float = 5.0
@@ -147,6 +149,7 @@ func _bash(hitbox: PartHitbox, animation: SkeletalDodgeAnimation) -> void:
 	spark.look_at(point - forward, Vector3.UP)
 	spark.scale = Vector3.ONE * 3.0
 	hitbox.on_hit(damage, mech.global_position, hit_kind)
+	MechStability.hit_body(hitbox, stagger_points, 0, 0.0, mech.global_position)
 	animation.halt()
 	bashed.emit(target, hitbox.part_key)
 	_push(target, forward)

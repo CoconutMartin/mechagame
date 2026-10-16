@@ -27,12 +27,19 @@ var weapons: WeaponController
 @export var crosshair_size: float = 6.0
 ## Draw the camera crosshair (yellow dot). Hidden since 4c (user request).
 @export var show_crosshair: bool = false
+## Stability bar under the brackets (user choice 2026-10-16): how full the target mech's stagger
+## meter is (MechStability). Its height (pixels), and the fill color; outline only while the target is
+## protected after a stagger.
+@export var stability_bar_height: float = 5.0
+@export var stability_color: Color = Color(1.0, 0.85, 0.3, 0.95)
 
 var _screen_position: Vector2 = Vector2.ZERO
 var _visible_on_screen: bool = false
 var _crosshair_position: Vector2 = Vector2.ZERO
 var _distance: float = -1.0
 var _status: float = -1.0
+## Target's stagger meter (null: no mech, or past the weapon range).
+var _stability: MechStability = null
 ## The weapon the range check uses: the active one, else the last active one (user rule 2026-10-16:
 ## one weapon fires at a time).
 var _range_weapon: MechWeapon = null
@@ -57,10 +64,12 @@ func _process(_delta: float) -> void:
 	var target: Object = mech_aim.target if is_instance_valid(mech_aim.target) else null
 	_distance = mech_aim.aim_origin.global_position.distance_to(mech_aim.target_point) if target != null else -1.0
 	_status = _target_status(target)
+	_stability = _target_stability(target)
 	# Past the weapon's max range the crosshair stays white (user rule 2026-10-16).
 	var reach := get_weapon_range()
 	if reach > 0.0 and _distance > reach:
 		_status = -1.0
+		_stability = null
 	queue_redraw()
 
 
@@ -87,6 +96,15 @@ func get_weapon_range() -> float:
 
 
 ## Average part HP (0 to 1) of what the crosshair is on, or -1 for a thing with no HP.
+## The stagger meter of what the crosshair is on (a mech part or a mech), or null.
+func _target_stability(target: Object) -> MechStability:
+	if target is PartHitbox:
+		return MechStability.of_body(target)
+	if target is Mech and (target as Mech).health != null:
+		return (target as Mech).health.stability
+	return null
+
+
 func _target_status(target: Object) -> float:
 	if target == null:
 		return -1.0
@@ -127,6 +145,7 @@ func _draw() -> void:
 		draw_line(top, bottom, tint, line_width)
 		draw_line(top, top - Vector2(sx * tick, 0.0), tint, line_width)
 		draw_line(bottom, bottom - Vector2(sx * tick, 0.0), tint, line_width)
+	_draw_stability(p, half, tint)
 	var text := "%d m" % roundi(_distance) if _distance >= 0.0 else "--- m"
 	var font := get_theme_default_font()
 	var place := p + Vector2(half.x - tick, -half.y - 6.0)
@@ -173,3 +192,18 @@ func _draw_corners(center: Vector2, half: float, tint: Color, width: float) -> v
 			var corner := center + Vector2(sx * half, sy * half)
 			draw_line(corner, corner - Vector2(sx * arm, 0.0), tint, width)
 			draw_line(corner, corner - Vector2(0.0, sy * arm), tint, width)
+
+
+## The stability bar: under the brackets, as wide as them; the fill is the meter (length, not only
+## color, shows it). An outline only while the target is protected after a stagger.
+func _draw_stability(center: Vector2, half: Vector2, tint: Color) -> void:
+	if _stability == null or not is_instance_valid(_stability):
+		return
+	var rect := Rect2(center + Vector2(-half.x, half.y + 6.0), Vector2(half.x * 2.0, stability_bar_height))
+	draw_rect(rect.grow(1.0), Color(0, 0, 0, 0.6), false, 1.0)
+	if _stability.is_protected():
+		draw_rect(rect, Color(tint, 0.6), false, 1.0)
+		return
+	var fill := Rect2(rect.position, Vector2(rect.size.x * _stability.get_fraction(), rect.size.y))
+	draw_rect(Rect2(rect.position, rect.size), Color(0, 0, 0, 0.35))
+	draw_rect(fill, stability_color)

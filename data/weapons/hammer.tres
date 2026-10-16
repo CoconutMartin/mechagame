@@ -13,4 +13,5 @@ slot = 0
 two_handed = true
 fire_rate = 1.0
 damage = 0.0
+stagger_points = 45.0
 scene = ExtResource("scene")

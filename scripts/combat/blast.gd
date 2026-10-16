@@ -9,8 +9,10 @@ const MASK := 1 | 4 | 8 | 16
 
 
 ## mask: the layers it hits (default: world, props and hitboxes).
+## stagger: stagger points for each mech in the blast (once per mech, full at the center like the
+## damage; MechStability), with shot_id and cap for a volley.
 static func apply(world: World3D, center: Vector3, radius: float, damage: float, exclude: Array[RID] = [],
-		mask: int = MASK) -> void:
+		mask: int = MASK, stagger: float = 0.0, shot_id: int = 0, cap: float = 0.0) -> void:
 	var sphere := SphereShape3D.new()
 	sphere.radius = radius
 	var query := PhysicsShapeQueryParameters3D.new()
@@ -26,9 +28,14 @@ static func apply(world: World3D, center: Vector3, radius: float, damage: float,
 			continue
 		var distance := _distance_to_shape(body as CollisionObject3D, result.shape, center)
 		nearest[body] = minf(nearest.get(body, INF), distance)
+	var staggered := {}
 	for body: Object in nearest:
 		var falloff := lerpf(1.0, 0.3, clampf(nearest[body] / radius, 0.0, 1.0))
 		body.on_hit(damage * falloff, center, &"blast")
+		var stability := MechStability.of_body(body)
+		if stagger > 0.0 and stability != null and not staggered.has(stability):
+			staggered[stability] = true
+			stability.add_hit(stagger * falloff, shot_id, cap, center)
 
 
 ## Distance from point to the surface of one shape of body (0 inside it). Boxes are exact; other

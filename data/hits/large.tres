@@ -7,4 +7,5 @@
 script = ExtResource("1")
 animation = ExtResource("2")
 min_damage = 200.0
+min_stagger = 28.0
 strength = 0.5

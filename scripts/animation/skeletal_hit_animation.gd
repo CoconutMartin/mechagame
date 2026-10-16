@@ -2,8 +2,9 @@ class_name SkeletalHitAnimation
 extends SkeletonModifier3D
 ## Hit reactions (user request 2026-10-15): Mixamo clips retargeted onto Sanggigilid (HitClip,
 ## tools/godot/retarget_mixamo.gd) play when the mech takes damage. User rules:
-##   The damage of one hit picks the clip (small, medium, large; thresholds in each HitClip). All
-##   parts hit in the same frame count as one hit (a missile blast).
+##   The stagger points of one hit pick the clip (small, medium, large; HitClip.min_stagger; user
+##   choice 2026-10-16: big hits flinch bigger, the arcade stagger spec "B"). All hits in the same frame
+##   count as one hit (a missile blast, a shotgun blast). Environment damage picks by damage.
 ##   Full body: the clip has the whole body and the legs stop (the mech stands while it plays). A
 ##   skid or lunge keeps its slide (Mech ignores root motion then); the clip plays over it.
 ## A bigger hit restarts the reaction with its bigger clip. A hit of the same size or smaller does not
@@ -42,12 +43,9 @@ extends SkeletonModifier3D
 ## Seconds for the added-up environment damage to fall from the threshold to zero when no new
 ## environment damage comes.
 @export var accumulated_decay_time: float = 3.0
-## Hits too small for any clip (under the small clip's min_damage, 40) add up (user choice 2026-10-16);
-## at the small clip's min_damage the small clip plays at full strength and the sum resets. The sum
-## falls to zero in this many seconds with no new hit.
-@export var small_hits_decay_time: float = 3.0
-## Seconds after a clip in which a hit of the same size or smaller plays no clip.
-@export var cooldown: float = 0.5
+## Seconds after a clip in which a hit of the same size or smaller plays no clip (spec "B": 0.12 to
+## 0.2 s, so fast fire does not jitter the mech).
+@export var cooldown: float = 0.15
 
 ## True while a clip plays.
 var is_playing: bool = false
@@ -66,8 +64,6 @@ var _environment_only: bool = false
 var _flinch_strength: float = 0.0
 ## Environment damage added up; it plays the bigger flinch at the threshold and decays over time.
 var _accumulated: float = 0.0
-## Hits too small for a clip, added up (see small_hits_decay_time).
-var _small_hits: float = 0.0
 var _cooldown_left: float = 0.0
 ## Weight when a dodge cut the clip; it fades out over the clip's blend_out.
 var _cut_weight: float = 0.0
@@ -90,13 +86,22 @@ func _ready() -> void:
 				list.append([track, each.animation.track_get_type(track), bone])
 		_tracks[each] = list
 	health.damaged.connect(_on_damaged)
+	_connect_stability.call_deferred()
+
+
+## Weapon hits flinch by their stagger points (MechStability, made by SkeletalStaggerAnimation).
+func _connect_stability() -> void:
+	if health.stability != null and not health.stability.hit_taken.is_connected(_on_stagger_hit):
+		health.stability.hit_taken.connect(_on_stagger_hit)
+
+
+func _on_stagger_hit(points: float, _from: Vector3) -> void:
+	_pending += points
 
 
 func _on_damaged(_key: String, amount: float) -> void:
 	if health.last_hit_kind == &"environment":
 		_pending_environment += amount
-	else:
-		_pending += amount
 
 
 ## The biggest clip for this damage (null when it is too small for every clip).
@@ -104,6 +109,15 @@ func pick(damage: float) -> HitClip:
 	var chosen: HitClip = null
 	for each in clips:
 		if damage >= each.min_damage:
+			chosen = each
+	return chosen
+
+
+## The biggest clip for these stagger points (null when they are too few for every clip).
+func pick_stagger(points: float) -> HitClip:
+	var chosen: HitClip = null
+	for each in clips:
+		if points >= each.min_stagger:
 			chosen = each
 	return chosen
 
@@ -119,16 +133,10 @@ func _physics_process(delta: float) -> void:
 	if is_playing and mech.dodge != null and mech.dodge.is_dodging:
 		_cut()
 	_accumulated = maxf(_accumulated - accumulated_threshold / maxf(accumulated_decay_time, 0.01) * delta, 0.0) + _pending_environment
-	var smallest := clips[0].min_damage if clips.size() > 0 else 0.0
-	_small_hits = maxf(_small_hits - smallest / maxf(small_hits_decay_time, 0.01) * delta, 0.0)
-	if _pending > 0.0 and pick(_pending) == null:
-		# Capped at the threshold: hits during a clip or its cooldown wait as one flinch, not many.
-		_small_hits = minf(_small_hits + _pending, smallest)
+	if _pending > 0.0 and pick_stagger(_pending) == null:
 		_pending = 0.0
-		if _small_hits >= smallest and _try_start(clips[0], false):
-			_small_hits = 0.0
 	if _pending > 0.0:
-		_try_start(pick(_pending), false)
+		_try_start(pick_stagger(_pending), false)
 	elif _accumulated >= accumulated_threshold and clips.size() > 0:
 		if _try_start(clips[0], true, accumulated_flinch):
 			_accumulated = 0.0

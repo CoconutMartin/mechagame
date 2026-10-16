@@ -24,6 +24,7 @@ func _fire() -> void:
 	var aim := (controller.mech_aim.aim_point - origin).normalized()
 	if aim.is_zero_approx():
 		aim = -_muzzle.global_basis.z
+	var shot := MechStability.new_shot_id()
 	for _i in maxi(data.pellets, 1):
 		var direction := MechWeapon.spread_direction(aim, data.spread_deg)
 		var bullet := BULLET.instantiate() as Bullet
@@ -31,6 +32,7 @@ func _fire() -> void:
 		bullet.exclude = controller.mech.get_hit_exclude()
 		bullet.damage = data.damage
 		bullet.weapon_data = data
+		bullet.shot_id = shot
 		# Long enough to reach the max range (the bullet ends there, Bullet.weapon_data).
 		bullet.lifetime = maxf(bullet.lifetime, data.range_m / maxf(data.projectile_speed, 1.0) + 0.5)
 		controller.get_world().add_child(bullet)

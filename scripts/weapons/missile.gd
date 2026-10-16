@@ -25,6 +25,10 @@ const EXPLOSION := preload("res://scenes/effects/explosion.tscn")
 ## Road crater radius (meters) when it explodes on or just above the ground (Crater); 0 = none.
 @export var crater_radius: float = 2.2
 
+## Stagger points of the blast, the volley id and the volley cap (MechStability).
+var stagger: float = 0.0
+var shot_id: int = 0
+var stagger_cap: float = 0.0
 var velocity: Vector3 = Vector3.ZERO
 var target: Node3D = null
 var aim_point: Vector3 = Vector3.ZERO
@@ -87,7 +91,7 @@ func _explode(point: Vector3) -> void:
 	var effect := EXPLOSION.instantiate() as Node3D
 	get_parent().add_child(effect)
 	effect.global_position = point
-	Blast.apply(get_world_3d(), point, blast_radius, damage, _exclude)
+	Blast.apply(get_world_3d(), point, blast_radius, damage, _exclude, Blast.MASK, stagger, shot_id, stagger_cap)
 	_crater(point)
 	queue_free()
 

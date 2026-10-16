@@ -24,6 +24,8 @@ var locking: Node3D = null
 var lock_progress: float = 0.0
 
 var _queue: Array = []
+## Shot id of the volley that flies now (its stagger cap, MechStability).
+var _volley_shot: int = 0
 var _launch_wait: float = 0.0
 var _next_tube: int = 0
 ## Time toward the next loaded missile.
@@ -93,6 +95,7 @@ func _fire_volley() -> void:
 	targets = targets.slice(0, ammo)
 	if locked:
 		controller.mech.brace(targets.size() * launch_interval + brace_after)
+	_volley_shot = MechStability.new_shot_id()
 	for target in targets:
 		_queue.append(target)
 	consume(targets.size())
@@ -116,6 +119,9 @@ func _update_launches(delta: float) -> void:
 	missile.launch(-tube.global_basis.z * 30.0 + Vector3.UP * 10.0, target if is_instance_valid(target) else null,
 			aim_point, data.projectile_speed, data.missile_turn_deg, controller.mech.get_hit_exclude())
 	missile.damage = data.damage
+	missile.stagger = data.stagger_points
+	missile.shot_id = _volley_shot
+	missile.stagger_cap = data.stagger_cap_per_shot
 	# Long enough to reach the max range (MWO LRM 1000 m) at the top speed.
 	missile.lifetime = maxf(missile.lifetime, data.range_m / maxf(data.projectile_speed, 1.0) + 2.0)
 

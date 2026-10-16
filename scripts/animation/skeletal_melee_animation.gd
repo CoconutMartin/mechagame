@@ -482,6 +482,7 @@ func _strike() -> void:
 			_hit[i][target] = true
 			_landed = true
 			(closest[target][0] as PartHitbox).on_hit(damage, mech.global_position, &"melee")
+			MechStability.hit_body(closest[target][0], _stagger_points(), 0, 0.0, mech.global_position)
 
 
 ## The attack ends: the legs are free again and the pose fades out (fade = false: at once, for a
@@ -652,3 +653,14 @@ func _chain_pose(skeleton: Skeleton3D, bone: int) -> Transform3D:
 		pose = skeleton.get_bone_pose(bone) * pose
 		bone = skeleton.get_bone_parent(bone)
 	return pose
+
+
+## Stagger points of the swing that plays (MechStability): the weapon's, or its finisher points on the
+## last swing of a fist combo.
+func _stagger_points() -> float:
+	if _weapon == null or not is_instance_valid(_weapon) or _weapon.data == null:
+		return 0.0
+	var data := _weapon.data
+	if _sequence.size() > 1 and _step == _sequence.size() - 1 and data.stagger_finisher_points > 0.0:
+		return data.stagger_finisher_points
+	return data.stagger_points

@@ -25,6 +25,8 @@ var damage: float = 100.0
 ## (WeaponData.damage_factor), and its max range (the bullet ends there). Null: no falloff, the bullet
 ## ends after lifetime.
 var weapon_data: WeaponData
+## Shot id for the stagger cap (pellets of one blast share it; MechStability).
+var shot_id: int = 0
 ## Bodies the bullet does not hit (the mech that fired it).
 var exclude: Array[RID] = []
 
@@ -94,6 +96,9 @@ func _impact(point: Vector3, normal: Vector3, hit_body: Object = null) -> void:
 	var hit_damage := get_damage(point)
 	if hit_body != null and hit_body.has_method(&"on_hit"):
 		hit_body.on_hit(hit_damage, point - velocity.normalized() * 10.0)
+		if weapon_data != null and weapon_data.stagger_points > 0.0:
+			MechStability.hit_body(hit_body, weapon_data.stagger_points, shot_id, weapon_data.stagger_cap_per_shot,
+					point - velocity.normalized() * 10.0)
 	if hit_body is GroundSlab and hit_damage >= crater_min_damage and normal.y > 0.7:
 		Crater.spawn(get_parent(), point, crater_radius * sqrt(damage / crater_min_damage), hit_body as Node)
 	if mark_scene != null and not (hit_body is PartHitbox or hit_body is TargetDummy):
