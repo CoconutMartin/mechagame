@@ -39,6 +39,7 @@ func _ready() -> void:
 		hand_control = mech.get_node_or_null("MechHandControl") as MechHandControl
 	health.damaged.connect(_on_damaged)
 	health.part_destroyed.connect(_on_part_destroyed)
+	health.part_reset.connect(_on_part_reset)
 
 
 func _on_damaged(key: String, _amount: float) -> void:
@@ -55,6 +56,17 @@ func _on_damaged(key: String, _amount: float) -> void:
 	var place := _part_place(key)
 	if not place.is_empty():
 		_smoking[key] = DamageSmoke.create(place[0], place[1], false, _smoke_opacity(fraction))
+
+
+## A weapon left the hand or came into it (WeaponPartSync): the smoke of the old part goes, and a part that is
+## below the smoke line smokes again.
+func _on_part_reset(key: String) -> void:
+	if _smoking.has(key):
+		if is_instance_valid(_smoking[key]):
+			(_smoking[key] as Node).queue_free()
+		_smoking.erase(key)
+	if health.hp.has(key):
+		_on_damaged(key, 0.0)
 
 
 ## Smoke opacity for a part HP fraction: smoke_start_opacity at smoke_below, solid at smoke_solid_below.

@@ -40,6 +40,22 @@ var crouch_pressed: bool = false
 ## Set by WeaponController: true while a two-hand rifle is aimed (sniping stance). The mech does not
 ## move, boost or jump then.
 var stance_lock: bool = false
+## True while the weapon hand key (Tab) is held (user rule 2026-10-17). The mouse buttons do not fire,
+## aim or lift the shield then: they choose the hand (WeaponHandControl).
+var hand_key_held: bool = false
+## True on the frame Tab was pressed while LMB (left) or RMB (right) was held: that hand drops its weapon.
+var drop_left_pressed: bool = false
+var drop_right_pressed: bool = false
+## True on the frame LMB (left) or RMB (right) was pressed while Tab was held: that side picks up a weapon.
+var pick_left_pressed: bool = false
+var pick_right_pressed: bool = false
+
+## A mouse button that was used with Tab stays quiet until it is released (letting Tab go first must not
+## punch or shoot).
+var _left_muted: bool = false
+var _right_muted: bool = false
+var _left_was_held: bool = false
+var _right_was_held: bool = false
 
 
 func _ready() -> void:
@@ -61,11 +77,12 @@ func _physics_process(_delta: float) -> void:
 	var was_held := jump_held
 	jump_held = Input.is_action_pressed("jump") and not stance_lock
 	jump_pressed = jump_held and not was_held
+	_read_hand_key()
 	# In the free camera RMB turns the camera: no aim and no right arm weapon.
 	var camera_free := camera_rig != null and camera_rig.free_camera_on
-	aim_held = Input.is_action_pressed("aim") and not camera_free
-	fire_held = Input.is_action_pressed("use_right_arm") and not camera_free
-	shield_held = Input.is_action_pressed("use_left_arm")
+	aim_held = Input.is_action_pressed("aim") and not camera_free and not _right_muted
+	fire_held = Input.is_action_pressed("use_right_arm") and not camera_free and not _right_muted
+	shield_held = Input.is_action_pressed("use_left_arm") and not _left_muted
 	left_fire_held = shield_held
 	back_left_held = Input.is_action_pressed("fire_back_left")
 	back_right_held = Input.is_action_pressed("fire_back_right")
@@ -73,3 +90,27 @@ func _physics_process(_delta: float) -> void:
 	crouch_pressed = Input.is_action_just_pressed("crouch")
 	forward_held = Input.is_action_pressed("move_forward")
 
+
+
+## The weapon hand key (user rule 2026-10-17). Hold LMB / RMB, then press Tab: that hand drops its weapon.
+## Hold Tab, then press LMB / RMB: that side picks up a weapon. A button that is held while Tab is held is
+## muted until it is released.
+func _read_hand_key() -> void:
+	var tab_was_held := hand_key_held
+	hand_key_held = Input.is_action_pressed("weapon_hand")
+	var left_held := Input.is_action_pressed("use_left_arm")
+	var right_held := Input.is_action_pressed("use_right_arm")
+	drop_left_pressed = hand_key_held and not tab_was_held and left_held
+	drop_right_pressed = hand_key_held and not tab_was_held and right_held
+	pick_left_pressed = hand_key_held and tab_was_held and left_held and not _left_was_held
+	pick_right_pressed = hand_key_held and tab_was_held and right_held and not _right_was_held
+	_left_was_held = left_held
+	_right_was_held = right_held
+	if hand_key_held and left_held:
+		_left_muted = true
+	elif not left_held:
+		_left_muted = false
+	if hand_key_held and right_held:
+		_right_muted = true
+	elif not right_held:
+		_right_muted = false

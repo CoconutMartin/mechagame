@@ -16,6 +16,9 @@ var reload_left: float = 0.0
 ## 0 to 100.
 var heat: float = 0.0
 var overheated: bool = false
+## HP of the weapon part while the weapon is not on a mech (user rule 2026-10-17: a dropped weapon keeps its
+## damage, and the next hand that takes it gets that HP). -1 = full (WeaponData.hp).
+var part_hp: float = -1.0
 
 var _cooldown: float = 0.0
 var _was_held: bool = false
@@ -35,6 +38,12 @@ func setup(weapon_data: WeaponData, weapon_controller: WeaponController) -> void
 	data = weapon_data
 	controller = weapon_controller
 	ammo = data.magazine
+
+
+## A new hand takes the weapon (it was picked up from the ground): it talks to this controller from now
+## on. Ammo, heat and HP stay.
+func rebind(new_controller: WeaponController) -> void:
+	controller = new_controller
 
 
 func uses_heat() -> bool:

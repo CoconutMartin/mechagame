@@ -31,9 +31,17 @@ func _ready() -> void:
 		weapon_fire.fired.connect(_on_fired)
 
 
-## Listens to a weapon's fired signal (WeaponController calls it).
+## Listens to a weapon's fired signal (WeaponController calls it). Binding the same weapon twice does
+## nothing (a weapon that comes back to the hand keeps one connection).
 func bind(emitter: Object) -> void:
-	emitter.connect(&"fired", _on_fired)
+	if not emitter.is_connected(&"fired", _on_fired):
+		emitter.connect(&"fired", _on_fired)
+
+
+## Stops listening to a weapon (it left the hand).
+func unbind(emitter: Object) -> void:
+	if is_instance_valid(emitter) and emitter.is_connected(&"fired", _on_fired):
+		emitter.disconnect(&"fired", _on_fired)
 
 
 func _on_fired() -> void:

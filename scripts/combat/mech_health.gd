@@ -4,7 +4,8 @@ extends Node
 ## damage that hitboxes and blasts send, and tells PartBreaker and MechDeath what broke.
 ## Keys: "Head", "Torso C", "Torso L", "Torso R", "Arm L", "Arm R", "Groin", "Leg L", "Leg R",
 ## "Booster" (backpack), "Shield", "Back L", "Back R", "Weapon R" (the right arm weapon), "Weapon L" (a left
-## hand gun or Pile Bunker).
+## hand gun or Pile Bunker). A fist is no part; a dropped weapon has no part (WeaponPartSync: user rule
+## 2026-10-17, weapons on the ground take no damage).
 ## The core part is split by position into center, left and right torso; the legs part into
 ## groin (pelvis) and the two legs. Every weapon (gun, pile bunker, shield, missile pod) is a part
 ## with its own HP (WeaponData.hp).
@@ -12,6 +13,9 @@ extends Node
 
 signal damaged(key: String, amount: float)
 signal part_destroyed(key: String)
+## The HP part of a hand weapon was taken off the mech or put on it again (a weapon was dropped or picked up:
+## WeaponPartSync). The damage look and the smoke of that key start again.
+signal part_reset(key: String)
 ## The mech is dead. cause = the part whose loss killed it.
 signal destroyed(cause: String)
 
@@ -70,7 +74,7 @@ func _ready() -> void:
 			max_hp["Back L"] = weapons.back_left.data.hp
 		if weapons.back_right != null:
 			max_hp["Back R"] = weapons.back_right.data.hp
-		if weapons.right_weapon != null:
+		if weapons.right_weapon != null and weapons.right_data.kind != WeaponData.Kind.FIST:
 			max_hp["Weapon R"] = weapons.right_data.hp
 		# A left hand gun or Pile Bunker has its own HP (user request 2026-10-15).
 		if weapons.has_left_weapon_part():
@@ -79,12 +83,46 @@ func _ready() -> void:
 	_split_segments()
 	for key: String in segment_nodes:
 		_add_hitboxes(key, segment_nodes[key])
+	if weapons != null:
+		# Keeps the HP part of a hand weapon in step with the weapon (drops and pick-ups).
+		var sync := WeaponPartSync.new()
+		sync.name = "WeaponPartSync"
+		sync.health = self
+		sync.weapons = weapons
+		add_child.call_deferred(sync)
 
 
 ## Adds a part with full HP. For a mech not built from parts (a rigged mech: SkeletalHitboxes).
 func add_part(key: String, max_value: float) -> void:
 	max_hp[key] = max_value
 	hp[key] = max_value
+
+
+## A weapon came into a hand: its part gets HP value (of max_value) and hitboxes on the model nodes. A part
+## with the same key is replaced.
+func attach_weapon_part(key: String, max_value: float, value: float, nodes: Array[Node3D]) -> void:
+	_remove_hitboxes(key)
+	segment_nodes.erase(key)
+	max_hp[key] = max_value
+	hp[key] = clampf(value, 0.0, max_value)
+	for node in nodes:
+		_add_node(key, node)
+	if segment_nodes.has(key):
+		_add_hitboxes(key, segment_nodes[key])
+	part_reset.emit(key)
+
+
+## A weapon left the hand: its part and hitboxes go. Returns the HP it had (-1 if there was no such part).
+func detach_weapon_part(key: String) -> float:
+	if not hp.has(key):
+		return -1.0
+	var value: float = hp[key]
+	_remove_hitboxes(key)
+	hp.erase(key)
+	max_hp.erase(key)
+	segment_nodes.erase(key)
+	part_reset.emit(key)
+	return value
 
 
 ## Adds a hitbox for a part (it is removed when the part is destroyed).
@@ -196,8 +234,9 @@ func _split_segments() -> void:
 	if hp.has("Shield"):
 		for node in weapons.shield_nodes:
 			_add_node("Shield", node)
-	for node in weapons.right_weapon_nodes():
-		_add_node("Weapon R", node)
+	if hp.has("Weapon R"):
+		for node in weapons.right_weapon_nodes():
+			_add_node("Weapon R", node)
 	if hp.has("Weapon L"):
 		for node in weapons.left_weapon_nodes():
 			_add_node("Weapon L", node)

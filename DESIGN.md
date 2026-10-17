@@ -960,6 +960,15 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 
 - Handoff 2026-10-16: `docs/HANDOFF_stagger_ranges_fixes.md` (next pipeline: flinch review and three stagger items, open reminders, phase 3 pick-up and free-hand fist, phase 4 jump clips from `models/mixamo/library/Jumping_Up.fbx` and `Landing.fbx`).
 
+- Phase 3: weapon drop and pick-up, empty hands are fists (user choices 2026-10-17), awaiting the user's test:
+  - Controls: hold LMB or RMB, then Tab: that hand drops its weapon (a two-hand rifle: either button). Hold Tab, then LMB or RMB: take the nearest weapon within 3 m (`WeaponHandControl.pickup_radius`). The pressed side gets it if that hand is free, else the other free hand. The left hand takes only what `WeaponController.can_hold_left` allows; a two-hand weapon needs both hands free. A button used with Tab is muted until released (no shot, no punch). HUD line (`WeaponPickupPrompt`): "Tab + LMB/RMB: pick up Auto Cannon", or why not ("needs both hands free", "no free hand"). The unused `lock_on` action (Tab) is removed; the missile lock is not changed.
+  - Fists: every empty hand with a live arm holds a Fist (a pool of two from `data/weapons/fist.tres`, `WeaponController.fist_data`). Empty left punches on LMB, empty right on RMB. At rest the fist arm hangs relaxed; during a punch (and `fist_hang_delay` 0.35 s after) the clip drives it. A fist has no HP part. When the shield breaks the left hand becomes a fist. The War Hammer is unchanged (frees both arms).
+  - Droppable: guns (also the Auto Cannon) and beam rifles. Not the Pile Bunker, War Hammer or shields (later).
+  - Pick-up: the WeaponPickup crouch, grab and lift at 2 x speed (`manual_speed`, about 1.1 s). The mech is locked (`is_fallen`, so the camera stays where you aim), the body turns to the weapon and back to the camera aim at the end.
+  - Weapons on the ground (`WeaponDrop`, group of `GroundWeapons`): disabled, take no damage, keep ammo and HP (`MechWeapon.part_hp`; the "Weapon R"/"Weapon L" HP part moves with the weapon: `WeaponPartSync`). A knock-down drop belongs to its mech only (auto pick-up after the get-up). Tab drops, death drops (SGG-101: `SkeletalDeath` puts guns and rifles on the ground; the hammer stays debris) and drops of a broken arm are free for any mech. A free weapon despawns after 60 s with no mech within 30 m (0.5 s shrink; `despawn_time`, `despawn_distance`, `fade_time`); at most 8 on the map (`max_ground_weapons`; the oldest free one goes first).
+  - The AI does not drop or take weapons. An AI that loses its gun fights with fists (AIMelee).
+  - Test: `tools/godot/test_weapon_hands.gd` (headless, about 100 checks).
+
 ## Reminders for the user
 - Closed (2026-10-16): weapon cooldowns set by the user (see the stagger phase). Reloads not changed.
 

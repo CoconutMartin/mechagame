@@ -25,6 +25,7 @@ var _layers: Dictionary = {}
 
 func _ready() -> void:
 	health.damaged.connect(_on_damaged)
+	health.part_reset.connect(_on_part_reset)
 	hitboxes.skeleton.skeleton_updated.connect(_follow_bones)
 
 
@@ -44,6 +45,14 @@ func _on_damaged(key: String, _amount: float) -> void:
 		_layers[key] = _make_layers(key)
 	for pair: Array in _layers[key]:
 		(pair[1] as ShaderMaterial).set_shader_parameter(&"amount", value)
+
+
+## A weapon left the hand or came into it (its HP part was taken off or put on): the old crust layers are
+## forgotten (a dropped weapon keeps the crust it has), and a part with damage gets its crust on the new meshes.
+func _on_part_reset(key: String) -> void:
+	_layers.erase(key)
+	if health.hp.has(key):
+		_on_damaged(key, 0.0)
 
 
 func _make_layers(key: String) -> Array:

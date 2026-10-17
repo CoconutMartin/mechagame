@@ -70,7 +70,11 @@ func _process(delta: float) -> void:
 	if skeleton == null or weapons == null:
 		return
 	var moving := mech != null and Vector3(mech.velocity.x, 0.0, mech.velocity.z).length() > fist_speed
-	var gun := weapons.right_weapon if weapons.right_weapon != null and is_instance_valid(weapons.right_weapon) else null
+	# A fist in the right hand is no gun: the hand makes a fist (user rule 2026-10-17: empty hands hold fists).
+	var fist_right := weapons.right_weapon is MeleeWeapon and weapons.right_data != null \
+			and weapons.right_data.kind == WeaponData.Kind.FIST
+	var gun := weapons.right_weapon if weapons.right_weapon != null and is_instance_valid(weapons.right_weapon) \
+			and not fist_right else null
 	var two_hand := gun != null and weapons.two_handed_left_grip()
 	var socket_r := _socket(gun, ^"GripSocketRight")
 	# A one-hand gun in the left hand (user rule 2026-10-15): its GripSocketRight fits the left fist too.
@@ -85,7 +89,7 @@ func _process(delta: float) -> void:
 		elif gun != null and not gun is PileBunkerWeapon:
 			var grip := _grip_pose(grip_bones[1])
 			hand_right.set_grip(grip * PALM_HOLLOW, grip.basis.y, grip_radius)
-		elif gun != null:
+		elif gun != null or fist_right:
 			hand_right.mode = MechHand.Mode.FIST
 		else:
 			hand_right.mode = MechHand.Mode.FIST if moving else MechHand.Mode.RELAXED

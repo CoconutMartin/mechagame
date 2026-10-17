@@ -14,9 +14,22 @@ extends Node
 ## done (trigger released, missiles launched). The blade is the exception: it works any time.
 ## A knock-down face down (SkeletalStaggerAnimation) makes the hands let go of their guns and rifles
 ## (user request 2026-10-15): drop_hand_weapons() sends each one to a rest place on the ground (WeaponDrop)
-## and WeaponPickup takes them back after the get-up (grab_dropped, equip_dropped). While a weapon lies on
-## the ground its slot (right_weapon or left_weapon) is null, so nothing fires and the hands see no weapon.
+## and WeaponPickup takes them back after the get-up (take_from_ground, equip_dropped). While a weapon lies
+## on the ground its slot (right_weapon or left_weapon) is null, so nothing fires and the hands see no weapon.
+## Empty hands are fists (user rule 2026-10-17): every hand with a live arm and nothing in it holds a Fist
+## from a pool of two (right_fist, left_fist; the loadout has no fist weapon any more). Empty left punches on
+## LMB, empty right on RMB. A fist hand that does not punch hangs relaxed (the arm IK goes to the relaxed
+## hang marker); during a punch the arm IK lets go so the punch clip drives the arm.
+## Hand weapons can be dropped with Tab (drop_hand) and taken from the ground (WeaponPickup.begin_manual,
+## take_from_ground): WeaponHandControl reads the keys. A weapon in a hand is a node under the torso; a
+## weapon on the ground is a node under a WeaponDrop and is disabled.
 ## MechAssembler (or SkeletalWeaponMount on a rigged mech) calls mount() before the other nodes start.
+
+## A hand let go of a weapon (Tab drop, knock-down, death). is_right: the right hand slot (a two-hand weapon
+## is the right slot). WeaponPartSync takes the HP part of the weapon off the mech.
+signal hand_weapon_released(is_right: bool, weapon: MechWeapon)
+## A weapon is in the hand and works (picked up). WeaponPartSync gives it an HP part again.
+signal hand_weapon_equipped(is_right: bool, weapon: MechWeapon)
 
 @export var mech: Mech
 @export var input: MechInput
@@ -55,9 +68,21 @@ extends Node
 @export var one_hand_rest_pitch_deg: float = -4.6
 ## Elbow direction of the right arm (out and down).
 @export var one_hand_pole: Vector3 = Vector3(0.4, -1.0, 0.5)
+@export_group("Fists")
+## The weapon in an empty hand (user rule 2026-10-17). Empty: data/weapons/fist.tres.
+@export var fist_data: WeaponData
+## A fist arm stays free for the punch clip this many seconds after a melee attack ends (the clip fades
+## out meanwhile), then it goes back to the relaxed hang.
+@export var fist_hang_delay: float = 0.35
 @export_group("Drop")
 ## False: the Auto Cannon (a gun held under the forearm) stays on the arm when the mech is knocked face down.
+## (A Tab drop ignores this: user rule 2026-10-17.)
 @export var drop_forearm_guns: bool = true
+## A Tab drop lands this part of the knock-down rest distances (drop_ahead, drop_side, drop_rifle_side), so
+## the weapon lies inside the 3 m pick-up radius and the mech can take it back at once.
+@export_range(0.2, 1.0) var tab_drop_scale: float = 0.75
+## The most weapons on the ground on the map (user rule 2026-10-17). The oldest free one goes first.
+@export var max_ground_weapons: int = 8
 ## Rest place of a dropped weapon (grip), from the place where the mech stands after the get-up: meters
 ## ahead of it, to the side of a one-hand gun (right gun right, left gun left), and to the right of the
 ## right grip of a two-hand rifle (the rifle lies across in front of the mech).
@@ -70,6 +95,13 @@ extends Node
 
 ## True when a two-hand weapon is held in the right hand alone.
 var one_hand_hold: bool = false
+## The two fists of the empty hands (made once, on first use; null = never made or the arm is gone).
+var right_fist: MeleeWeapon
+var left_fist: MeleeWeapon
+## The weapon pick-up of this mech (it registers itself). Null on a mech without one.
+var pickup: WeaponPickup
+## True while the left arm is destroyed.
+var left_arm_lost: bool = false
 
 var right_weapon: MechWeapon
 var back_left: MechWeapon
@@ -99,6 +131,13 @@ var shield_nodes: Array[Node3D] = []
 ## Right arm hold offset (ArmPart.hold_offset), torso space: added to every right weapon hold place.
 var hold_offset: Vector3 = Vector3.ZERO
 
+## A hand is reaching for a weapon on the ground (WeaponPickup): its fist is off and the pick-up runs it.
+var _picking_right: bool = false
+var _picking_left: bool = false
+## Seconds left that a fist arm stays free for the punch clip.
+var _swing_hold: float = 0.0
+var _melee: SkeletalMeleeAnimation
+
 
 func _ready() -> void:
 	# After MechInput (-10), before WeaponPose (5) and the weapons.
@@ -107,8 +146,16 @@ func _ready() -> void:
 
 ## attach: adds a socket-group scene to the frame and returns the added nodes (MechAssembler.attach).
 func mount(loadout: Loadout, attach: Callable) -> void:
+	if fist_data == null:
+		# Loaded here and not preloaded: the fist scene's script reads this class (a preload would be a cycle).
+		fist_data = load("res://data/weapons/fist.tres") as WeaponData
 	right_data = loadout.weapon_right
 	left_data = loadout.weapon_left
+	# A fist is no loadout weapon (user rule 2026-10-17): every empty hand gets one (_refresh_fists).
+	if right_data != null and right_data.kind == WeaponData.Kind.FIST:
+		right_data = null
+	if left_data != null and left_data.kind == WeaponData.Kind.FIST:
+		left_data = null
 	hold_offset = loadout.arm_right.hold_offset if loadout.arm_right is ArmPart else Vector3.ZERO
 	left_hold_offset = loadout.arm_left.hold_offset if loadout.arm_left is ArmPart else Vector3.ZERO
 	if right_data != null and right_data.scene != null:
@@ -124,10 +171,7 @@ func mount(loadout: Loadout, attach: Callable) -> void:
 	_set_shield_enabled(has_shield)
 	if not has_shield and not _two_handed():
 		arm_ik_left.target = _free_left_target()
-	if left_data != null and left_data.kind == WeaponData.Kind.FIST and left_data.scene != null and not _two_handed():
-		left_weapon = _add_weapon(left_data, "LeftWeapon")
-		_wire_melee(left_weapon as MeleeWeapon, true)
-	elif can_hold_left(left_data, right_data):
+	if can_hold_left(left_data, right_data):
 		_make_left_view()
 		left_weapon = _add_weapon(left_data, "LeftWeapon", left_view)
 		_wire_left_weapon(left_data)
@@ -135,6 +179,12 @@ func mount(loadout: Loadout, attach: Callable) -> void:
 		back_left = _add_weapon(loadout.back_left, "BackLeft")
 	if loadout.back_right != null and loadout.back_right.scene != null:
 		back_right = _add_weapon(loadout.back_right, "BackRight")
+	if animate_free_left_arm:
+		# Both fists exist from the start (they get the mech skin with the rest of the mech); an empty hand shows its one.
+		_fist(true)
+		_fist(false)
+	_refresh_fists()
+	_make_hand_control()
 
 
 ## owner_controller: the controller the weapon talks to (the left view for a left weapon).
@@ -173,6 +223,11 @@ func _wire_right(data: WeaponData) -> void:
 		weapon_pose.left_pole_rest = data.left_pole_rest
 		weapon_pose.left_pole_aim = data.left_pole_aim
 		arm_ik_left.target = weapon_pose.left_grip_target
+	else:
+		# A one-hand gun (maybe after a rifle): no left grip on the pose.
+		weapon_pose.left_grip_target = null
+		weapon_pose.left_grip_rest = null
+		weapon_pose.left_grip_aim = null
 
 
 ## True for the melee weapons that play attack clips (fist, hammer; user request 2026-10-15).
@@ -196,6 +251,176 @@ func _wire_melee(weapon: MeleeWeapon, left: bool) -> void:
 	torso_pose.aim_tilt_deg = 0.0
 	if weapon.data.two_handed:
 		arm_ik_left.target = null
+
+
+## The fist of a hand, made on first use (a MeleeWeapon under the torso, its model on the hand bone). It
+## stays off (disabled, model hidden) until _fist_on.
+func _fist(is_right: bool) -> MeleeWeapon:
+	var fist := right_fist if is_right else left_fist
+	if fist != null and is_instance_valid(fist):
+		return fist
+	fist = _add_weapon(fist_data, "RightFist" if is_right else "LeftFist") as MeleeWeapon
+	fist.is_left = not is_right
+	fist.attach_to_hand()
+	fist.process_mode = Node.PROCESS_MODE_DISABLED
+	_show_fist(fist, false)
+	if is_right:
+		right_fist = fist
+	else:
+		left_fist = fist
+	return fist
+
+
+func _show_fist(fist: MeleeWeapon, shown: bool) -> void:
+	var model := fist.get_model()
+	if is_instance_valid(model):
+		model.visible = shown
+
+
+func _is_fist(weapon: MechWeapon) -> bool:
+	return weapon != null and weapon is MeleeWeapon and weapon.data != null and weapon.data.kind == WeaponData.Kind.FIST
+
+
+## The hand holds its fist now.
+func _fist_on(is_right: bool) -> void:
+	var fist := _fist(is_right)
+	if (right_weapon if is_right else left_weapon) == fist:
+		return
+	fist.process_mode = Node.PROCESS_MODE_INHERIT
+	_show_fist(fist, true)
+	if is_right:
+		right_weapon = fist
+		right_data = fist_data
+		weapon_pose.aim_amount = 0.0
+		weapon_pose.wants_raise = false
+		for node: Node in [weapon_pose, weapon_recoil]:
+			node.process_mode = Node.PROCESS_MODE_DISABLED
+		torso_pose.aim_twist_deg = 0.0
+		torso_pose.aim_tilt_deg = 0.0
+		camera_ads.enabled = false
+		_relax_arm(arm_ik_right, _free_right_target())
+	else:
+		left_weapon = fist
+		left_data = fist_data
+		_relax_arm(arm_ik_left, _free_left_target())
+
+
+## The hand does not hold its fist any more (a weapon comes into the hand, or the arm is gone).
+func _fist_off(is_right: bool) -> void:
+	var fist := right_fist if is_right else left_fist
+	if fist == null or not is_instance_valid(fist):
+		return
+	# Twice: the second call clears the "trigger was released" flag.
+	fist.set_trigger(false)
+	fist.set_trigger(false)
+	fist.process_mode = Node.PROCESS_MODE_DISABLED
+	_show_fist(fist, false)
+	if active == fist:
+		active = null
+	if is_right:
+		if right_weapon == fist:
+			right_weapon = null
+			right_data = null
+	elif left_weapon == fist:
+		left_weapon = null
+		left_data = null
+
+
+## The arm is destroyed: its fist goes with it (the model sits on the hand bone).
+func _retire_fist(is_right: bool) -> void:
+	_fist_off(is_right)
+	var fist := right_fist if is_right else left_fist
+	if is_right:
+		right_fist = null
+	else:
+		left_fist = null
+	if fist != null and is_instance_valid(fist):
+		var model := fist.get_model()
+		if is_instance_valid(model):
+			model.queue_free()
+		fist.queue_free()
+
+
+## Puts a fist in every empty hand and takes it out of every other hand (user rule 2026-10-17). Safe to call
+## at any time. A hand has no fist when: its arm is destroyed, a weapon lies on the ground that the hand
+## dropped face down, the hand is reaching for a weapon, the hand holds something, or
+## (left) the right hand holds a two-hand weapon or the War Hammer. Only rigged mechs have fists.
+func _refresh_fists() -> void:
+	# A wreck keeps the fists it has and gets no new ones.
+	if not animate_free_left_arm or fist_data == null or mech == null or left_arm_view or mech.is_wrecked:
+		return
+	var right_empty := (right_weapon == null or right_weapon == right_fist) \
+			and (right_data == null or right_data == fist_data) and not is_instance_valid(dropped_right)
+	var left_empty := (left_weapon == null or left_weapon == left_fist) \
+			and (left_data == null or left_data == fist_data) and not is_instance_valid(dropped_left) \
+			and not _two_handed()
+	var want_right := right_empty and not _picking_right and is_arm_alive(true)
+	var want_left := left_empty and not _picking_left and is_arm_alive(false)
+	if want_right:
+		_fist_on(true)
+	elif right_weapon == right_fist and right_fist != null:
+		_fist_off(true)
+	if want_left:
+		_fist_on(false)
+	elif left_weapon == left_fist and left_fist != null:
+		_fist_off(false)
+
+
+## True when the arm of a hand is not destroyed.
+func is_arm_alive(is_right: bool) -> bool:
+	if not is_right and left_arm_lost:
+		return false
+	var health := mech.health if mech != null else null
+	var key := "Arm R" if is_right else "Arm L"
+	return health == null or not health.hp.has(key) or health.is_part_alive(key)
+
+
+## True when the hand holds only its fist (a weapon can go in it) and its arm is alive.
+func is_hand_free(is_right: bool) -> bool:
+	if (_picking_right if is_right else _picking_left):
+		return false
+	var fist := right_fist if is_right else left_fist
+	return fist != null and is_instance_valid(fist) and (right_weapon if is_right else left_weapon) == fist \
+			and is_arm_alive(is_right)
+
+
+## True when this weapon is in a hand (not on the ground, not on the way).
+func holds(weapon: MechWeapon) -> bool:
+	return weapon != null and (weapon == right_weapon or weapon == left_weapon)
+
+
+## Keeps a fist arm free for the punch clip while a melee attack plays, and at the relaxed hang
+## otherwise (the melee animation keeps an arm that has an IK target: SkeletalMeleeAnimation).
+func _update_fist_arms(delta: float) -> void:
+	if right_fist == null and left_fist == null:
+		return
+	if _melee == null or not is_instance_valid(_melee):
+		_melee = mech.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
+	if _melee != null and _melee.is_playing:
+		_swing_hold = fist_hang_delay
+	else:
+		_swing_hold = maxf(_swing_hold - delta, 0.0)
+	var hanging := _swing_hold <= 0.0
+	for is_right: bool in [true, false]:
+		var fist := right_fist if is_right else left_fist
+		if fist == null or (right_weapon if is_right else left_weapon) != fist:
+			continue
+		var ik := arm_ik_right if is_right else arm_ik_left
+		var hang := _free_right_target() if is_right else _free_left_target()
+		var wanted: Node3D = hang if hanging else null
+		if hang != null and ik.target != wanted:
+			ik.target = wanted
+
+
+func _make_hand_control() -> void:
+	if mech == null or input == null or left_arm_view:
+		return
+	var control := WeaponHandControl.new()
+	control.name = "WeaponHandControl"
+	control.mech = mech
+	control.weapons = self
+	control.input = input
+	mech.add_child.call_deferred(control)
 
 
 ## True when the left hand can hold this weapon besides the shields and the fist (user rule
@@ -272,15 +497,23 @@ func _wire_left_weapon(data: WeaponData) -> void:
 	left_pose.right_pole_rest = mirror_point(data.right_pole_rest)
 	left_pose.right_pole_aim = mirror_point(data.right_pole_aim)
 	left_weapon.transform = rest
-	var grip := left_weapon.get_node("GripRight") as Node3D
-	var hand := Marker3D.new()
-	hand.name = "GripLeft"
-	hand.position = mirror_point(grip.position)
-	left_weapon.add_child(hand)
-	arm_ik_left.target = hand
+	ensure_left_grip(left_weapon)
+	arm_ik_left.target = left_weapon.get_node("GripLeft")
 	left_recoil.bind(left_weapon)
 	left_recoil.kick_back = data.model_kick_back
 	left_recoil.kick_up_deg = data.model_kick_up_deg
+
+
+## A one-hand gun gets a GripLeft marker (the mirror of its GripRight) when it has none: the left arm
+## reaches for it. WeaponPickup needs it before the weapon is in the left hand.
+func ensure_left_grip(weapon: MechWeapon) -> void:
+	if weapon.get_node_or_null("GripLeft") != null:
+		return
+	var grip := weapon.get_node("GripRight") as Node3D
+	var hand := Marker3D.new()
+	hand.name = "GripLeft"
+	hand.position = mirror_point(grip.position)
+	weapon.add_child(hand)
 
 
 func _wire_shield(data: WeaponData) -> void:
@@ -300,9 +533,14 @@ func _wire_shield(data: WeaponData) -> void:
 func lose_right_weapon() -> void:
 	if right_weapon == null and dropped_right == null:
 		return
-	# A weapon that lies on the ground stays there for good (the caller may break it with right_weapon_nodes()).
+	var fist_in_hand := right_weapon != null and right_weapon == right_fist
+	if fist_in_hand and is_arm_alive(true):
+		return  # A fist is no part: nothing is lost while the arm is there.
+	# A weapon that lies on the ground stays there for good (nobody owns it any more).
 	_leave_dropped(true)
-	if right_weapon != null:
+	if fist_in_hand:
+		_retire_fist(true)
+	elif right_weapon != null:
 		if active == right_weapon:
 			active = null
 		right_weapon.set_trigger(false)
@@ -329,6 +567,9 @@ func lose_right_weapon() -> void:
 	torso_pose.aim_tilt_deg = 0.0
 	torso_pose.action_twist_deg = 0.0
 	camera_ads.enabled = false
+	if not is_arm_alive(true):
+		_retire_fist(true)
+	_refresh_fists()
 
 
 ## Left hand target when the left hand holds nothing.
@@ -362,18 +603,20 @@ func relax_free_left_arm() -> void:
 		arm_ik_left.target = _free_left_target()
 
 
-## Model nodes of the right weapon (a forearm weapon's model sits on the forearm: get_model()).
+## Model nodes of the right weapon in the hand (a forearm weapon's model sits on the forearm: get_model()).
+## A fist and a weapon on the ground have none (they are no HP part).
 func right_weapon_nodes() -> Array[Node3D]:
-	return _weapon_nodes(right_weapon if right_weapon != null else _dropped_weapon(dropped_right))
+	if right_weapon == null or _is_fist(right_weapon):
+		return []
+	return _weapon_nodes(right_weapon)
 
 
 ## Model nodes of the left hand gun or Pile Bunker ("Weapon L", user request 2026-10-15); empty for a
 ## fist, a shield or an empty hand.
 func left_weapon_nodes() -> Array[Node3D]:
-	var weapon := left_weapon if left_weapon != null else _dropped_weapon(dropped_left)
-	if weapon == null or weapon is MeleeWeapon:
+	if left_weapon == null or left_weapon is MeleeWeapon:
 		return []
-	return _weapon_nodes(weapon)
+	return _weapon_nodes(left_weapon)
 
 
 ## True when the left hand holds a weapon with its own HP part ("Weapon L"): a gun or the Pile Bunker.
@@ -405,6 +648,7 @@ func lose_left_weapon() -> Array[Node3D]:
 			node.process_mode = Node.PROCESS_MODE_DISABLED
 	if not _two_handed():
 		arm_ik_left.target = _lost_left_target()
+	_refresh_fists()
 	return nodes
 
 
@@ -437,12 +681,16 @@ func lose_shield() -> void:
 	mech_shield.force_up = false
 	if animate_free_left_arm and not _two_handed():
 		arm_ik_left.target = _lost_left_target()
+	# The empty hand is a fist now (user rule 2026-10-17).
+	_refresh_fists()
 
 
 ## The left arm is gone: no shield, and the left arm IK stops.
 func lose_left_arm() -> void:
+	left_arm_lost = true
 	lose_shield()
 	_leave_dropped(false)
+	_retire_fist(false)
 	if left_weapon != null:
 		left_weapon.set_trigger(false)
 		left_weapon.process_mode = Node.PROCESS_MODE_DISABLED
@@ -508,12 +756,18 @@ func lose_left_gun() -> Array[Node3D]:
 	return _weapon_nodes(weapon)
 
 
-## True when the hand can let go of this weapon: a hand gun or a rifle (the pile bunker and the fist stay,
-## the shields stay).
+## True when the hand can let go of this weapon on a knock-down: a hand gun or a rifle (the pile bunker and
+## the fist stay, the shields stay), and the Auto Cannon only with drop_forearm_guns.
 func can_drop(weapon: MechWeapon) -> bool:
-	if weapon == null or not is_instance_valid(weapon) or weapon is MeleeWeapon or weapon is PileBunkerWeapon:
-		return false
 	if weapon is ForearmGunWeapon and not drop_forearm_guns:
+		return false
+	return _is_droppable(weapon)
+
+
+## True for the weapons that leave the hand: guns (also the Auto Cannon) and beam rifles. Not the pile
+## bunker, the hammer, the fists and the shields (user rule 2026-10-17).
+func _is_droppable(weapon: MechWeapon) -> bool:
+	if weapon == null or not is_instance_valid(weapon) or weapon is MeleeWeapon or weapon is PileBunkerWeapon:
 		return false
 	return (weapon is GunWeapon or weapon is BeamRifleWeapon) and torso.is_ancestor_of(weapon)
 
@@ -528,46 +782,95 @@ func is_hand_weapon_dropped() -> bool:
 	return is_instance_valid(dropped_right) or is_instance_valid(dropped_left)
 
 
-## True when the right (left) arm has no weapon in the hand because the weapon lies on the ground. The
-## left hand of a two-hand rifle counts: it let go of the forestock.
+## True when the right (left) arm has no weapon in the hand: the weapon lies on the ground, or the hand
+## holds only its fist (the knock-down clip moves the arm then). The left hand of a two-hand rifle counts: it
+## let go of the forestock.
 func is_arm_free(right: bool) -> bool:
 	if right:
-		return is_instance_valid(dropped_right)
-	return is_instance_valid(dropped_left) or (is_instance_valid(dropped_right) and weapon_pose.left_grip_target != null)
+		return is_instance_valid(dropped_right) or (right_weapon != null and right_weapon == right_fist)
+	return is_instance_valid(dropped_left) or (left_weapon != null and left_weapon == left_fist) \
+			or (is_instance_valid(dropped_right) and weapon_pose.left_grip_target != null)
 
 
 ## The hands let go of their guns and rifles: each flies from the hand to a rest place on the ground
 ## near stand_point (the place where the mech will stand after the get-up; forward is its facing, flat).
-## The fall moves the mech; the rest places are ahead of the stand place, to the sides.
+## The fall moves the mech; the rest places are ahead of the stand place, to the sides. Only this mech
+## takes them back (user rule 2026-10-17).
 func drop_hand_weapons(stand_point: Vector3, forward: Vector3) -> void:
-	forward = Vector3(forward.x, 0.0, forward.z).normalized()
-	var side := forward.cross(Vector3.UP)
 	var level := get_world()
 	for is_right: bool in [true, false]:
 		var weapon := right_weapon if is_right else left_weapon
 		if not can_drop(weapon):
 			continue
 		var two_hand := is_right and two_handed_left_grip() and weapon_pose.left_grip_target != null
-		_let_go(weapon, is_right, two_hand)
-		var spot := stand_point + forward * drop_ahead
-		var face := forward
-		if two_hand:
-			spot += side * drop_rifle_side
-			face = -side
-		else:
-			var out := 1.0 if is_right else -1.0
-			spot += side * drop_side * out
-			face = forward.rotated(Vector3.UP, -deg_to_rad(drop_gun_yaw_deg) * out)
-		var drop := WeaponDrop.create(weapon, level, spot, face, two_hand)
+		_let_go(weapon, is_right, two_hand, false)
+		var place := _drop_spot(stand_point, forward, is_right, two_hand, 1.0)
+		var drop := WeaponDrop.create(weapon, level, place[0], place[1], two_hand, max_ground_weapons)
+		drop.owner_weapons = self
 		if is_right:
 			dropped_right = drop
 		else:
 			dropped_left = drop
 
 
+## Rest place of a dropped weapon: [grip spot, facing]. Ahead of stand_point by drop_ahead, to the side of a
+## one-hand gun, across in front of the mech for a two-hand rifle. scale shortens all the distances.
+func _drop_spot(stand_point: Vector3, forward: Vector3, is_right: bool, two_hand: bool, scale: float) -> Array:
+	forward = Vector3(forward.x, 0.0, forward.z).normalized()
+	var side := forward.cross(Vector3.UP)
+	var spot := stand_point + forward * drop_ahead * scale
+	var face := forward
+	if two_hand:
+		spot += side * drop_rifle_side * scale
+		face = -side
+	else:
+		var out := 1.0 if is_right else -1.0
+		spot += side * drop_side * scale * out
+		face = forward.rotated(Vector3.UP, -deg_to_rad(drop_gun_yaw_deg) * out)
+	return [spot, face]
+
+
+## True when a Tab drop can let go of the weapon of this hand now (user rule 2026-10-17): a gun or a
+## rifle in the hand, and the mech is free (on its feet, not reaching for a weapon).
+func can_tab_drop(is_right: bool) -> bool:
+	if mech.is_wrecked or mech.is_fallen or _picking_right or _picking_left:
+		return false
+	return _is_droppable(right_weapon if is_right else left_weapon)
+
+
+## Tab drop (user rule 2026-10-17): the hand lets go of its weapon. It lands in front of the mech, free for
+## any mech to take, and the empty hand becomes a fist. is_right: the hand slot (a two-hand rifle is the
+## right one). Returns the drop, or null when nothing can be dropped.
+func drop_hand(is_right: bool) -> WeaponDrop:
+	if not can_tab_drop(is_right):
+		return null
+	var weapon := right_weapon if is_right else left_weapon
+	var rifle := is_right and right_data != null and right_data.two_handed
+	var forward := Basis(Vector3.UP, mech.get_aim_yaw()) * Vector3.FORWARD
+	var place := _drop_spot(mech.global_position, forward, is_right, rifle, tab_drop_scale)
+	_let_go(weapon, is_right, rifle and weapon_pose.left_grip_target != null, true)
+	var drop := WeaponDrop.create(weapon, get_world(), place[0], place[1], rifle, max_ground_weapons)
+	_refresh_fists()
+	return drop
+
+
+## The hand lets go of its weapon at a given place (the mech died): a free drop, no fist after.
+func drop_hand_at(is_right: bool, spot: Vector3, face: Vector3) -> WeaponDrop:
+	var weapon := right_weapon if is_right else left_weapon
+	if not can_drop(weapon):
+		return null
+	var rifle := is_right and right_data != null and right_data.two_handed
+	_let_go(weapon, is_right, rifle and weapon_pose.left_grip_target != null, true)
+	return WeaponDrop.create(weapon, get_world(), spot, face, rifle, max_ground_weapons)
+
+
 ## The hand lets go of the weapon: it stops, the pose and the arm IK of that hand stop, and the arm
-## goes to its relaxed hang (the knock-down clip moves it).
-func _let_go(weapon: MechWeapon, is_right: bool, two_hand: bool) -> void:
+## goes to its relaxed hang (the knock-down clip moves it). The weapon is disabled for good (it lies on the
+## ground; WeaponDrop does that too). ownerless: the weapon will not come back to this hand by itself (Tab
+## drop, death), so the pose forgets it and the slot data goes.
+func _let_go(weapon: MechWeapon, is_right: bool, two_hand: bool, ownerless: bool) -> void:
+	# First: WeaponPartSync takes the HP part off the mech while the weapon is still known as the hand's.
+	hand_weapon_released.emit(is_right, weapon)
 	# Twice: the second call clears the "trigger was released" flag, or a charged beam rifle would fire
 	# from the ground when it works again.
 	weapon.set_trigger(false)
@@ -582,8 +885,10 @@ func _let_go(weapon: MechWeapon, is_right: bool, two_hand: bool) -> void:
 		var model := (weapon as ForearmGunWeapon).get_model()
 		if model.get_parent() != weapon:
 			model.reparent(weapon, true)
-		weapon.process_mode = Node.PROCESS_MODE_DISABLED
+	weapon.process_mode = Node.PROCESS_MODE_DISABLED
 	if is_right:
+		weapon_recoil.unbind(weapon)
+		reset_grips()
 		right_weapon = null
 		weapon_pose.aim_amount = 0.0
 		weapon_pose.wants_raise = false
@@ -594,16 +899,33 @@ func _let_go(weapon: MechWeapon, is_right: bool, two_hand: bool) -> void:
 		torso_pose.action_twist_deg = 0.0
 		camera_ads.enabled = false
 		input.stance_lock = false
+		one_hand_hold = false
+		if free_aim != null:
+			free_aim.unsteady = 0.0
 		_relax_arm(arm_ik_right, _free_right_target())
 		if two_hand:
 			_relax_arm(arm_ik_left, _lost_left_target())
+		if ownerless:
+			right_data = null
+			weapon_pose.weapon = null
+			weapon_pose.right_grip_target = null
+			weapon_pose.right_grip_rest = null
+			weapon_pose.right_grip_aim = null
+			weapon_pose.left_grip_target = null
+			weapon_pose.left_grip_rest = null
+			weapon_pose.left_grip_aim = null
 	else:
+		if left_recoil != null:
+			left_recoil.unbind(weapon)
 		left_weapon = null
 		left_pose.aim_amount = 0.0
 		left_pose.wants_raise = false
 		for node: Node in [left_pose, left_recoil]:
 			node.process_mode = Node.PROCESS_MODE_DISABLED
 		_relax_arm(arm_ik_left, _free_left_target())
+		if ownerless:
+			left_data = null
+			left_pose.weapon = null
 
 
 ## WeaponPickup: an arm that reached for its weapon goes back to the relaxed hang.
@@ -632,25 +954,76 @@ func _end_discharge(weapon: MechWeapon) -> void:
 	torso_pose.action_shake = 0.0
 
 
-## WeaponPickup: the hands hold the dropped weapon again. It goes back to the frame and the slot, and the
-## arms reach for its grips. The weapon does not work yet (equip_dropped).
-func grab_dropped(drop: WeaponDrop) -> void:
+## WeaponPickup: the hand starts to reach for a weapon on the ground. Its fist goes off (the pick-up runs the
+## arm) and stays off until equip_dropped or cancel_hand_pickup.
+func begin_hand_pickup(is_right: bool) -> void:
+	if is_right:
+		_picking_right = true
+	else:
+		_picking_left = true
+	_fist_off(is_right)
+
+
+## WeaponPickup: the reach ended before the weapon was in the hand (a knock-down, a broken arm): the arm goes
+## back to the relaxed hang and the hand gets its fist back.
+func cancel_hand_pickup(is_right: bool) -> void:
+	relax_arm(is_right)
+	clear_hand_pickup(is_right)
+
+
+## WeaponPickup: the hand is not reaching any more (the weapon is gone from the hand, or the reach ended).
+func clear_hand_pickup(is_right: bool) -> void:
+	if is_right:
+		_picking_right = false
+	else:
+		_picking_left = false
+	_refresh_fists()
+
+
+## True while a hand reaches for a weapon (the pick-up of this mech runs).
+func is_picking() -> bool:
+	return _picking_right or _picking_left
+
+
+## WeaponPickup: the hands hold the weapon of a drop. It goes under the frame and into the slot of the hand,
+## the pose and the arm IK are wired for it, and the arms reach for its grips. The weapon keeps its place in
+## the world and does not work yet (equip_dropped). Its recoil, controller and HP part follow.
+func take_from_ground(drop: WeaponDrop, is_right: bool) -> void:
 	var weapon := drop.weapon
 	if not is_instance_valid(weapon):
 		return
-	var is_right := drop == dropped_right
+	var data := weapon.data
+	var place := weapon.global_transform
 	weapon.reparent(torso, true)
 	if is_right:
-		dropped_right = null
+		if dropped_right == drop:
+			dropped_right = null
+		weapon.rebind(self)
 		right_weapon = weapon
-		arm_ik_right.target = weapon.get_node("GripRight")
+		right_data = data
+		_wire_right(data)
 		arm_ik_right.process_mode = Node.PROCESS_MODE_INHERIT
-		if weapon_pose.left_grip_target != null:
-			arm_ik_left.target = weapon_pose.left_grip_target
+		if data.two_handed and is_arm_alive(false):
+			arm_ik_left.process_mode = Node.PROCESS_MODE_INHERIT
 	else:
-		dropped_left = null
+		if dropped_left == drop:
+			dropped_left = null
+		if left_view == null:
+			_make_left_view()
+		weapon.rebind(left_view)
 		left_weapon = weapon
-		arm_ik_left.target = weapon.get_node("GripLeft")
+		left_data = data
+		_wire_left_weapon(data)
+		arm_ik_left.process_mode = Node.PROCESS_MODE_INHERIT
+	weapon.global_transform = place
+	# Still disabled, with its pose and recoil: they work again at equip_dropped.
+	weapon.process_mode = Node.PROCESS_MODE_DISABLED
+	if is_right:
+		for node: Node in [weapon_pose, weapon_recoil]:
+			node.process_mode = Node.PROCESS_MODE_DISABLED
+	else:
+		for node: Node in [left_pose, left_recoil]:
+			node.process_mode = Node.PROCESS_MODE_DISABLED
 	drop.queue_free()
 
 
@@ -662,6 +1035,8 @@ func equip_dropped(weapon: MechWeapon, is_right: bool) -> void:
 		torso_pose.aim_twist_deg = right_data.aim_twist_deg
 		torso_pose.aim_tilt_deg = right_data.aim_tilt_deg
 		camera_ads.enabled = right_data.two_handed and right_data.zoom_fov > 0.0
+		if camera_ads.enabled:
+			camera_ads.aim_fov = right_data.zoom_fov
 		weapon_pose.aim_amount = 0.0
 		weapon_pose.wants_raise = false
 		arm_ik_right.pole_direction = weapon_pose.right_pole_rest
@@ -669,12 +1044,21 @@ func equip_dropped(weapon: MechWeapon, is_right: bool) -> void:
 			arm_ik_left.pole_direction = weapon_pose.left_pole_rest
 		for node: Node in [weapon_pose, weapon_recoil]:
 			node.process_mode = Node.PROCESS_MODE_INHERIT
+		# The left arm is gone: the rifle is held in one hand, low at the hip.
+		if right_data.two_handed and not is_arm_alive(false):
+			_hold_one_hand()
+		_picking_right = false
+		if right_data.two_handed:
+			_picking_left = false
 	else:
 		left_pose.aim_amount = 0.0
 		left_pose.wants_raise = false
 		arm_ik_left.pole_direction = left_pose.right_pole_rest
 		for node: Node in [left_pose, left_recoil]:
 			node.process_mode = Node.PROCESS_MODE_INHERIT
+		_picking_left = false
+	_refresh_fists()
+	hand_weapon_equipped.emit(is_right, weapon)
 
 
 ## Where a hand holds the weapon at rest: the grip markers of a two-hand rifle go to their rest places
@@ -686,22 +1070,28 @@ func reset_grips() -> void:
 		weapon_pose.left_grip_target.position = weapon_pose.left_grip_rest.position
 
 
-## The weapon lies on the ground for good (its arm is gone): nobody picks it up.
+## The weapon on the ground has no owner any more (its arm is gone, or the mech is): it stays where it is and
+## any mech may take it.
 func _leave_dropped(is_right: bool) -> void:
 	var drop := dropped_right if is_right else dropped_left
 	if is_right:
 		dropped_right = null
 	else:
 		dropped_left = null
-	if is_instance_valid(drop) and is_instance_valid(drop.weapon):
-		drop.weapon.process_mode = Node.PROCESS_MODE_DISABLED
+	if is_instance_valid(drop):
+		drop.owner_weapons = null
 
 
-## The mech is gone: its weapons on the ground go with it.
+## The weapons on the ground that belonged to this mech (knock-down drops) have no owner now: the mech died
+## or is gone (user rule 2026-10-17).
+func release_ground_weapons() -> void:
+	_leave_dropped(true)
+	_leave_dropped(false)
+
+
+## The mech is gone: its weapons on the ground stay for any mech.
 func _exit_tree() -> void:
-	for drop in [dropped_right, dropped_left]:
-		if is_instance_valid(drop):
-			drop.queue_free()
+	release_ground_weapons()
 
 
 ## A back unit is gone.
@@ -729,7 +1119,8 @@ func _two_handed() -> bool:
 	return right_data != null and right_data.two_handed
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
+	_update_fist_arms(delta)
 	if mech.is_wrecked or mech.is_fallen:
 		# Down, stunned or dead: no weapon fires (a trigger held before stays released).
 		for weapon: MechWeapon in [right_weapon, left_weapon, back_left, back_right]:

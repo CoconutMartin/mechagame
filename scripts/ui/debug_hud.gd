@@ -16,6 +16,8 @@ const NAMES: MechNameCatalog = preload("res://data/names/mech_names.tres")
 @onready var _build: Label = $Build
 @onready var _weapons_label: Label = $Weapons
 
+var _pickup_prompt: WeaponPickupPrompt
+
 
 func _ready() -> void:
 	set_mech(mech)
@@ -40,6 +42,11 @@ func set_mech(new_mech: Mech) -> void:
 	var reticle := $AimReticle as AimReticle
 	reticle.mech_aim = mech_aim
 	reticle.weapons = mech.get_node_or_null("WeaponController") as WeaponController
+	# The pick-up line (user rule 2026-10-17), made once; it follows each new mech.
+	if _pickup_prompt == null:
+		_pickup_prompt = WeaponPickupPrompt.new()
+		add_child(_pickup_prompt)
+	_pickup_prompt.mech = mech
 
 
 func _process(_delta: float) -> void:
