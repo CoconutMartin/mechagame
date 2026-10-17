@@ -99,7 +99,11 @@ def res(path, scene, props):
 # Slow heavy shots.
 FIRING = {"kind": 0, "fire_rate": 1.5, "damage": 165.0, "projectile_speed": 450.0, "spread_deg": 0.3,
           "recoil_up_deg": 4.0, "recoil_side_deg": 1.5, "shake_trauma": 0.12, "shake_kick": 0.18,
-          "magazine": 8, "reload_time": 4.5}
+          "magazine": 8, "reload_time": 4.5, "stagger_points": 28.0, "range_m": 900.0,
+          "effective_range_m": 450.0}
+# Stop to fire, so it hits harder and steadier than the hand Auto Cannon (user choice 2026-10-17).
+SHOULDER = {"fire_rate": 0.2, "damage": 200.0, "stagger_points": 35.0, "spread_deg": 0.15,
+            "recoil_up_deg": 2.0, "recoil_side_deg": 0.75}
 
 if __name__ == "__main__":
     baton("scenes/weapons/auto_cannon.tscn")
@@ -115,10 +119,10 @@ if __name__ == "__main__":
     aim_anchor = arm_poses.minus(RIGHT_HAND_AIM, FIST_OFFSET)
     aim_anchor = (aim_anchor[0] + 0.15, aim_anchor[1], aim_anchor[2])
     res("data/weapons/auto_cannon.tres", "res://scenes/weapons/auto_cannon.tscn", {
-        "display_name": '"Auto Cannon"', "weight_t": 3.5, "hp": 300.0, **FIRING, "slot": 0,
+        "display_name": '"Auto Cannon"', "weight_t": 3.5, "hp": 300.0, **FIRING, "fire_rate": 0.25, "slot": 0,
         "model_kick_back": 0.8, "model_kick_up_deg": 4.0,
         "rest_transform": "Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, %.4f, %.4f, %.4f)" % rest_origin,
         "aim_anchor": v3(aim_anchor),
         "right_pole_rest": "Vector3(0.4, -1, 0.5)", "right_pole_aim": "Vector3(0.4, -1, 0.5)"})
     res("data/weapons/auto_cannon_shoulder.tres", "res://scenes/weapons/auto_cannon_shoulder.tscn", {
-        "display_name": '"Shoulder Cannon"', "weight_t": 3.5, "hp": 300.0, **FIRING, "slot": 1})
+        "display_name": '"Shoulder Cannon"', "weight_t": 3.5, "hp": 300.0, **FIRING, **SHOULDER, "slot": 1})

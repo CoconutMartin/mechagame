@@ -956,6 +956,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
   - SMG flinch: the small flinch clip plays 2.5 x faster (`speed_scale` 2.5 in `data/hits/small.tres`; 1.05 s to 0.42 s). At 3 shots per second about 1 bullet in 2 starts a flinch (was 1 in 3). Note: each flinch stops the legs while it plays.
   - Stagger clip ("Receive torso punch") plays 1.5 x faster (`speed_scale` 1.5 in `data/stagger/punch.tres`; 1.22 s to 0.81 s).
   - Tests: `test_stability.gd` (67 checks) and `test_hit_reactions.gd` pass.
+  - Shoulder Cannon balance (user agreed to the proposal 2026-10-17): it must stop to fire and has a 5 s cooldown, so it hits harder and steadier than the hand Auto Cannon: damage 200 (hand 165), stagger points 35 (hand 28), spread 0.15 deg (hand 0.3), recoil 2 deg up and 0.75 side (hand 4 and 1.5). One hit from each shoulder (35 + 35) does not knock down (one shot only). `tools/mech_gen/auto_cannon.py` (`SHOULDER`) is in step with the .tres.
 
 - Handoff 2026-10-16: `docs/HANDOFF_stagger_ranges_fixes.md` (next pipeline: flinch review and three stagger items, open reminders, phase 3 pick-up and free-hand fist, phase 4 jump clips from `models/mixamo/library/Jumping_Up.fbx` and `Landing.fbx`).
 
@@ -966,7 +967,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Closed: "update the dodge hop animation", the user accepted the current hop at the start of Phase 3.
 - Closed (2026-10-11): "the new mech's camera does not turn with the aim twist" was a wrong report. No mech's camera follows the torso turn (camera scripts do not read TorsoPose); the new mech's torso turn and zoom work like the Warden's.
 - Closed (2026-10-11): Sanggigilid's left arm gap and outward left palm (fixed: arm twist from the rest pose, relaxed free left arm).
-- Open (2026-10-11): balance the stop-to-fire shoulder weapons against the hand-held versions: recoil, damage and sway (Shoulder Cannon and baton Auto Cannon have the same values now).
+- Closed (2026-10-17): balance the stop-to-fire Shoulder Cannon against the hand Auto Cannon (see "Stagger review"). Sway is not in the weapon data.
 - Closed (2026-10-12): Sanggigilid's hand positions, fixed from the user's arm drawing (Blender was not needed).
 - Closed (2026-10-13): how to tune the PS1 skin: the garage (G) has a "PS1 LOOK" menu with sliders and a "Reset PS1 look" button (see "PS1 tuning menu"). The settings file `data/skins/ps1_skin.tres` holds the default values; the environment wobble (`world_snap_grid`, 0 = off) is only in that file.
 - Closed (2026-10-12): the Beam Rifle's long stock touched the body. Fixed by the new two-hand rest and the sniping stance (0 points at rest and aim).

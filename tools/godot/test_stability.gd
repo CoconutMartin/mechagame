@@ -10,7 +10,7 @@ const TOLERANCE := 0.001
 ## [file, stagger points, cap per shot, finisher, seconds between shots (0 = not checked)].
 const WEAPONS := [
 	["shotgun", 4.0, 20.0, 0.0, 2.25], ["smg", 3.0, 12.0, 0.0, 0.33], ["heavy_rifle", 18.0, 0.0, 0.0, 3.0],
-	["auto_cannon", 28.0, 0.0, 0.0, 4.0], ["auto_cannon_shoulder", 28.0, 0.0, 0.0, 5.0],
+	["auto_cannon", 28.0, 0.0, 0.0, 4.0], ["auto_cannon_shoulder", 35.0, 0.0, 0.0, 5.0],
 	["beam_rifle", 16.0, 0.0, 0.0, 4.0], ["beam_sniper", 32.0, 0.0, 0.0, 6.0],
 	["missile_pod_l", 10.0, 30.0, 0.0, 1.0], ["missile_pod_r", 10.0, 30.0, 0.0, 1.0],
 	["fist", 15.0, 0.0, 25.0, 0.0], ["hammer", 45.0, 0.0, 0.0, 0.0], ["pile_bunker", 30.0, 0.0, 0.0, 6.0],
