@@ -974,7 +974,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Closed (2026-10-13): the Akira slide at the end of a full boost or run: the Blender action `biped_run_stop_akira` (already in the .glb) now plays there (see "Akira stop animation").
 - Closed (2026-10-13): the two-hand rifles' hand markers now sit on the grip sockets, with a new rest and aim stance (see "Grip sockets").
 - Done (2026-10-15): HP indicators per part (design "9 Minimal Dot", square windows).
-- Open (2026-10-15): the left torso HP indicator (Torso L) is hidden from the game camera angle. The user wants to fix it later.
+- Closed (2026-10-17): the left torso HP indicator (Torso L) can be seen on a PC (user check); it was hidden only on the tablet.
 - Open (2026-10-14): pulse scan equipment, a substitute for a persistent radar (user idea; reference pictures `models/guides/pulse_scan/`, MechWarrior 5 "enhanced imaging"). User answers (2026-10-14):
   - Slot: a back unit. Back packs will have a range of slots for auxiliary equipment (the back pack and its slots are new).
   - Effect: the pulse spreads out from the mech as a ring and turns the environment into a green wire frame. The wire frame then fades out gradually from the start point (near the mech) to the end point (the ring's edge). If the pulse finds a mech, the wire frame converges on it and highlights it.
