@@ -50,8 +50,10 @@ func apply() -> void:
 	var high := preset == Preset.HIGH
 	var low := preset == Preset.LOW
 	var viewport := get_viewport()
-	viewport.use_taa = not low
-	viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA if low else Viewport.SCREEN_SPACE_AA_DISABLED
+	# TAA exists only in the Forward+ renderer (tablets run Mobile or Compatibility): FXAA there.
+	var taa := not low and RenderingServer.get_current_rendering_method() == "forward_plus"
+	viewport.use_taa = taa
+	viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED if taa else Viewport.SCREEN_SPACE_AA_FXAA
 	viewport.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR if low else Viewport.SCALING_3D_MODE_BILINEAR
 	viewport.scaling_3d_scale = low_render_scale if low else 1.0
 	RenderingServer.directional_shadow_atlas_set_size(4096 if high else (1024 if low else 2048), true)
