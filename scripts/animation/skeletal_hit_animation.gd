@@ -43,6 +43,11 @@ extends SkeletonModifier3D
 ## Seconds for the added-up environment damage to fall from the threshold to zero when no new
 ## environment damage comes.
 @export var accumulated_decay_time: float = 3.0
+## Weapon hits too weak for every clip (the SMG bullet) count up: this many play one small flinch (user
+## request 2026-10-18: the SMG flinches only after 8 bullets).
+@export var chip_hits_per_flinch: int = 8
+## Seconds with no weak hit after which the count starts again.
+@export var chip_reset_time: float = 1.5
 ## Seconds after a clip in which a hit of the same size or smaller plays no clip (spec "B": 0.12 to
 ## 0.2 s, so fast fire does not jitter the mech).
 @export var cooldown: float = 0.15
@@ -64,6 +69,9 @@ var _environment_only: bool = false
 var _flinch_strength: float = 0.0
 ## Environment damage added up; it plays the bigger flinch at the threshold and decays over time.
 var _accumulated: float = 0.0
+## Weak weapon hits counted toward one small flinch, and the seconds since the last one.
+var _chip_hits: int = 0
+var _chip_age: float = 0.0
 var _cooldown_left: float = 0.0
 ## Weight when a dodge cut the clip; it fades out over the clip's blend_out.
 var _cut_weight: float = 0.0
@@ -133,8 +141,16 @@ func _physics_process(delta: float) -> void:
 	if is_playing and mech.dodge != null and mech.dodge.is_dodging:
 		_cut()
 	_accumulated = maxf(_accumulated - accumulated_threshold / maxf(accumulated_decay_time, 0.01) * delta, 0.0) + _pending_environment
+	_chip_age += delta
+	if _chip_age > chip_reset_time:
+		_chip_hits = 0
 	if _pending > 0.0 and pick_stagger(_pending) == null:
 		_pending = 0.0
+		_chip_hits += 1
+		_chip_age = 0.0
+		if _chip_hits >= maxi(chip_hits_per_flinch, 1) and clips.size() > 0:
+			if _try_start(clips[0], false):
+				_chip_hits = 0
 	if _pending > 0.0:
 		_try_start(pick_stagger(_pending), false)
 	elif _accumulated >= accumulated_threshold and clips.size() > 0:

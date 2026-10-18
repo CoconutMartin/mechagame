@@ -79,18 +79,18 @@ const CASES := [
 			["hammer_swing_d", "hammer_swing_a", "hammer_down"], {"stagger": ["25", "25", "45 knock"], "walk": 0.5,
 			"from_start": true}],
 	["baton_none", "baton", "right", "", "attack", [], [], ["baton_down_light"], {"stagger": ["15"]}],
-	["baton_S", "baton", "right", "move_back", "attack", [], [], ["baton_down"], {"stagger": ["30"]}],
+	["baton_S", "baton", "right", "move_back", "attack", [], [], ["baton_down"], {"stagger": ["45 knock"]}],
 	["baton_A", "baton", "right", "move_left", "attack", [], [], ["baton_swing_a"], {"stagger": ["15"]}],
 	["baton_D", "baton", "right", "move_right", "attack", [], [], ["baton_swing_d"], {"stagger": ["15"]}],
 	["baton_W_thrust", "baton", "right", "move_forward", "attack", [], [], ["baton_thrust"], {"stagger": ["15"]}],
 	["baton_W_A_S", "baton", "right", "move_forward", "combo", [0.1, 0.1], ["move_left", "move_back"],
-			["baton_thrust", "baton_swing_a", "baton_down"], {"stagger": ["15", "15", "30"]}],
+			["baton_thrust", "baton_swing_a", "baton_down"], {"stagger": ["15", "15", "45 knock"]}],
 	# The thrust as the third swing gets the weapon's 30.
 	["baton_D_RMB_W", "baton", "right", "move_right", "combo", [0.1, 0.1], ["", "move_forward"],
-			["baton_swing_d", "baton_down_light", "baton_thrust"], {"stagger": ["15", "15", "30"]}],
+			["baton_swing_d", "baton_down_light", "baton_thrust"], {"stagger": ["15", "15", "45 knock"]}],
 	# Input buffer: the next press 0.2 s after the swing starts, before its hit.
 	["baton_W_A_S_early", "baton", "right", "move_forward", "combo", [0.2, 0.2], ["move_left", "move_back"],
-			["baton_thrust", "baton_swing_a", "baton_down"], {"stagger": ["15", "15", "30"], "from_start": true}],
+			["baton_thrust", "baton_swing_a", "baton_down"], {"stagger": ["15", "15", "45 knock"], "from_start": true}],
 ]
 
 var _out_dir := ""

@@ -54,7 +54,7 @@ func _run() -> void:
 		return
 	var from := _player.global_position - _player.global_basis.z * 100.0
 	# Flinch size by stagger points.
-	for entry: Array in [["SMG bullet", 3.0, "small"], ["Heavy Rifle", 18.0, "medium"], ["Auto Cannon", 28.0, "large"]]:
+	for entry: Array in [["Fist-size weak hit", 4.0, "small"], ["Heavy Rifle", 18.0, "medium"], ["Auto Cannon", 28.0, "large"]]:
 		await _calm()
 		var started := await _hit_and_watch(func() -> void: MechStability.hit_body(_hitbox, entry[1], 0, 0.0, from))
 		_check(started == [entry[2]], "%s (%.0f points): %s flinch (got %s)" % [entry[0], entry[1], entry[2], started])
@@ -66,16 +66,17 @@ func _run() -> void:
 			MechStability.hit_body(_hitbox, 4.0, shot, 20.0, from))
 	_check(blast == ["medium"], "shotgun blast (8 pellets): one medium flinch (got %s)" % [blast])
 	_check(absf(stability.value - 20.0) < 0.5, "shotgun blast: meter 20 (got %.1f)" % stability.value)
-	# SMG stream at 3 shots per second: small flinches only; a bullet while a small flinch still plays
-	# does not restart it (no jitter).
+	# SMG stream at 3 shots per second (user request 2026-10-18): one small flinch per 8 bullets.
+	await _calm()
+	var single := await _hit_and_watch(func() -> void: MechStability.hit_body(_hitbox, 3.0, 0, 0.0, from))
+	_check(single.is_empty(), "one SMG bullet (3 points): no flinch (got %s)" % [single])
 	await _calm()
 	var stream: Array = []
-	for bullet in 6:
+	for bullet in 16:
 		stream.append_array(await _hit_and_watch(func() -> void: MechStability.hit_body(_hitbox, 3.0, 0, 0.0, from), 20))
 	var only_small := stream.all(func(name: String) -> bool: return name == "small")
-	_check(only_small and stream.size() >= 2 and stream.size() <= 6,
-			"SMG at 3 per second (6 bullets, small clip %.2f s): %d small flinches, no restarts (got %s)" % [
-			_hits.clips[0].get_length(), stream.size(), stream])
+	_check(only_small and stream.size() == 2,
+			"SMG at 3 per second (16 bullets): 2 small flinches, one per 8 bullets (got %s)" % [stream])
 	# Stagger at 100: the stun clip plays, not a flinch; then the protection.
 	await _calm()
 	for i in 3:
