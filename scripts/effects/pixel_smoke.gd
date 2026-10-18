@@ -8,6 +8,9 @@ extends RefCounted
 ## Opacity (user request 2026-10-15): an emitter's "opacity" metadata (0 to 1, default 1; set_opacity)
 ## makes its puffs see-through. Below 1 the pixel puffs blend at that opacity (the edges stay hard,
 ## the puff texture alpha is 0 or 1).
+## Shared looks (lag spike fix 2026-10-18): the pixel materials and quads are made once per game and
+## shared by all emitters. A new material per emitter let its shader go when the last emitter of that
+## kind was gone, and the next explosion compiled it again (a long frame on the first part break).
 
 const GROUP := &"smoke_particles"
 const PUFF_PIXELS := 16
@@ -15,6 +18,9 @@ const PUFF_PIXELS := 16
 const OPACITY_STEP := 0.05
 
 static var _puff: ImageTexture
+## Pixel materials by see-through (bool), and pixel quads by [size, see-through].
+static var _materials: Dictionary = {}
+static var _quads: Dictionary = {}
 
 
 ## Call once when the emitter has its soft look. It gets the look the player picked.
@@ -57,8 +63,21 @@ static func apply(particles: CPUParticles3D, on: bool) -> void:
 
 
 static func _pixel_mesh(soft: Mesh, see_through: bool = false) -> QuadMesh:
+	var size := (soft as QuadMesh).size if soft is QuadMesh else Vector2.ONE
+	var key := [size, see_through]
+	if _quads.has(key):
+		return _quads[key]
 	var quad := QuadMesh.new()
-	quad.size = (soft as QuadMesh).size if soft is QuadMesh else Vector2.ONE
+	quad.size = size
+	quad.material = pixel_material(see_through)
+	_quads[key] = quad
+	return quad
+
+
+## The shared pixel puff material: solid (alpha scissor) or see-through (alpha blend).
+static func pixel_material(see_through: bool = false) -> StandardMaterial3D:
+	if _materials.has(see_through):
+		return _materials[see_through]
 	var material := StandardMaterial3D.new()
 	if see_through:
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -70,8 +89,8 @@ static func _pixel_mesh(soft: Mesh, see_through: bool = false) -> QuadMesh:
 	material.vertex_color_use_as_albedo = true
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	material.albedo_texture = puff_texture()
-	quad.material = material
-	return quad
+	_materials[see_through] = material
+	return material
 
 
 ## The soft ramp's colors at one alpha for the whole life (solid at 1: the scissor cuts at half

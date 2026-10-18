@@ -22,8 +22,16 @@ const SHADER := preload("res://shaders/char_damage.gdshader")
 ## Crust materials by hit key: [MeshInstance3D, ShaderMaterial] pairs.
 var _layers: Dictionary = {}
 
+## One crust material made at load (lag spike fix 2026-10-18): it makes the renderer compile the crust
+## shader then. Before, the first crust of a game compiled it in the frame of the hit (about 120 ms on
+## Forward+ when a War Hammer hit broke a part). The shader stays while this material lives.
+static var _warm: ShaderMaterial
+
 
 func _ready() -> void:
+	if _warm == null:
+		_warm = ShaderMaterial.new()
+		_warm.shader = SHADER
 	health.damaged.connect(_on_damaged)
 	health.part_reset.connect(_on_part_reset)
 	hitboxes.skeleton.skeleton_updated.connect(_follow_bones)

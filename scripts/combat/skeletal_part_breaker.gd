@@ -40,6 +40,13 @@ func _ready() -> void:
 	health.damaged.connect(_on_damaged)
 	health.part_destroyed.connect(_on_part_destroyed)
 	health.part_reset.connect(_on_part_reset)
+	# The break effects' shaders are made at load, not in the frame of the first break (2026-10-18).
+	_warm_up.call_deferred()
+
+
+func _warm_up() -> void:
+	if is_inside_tree():
+		BreakWarmup.run(_world())
 
 
 func _on_damaged(key: String, _amount: float) -> void:
