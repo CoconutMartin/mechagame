@@ -978,6 +978,8 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
   - The AI does not drop or take weapons. An AI that loses its gun fights with fists (AIMelee).
   - Test: `tools/godot/test_weapon_hands.gd` (headless, about 100 checks).
 
+- Handoff 2026-10-18: `docs/HANDOFF_phase3_melee_arms.md` (next: ask about the untested items, then phase 4 jump and landing).
+
 ## Reminders for the user
 - Closed (2026-10-16): weapon cooldowns set by the user (see the stagger phase). Reloads not changed.
 
