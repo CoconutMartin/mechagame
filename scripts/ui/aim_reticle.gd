@@ -80,6 +80,10 @@ func get_weapon_range() -> float:
 		return 0.0
 	if weapons.active != null and is_instance_valid(weapons.active):
 		_range_weapon = weapons.active
+	# A weapon the hands let go of (Tab drop, review 2026-10-18) no longer sets the range.
+	if _range_weapon != null and is_instance_valid(_range_weapon) and not weapons.holds(_range_weapon) \
+			and _range_weapon != weapons.back_left and _range_weapon != weapons.back_right:
+		_range_weapon = null
 	if _range_weapon == null or not is_instance_valid(_range_weapon) or _range_weapon.data == null:
 		_range_weapon = null
 		for weapon: MechWeapon in [weapons.right_weapon, weapons.left_weapon]:

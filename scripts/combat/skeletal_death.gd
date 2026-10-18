@@ -87,7 +87,7 @@ func _drop_weapons() -> void:
 	var push := mech.velocity - mech.global_basis.z * weapon_drop_push
 	var right := weapons.right_weapon
 	var forward := Basis(Vector3.UP, mech.get_aim_yaw()) * Vector3.FORWARD
-	if weapons.can_drop(right):
+	if weapons.is_droppable(right):
 		var rifle := weapons.right_data != null and weapons.right_data.two_handed
 		var grip := (right.get_node("GripRight") as Node3D).global_position
 		weapons.drop_hand_at(true, grip + forward * weapon_drop_distance,
@@ -99,7 +99,7 @@ func _drop_weapons() -> void:
 			weapons.lose_right_weapon()
 			Debris.drop(right_nodes, world, push)
 	var left := weapons.left_weapon
-	if weapons.can_drop(left):
+	if weapons.is_droppable(left):
 		var hand := left.get_node_or_null("GripLeft") as Node3D
 		var spot := hand.global_position if hand != null else left.global_position
 		weapons.drop_hand_at(false, spot + forward * weapon_drop_distance, forward)

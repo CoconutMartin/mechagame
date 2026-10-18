@@ -761,12 +761,12 @@ func lose_left_gun() -> Array[Node3D]:
 func can_drop(weapon: MechWeapon) -> bool:
 	if weapon is ForearmGunWeapon and not drop_forearm_guns:
 		return false
-	return _is_droppable(weapon)
+	return is_droppable(weapon)
 
 
 ## True for the weapons that leave the hand: guns (also the Auto Cannon) and beam rifles. Not the pile
 ## bunker, the hammer, the fists and the shields (user rule 2026-10-17).
-func _is_droppable(weapon: MechWeapon) -> bool:
+func is_droppable(weapon: MechWeapon) -> bool:
 	if weapon == null or not is_instance_valid(weapon) or weapon is MeleeWeapon or weapon is PileBunkerWeapon:
 		return false
 	return (weapon is GunWeapon or weapon is BeamRifleWeapon) and torso.is_ancestor_of(weapon)
@@ -835,7 +835,7 @@ func _drop_spot(stand_point: Vector3, forward: Vector3, is_right: bool, two_hand
 func can_tab_drop(is_right: bool) -> bool:
 	if mech.is_wrecked or mech.is_fallen or _picking_right or _picking_left:
 		return false
-	return _is_droppable(right_weapon if is_right else left_weapon)
+	return is_droppable(right_weapon if is_right else left_weapon)
 
 
 ## Tab drop (user rule 2026-10-17): the hand lets go of its weapon. It lands in front of the mech, free for

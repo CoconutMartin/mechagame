@@ -330,6 +330,8 @@ func _reach_broken() -> bool:
 					if is_instance_valid(hand.marker):
 						(hand.marker as Marker3D).queue_free()
 					_hands.erase(hand)
+					# The left hand leaves the pick-up for good (review 2026-10-18: its flag stayed set).
+					weapons.clear_hand_pickup(false)
 	return false
 
 
