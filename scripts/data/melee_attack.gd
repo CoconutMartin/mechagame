@@ -27,8 +27,9 @@ extends Resource
 ## approached until this distance (mechs collide at about 5.2 m).
 @export var contact_distance: float = 6.0
 ## Stagger points of this swing as swing 1 or 2 of a chain (user decision 2026-10-18: the hammer swings
-## give 25, a flinch, no knock-down). The S attack and the last swing of a full chain use the weapon's
-## points (WeaponData.stagger_points). Below 0 = always the weapon's points.
+## give 25, a flinch, no knock-down; Baton swings 15, user choice 2026-10-18). The S attack and the last
+## swing of a full chain use the weapon's points (WeaponData.stagger_points). Below 0 = always the
+## weapon's points.
 @export var chain_stagger_points: float = -1.0
 ## During the attack the mech moves no closer than this to another mech (center to center, m), so wide
 ## swings do not reach into it (user rule 2026-10-15: mechs collide, no clipping). 0 = only the bodies

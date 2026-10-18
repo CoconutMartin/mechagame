@@ -7,6 +7,9 @@ extends SkeletonModifier3D
 ##   the left. The hooks need a fist on that arm.
 ##   Hammer (RMB only, user 2026-10-15): S = downward strike; no key or W = a weaker downward strike;
 ##   D = one swing from the right to the left; A = one swing from the left to the right.
+##   Other two-hand weapons of the hammer kind bring their own attack per key (MeleeWeapon two-hand
+##   attacks; a key with none plays the hammer's). Baton (user request 2026-10-18): the hammer attacks,
+##   faster, and W = a two-hand straight thrust.
 ##   Chain combo (user rules 2026-10-18; replaces the plain fist combo of 2026-10-15): any attack can
 ##   chain into the next one, in any order, up to max_chain_swings swings. The next swing plays when a new
 ##   press of the weapon's button (with the move key of that moment) comes within combo_window seconds
@@ -224,12 +227,16 @@ func request(weapon: MeleeWeapon) -> void:
 
 ## The attack for a press of weapon's button with the move key direction, as swing number place of a
 ## chain (0 = the first swing). Null when the press throws nothing.
-##   Hammer: S = downward strike, A and D = the full swings, no key or W = the light strike.
+##   Hammer: S = downward strike, A and D = the full swings, no key or W = the light strike. A two-hand
+##   weapon with its own attack for the key (the Baton, 2026-10-18) plays that one instead.
 ##   Fist: W = uppercut and S = swipe of that fist's arm, A = left hook, D = right hook. No key: the
 ##   straight punch of that arm; later in a chain the plain combo goes on with the other arm than the
 ##   swing before (_plain_follow_up).
 func _pick_attack(weapon: MeleeWeapon, direction: StringName, place: int) -> MeleeAttack:
 	if weapon.data.kind == WeaponData.Kind.HAMMER:
+		var own := weapon.get_two_hand_attack(direction)
+		if own != null:
+			return own
 		match direction:
 			&"back":
 				return hammer_down

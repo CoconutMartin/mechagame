@@ -9,6 +9,8 @@ extends Node
 ##           the weapon button for one frame. The move key of that frame picks the attack (the situation
 ##           and some randomness decide: where the target moves, kneeling or down, close or far).
 ##   Fist combo: a plain punch that hit gets its next press inside the combo window.
+##   Two-hand weapons (War Hammer, Baton): S, A, D or no key by the situation; a weapon with its own W
+##   attack (the Baton thrust, 2026-10-18) also uses W when the target is straight ahead.
 ##   Pile bunker: it holds the button for a random time at 15 to 25 m, then releases (charge and punch).
 
 ## Fist and hammer: direction keys by name, in the aim frame (forward is the aim).
@@ -62,6 +64,9 @@ const KEYS := {
 @export var weight_heavy_hit: float = 6.0
 @export var weight_hammer_side: float = 4.0
 @export var weight_light: float = 2.0
+## Two-hand weapon with its own W attack (the Baton thrust, 2026-10-18): weight of W when the target is
+## straight ahead (not moving or standing to a side). Not used otherwise.
+@export var weight_thrust: float = 4.0
 
 @export_group("Pile bunker")
 ## It holds the power up button for a random time in this range (seconds; 1.5 s is full power).
@@ -243,6 +248,9 @@ func _hammer_attack(target: Mech, _distance: float) -> void:
 	if heavy:
 		weights[&"left"] = 0.5
 		weights[&"right"] = 0.5
+	var weapon := _weapons.right_weapon as MeleeWeapon
+	if side == 0 and weapon != null and weapon.get_two_hand_attack(&"forward") != null:
+		weights[&"forward"] = weight_thrust
 	var key: StringName = _pick(weights)
 	_press(key, false)
 	_count("hammer/" + (String(key) if key != &"" else "light"))

@@ -1,5 +1,5 @@
 extends SceneTree
-## Melee test and render tool. Plays the fist and hammer attacks against a target mech in front of the
+## Melee test and render tool. Plays the fist, hammer and baton attacks against a target mech in front of the
 ## player (inside the crosshair), logs hits, chain combos, the cooldown and the lowest foot point, and
 ## with a window saves a strip of frames per attack.
 ## Headless (log only; the targets stand 12 m and 7 m ahead):
@@ -8,18 +8,19 @@ extends SceneTree
 ##   xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 \
 ##     --resolution 1280x720 --fixed-fps 60 --script res://tools/godot/render_melee.gd
 ## Environment: MELEE_ONLY (part of a case name), MELEE_OUT (folder), MELEE_TRACE (print the strike
-## point), MELEE_DISTANCES (for example "12,7"), MELEE_CAMERA ("side" default, "behind").
+## point), MELEE_DISTANCES (for example "12,7"), MELEE_CAMERA ("side" default, "other_side", "behind").
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
 const MECH_SCENE := "res://scenes/mech/sanggigilid.tscn"
 const FIST := "res://data/weapons/fist.tres"
 const HAMMER := "res://data/weapons/hammer.tres"
+const BATON := "res://data/weapons/baton.tres"
 ## Frames saved per attack.
 const FRAMES_PER_ATTACK := 9
 ## Longest case (physics frames).
 const MAX_FRAMES := 900
 
-## Cases: name, weapon ("fist" or "hammer"), button ("right" = RMB, "left" = LMB), move key ("" or an
+## Cases: name, weapon ("fist", "hammer" or "baton"), button ("right" = RMB, "left" = LMB), move key ("" or an
 ## action), kind ("attack", "combo", "cooldown"), the combo delays (seconds after each hit to the next
 ## press), the move key of each combo press (optional; "" = no key; empty list = the case key stays) and
 ## the expected swings (optional, MeleeAttack file names; the log says CHECK ok or CHECK FAIL) and
@@ -31,6 +32,8 @@ const MAX_FRAMES := 900
 ## Chain combo cases (user rules 2026-10-18): any attack chains into any other, up to 3 swings, press
 ## within 0.6 s after the hit, S ends the chain, then the 5 s cooldown. Hammer stagger (user decision
 ## 2026-10-18): swings 1 and 2 give 25 points (a flinch), the S strike and the third swing 45 (knock-down).
+## Baton (user request 2026-10-18): the hammer attacks about 1.5 x faster, 150 damage, and W = a two-hand
+## thrust; swings 1 and 2 give 15 points, the S strike and the third swing 30.
 const CASES := [
 	["fist_straight_r", "fist", "right", "", "attack", []],
 	["fist_straight_l", "fist", "left", "", "attack", []],
@@ -75,6 +78,19 @@ const CASES := [
 	["hammer_D_A_S_walk_early", "hammer", "right", "move_right", "combo", [0.3, 0.3], ["move_left", "move_back"],
 			["hammer_swing_d", "hammer_swing_a", "hammer_down"], {"stagger": ["25", "25", "45 knock"], "walk": 0.5,
 			"from_start": true}],
+	["baton_none", "baton", "right", "", "attack", [], [], ["baton_down_light"], {"stagger": ["15"]}],
+	["baton_S", "baton", "right", "move_back", "attack", [], [], ["baton_down"], {"stagger": ["30"]}],
+	["baton_A", "baton", "right", "move_left", "attack", [], [], ["baton_swing_a"], {"stagger": ["15"]}],
+	["baton_D", "baton", "right", "move_right", "attack", [], [], ["baton_swing_d"], {"stagger": ["15"]}],
+	["baton_W_thrust", "baton", "right", "move_forward", "attack", [], [], ["baton_thrust"], {"stagger": ["15"]}],
+	["baton_W_A_S", "baton", "right", "move_forward", "combo", [0.1, 0.1], ["move_left", "move_back"],
+			["baton_thrust", "baton_swing_a", "baton_down"], {"stagger": ["15", "15", "30"]}],
+	# The thrust as the third swing gets the weapon's 30.
+	["baton_D_RMB_W", "baton", "right", "move_right", "combo", [0.1, 0.1], ["", "move_forward"],
+			["baton_swing_d", "baton_down_light", "baton_thrust"], {"stagger": ["15", "15", "30"]}],
+	# Input buffer: the next press 0.2 s after the swing starts, before its hit.
+	["baton_W_A_S_early", "baton", "right", "move_forward", "combo", [0.2, 0.2], ["move_left", "move_back"],
+			["baton_thrust", "baton_swing_a", "baton_down"], {"stagger": ["15", "15", "30"], "from_start": true}],
 ]
 
 var _out_dir := ""
@@ -137,7 +153,7 @@ func _play(map: Node, switcher: LoadoutSwitcher, case: Array, distance: float) -
 		loadout.weapon_right = load(FIST)
 		loadout.weapon_left = load(FIST)
 	else:
-		loadout.weapon_right = load(HAMMER)
+		loadout.weapon_right = load(BATON if case[1] == "baton" else HAMMER)
 		loadout.weapon_left = null
 	var place := Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0))
 	switcher.rebuild(loadout, place)
@@ -468,6 +484,9 @@ func _follow(camera: Camera3D, player: Mech, target: Mech) -> void:
 		camera.global_position = player.global_position - along.normalized() * 22.0 + Vector3(0, 12, 0) + side * 4.0
 		camera.look_at(middle, Vector3.UP)
 		return
+	# "other_side": the other side of the two mechs (2026-10-18, to see the left hand on the Baton).
+	if OS.get_environment("MELEE_CAMERA") == "other_side":
+		side = -side
 	camera.global_position = middle + side * distance + Vector3(0, 3, 0)
 	camera.look_at(middle, Vector3.UP)
 

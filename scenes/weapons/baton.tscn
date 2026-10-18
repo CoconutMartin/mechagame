@@ -1,0 +1,47 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/melee_weapon.gd" id="1"]
+[ext_resource type="Resource" path="res://data/melee/baton_down_light.tres" id="plain"]
+[ext_resource type="Resource" path="res://data/melee/baton_thrust.tres" id="forward"]
+[ext_resource type="Resource" path="res://data/melee/baton_down.tres" id="back"]
+[ext_resource type="Resource" path="res://data/melee/baton_swing_a.tres" id="left"]
+[ext_resource type="Resource" path="res://data/melee/baton_swing_d.tres" id="right"]
+
+[sub_resource type="StandardMaterial3D" id="shaft"]
+albedo_color = Color(0.16, 0.17, 0.19, 1)
+metallic = 0.4
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="end"]
+albedo_color = Color(0.36, 0.37, 0.4, 1)
+metallic = 0.6
+roughness = 0.5
+
+[sub_resource type="BoxMesh" id="shaft_mesh"]
+material = SubResource("shaft")
+size = Vector3(0.32, 0.32, 5.4)
+
+[sub_resource type="BoxMesh" id="end_mesh"]
+material = SubResource("end")
+size = Vector3(0.5, 0.5, 1.3)
+
+[node name="Baton" type="Node3D"]
+script = ExtResource("1")
+attack_plain = ExtResource("plain")
+attack_forward = ExtResource("forward")
+attack_back = ExtResource("back")
+attack_left = ExtResource("left")
+attack_right = ExtResource("right")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="Shaft" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.88, 1.8)
+mesh = SubResource("shaft_mesh")
+
+[node name="End" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.88, 4.4)
+mesh = SubResource("end_mesh")
+
+[node name="StrikePoint" type="Marker3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.88, 4.6)

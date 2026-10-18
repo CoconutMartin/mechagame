@@ -4,6 +4,20 @@ extends MechWeapon
 ## RMB right) and the two-hand hammer (either mouse button). The mouse button plus the move keys
 ## picks the attack (SkeletalMeleeAnimation). The model sits on the hand bone (BoneAttachment3D), and
 ## the arm follows the animation (no grip IK).
+## Two-hand weapons (WeaponData.Kind.HAMMER) can bring their own attacks for each move key (the Baton,
+## user request 2026-10-18); a key with none plays the War Hammer attack of SkeletalMeleeAnimation.
+
+@export_group("Two-hand attacks")
+## RMB with no move key (null = the War Hammer light strike).
+@export var attack_plain: MeleeAttack
+## W + RMB (null = the War Hammer light strike).
+@export var attack_forward: MeleeAttack
+## S + RMB, the last swing of a chain (null = the War Hammer downward strike).
+@export var attack_back: MeleeAttack
+## A + RMB (null = the War Hammer swing from the left to the right).
+@export var attack_left: MeleeAttack
+## D + RMB (null = the War Hammer swing from the right to the left).
+@export var attack_right: MeleeAttack
 
 ## True for a weapon on the left arm (set by WeaponController).
 var is_left: bool = false
@@ -54,6 +68,21 @@ func attach_to_hand() -> void:
 		local.origin.x = -local.origin.x
 	_model.reparent(_attachment, false)
 	_model.transform = local
+
+
+## This weapon's own two-hand attack for the move key direction (&"forward", &"back", &"left",
+## &"right" or &"" = none; as SkeletalMeleeAnimation._input_direction), or null (the War Hammer attack).
+func get_two_hand_attack(direction: StringName) -> MeleeAttack:
+	match direction:
+		&"forward":
+			return attack_forward
+		&"back":
+			return attack_back
+		&"left":
+			return attack_left
+		&"right":
+			return attack_right
+	return attack_plain
 
 
 ## No ammo or heat to show.
