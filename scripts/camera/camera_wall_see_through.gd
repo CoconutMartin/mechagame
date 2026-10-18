@@ -95,7 +95,9 @@ func _show(chunk: UrbanChunk) -> void:
 	_hidden.erase(chunk)
 	if not is_instance_valid(chunk):
 		return
-	if chunk.damage_owner != null and not chunk.damage_owner.is_standing(chunk):
+	if not is_instance_valid(chunk.building):
+		return
+	if is_instance_valid(chunk.damage_owner) and not chunk.damage_owner.is_standing(chunk):
 		return
 	var generator := chunk.building as BuildingGenerator
 	for entry: Array in saved:
@@ -118,6 +120,8 @@ func _forget_freed() -> void:
 	for key in _occluders_off.keys():
 		if not is_instance_valid(key):
 			_occluders_off.erase(key)
+		elif _occluders_off[key] != null and not is_instance_valid(_occluders_off[key]):
+			_occluders_off[key] = null
 
 
 ## A building with hidden pieces has its occluder off; it comes back when none are hidden (and the
@@ -125,8 +129,8 @@ func _forget_freed() -> void:
 func _update_occluders() -> void:
 	var busy := {}
 	for chunk: UrbanChunk in _hidden:
-		if is_instance_valid(chunk):
-			busy[chunk.building] = chunk.damage_owner
+		if is_instance_valid(chunk) and is_instance_valid(chunk.building):
+			busy[chunk.building] = chunk.damage_owner if is_instance_valid(chunk.damage_owner) else null
 	for building: BuildingGenerator in busy:
 		if not _occluders_off.has(building) and building.occluder != null and building.occluder.visible:
 			building.occluder.visible = false
@@ -134,8 +138,9 @@ func _update_occluders() -> void:
 	for building: BuildingGenerator in _occluders_off.keys():
 		if busy.has(building):
 			continue
-		var damage: BuildingDamage = _occluders_off[building]
+		# Untyped: the building's damage node may be freed by now (a typed variable stops the script).
+		var damage: Variant = _occluders_off[building]
 		_occluders_off.erase(building)
 		if is_instance_valid(building) and building.occluder != null \
-				and (damage == null or not is_instance_valid(damage) or not damage.has_broken()):
+				and (not is_instance_valid(damage) or not (damage as BuildingDamage).has_broken()):
 			building.occluder.visible = true
