@@ -99,8 +99,8 @@ def res(path, scene, props):
 # Slow heavy shots.
 FIRING = {"kind": 0, "fire_rate": 1.5, "damage": 165.0, "projectile_speed": 450.0, "spread_deg": 0.3,
           "recoil_up_deg": 4.0, "recoil_side_deg": 1.5, "shake_trauma": 0.12, "shake_kick": 0.18,
-          "magazine": 8, "reload_time": 4.5, "stagger_points": 28.0, "range_m": 900.0,
-          "effective_range_m": 450.0}
+          "magazine": 8, "reload_time": 4.5, "stagger_points": 28.0, "range_m": 225.0,
+          "effective_range_m": 112.5}
 # Stop to fire, so it hits harder and steadier than the hand Auto Cannon (user choice 2026-10-17).
 SHOULDER = {"fire_rate": 0.2, "damage": 200.0, "stagger_points": 35.0, "spread_deg": 0.15,
             "recoil_up_deg": 2.0, "recoil_side_deg": 0.75}

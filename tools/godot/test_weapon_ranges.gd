@@ -1,11 +1,13 @@
 extends SceneTree
-## Weapon range unit test (user choice 2026-10-16: MechWarrior Online ranges). Checks each weapon's
+## Weapon range unit test (user choice 2026-10-16: MechWarrior Online ranges; 2026-10-18: a quarter of them, RANGE_SCALE). Checks each weapon's
 ## optimal and max range in data/weapons/*.tres and WeaponData.damage_factor: 1 up to the optimal
 ## range, linear down to 0 at the max range, 0 beyond, never increasing, never NaN or negative.
 ## Exits with code 1 on any failure. Headless:
 ##   godot --headless --path . --script res://tools/godot/test_weapon_ranges.gd
 
 const TOLERANCE := 0.0005
+## The game uses a quarter of the MWO ranges (user choice 2026-10-18: close engagements).
+const RANGE_SCALE := 0.25
 ## [file, MWO weapon, optimal, max]. A max-only weapon has optimal 0 (no falloff).
 const WEAPONS := [
 	["shotgun", "LB 10-X AC", 540.0, 1080.0], ["smg", "Machine Gun", 130.0, 260.0],
@@ -21,7 +23,7 @@ var _checks: int = 0
 
 func _initialize() -> void:
 	for entry: Array in WEAPONS:
-		_test_weapon(entry[0], entry[1], entry[2], entry[3])
+		_test_weapon(entry[0], entry[1], entry[2] * RANGE_SCALE, entry[3] * RANGE_SCALE)
 	var none := WeaponData.new()
 	_check(is_equal_approx(none.damage_factor(5000.0), 1.0), "no optimal range: factor 1")
 	var odd := WeaponData.new()

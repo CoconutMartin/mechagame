@@ -299,7 +299,7 @@ if __name__ == "__main__":
     RIFLE_HIP = (ONE_HAND_AIM_X, RIFLE_HIP[1], RIFLE_HIP[2])
     res("data/weapons/heavy_rifle.tres", {"display_name": '"Heavy Rifle"', "weight_t": 2.0, "hp": 300.0,
         "kind": 0, "fire_rate": 0.33333, "damage": 90.0, "stagger_points": 18.0, "projectile_speed": 400.0, "spread_deg": 0.4,
-        "range_m": 1240.0, "effective_range_m": 620.0,
+        "range_m": 310.0, "effective_range_m": 155.0,
         "recoil_up_deg": 2.0, "recoil_side_deg": 1.0, "model_kick_back": 0.7, "model_kick_up_deg": 10.0,
         "shake_trauma": 0.052, "shake_kick": 0.078, "magazine": 12, "reload_time": 3.5,
         "rest_transform": RIFLE_REST, "aim_anchor": v3(RIFLE_HIP),
@@ -333,8 +333,8 @@ if __name__ == "__main__":
     # lines up with the pistol grip and the stock keeps off the right forearm (found by search).
     sniper_anchor = (1.9, 1.2, -1.5)
     res("data/weapons/beam_sniper.tres", {"display_name": '"Beam Sniper"', "weight_t": 4.0, "hp": 300.0,
-        "kind": 1, "two_handed": "true", "fire_rate": 0.16667, "damage": 225.0, "stagger_points": 32.0, "spread_deg": 0.05, "range_m": 1350.0,
-        "effective_range_m": 675.0,
+        "kind": 1, "two_handed": "true", "fire_rate": 0.16667, "damage": 225.0, "stagger_points": 32.0, "spread_deg": 0.05, "range_m": 337.5,
+        "effective_range_m": 168.75,
         "recoil_up_deg": 3.5, "recoil_side_deg": 0.5, "model_kick_back": 0.5, "model_kick_up_deg": 6.0,
         "shake_trauma": 0.1, "shake_kick": 0.15, "heat_per_use": 34.0, "heat_cooling": 10.0, "overheat_cooling": 25.0,
         "rest_transform": xf_rows(rest_rows, stock_rest), "aim_anchor": v3(sniper_anchor),
@@ -355,8 +355,8 @@ if __name__ == "__main__":
     # The same butt place as the sniper (grip sockets, 2026-10-13).
     br_anchor = (1.9, 1.2, -1.5)
     res("data/weapons/beam_rifle.tres", {"display_name": '"Beam Rifle"', "weight_t": 3.5, "hp": 300.0,
-        "kind": 1, "two_handed": "true", "fire_rate": 0.25, "damage": 225.0, "stagger_points": 16.0, "spread_deg": 0.05, "range_m": 900.0,
-        "effective_range_m": 450.0,
+        "kind": 1, "two_handed": "true", "fire_rate": 0.25, "damage": 225.0, "stagger_points": 16.0, "spread_deg": 0.05, "range_m": 225.0,
+        "effective_range_m": 112.5,
         "recoil_up_deg": 3.5, "recoil_side_deg": 0.5, "model_kick_back": 0.5, "model_kick_up_deg": 6.0,
         "shake_trauma": 0.1, "shake_kick": 0.15, "heat_per_use": 34.0, "heat_cooling": 10.0, "overheat_cooling": 25.0,
         "rest_transform": xf_rows(br_rows, br_rest), "aim_anchor": v3(br_anchor),
@@ -382,7 +382,7 @@ if __name__ == "__main__":
         "res://scenes/weapons/pile_bunker.tscn")
     for side in ("l", "r"):
         res(f"data/weapons/missile_pod_{side}.tres", {"display_name": f'"Missile Pod {side.upper()}"', "weight_t": 3.0, "hp": 250.0,
-            "kind": 3, "slot": 1, "fire_rate": 1.0, "damage": 112.5, "stagger_points": 10.0, "stagger_cap_per_shot": 30.0, "projectile_speed": 90.0, "range_m": 1000.0,
+            "kind": 3, "slot": 1, "fire_rate": 1.0, "damage": 112.5, "stagger_points": 10.0, "stagger_cap_per_shot": 30.0, "projectile_speed": 90.0, "range_m": 250.0,
             "magazine": 4, "reload_time": 6.0, "lock_box_deg": 7.0, "lock_time": 0.5, "missile_turn_deg": 110.0,
             "recoil_up_deg": 0.3, "recoil_side_deg": 0.3, "shake_trauma": 0.08, "shake_kick": 0.1},
             f"res://scenes/weapons/missile_pod_{side}.tscn")

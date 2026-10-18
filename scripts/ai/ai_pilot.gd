@@ -31,7 +31,8 @@ extends Node
 @export var sight_range: float = 400.0
 
 @export_group("Fire")
-## Largest distance it shoots from, in meters.
+## Largest distance it shoots from, in meters (also never past the weapon's max range: user choice
+## 2026-10-18, the ranges are a quarter of MWO's).
 @export var fire_range: float = 180.0
 ## It fires only when the torso points within this angle of the target, in degrees.
 @export var fire_angle_deg: float = 6.0
@@ -255,8 +256,11 @@ func _search(delta: float) -> void:
 
 func _fire(distance: float, sees: bool) -> void:
 	var error := absf(wrapf(input.aim_yaw - mech.get_aim_yaw(), -PI, PI))
-	var ready := sees and distance <= fire_range and _shield_left <= 0.0 and error < deg_to_rad(fire_angle_deg)
 	var weapon := _weapons.right_weapon if _weapons != null else null
+	var max_range := fire_range
+	if weapon != null and weapon.data != null and weapon.data.range_m > 0.0:
+		max_range = minf(max_range, weapon.data.range_m)
+	var ready := sees and distance <= max_range and _shield_left <= 0.0 and error < deg_to_rad(fire_angle_deg)
 	if weapon is BeamRifleWeapon:
 		var rifle := weapon as BeamRifleWeapon
 		if _charge_goal < 0.0:
