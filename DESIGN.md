@@ -980,6 +980,12 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 
 - Handoff 2026-10-18: `docs/HANDOFF_phase3_melee_arms.md` (next: ask about the untested items, then phase 4 jump and landing).
 
+- Phase 4: jump and landing clips (user answers 2026-10-18), awaiting the user's look check:
+  - Jumping_Up (`data/animations/jump_up.res`, `data/jump_clips/jump_up.tres`) drives the charge crouch (clip 0 to 0.55 s follows the charge), the push (0.55 to 0.88 s) and the tuck while rising (0.88 s to the end, timed to end at 85% of the rise, then held). Jumping_Down stays the fall pose.
+  - Heavy push (user choice "heavy, slow push"): after the release the legs push off on the ground for `MechJumpCharge.push_time` (0.45 s; the mech stands still, `is_pushing`), then it launches. Height and hang time are unchanged.
+  - Landing.fbx (`data/animations/landing.res`, `data/jump_clips/landing.tres`, touchdown 0.37 s, standing 1.3 s) replaces Falling_To_Landing and Landing_position for every fall of 1 m or more (user: "B go away", "Landing replaces B and C"). Its air frames are timed by the predicted time to impact, then it plays through the recovery. Falls under 1 m and the dodge hop keep the coded landing.
+  - Test: `render_jump.gd` (9 m: no foot under the ground; the feet hover about 0.05 m in the charge and landing). Not checked yet: thigh clipping with missile pods, shield or Pile Bunker in the charge crouch.
+
 ## Reminders for the user
 - Closed (2026-10-16): weapon cooldowns set by the user (see the stagger phase). Reloads not changed.
 

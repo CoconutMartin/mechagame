@@ -9,6 +9,10 @@ extends Resource
 @export_range(0.05, 4.0) var speed_scale: float = 1.0
 ## Seconds into the clip where the feet touch the ground (0 = the clip has no touchdown).
 @export var contact_time: float = 0.0
+## Jump clips: seconds into the clip at the deepest crouch (reached at full charge).
+@export var crouch_time: float = 0.0
+## Jump clips: seconds into the clip where the feet leave the ground (the end of the push).
+@export var takeoff_time: float = 0.0
 ## Seconds into the clip where the pose holds: a fall holds there while the mech is in the air; a
 ## landing holds there until the recovery ends. 0 = the end of the clip.
 @export var hold_time: float = 0.0

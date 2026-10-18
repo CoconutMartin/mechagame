@@ -10,12 +10,12 @@ extends SkeletonModifier3D
 ## B, landing: at contact the legs compress fast (a spring, with a small overshoot) as deep as the fall
 ##   was high (full at land_full_height, the top of a full jump), wider feet, the torso drops and leans;
 ##   the pose holds through the landing recovery (MechLandingRecovery) and lets go in its last part.
-## Clips (user request 2026-10-15): three Mixamo clips play over B0 and B (JumpClipDirector decides when,
-## AirClipBody puts them on the body with the feet on the floor): Jumping_Down from the top of a jump or
-## the walk off an edge, Falling_To_Landing timed so its touchdown frame meets the real touchdown, and
-## after a fall of hard_fall_height or more Landing_position (a crouch held through the recovery).
-## Falls under min_fall_height and the dodge step landing keep the coded landing crouch (B); A and A2
-## stay coded.
+## Clips (user requests 2026-10-15 and phase 4, 2026-10-18; JumpClipDirector decides when, AirClipBody
+## puts them on the body with the feet on the floor): Jumping_Up over A and A2 (its crouch follows the
+## charge, then the push and the tuck while rising), Jumping_Down from the top of a jump or the walk off
+## an edge, and Landing timed so its touchdown frame meets the real touchdown, then its crouch and rise
+## through the recovery. Falls under min_fall_height and the dodge step landing keep the coded landing
+## crouch (B).
 ## The legs use a two-bone solve (the ankle on its target, the knee toward the front, the foot flat).
 ## The arms keep their weapon holds (SkeletalArmRig runs after this node and follows the torso).
 ## A skeleton modifier must be a child of the Skeleton3D; this node moves itself there at start. Keep
@@ -73,18 +73,15 @@ extends SkeletonModifier3D
 @export var weapon_lift: Vector3 = Vector3(0.0, 0.8, -0.15)
 
 @export_group("Clips")
+## Jumping_Up: the charge crouch, the push and the tuck while rising.
+@export var jump_up_clip: AirClip = preload("res://data/jump_clips/jump_up.tres")
 ## Jumping_Down: the start of a fall (holds its pose while the mech is in the air).
 @export var fall_start_clip: AirClip = preload("res://data/jump_clips/fall_start.tres")
-## Falling_To_Landing: the end of a fall; its touchdown frame meets the real touchdown.
-@export var fall_end_clip: AirClip = preload("res://data/jump_clips/fall_end.tres")
-## Landing_position: the hard landing crouch.
-@export var hard_landing_clip: AirClip = preload("res://data/jump_clips/hard_landing.tres")
-## Falls shorter than this (m) play no clip and keep the coded landing crouch (the landing recovery's
-## min_height: its short fall delay).
+## Landing: the end of a fall; its touchdown frame meets the real touchdown, then the crouch and rise.
+@export var landing_clip: AirClip = preload("res://data/jump_clips/landing.tres")
+## Falls shorter than this (m) play no landing clip and keep the coded landing crouch (the landing
+## recovery's min_height: its short fall delay).
 @export var min_fall_height: float = 1.0
-## Falls of this height (m) or more land with the hard landing clip, shorter ones with the end of
-## Falling_To_Landing (about one second of jump charge: 3 m).
-@export var hard_fall_height: float = 3.0
 ## Seconds in the air before the fall clip may start.
 @export var fall_clip_delay: float = 0.1
 ## Ground layer for the ray that predicts the touchdown (1 = world).
@@ -153,12 +150,12 @@ func _setup_clips(skeleton: Skeleton3D) -> void:
 	_clip_body.setup(skeleton)
 	director = JumpClipDirector.new()
 	director.mech = mech
+	director.jump_charge = jump_charge
 	director.landing_recovery = landing_recovery
+	director.jump_up = jump_up_clip
 	director.fall_start = fall_start_clip
-	director.fall_end = fall_end_clip
-	director.hard_landing = hard_landing_clip
+	director.landing = landing_clip
 	director.min_fall_height = min_fall_height
-	director.hard_fall_height = hard_fall_height
 	director.start_delay = fall_clip_delay
 	director.ground_mask = ground_mask
 

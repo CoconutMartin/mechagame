@@ -5,6 +5,8 @@ extends Node
 ## Height = full_height x charge. The charge follows height_at_second:
 ## 1 s = 33%, 2 s = 63%, 3 s = 100%. Values between whole seconds are blended.
 ## Charging uses energy at a steady rate. If energy runs out, the charge stops growing.
+## Push (phase 4, user choice 2026-10-18 "heavy, slow push"): after the release the legs push off for
+## push_time on the ground (is_pushing; the mech still counts as charging and stands still), then it launches.
 
 @export var mech: Mech
 @export var input: MechInput
@@ -23,12 +25,18 @@ extends Node
 ## A move key released this many seconds before the jump still sets the jump direction.
 ## This lets you release the move key and Space at the same time.
 @export var direction_memory: float = 0.25
+## Seconds of the leg push on the ground between the release and the launch (0 = launch at once).
+@export var push_time: float = 0.45
 
 ## 0 to 1: fraction of full height while charging.
 var charge: float = 0.0
 var is_charging: bool = false
 ## Move direction held when the jump launched (length 0 to 1). Zero = straight up.
 var launch_direction: Vector3 = Vector3.ZERO
+## True while the legs push off after the release (is_charging stays true).
+var is_pushing: bool = false
+## 0 to 1 through the push.
+var push: float = 0.0
 
 var _charge_time: float = 0.0
 var _launch_height: float = 0.0
@@ -50,6 +58,12 @@ func _physics_process(delta: float) -> void:
 	if not mech.is_on_floor() or mech.is_fallen or landing_recovery.is_recovering() or kneel.is_kneeling or dodge.blocks_jump():
 		_reset()
 		return
+	if is_pushing:
+		push = minf(push + delta / maxf(push_time, 0.001), 1.0)
+		if push >= 1.0:
+			_launch_height = charge * full_height
+			_reset()
+		return
 	_remember_direction(delta)
 	if input.jump_held:
 		is_charging = true
@@ -59,8 +73,12 @@ func _physics_process(delta: float) -> void:
 			charge = _height_for_time(_charge_time)
 	elif is_charging:
 		if charge >= min_charge:
-			_launch_height = charge * full_height
 			launch_direction = _charge_direction
+			if push_time > 0.0:
+				is_pushing = true
+				push = 0.0
+				return
+			_launch_height = charge * full_height
 		_reset()
 
 
@@ -91,5 +109,7 @@ func _remember_direction(delta: float) -> void:
 
 func _reset() -> void:
 	is_charging = false
+	is_pushing = false
+	push = 0.0
 	charge = 0.0
 	_charge_time = 0.0

@@ -1,29 +1,29 @@
 class_name JumpClipDirector
 extends RefCounted
-## Decides which jump, fall and landing clips play and at which time (user request 2026-10-15).
-## Three layers, each over the one before it (the last one that is full hides the rest):
-##   0 fall_start (Jumping_Down): from the top of a jump or the walk off an edge, the start of the fall;
+## Decides which jump, fall and landing clips play and at which time (user requests 2026-10-15 and
+## phase 4, 2026-10-18). Three layers, each over the one before it (the last one that is full hides the rest):
+##   0 jump_up (Jumping_Up): its crouch follows the jump charge (0 to crouch_time), the release plays the
+##     push to takeoff_time over MechJumpCharge.push_time, and the rest of the clip (the legs tuck) plays
+##     while the mech rises, timed to end near the top of the jump, then holds.
+##   1 fall_start (Jumping_Down): from the top of a jump or the walk off an edge, the start of the fall;
 ##     it plays to its hold frame and holds while the mech is in the air.
-##   1 fall_end (Falling_To_Landing): the clip time follows the predicted time to impact (ray down, gravity),
-##     so its touchdown frame meets the real touchdown. After a fall of at least min_fall_height and under
-##     hard_fall_height it plays on through its crouch and rise, stretched to the landing recovery.
-##   2 hard_landing (Landing_position): after a fall of hard_fall_height or more: the crouch, held until the
-##     end of the recovery, then released.
+##   2 landing (Landing): the clip time follows the predicted time to impact (ray down, gravity), so its
+##     touchdown frame meets the real touchdown; on the ground it plays on through the crouch and the rise,
+##     stretched to the landing recovery, then it is released.
 ## Falls under min_fall_height keep the coded landing crouch (SkeletalJumpPose), and so do all other
-## landings (dodge step). The coded landing is off (coded_landing) while a landing clip plays.
+## landings (dodge step). The coded landing is off (coded_landing) while the landing clip plays.
 
 const LAYERS := 3
 
 var mech: Mech
+var jump_charge: MechJumpCharge
 var landing_recovery: MechLandingRecovery
+var jump_up: AirClip
 var fall_start: AirClip
-var fall_end: AirClip
-var hard_landing: AirClip
+var landing: AirClip
 ## Falls shorter than this (m) play no clip (the coded landing crouch). The drop is the height already
 ## fallen plus the height to the ground.
 var min_fall_height: float = 1.0
-## Falls of this height (m) or more land with the hard landing clip; shorter ones with Falling_To_Landing.
-var hard_fall_height: float = 3.0
 ## Seconds in the air before the fall clip may start (a step down gives none).
 var start_delay: float = 0.1
 ## Ground layer for the ray down.
@@ -31,6 +31,10 @@ var ground_mask: int = 1
 ## Slowest and fastest landing clip playback when it is stretched to the recovery time.
 var min_land_speed: float = 0.6
 var max_land_speed: float = 1.5
+## Part of the rise time (launch to the top) the tuck of jump_up takes; slowest and fastest playback.
+var rise_part: float = 0.85
+var min_rise_speed: float = 0.4
+var max_rise_speed: float = 1.5
 
 ## Per layer now.
 var weights: Array[float] = [0.0, 0.0, 0.0]
@@ -44,13 +48,17 @@ var _air_time: float = 0.0
 var _falling_clip: bool = false
 var _peak_y: float = 0.0
 var _last_left: float = 0.0
-## 0 none, 1 Falling_To_Landing plays on, 2 hard landing.
-var _tier: int = 0
+## True while the landing clip plays on the ground.
+var _landing_clip: bool = false
+## jump_up: the clip time at the release, and true from the push until the top of the jump.
+var _release_time: float = -1.0
+var _rising: bool = false
+var _rise_speed: float = 1.0
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 
 func clips() -> Array[AirClip]:
-	return [fall_start, fall_end, hard_landing]
+	return [jump_up, fall_start, landing]
 
 
 func update(delta: float) -> void:
@@ -67,20 +75,56 @@ func update(delta: float) -> void:
 	time_to_impact = INF
 	var targets: Array[float] = [0.0, 0.0, 0.0]
 	if flying:
-		_tier = 0
+		_landing_clip = false
 		_air_time += delta
+		_update_rise(delta, targets)
 		_update_air(delta, targets)
 	else:
 		_air_time = 0.0
+		if on_floor and free:
+			_update_charge(targets)
 		if new_landing and free:
 			_start_landing()
-		if _tier > 0 and recovering and free and on_floor:
+		if _landing_clip and recovering and free and on_floor:
 			_update_landing(targets)
 		else:
-			_tier = 0
+			_landing_clip = false
 			_falling_clip = false
-	coded_landing = 0.0 if _tier > 0 else 1.0
+	coded_landing = 0.0 if _landing_clip else 1.0
 	_slew(delta, targets, free)
+
+
+## On the ground: the crouch follows the charge, then the push to the takeoff.
+func _update_charge(targets: Array[float]) -> void:
+	_rising = false
+	if jump_charge == null or not jump_charge.is_charging:
+		_release_time = -1.0
+		return
+	targets[0] = 1.0
+	if jump_charge.is_pushing:
+		if _release_time < 0.0:
+			_release_time = times[0]
+		times[0] = lerpf(_release_time, jump_up.takeoff_time, smoothstep(0.0, 1.0, jump_charge.push))
+		_rising = true
+	else:
+		_release_time = -1.0
+		times[0] = jump_up.crouch_time * smoothstep(0.0, 1.0, jump_charge.charge)
+
+
+## In the air after a push: the tuck plays while the mech rises; it ends at the top.
+func _update_rise(delta: float, targets: Array[float]) -> void:
+	if not _rising:
+		return
+	if mech.velocity.y <= 0.0:
+		_rising = false
+		return
+	if _air_time <= delta * 1.5:
+		var rise_time := mech.velocity.y / maxf(_gravity * mech.gravity_scale, 0.1)
+		var span := jump_up.get_hold_time() - jump_up.takeoff_time
+		_rise_speed = clampf(span / maxf(rise_time * rise_part, 0.05), min_rise_speed, max_rise_speed)
+		times[0] = jump_up.takeoff_time
+	targets[0] = 1.0
+	times[0] = minf(times[0] + delta * _rise_speed, jump_up.get_hold_time())
 
 
 ## In the air: the fall start, then the touchdown clip by the predicted time to impact.
@@ -92,30 +136,21 @@ func _update_air(delta: float, targets: Array[float]) -> void:
 		if (_peak_y - mech.global_position.y) + remaining < min_fall_height:
 			return
 		_falling_clip = true
-		times[0] = 0.0
 		times[1] = 0.0
-	targets[0] = 1.0
-	times[0] = minf(times[0] + delta * fall_start.speed_scale, fall_start.get_hold_time())
+		times[2] = 0.0
+	targets[1] = 1.0
+	times[1] = minf(times[1] + delta * fall_start.speed_scale, fall_start.get_hold_time())
 	time_to_impact = _impact_time(remaining)
-	if time_to_impact <= fall_end.contact_time:
-		targets[1] = 1.0
-		times[1] = maxf(times[1], fall_end.contact_time - time_to_impact)
+	if time_to_impact <= landing.contact_time:
+		targets[2] = 1.0
+		times[2] = maxf(times[2], landing.contact_time - time_to_impact)
 
 
-## A new landing: the clip for the height of the fall.
+## A new landing: the landing clip after a fall of min_fall_height or more.
 func _start_landing() -> void:
-	var height := landing_recovery.fall_height
-	if height < min_fall_height:
-		_tier = 0
-	elif height < hard_fall_height:
-		_tier = 1
-	else:
-		_tier = 2
-	if _tier == 1:
-		times[1] = maxf(times[1], fall_end.contact_time)
-	elif _tier == 2:
-		times[1] = maxf(times[1], fall_end.contact_time)
-		times[2] = hard_landing.contact_time
+	_landing_clip = landing_recovery.fall_height >= min_fall_height
+	if _landing_clip:
+		times[2] = maxf(times[2], landing.contact_time)
 
 
 ## On the ground after the landing: the clip plays on, stretched to the recovery, and is released in the
@@ -123,19 +158,13 @@ func _start_landing() -> void:
 func _update_landing(targets: Array[float]) -> void:
 	var duration := maxf(landing_recovery.duration, 0.05)
 	var elapsed := duration - landing_recovery.time_left
-	var layer := _tier
-	var clip := fall_end if _tier == 1 else hard_landing
-	var release := clampf(landing_recovery.time_left / minf(clip.blend_out, duration * 0.6), 0.0, 1.0)
-	var span := clip.get_hold_time() - clip.contact_time
-	var speed := clampf(span / maxf(duration - clip.blend_out, 0.05), min_land_speed, max_land_speed)
-	times[layer] = clip.contact_time + minf(elapsed * speed, span)
-	targets[layer] = smoothstep(0.0, 1.0, release)
-	if _tier == 2:
-		targets[1] = 1.0
-		times[1] = fall_end.contact_time
-	# The layers under it stay until it is full, but not while it is released.
-	for lower in layer:
-		targets[lower] = 1.0 if (weights[layer] < 0.999 and release >= 1.0) else 0.0
+	var release := clampf(landing_recovery.time_left / minf(landing.blend_out, duration * 0.6), 0.0, 1.0)
+	var span := landing.get_hold_time() - landing.contact_time
+	var speed := clampf(span / maxf(duration - landing.blend_out, 0.05), min_land_speed, max_land_speed)
+	times[2] = landing.contact_time + minf(elapsed * speed, span)
+	targets[2] = smoothstep(0.0, 1.0, release)
+	# The fall pose stays under it until it is full, but not while it is released.
+	targets[1] = 1.0 if (_falling_clip and weights[2] < 0.999 and release >= 1.0) else 0.0
 
 
 ## Weights move to their targets; a full layer hides the ones under it.
@@ -146,17 +175,15 @@ func _slew(delta: float, targets: Array[float], free: bool) -> void:
 		var rate := 1.0 / maxf(clip.blend_in if targets[i] > weights[i] else clip.blend_out, 0.01)
 		if not free:
 			rate = 12.0
-		if _tier == 2 and i == 2 and targets[i] > weights[i]:
-			rate = 12.0
 		# Release (landing, last part): the weight follows its target at once.
-		var at_once := _tier > 0 and i == _tier and targets[i] < weights[i]
+		var at_once := _landing_clip and i == 2 and targets[i] < weights[i]
 		weights[i] = targets[i] if at_once else move_toward(weights[i], targets[i], rate * delta)
 	for i in range(LAYERS - 1, 0, -1):
 		if weights[i] >= 0.999:
 			for lower in i:
 				weights[lower] = 0.0
 	for i in LAYERS:
-		if weights[i] <= 0.0 and targets[i] <= 0.0 and not _falling_clip and _tier == 0:
+		if weights[i] <= 0.0 and targets[i] <= 0.0 and not _falling_clip and not _landing_clip and not _rising:
 			times[i] = 0.0
 
 
