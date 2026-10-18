@@ -23,6 +23,14 @@ extends SceneTree
 ## The arms are left out of MAP_UAL on purpose: the dodge never plays arm tracks (the arms keep holding
 ## the weapon and the shield). Shield_Dash starts side-on (left shoulder leading, about -96 degrees); the stance turn is
 ## taken out as for Mixamo clips, so the mech faces forward.
+##
+## Arms mode (user request 2026-10-18: the free and fist arms swing like "Slow Run - arm swing"): only the
+## arm bones (MAP_ARMS), each as its turn against the source chest (Spine2), so the clip's body lean and
+## twist stay out; the target torso stays at rest, so the tracks are the arm turns under the mech's own
+## torso (the Mixamo clavicle turn is in the upper arm: the mech has no clavicle bone). The fingers are left
+## out (the jointed MechHand makes its own fist or open hand). The clip is shifted so time 0 is the left foot
+## landing (SkeletalLocomotion phase 0) and loops; no travel curve. Run:
+##   godot --headless --path . --script res://tools/godot/retarget_mixamo.gd -- arms <fbx> <out anim .res>
 
 const MODEL := "res://models/new_mech/new_mech_exploded.glb"
 const FPS := 30.0
@@ -57,6 +65,17 @@ const MAP_UAL := {
 	"shin_R": ["calf_r", "foot_R", "foot_r", ""],
 	"foot_R": ["foot_r", "", "", "shin_R"],
 }
+## Arm bones only (arms mode), same layout as MAP.
+const MAP_ARMS := {
+	"upper_arm_L": ["LeftArm", "forearm_L", "LeftForeArm", ""],
+	"forearm_L": ["LeftForeArm", "hand_L", "LeftHand", ""],
+	"hand_L": ["LeftHand", "", "", "forearm_L"],
+	"upper_arm_R": ["RightArm", "forearm_R", "RightForeArm", ""],
+	"forearm_R": ["RightForeArm", "hand_R", "RightHand", ""],
+	"hand_R": ["RightHand", "", "", "forearm_R"],
+}
+## Arms mode: the source chest bone and the target torso bone the arm turns are taken against.
+const ARMS_SOURCE_CHEST := "Spine2"
 ## Source bone name prefix (Mixamo: "mixamorig_"), hips bone, left and right shoulder bones.
 var _prefix := "mixamorig_"
 var _hips_name := "Hips"
@@ -65,6 +84,10 @@ var _shoulders := ["LeftArm", "RightArm"]
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
+	if args[0] == "arms":
+		await _retarget_arms(args[1], args[2])
+		quit()
+		return
 	var map: Dictionary = MAP
 	var clip_name := ""
 	var ual: bool = (args[0] as String).ends_with(".glb")
@@ -191,6 +214,100 @@ func _initialize() -> void:
 			anim.length, frames, scale, farthest.length(), travel_direction.snapped(Vector3.ONE * 0.01), curve.sample(1.0)])
 	print("save anim ", ResourceSaver.save(anim, args[1]), " curve ", ResourceSaver.save(curve, args[2]))
 	quit()
+
+
+## Arms mode: arm turns against the chest, time 0 = the left foot landing, looped.
+func _retarget_arms(fbx: String, out_path: String) -> void:
+	var source_root := (load(fbx) as PackedScene).instantiate() as Node3D
+	var target_root := (load(MODEL) as PackedScene).instantiate() as Node3D
+	get_root().add_child(source_root)
+	get_root().add_child(target_root)
+	await process_frame
+	var player := source_root.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	var source := source_root.find_child("Skeleton3D", true, false) as Skeleton3D
+	var target := target_root.find_child("Skeleton3D", true, false) as Skeleton3D
+	var clip_name: String = player.get_animation_list()[0]
+	var length := player.get_animation(clip_name).length
+	player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	player.play(clip_name)
+	var source_rest := _rest_globals(source)
+	var target_rest := _rest_globals(target)
+	var chest := _src(source, ARMS_SOURCE_CHEST)
+	var chest_rest := source_rest[chest].basis.get_rotation_quaternion()
+	var align := {}
+	for bone: String in MAP_ARMS:
+		var entry: Array = MAP_ARMS[bone]
+		if entry[1] == "":
+			continue
+		var t_dir := (target_rest[target.find_bone(entry[1])].origin - target_rest[target.find_bone(bone)].origin).normalized()
+		var s_dir := (source_rest[_src(source, entry[2])].origin - source_rest[_src(source, entry[0])].origin).normalized()
+		align[bone] = Quaternion(t_dir, s_dir)
+	for bone: String in MAP_ARMS:
+		var use: String = MAP_ARMS[bone][3]
+		if use != "":
+			align[bone] = align[use]
+	# The left foot landing: the first frame of the foot's lowest part of the cycle (within 15 % of its
+	# height range above the lowest), after a frame above it.
+	var frames := int(round(length * FPS))
+	var heights := {"Left": [], "Right": []}
+	for frame in frames:
+		player.seek(frame / FPS, true)
+		player.advance(0.0)
+		source.force_update_all_bone_transforms()
+		for side: String in heights:
+			(heights[side] as Array).append(source.get_bone_global_pose(_src(source, side + "Foot")).origin.y)
+	var lands := {}
+	for side: String in heights:
+		var h: Array = heights[side]
+		var low := INF
+		var high := -INF
+		for value in h:
+			low = minf(low, float(value))
+			high = maxf(high, float(value))
+		var near := low + (high - low) * 0.15
+		for frame in frames:
+			if h[frame] <= near and h[posmod(frame - 1, frames)] > near:
+				lands[side] = frame / FPS
+				break
+	print("foot heights (left): ", (heights.Left as Array).map(func(v: float) -> String: return "%.3f" % v))
+	print("foot heights (right): ", (heights.Right as Array).map(func(v: float) -> String: return "%.3f" % v))
+	var start: float = lands.get("Left", 0.0)
+	print("clip %.2f s, %d frames; left foot lands at %.2f s, right at %.2f s (part %.2f of the cycle later)" % [length, frames,
+			start, lands.get("Right", -1.0), fposmod(float(lands.get("Right", 0.0)) - start, length) / length])
+
+	var anim := Animation.new()
+	anim.length = length
+	anim.step = 1.0 / FPS
+	anim.loop_mode = Animation.LOOP_LINEAR
+	var tracks := {}
+	for bone: String in MAP_ARMS:
+		var track := anim.add_track(Animation.TYPE_ROTATION_3D)
+		anim.track_set_path(track, NodePath("MechRig/Skeleton3D:" + bone))
+		tracks[bone] = track
+	for frame in frames + 1:
+		var time := minf(frame / FPS, length)
+		player.seek(fposmod(start + time, length), true)
+		player.advance(0.0)
+		source.force_update_all_bone_transforms()
+		# Back to the chest's rest turn: the arm as if the chest did not move.
+		var unchest := chest_rest * source.get_bone_global_pose(chest).basis.get_rotation_quaternion().inverse()
+		var globals := {}
+		for b in target.get_bone_count():
+			var name := target.get_bone_name(b)
+			var parent := target.get_bone_parent(b)
+			var parent_global: Transform3D = globals[parent] if parent >= 0 else Transform3D.IDENTITY
+			var local := target.get_bone_rest(b)
+			if MAP_ARMS.has(name):
+				var s := _src(source, MAP_ARMS[name][0])
+				var change := unchest * source.get_bone_global_pose(s).basis.get_rotation_quaternion() \
+						* source_rest[s].basis.get_rotation_quaternion().inverse()
+				var aligned: Quaternion = align.get(name, Quaternion.IDENTITY)
+				var global_rotation := (change * aligned * target_rest[b].basis.get_rotation_quaternion()).normalized()
+				var local_rotation := (parent_global.basis.get_rotation_quaternion().inverse() * global_rotation).normalized()
+				local = Transform3D(Basis(local_rotation), local.origin)
+				anim.rotation_track_insert_key(tracks[name], time, local_rotation)
+			globals[b] = parent_global * local
+	print("save arms anim ", ResourceSaver.save(anim, out_path))
 
 
 func _src(skeleton: Skeleton3D, name: String) -> int:

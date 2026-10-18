@@ -10,10 +10,20 @@ extends SkeletonModifier3D
 ## Neutral arms (user rule 2026-10-11): the shoulder armor block (the upper arm mesh) is flat on top, so
 ## the elbow sits under its outer edge. Each upper arm swings from that flat pose, and the elbow stays
 ## as near to it as the hand target lets it (tucked elbows).
-## Relaxed arms (user report 2026-10-18): an arm at its relaxed hang (an empty or fist hand) is solved to
-## the still hang marker and then turned whole about the shoulder by FreeArmSwing's swing angle, so the
-## shoulder, elbow and hand swing together. A fist arm that the punch clip drives still gets the hang pose
-## under the clip (WeaponController.fist_hang_target), so the clip fades into the hang.
+## Relaxed arms (user request 2026-10-18, clip arm swing; it replaces the whole-arm swing about the shoulder
+## of the same day): an arm at its relaxed hang (an empty or fist hand) is solved to the still hang marker
+## (with FreeArmSwing's small idle sway while standing), then its upper arm, forearm and hand take the arm
+## turns of FreeArmSwing's clip ("Slow Run - arm swing", locked to the stride), blended from the hang by
+## FreeArmSwing.amount (the speed). The mech's hips are nearly as wide as its shoulders and its torso is
+## 3 m deep, so the clip's forearms (they point in toward the middle, like a human runner's) would put the
+## fists through the thighs and the chest: the forearm turns out about the torso's up axis at the elbow
+## (clip_forearm_out_deg, it points more forward; the hand height stays the clip's) and the upper arm turns a
+## little out to the side (clip_out_deg). Where the palm or the wrist
+## still comes nearer the legs than swing_leg_clearance, or nearer the torso and pelvis armor than
+## swing_body_clearance, the upper arm turns further out (at most swing_max_out_deg, at swing_out_speed_deg).
+## Gun and rifle arms (IK to a grip) and melee
+## weapon arms (the clip) do not swing. A fist arm that the punch clip drives still gets the hang pose (and
+## the clip swing) under the punch clip (WeaponController.fist_hang_target), so the punch fades into it.
 ## Animated arms while moving (user rule 2026-10-18): an arm that follows the animation (the War Hammer,
 ## a punch) keeps only moving_raise_scale of the clip's raise to the side, unless the hand or the weapon
 ## head would come too near a leg.
@@ -62,6 +72,8 @@ extends SkeletonModifier3D
 @export var torso_bone: StringName = &"torso"
 @export var upper_arm_bones: PackedStringArray = ["upper_arm_L", "upper_arm_R"]
 @export var forearm_bones: PackedStringArray = ["forearm_L", "forearm_R"]
+## Wrist bones (the clip arm swing turns them too).
+@export var hand_bones: PackedStringArray = ["hand_L", "hand_R"]
 ## Weapon socket bones in the palms: the IK puts these on the weapon grips.
 @export var grip_bones: PackedStringArray = ["grip_L", "grip_R"]
 ## Shoulder height in the Torso node (the part-built frame value, so the weapon data poses fit).
@@ -115,6 +127,26 @@ extends SkeletonModifier3D
 ## butt end); those handle points keep leg_clearance too.
 @export var weapon_butt_share: float = 0.35
 @export var leg_bones: PackedStringArray = ["thigh_L", "shin_L", "foot_L", "thigh_R", "shin_R", "foot_R"]
+@export_group("Clip arm swing")
+## The clip forearm turns out about the torso's up axis at the elbow this much (degrees, at the full clip
+## amount), so it points forward and the fist passes outside the thighs and the chest.
+@export var clip_forearm_out_deg: float = 30.0
+## The clip upper arm turns out to the side this much (degrees, about the torso's forward axis, at the full
+## clip amount).
+@export var clip_out_deg: float = 8.0
+## A relaxed arm in the clip swing keeps its palm and wrist this far (m) from the leg bone lines, or as far
+## as in its hang pose where that is nearer (0.8 m: the nearest of the approved whole-arm swing, renders
+## 2026-10-18). Nearer, the upper arm turns further out.
+@export var swing_leg_clearance: float = 0.8
+## The palm and the wrist keep this far (m) from the torso and pelvis armor boxes (about half a fist).
+@export var swing_body_clearance: float = 0.5
+## Armor meshes (Skeleton3D children) the clip arms keep off, and the bone each one moves with.
+@export var body_meshes: PackedStringArray = ["Torso", "Pelvis"]
+@export var body_mesh_bones: PackedStringArray = ["torso", "pelvis"]
+## The largest further turn out to the side for that (degrees), and how fast it may change (degrees per
+## second, both ways; no pop).
+@export var swing_max_out_deg: float = 25.0
+@export var swing_out_speed_deg: float = 240.0
 @export_group("")
 
 var _skeleton: Skeleton3D
@@ -133,6 +165,8 @@ var _weapon_moved: Array[Transform3D] = [Transform3D.IDENTITY, Transform3D.IDENT
 var _free_swing: FreeArmSwing
 ## Lower raise of the animated arms now (0 = standing, 1 = moving).
 var _raise_amount: float = 0.0
+## Armor boxes the clip arms keep off: [bone, AABB in that bone's rest space].
+var _body_boxes: Array = []
 
 
 func _ready() -> void:
@@ -175,6 +209,17 @@ func _setup() -> void:
 		shoulder_mounts[i].position = top - torso_rest.origin
 		var mount_rest := to_mech.affine_inverse() * Transform3D(Basis.IDENTITY, top)
 		_mount_offsets.append([shoulder_mounts[i], bone, flat_rest.affine_inverse() * mount_rest])
+	for i in mini(body_meshes.size(), body_mesh_bones.size()):
+		var mesh := _skeleton.get_node_or_null(NodePath(body_meshes[i])) as MeshInstance3D
+		var bone := _skeleton.find_bone(body_mesh_bones[i])
+		if mesh == null or mesh.mesh == null or bone < 0:
+			continue
+		var to_bone := _skeleton.get_bone_global_rest(bone).affine_inverse() * mesh.transform
+		var vertices: PackedVector3Array = mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var box := AABB()
+		for v in vertices.size():
+			box = AABB(to_bone * vertices[v], Vector3.ZERO) if v == 0 else box.expand(to_bone * vertices[v])
+		_body_boxes.append([bone, box])
 	var grip_track := _grip_rotations()
 	for i in 2:
 		var side := {}
@@ -182,6 +227,7 @@ func _setup() -> void:
 		side.shoulder = shoulder_left if i == 0 else shoulder_right
 		side.upper = _skeleton.find_bone(upper_arm_bones[i])
 		side.fore = _skeleton.find_bone(forearm_bones[i])
+		side.hand = _skeleton.find_bone(hand_bones[i])
 		var grip := _skeleton.find_bone(grip_bones[i])
 		side.grip = grip
 		var p_shoulder := _skeleton.get_bone_global_rest(side.upper).origin
@@ -350,6 +396,16 @@ func _pose_arm(side: Dictionary) -> void:
 			_skeleton.set_bone_pose_rotation(bone, side.fingers[bone])
 	shoulder.global_basis = (skin.basis.orthonormalized() * upper_basis * (side.upper_offset as Basis).inverse()).orthonormalized()
 	ik.mid_joint.global_basis = (skin.basis.orthonormalized() * fore_basis * (side.fore_offset as Basis).inverse()).orthonormalized()
+
+
+## The joint nodes take the arm bones' turn now (after a change of the bones), so the weapons, the shield
+## and the hand places on them sit on the real arm.
+func _joints_from_bones(side: Dictionary) -> void:
+	var skin := _skeleton.global_transform.basis.orthonormalized()
+	var upper_basis := _skeleton.get_bone_global_pose(side.upper as int).basis.orthonormalized()
+	var fore_basis := _skeleton.get_bone_global_pose(side.fore as int).basis.orthonormalized()
+	(side.shoulder as Node3D).global_basis = (skin * upper_basis * (side.upper_offset as Basis).inverse()).orthonormalized()
+	(side.ik as TwoBoneIK).mid_joint.global_basis = (skin * fore_basis * (side.fore_offset as Basis).inverse()).orthonormalized()
 
 
 ## Arm IK with the swing limit. The right weapon moves to a limited right hand. A two-hand weapon then
@@ -600,21 +656,154 @@ func _follow_shoulders() -> void:
 				* (entry[2] as Transform3D)).orthonormalized()
 
 
-## A relaxed arm (IK to a hang marker) turns whole about the shoulder by FreeArmSwing's angle: the
-## elbow and the hand go with the shoulder (user report 2026-10-18).
+## True when the arm's IK goes to a relaxed hang marker (a free or fist hand).
+func _is_relaxed(ik: TwoBoneIK) -> bool:
+	return weapons != null and ik.target != null and (ik.target == weapons.free_left_hand or ik.target == weapons.free_right_hand)
+
+
+## The mech's FreeArmSwing (found on first use; Mech adds it at runtime), or null.
+func _arm_swing() -> FreeArmSwing:
+	if _free_swing == null or not is_instance_valid(_free_swing):
+		_free_swing = weapons.mech.get_node_or_null(^"FreeArmSwing") as FreeArmSwing \
+				if weapons != null and weapons.mech != null else null
+	return _free_swing
+
+
+## A relaxed arm (IK to a hang marker) turns whole about the shoulder by FreeArmSwing's idle sway while
+## standing (it fades out as the clip swing fades in).
 func _swing_relaxed(side: Dictionary) -> void:
 	var ik := side.ik as TwoBoneIK
-	if weapons == null or (ik.target != weapons.free_left_hand and ik.target != weapons.free_right_hand):
+	if not _is_relaxed(ik) or _arm_swing() == null:
 		return
-	if _free_swing == null or not is_instance_valid(_free_swing):
-		_free_swing = weapons.mech.get_node_or_null(^"FreeArmSwing") as FreeArmSwing if weapons.mech != null else null
-		if _free_swing == null:
-			return
 	var angle := _free_swing.right_angle if ik == ik_right else _free_swing.left_angle
 	if absf(angle) < 0.00001:
 		return
 	var axis := torso.global_basis.x.normalized()
 	ik.root_joint.global_basis = (Basis(axis, angle) * ik.root_joint.global_basis).orthonormalized()
+
+
+## Clip arm swing (user request 2026-10-18): a relaxed arm, posed at its hang, takes the clip's upper arm,
+## forearm and wrist turns, blended by FreeArmSwing.amount, with the clip's twist and turn out. Then it
+## keeps off the legs and the body (_keep_off) and the joint nodes follow the bones.
+func _clip_swing(side: Dictionary, right: bool) -> void:
+	var ik := side.ik as TwoBoneIK
+	if not _is_relaxed(ik) or _arm_swing() == null or _free_swing.amount <= 0.0 or _free_swing.clip == null:
+		side.swing_out = 0.0
+		return
+	var amount := _free_swing.amount
+	var legs := _leg_segments()
+	# The clip may come no nearer the legs and the body than the hang pose already is.
+	var hang := _arm_distances(side, legs)
+	var leg_limit := minf(swing_leg_clearance, hang.x)
+	var body_limit := minf(swing_body_clearance, hang.y)
+	for bone: int in [side.upper, side.fore, side.hand]:
+		if bone < 0:
+			continue
+		var now := _skeleton.get_bone_pose_rotation(bone)
+		var clip := _free_swing.arm_rotation(StringName(_skeleton.get_bone_name(bone)), now, right)
+		_skeleton.set_bone_pose_rotation(bone, now.slerp(clip, amount))
+	_turn_upper(side, right, deg_to_rad(clip_out_deg) * amount)
+	_turn_forearm(side, right, deg_to_rad(clip_forearm_out_deg) * amount)
+	_keep_off(side, right, legs, leg_limit, body_limit)
+	_joints_from_bones(side)
+
+
+## Turns the upper arm out to the side (the forearm and the hand go with it) about the torso's forward
+## axis at the shoulder.
+func _turn_upper(side: Dictionary, right: bool, out: float) -> void:
+	if absf(out) < 0.00001:
+		return
+	var upper: int = side.upper
+	var upper_pose := _skeleton.get_bone_global_pose(upper).orthonormalized()
+	var turn := Basis(_torso_back_axis(), out * (1.0 if right else -1.0))
+	var parent_pose := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(upper))
+	_skeleton.set_bone_pose_rotation(upper, (parent_pose.basis.orthonormalized().inverse() * (turn * upper_pose.basis)).get_rotation_quaternion())
+
+
+## Turns the forearm (the hand goes with it) about the torso's up axis at the elbow: + = a forward forearm
+## points more to the outside.
+func _turn_forearm(side: Dictionary, right: bool, out: float) -> void:
+	if absf(out) < 0.00001:
+		return
+	var fore: int = side.fore
+	var fore_pose := _skeleton.get_bone_global_pose(fore).orthonormalized()
+	var torso_basis := _skeleton.global_transform.basis.orthonormalized().inverse() * torso.global_basis.orthonormalized()
+	# About +Y a forward (-Z) direction turns to -X: the right arm (out = +X) turns by the minus angle.
+	var turn := Basis((torso_basis * Vector3.UP).normalized(), -out * (1.0 if right else -1.0))
+	var upper_pose := _skeleton.get_bone_global_pose(side.upper as int).orthonormalized()
+	_skeleton.set_bone_pose_rotation(fore, (upper_pose.basis.inverse() * (turn * fore_pose.basis)).get_rotation_quaternion())
+
+
+## The torso's back axis in skeleton space (a turn about it moves a hanging right arm to +X, out).
+func _torso_back_axis() -> Vector3:
+	var torso_basis := _skeleton.global_transform.basis.orthonormalized().inverse() * torso.global_basis.orthonormalized()
+	return (torso_basis * Vector3.BACK).normalized()
+
+
+## Nearest distances (m) of the palm (grip bone) and the wrist (hand bone): x to the leg bone lines, y to
+## the torso and pelvis armor boxes (below 0 inside one).
+func _arm_distances(side: Dictionary, legs: Array) -> Vector2:
+	var skin := _skeleton.global_transform
+	var nearest := Vector2(INF, INF)
+	for bone: int in [side.grip, side.hand]:
+		if bone >= 0:
+			var point := _skeleton.get_bone_global_pose(bone).origin
+			nearest.x = minf(nearest.x, _leg_distance(skin * point, legs))
+			nearest.y = minf(nearest.y, _body_distance(point))
+	return nearest
+
+
+## Distance (m) of a point (skeleton space) to the nearest armor box (below 0: that deep inside).
+func _body_distance(point: Vector3) -> float:
+	var nearest := INF
+	for entry: Array in _body_boxes:
+		var local := _skeleton.get_bone_global_pose(entry[0] as int).orthonormalized().affine_inverse() * point
+		var box := entry[1] as AABB
+		var half := box.size * 0.5
+		var away := (local - box.get_center()).abs() - half
+		var outside := Vector3(maxf(away.x, 0.0), maxf(away.y, 0.0), maxf(away.z, 0.0)).length()
+		nearest = minf(nearest, outside if outside > 0.0 else maxf(away.x, maxf(away.y, away.z)))
+	return nearest
+
+
+## Where the palm or the wrist is nearer the legs than leg_limit or the body than body_limit, the upper arm
+## turns further out to the side (about the torso's forward axis at the shoulder) by the smallest angle
+## that clears, up to swing_max_out_deg, changing at most swing_out_speed_deg per second.
+func _keep_off(side: Dictionary, right: bool, legs: Array, leg_limit: float, body_limit: float) -> void:
+	var skin := _skeleton.global_transform
+	var upper_pose := _skeleton.get_bone_global_pose(side.upper as int)
+	var shoulder := upper_pose.origin
+	var points: Array[Vector3] = []
+	for bone: int in [side.grip, side.hand]:
+		if bone >= 0:
+			points.append(_skeleton.get_bone_global_pose(bone).origin)
+	var axis := _torso_back_axis()
+	var out_sign := 1.0 if right else -1.0
+	var clear := func(angle: float) -> bool:
+		var turn := Basis(axis, angle * out_sign)
+		for point in points:
+			var moved := shoulder + turn * (point - shoulder)
+			if _leg_distance(skin * moved, legs) < leg_limit - 0.001 or _body_distance(moved) < body_limit - 0.001:
+				return false
+		return true
+	var wanted := 0.0
+	if not clear.call(0.0):
+		var low := 0.0
+		var high := deg_to_rad(swing_max_out_deg)
+		if clear.call(high):
+			for i in 10:
+				var middle := (low + high) * 0.5
+				if clear.call(middle):
+					high = middle
+				else:
+					low = middle
+		wanted = high
+	var step := deg_to_rad(swing_out_speed_deg) * _delta
+	var last := float(side.get("swing_out", 0.0))
+	var angle := clampf(wanted, last - step, last + step)
+	side.swing_out = angle
+	if angle > 0.0:
+		_turn_upper(side, right, angle)
 
 
 ## The lower raise fades in with the ground speed (on the ground, not fallen).
@@ -781,6 +970,7 @@ func _process_modification_with_delta(delta: float) -> void:
 	for side in active:
 		_swing_relaxed(side)
 		_pose_arm(side)
+		_clip_swing(side, side.ik == ik_right)
 	for ik in borrowed:
 		ik.target = null
 	_update_raise_amount(delta)
