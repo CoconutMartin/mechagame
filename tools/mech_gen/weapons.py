@@ -169,11 +169,12 @@ def sniper(part, marker):
     # Grip sockets: on the grip and foregrip axes, nearest the hand markers.
     marker("GripSocketRight", (0, -0.514, -1.439), (-20, 0, 0), meta={"grip_radius": 0.15, "hand_reach": "true"})
     marker("GripSocketLeft", (0, -0.454, -2.926), (-10, 0, 0), meta={"grip_radius": 0.14, "hand_reach": "true"})
-    # Aim: the left hand cups the underside of the body, nearer the right hand (GripLeftAim).
-    marker("GripSocketLeftAim", (0, -0.3, -2.2), (-90, 0, 0), meta={"grip_radius": 0.2, "hand_reach": "true"})
+    # Aim (user request 2026-10-18): the left hand cups the underside of the barrel between the first two
+    # coils, about 65% of the way from the butt to the muzzle (was under the body at z -2.2).
+    marker("GripSocketLeftAim", SNIPER_LEFT_AIM, (-90, 0, 0), meta={"grip_radius": 0.2, "hand_reach": "true"})
     marker("GripLeft", SNIPER_HANDS["left_rest"])
     marker("GripLeftRest", SNIPER_HANDS["left_rest"])
-    # Aim: nearer the right hand than at rest, so the left arm reaches with the stock off the chest.
+    # Aim: out on the barrel (SNIPER_LEFT_AIM), as far forward as the left arm reaches at level aim.
     marker("GripLeftAim", SNIPER_HANDS["left_aim"])
     marker("Muzzle", (0, 0.05, -7.15))
 
@@ -217,7 +218,15 @@ BR_MUZZLE = (0.0, 0.0, -6.0)
 ## pistol grip, out near the barrel (the rail runs from z -2.37 to -6.0).
 BR_LEFT_REST_SPACING = 3.2
 BR_LEFT_REST = (0.0, BR_GRIP_LEFT[1], BR_GRIP_RIGHT[2] - BR_LEFT_REST_SPACING)
+## Beam Rifle aim (user request 2026-10-18: the left hand sat too close to the right hand): the left hand
+## holds the lower rail this far ahead of the pistol grip, about 70% of the way from the butt to the
+## muzzle. Farther forward the left upper arm reaches its swing limit (SkeletalArmRig) at level aim.
+BR_LEFT_AIM_SPACING = 2.3
+BR_LEFT_AIM = (0.0, BR_GRIP_LEFT[1], BR_GRIP_RIGHT[2] - BR_LEFT_AIM_SPACING)
 SNIPER_GRIP_RIGHT = (0.0, -0.5, -1.4)
+## Beam Sniper aim (user request 2026-10-18): the left aim socket on the barrel (center height, between the
+## coils at z -4.2 and -5.0), about 65% of the way from the butt to the muzzle.
+SNIPER_LEFT_AIM = (0.0, 0.05, -4.6)
 
 
 def plus(a, b):
@@ -231,13 +240,13 @@ SNIPER_HANDS = {
     "right_rest": plus(SNIPER_GRIP_RIGHT, (-0.1, 0.739, -0.163)),  # Close rest (2026-10-13).
     "right_aim": plus(SNIPER_GRIP_RIGHT, (-0.051, 0.427, -0.291)),
     "left_rest": plus((0.0, -0.45, -2.9), (0.079, 0.061, 0.208)),
-    "left_aim": plus((0.0, -0.45, -2.2), (0.115, 0.391, 0.143)),
+    "left_aim": plus(SNIPER_LEFT_AIM, (0.197, -0.157, 0.085)),
 }
 BR_HANDS = {
     "right_rest": plus(BR_GRIP_RIGHT, (0.051, 0.406, -0.249)),
     "right_aim": plus(BR_GRIP_RIGHT, (-0.043, 0.594, -0.237)),
     "left_rest": plus(BR_LEFT_REST, (0.146, -0.06, 0.305)),
-    "left_aim": plus((BR_GRIP_LEFT[0], BR_GRIP_LEFT[1], BR_GRIP_LEFT[2] + 0.8), (0.145, 0.22, 0.07)),
+    "left_aim": plus(BR_LEFT_AIM, (0.185, -0.103, 0.192)),
 }
 
 
@@ -252,8 +261,6 @@ def beam_rifle_scene(path):
          'coil_paths = Array[NodePath]([NodePath("Model/Coil0")])',
          'emitter_path = NodePath("Model/MuzzleBore")\n',
          '[node name="Model" parent="." instance=ExtResource("model")]\n']
-    # Aim: the left hand 0.8 m nearer the right hand, so the stock stays off the chest (see br_anchor).
-    br_left_aim = (BR_GRIP_LEFT[0], BR_GRIP_LEFT[1], BR_GRIP_LEFT[2] + 0.8)
     # Hand markers: the fist hollows on the grip sockets (see SNIPER_HANDS).
     for name, pos in (("GripRight", BR_HANDS["right_rest"]), ("GripRightRest", BR_HANDS["right_rest"]),
                       ("GripRightAim", BR_HANDS["right_aim"]), ("GripLeft", BR_HANDS["left_rest"]),
@@ -262,7 +269,7 @@ def beam_rifle_scene(path):
     # Grip sockets: the pistol grip (tilted 24 deg, 0.24 x 0.45 m) and the lower rail (along the gun).
     o.append(grip_socket("GripSocketRight", BR_GRIP_RIGHT, 24.0, 0.16, hand_reach=True))
     o.append(grip_socket("GripSocketLeft", BR_LEFT_REST, 90.0, 0.15, hand_reach=True))
-    o.append(grip_socket("GripSocketLeftAim", br_left_aim, 90.0, 0.15, hand_reach=True))
+    o.append(grip_socket("GripSocketLeftAim", BR_LEFT_AIM, 90.0, 0.15, hand_reach=True))
     open(path, "w").write("\n".join(o))
     print("wrote", path)
 
