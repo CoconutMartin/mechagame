@@ -37,6 +37,7 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	_forget_freed()
 	if camera == null or mech == null or not camera.is_current():
 		_show_all()
 		return
@@ -102,9 +103,21 @@ func _show(chunk: UrbanChunk) -> void:
 
 
 func _show_all() -> void:
+	_forget_freed()
 	for chunk: UrbanChunk in _hidden.keys():
 		_show(chunk)
 	_update_occluders()
+
+
+## Drops chunks and buildings that were freed (a building broke apart, user report 2026-10-18): a
+## typed loop over a freed key stops the script.
+func _forget_freed() -> void:
+	for key in _hidden.keys():
+		if not is_instance_valid(key):
+			_hidden.erase(key)
+	for key in _occluders_off.keys():
+		if not is_instance_valid(key):
+			_occluders_off.erase(key)
 
 
 ## A building with hidden pieces has its occluder off; it comes back when none are hidden (and the
