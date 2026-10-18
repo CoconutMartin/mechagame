@@ -176,6 +176,10 @@ def sniper(part, marker):
     marker("GripLeftRest", SNIPER_HANDS["left_rest"])
     # Aim: out on the barrel (SNIPER_LEFT_AIM), as far forward as the left arm reaches at level aim.
     marker("GripLeftAim", SNIPER_HANDS["left_aim"])
+    # Low aim (user choice 2026-10-18, "Slide hand back"): aiming down, the left hand slides back to its
+    # old place under the body (WeaponPose low_aim_start_deg / low_aim_full_deg).
+    marker("GripSocketLeftAimLow", SNIPER_LEFT_AIM_LOW, (-90, 0, 0), meta={"grip_radius": 0.2, "hand_reach": "true"})
+    marker("GripLeftAimLow", SNIPER_HANDS["left_aim_low"])
     marker("Muzzle", (0, 0.05, -7.15))
 
 
@@ -227,6 +231,11 @@ SNIPER_GRIP_RIGHT = (0.0, -0.5, -1.4)
 ## Beam Sniper aim (user request 2026-10-18): the left aim socket on the barrel (center height, between the
 ## coils at z -4.2 and -5.0), about 65% of the way from the butt to the muzzle.
 SNIPER_LEFT_AIM = (0.0, 0.05, -4.6)
+## Low aim (user choice 2026-10-18, "Slide hand back"): aiming down, the left hand slides back along the
+## rifle to these places (the old aim holds near the right hand), so the left upper arm stays inside its
+## swing limit and the arm rig does not drag the rifle to the hand (WeaponPose low_aim_*_deg).
+BR_LEFT_AIM_LOW = (0.0, BR_GRIP_LEFT[1], BR_GRIP_LEFT[2] + 0.8)
+SNIPER_LEFT_AIM_LOW = (0.0, -0.3, -2.2)
 
 
 def plus(a, b):
@@ -241,12 +250,14 @@ SNIPER_HANDS = {
     "right_aim": plus(SNIPER_GRIP_RIGHT, (-0.051, 0.427, -0.291)),
     "left_rest": plus((0.0, -0.45, -2.9), (0.079, 0.061, 0.208)),
     "left_aim": plus(SNIPER_LEFT_AIM, (0.197, -0.157, 0.085)),
+    "left_aim_low": plus((0.0, -0.45, -2.2), (0.115, 0.391, 0.143)),
 }
 BR_HANDS = {
     "right_rest": plus(BR_GRIP_RIGHT, (0.051, 0.406, -0.249)),
     "right_aim": plus(BR_GRIP_RIGHT, (-0.043, 0.594, -0.237)),
     "left_rest": plus(BR_LEFT_REST, (0.146, -0.06, 0.305)),
     "left_aim": plus(BR_LEFT_AIM, (0.185, -0.103, 0.192)),
+    "left_aim_low": plus(BR_LEFT_AIM_LOW, (0.145, 0.22, 0.07)),
 }
 
 
@@ -264,12 +275,14 @@ def beam_rifle_scene(path):
     # Hand markers: the fist hollows on the grip sockets (see SNIPER_HANDS).
     for name, pos in (("GripRight", BR_HANDS["right_rest"]), ("GripRightRest", BR_HANDS["right_rest"]),
                       ("GripRightAim", BR_HANDS["right_aim"]), ("GripLeft", BR_HANDS["left_rest"]),
-                      ("GripLeftRest", BR_HANDS["left_rest"]), ("GripLeftAim", BR_HANDS["left_aim"]), ("Muzzle", BR_MUZZLE)):
+                      ("GripLeftRest", BR_HANDS["left_rest"]), ("GripLeftAim", BR_HANDS["left_aim"]),
+                      ("GripLeftAimLow", BR_HANDS["left_aim_low"]), ("Muzzle", BR_MUZZLE)):
         o.append(f'[node name="{name}" type="Marker3D" parent="."]\ntransform = {xf(pos)}\n')
     # Grip sockets: the pistol grip (tilted 24 deg, 0.24 x 0.45 m) and the lower rail (along the gun).
     o.append(grip_socket("GripSocketRight", BR_GRIP_RIGHT, 24.0, 0.16, hand_reach=True))
     o.append(grip_socket("GripSocketLeft", BR_LEFT_REST, 90.0, 0.15, hand_reach=True))
     o.append(grip_socket("GripSocketLeftAim", BR_LEFT_AIM, 90.0, 0.15, hand_reach=True))
+    o.append(grip_socket("GripSocketLeftAimLow", BR_LEFT_AIM_LOW, 90.0, 0.15, hand_reach=True))
     open(path, "w").write("\n".join(o))
     print("wrote", path)
 

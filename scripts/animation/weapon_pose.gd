@@ -60,9 +60,22 @@ extends Node
 ## Elbow directions in the aim pose: right elbow out and down, left elbow under the rifle.
 @export var left_pole_aim: Vector3 = Vector3(-0.3, -1.0, 0.0)
 @export var right_pole_aim: Vector3 = Vector3(1.0, -0.6, 0.3)
+## Low aim (user choice 2026-10-18, "Slide hand back"): a long rifle with GripLeftAimLow (and
+## GripSocketLeftAimLow) markers moves the left aim hold from GripLeftAim back to them as the aim goes
+## down, so the left upper arm stays inside its swing limit (SkeletalArmRig) and the rifle is not
+## dragged to the hand. Aim pitch (degrees against the world up, down is negative) where the slide starts.
+@export_range(-45.0, 15.0) var low_aim_start_deg: float = -3.0
+## Aim pitch (degrees) where the left hand is fully at the low place.
+@export_range(-60.0, 0.0) var low_aim_full_deg: float = -14.0
+## How fast the left hand slides between the aim and the low place (whole slides per second), so a
+## quick camera turn does not pull the fist off the wrist.
+@export var low_aim_speed: float = 3.0
 
 ## 0 = rest pose, 1 = aim pose.
 var aim_amount: float = 0.0
+## 0 = left aim hold at GripLeftAim, 1 = at GripLeftAimLow (low aim). Stays 0 without that marker.
+## MechHandControl reads it to slide the left aim socket the same way.
+var low_aim_amount: float = 0.0
 ## Set by WeaponController: rest transform and aim anchor position come from the weapon data,
 ## and wants_raise replaces the aim key.
 var use_weapon_data: bool = false
@@ -89,6 +102,8 @@ func _physics_process(delta: float) -> void:
 	var rest := rest_transform if use_weapon_data else rest_pose.transform
 	var target := parent.global_transform.affine_inverse() * mech_aim.aim_point
 	var aim_pose := Transform3D(Basis.looking_at(target - origin, Vector3.UP), origin)
+	low_aim_amount = move_toward(low_aim_amount, _low_aim(mech_aim.aim_point - parent.global_transform * origin),
+			low_aim_speed * delta)
 	if one_hand_elbow_pivot and left_grip_target == null and weapon is GunWeapon \
 			and not weapon is ForearmGunWeapon:
 		aim_pose.origin = one_hand_pivot + aim_pose.basis * (origin - one_hand_pivot)
@@ -109,8 +124,32 @@ func _physics_process(delta: float) -> void:
 		right_grip_target.position = right_grip_rest.position.lerp(right_grip_aim.position, t)
 	if left_grip_target == null:
 		return  # One-hand weapon: the left arm is free.
-	left_grip_target.position = left_grip_rest.position.lerp(left_grip_aim.position, t)
+	left_grip_target.position = left_grip_rest.position.lerp(left_aim_position(), t)
 	arm_ik_left.pole_direction = left_pole_rest.lerp(left_pole_aim, t)
+
+
+## The left hand place in the aim pose (weapon space): GripLeftAim, slid toward GripLeftAimLow by
+## low_aim_amount.
+func left_aim_position() -> Vector3:
+	var low := _low_marker()
+	if low == null:
+		return left_grip_aim.position
+	return left_grip_aim.position.lerp(low.position, low_aim_amount)
+
+
+## 0..1: how far the left aim hold slides to the low place at this aim direction (world space; the
+## torso pitches with the aim in the sniping stance, so the pitch is taken against the world up).
+func _low_aim(direction: Vector3) -> float:
+	var flat := Vector2(direction.x, direction.z).length()
+	if _low_marker() == null or flat + absf(direction.y) < 0.001:
+		return 0.0
+	return smoothstep(low_aim_start_deg, low_aim_full_deg, rad_to_deg(atan2(direction.y, flat)))
+
+
+func _low_marker() -> Node3D:
+	if left_grip_target == null or left_grip_aim == null or weapon == null:
+		return null
+	return weapon.get_node_or_null(^"GripLeftAimLow") as Node3D
 
 
 ## Moves a one-hand weapon toward the shoulder when its grip is out of the arm's reach.

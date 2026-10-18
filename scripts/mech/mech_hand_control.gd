@@ -10,9 +10,10 @@ extends Node
 ## then a bend (at most max_wrist_bend_deg). With hand_reach the fist hollow goes onto the socket and the
 ## arm reaches the rest of the way (a HandTarget node). The two-hand rifles' hand markers sit where the
 ## fist lands on the sockets, so their reach stays near 0; GripSocketLeftAim (optional) is the left
-## socket of the aim hold (the hand slides between the two with the left hand marker). Without sockets:
-## the old grips (the right fist hollow PALM_HOLLOW from grip_R, tools/mech_gen/arm_poses.py; the left
-## grip at grip_L).
+## socket of the aim hold (the hand slides between the two with the left hand marker), and
+## GripSocketLeftAimLow (optional, with GripLeftAimLow) the socket of the low aim hold (WeaponPose
+## low_aim_amount). Without sockets: the old grips (the right fist hollow PALM_HOLLOW from grip_R,
+## tools/mech_gen/arm_poses.py; the left grip at grip_L).
 
 const PALM_HOLLOW := Vector3(0.2, 0.0, 0.18)
 ## The fist hollows in the hand frames (wrist origin, +Y to the fingers, +Z to the back of the hand),
@@ -134,9 +135,19 @@ func _left_socket_place(socket: Node3D, weapon: Node3D) -> Transform3D:
 	# GripSocketLeftAim (optional): the socket of the aim hold; the hand slides between the two.
 	var socket_aim := weapon.get_node_or_null(^"GripSocketLeftAim") as Node3D
 	if socket_aim != null and aim != null:
-		var way := aim.position - rest.position
+		var aim_place := socket_aim.global_transform.orthonormalized()
+		var aim_position := aim.position
+		# Low aim (WeaponPose.low_aim_amount): the aim hold slides back to GripLeftAimLow and
+		# GripSocketLeftAimLow, so the socket follows the marker.
+		var aim_low := weapon.get_node_or_null(^"GripLeftAimLow") as Node3D
+		var socket_low := weapon.get_node_or_null(^"GripSocketLeftAimLow") as Node3D
+		var low := weapons.weapon_pose.low_aim_amount if weapons.weapon_pose != null else 0.0
+		if aim_low != null and socket_low != null and low > 0.0:
+			aim_place = aim_place.interpolate_with(socket_low.global_transform.orthonormalized(), low)
+			aim_position = aim_position.lerp(aim_low.position, low)
+		var way := aim_position - rest.position
 		var t := clampf((marker.position - rest.position).dot(way) / maxf(way.length_squared(), 0.000001), 0.0, 1.0)
-		return place.interpolate_with(socket_aim.global_transform.orthonormalized(), t)
+		return place.interpolate_with(aim_place, t)
 	place.origin += marker.global_position - rest.global_position
 	return place
 

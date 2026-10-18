@@ -6,14 +6,20 @@ extends SceneTree
 ## the left hand: the wrist gap (jointed hand to the forearm's hand bone), the fist hollow to the left
 ## aim socket, the hand reach offset (MechHandControl), the wrist turn, the upper arm swing against its
 ## limit, the left shoulder-to-target distance against the arm length, and how far the arm rig had to
-## drag the rifle to the hands (0 = both hands reach their markers). Also the suggested GripLeftAim
-## (marker + reach offset: where the arm puts the fist hollow on the socket).
+## drag the rifle to the hands (0 = both hands reach their markers). Also the suggested left aim marker
+## (GripLeft + reach offset: where the arm puts the fist hollow on the socket; at full aim that is the
+## GripLeftAim place, or GripLeftAimLow at full low aim).
 ## ADS_PROBE (comma list of socket z values, weapon space): measure only; for each value the left aim
 ## socket and the GripLeftAim marker move along the gun to that z (and to the height ADS_PROBE_Y, if
 ## set; the marker keeps its offset from the socket). ADS_PITCHES (comma list of degrees): measure at
 ## each aim pitch (camera rig target pitch; -27.5 to 15). ADS_POLE "x,y,z": left_pole_aim for the run. ADS_RENDER 0: no pictures.
+## Low aim (2026-10-18): each row also gives the rifle pitch (world) and WeaponPose
+## low_aim_amount, and the fist is measured to the socket MechHandControl uses now (it slides to
+## GripSocketLeftAimLow). ADS_NO_LOW 1: remove the low aim markers first (the hold before the slide).
 ## Pictures (ads_<weapon>_<view>.png in ADS_OUT, HUD hidden): right_front (like the user's screenshot),
-## left side, top, front, and a close right_front of the forestock.
+## left side, top, front, and a close right_front of the forestock; at the camera start pitch, or at
+## ADS_PICTURE_PITCH (degrees). ADS_LOW_SPEED: WeaponPose low_aim_speed for the run. ADS_SAMPLE_MOVE 1: each row also covers the move from the pitch before
+## (the camera turning), so a pop or a short drag while the hand slides shows up.
 ##   ADS_WEAPON=beam_sniper ADS_OUT=/tmp/x xvfb-run -a -s "-screen 0 1280x720x24" godot --path . \
 ##     --rendering-driver opengl3 --resolution 1280x720 --fixed-fps 60 --script res://tools/godot/render_ads.gd
 
@@ -64,15 +70,28 @@ func _run() -> void:
 	_weapons = _player.get_node("WeaponController") as WeaponController
 	_control = _player.find_child("MechHandControl", true, false) as MechHandControl
 	_rig = _player.find_children("*", "SkeletalArmRig", true, false)[0] as SkeletalArmRig
+	if _env("ADS_LOW_SPEED", "") != "":
+		_weapons.weapon_pose.low_aim_speed = float(_env("ADS_LOW_SPEED", ""))
 	var pole := _env("ADS_POLE", "").split_floats(",", false)
 	if pole.size() == 3:
 		_weapons.weapon_pose.left_pole_aim = Vector3(pole[0], pole[1], pole[2])
 	var gun := _weapons.right_weapon
+	if _env("ADS_NO_LOW", "0") == "1":
+		for low_name: String in ["GripLeftAimLow", "GripSocketLeftAimLow"]:
+			var low_node := gun.get_node_or_null(low_name)
+			if low_node != null:
+				gun.remove_child(low_node)
+				low_node.free()
 	var socket := gun.get_node("GripSocketLeftAim") as Node3D
 	var marker := gun.get_node("GripLeftAim") as Node3D
 	print("%s: GripLeftAim %s, GripSocketLeftAim %s, GripRightAim %s, left_pole_aim %s" % [weapon_name,
 			marker.position, socket.position, (gun.get_node("GripRightAim") as Node3D).position,
 			_weapons.weapon_pose.left_pole_aim])
+	var low_marker := gun.get_node_or_null("GripLeftAimLow") as Node3D
+	var low_socket := gun.get_node_or_null("GripSocketLeftAimLow") as Node3D
+	print("  low aim: GripLeftAimLow %s, GripSocketLeftAimLow %s, slide from %.1f to %.1f deg" % [
+			low_marker.position if low_marker != null else "none", low_socket.position if low_socket != null else "none",
+			_weapons.weapon_pose.low_aim_start_deg, _weapons.weapon_pose.low_aim_full_deg])
 	if render:
 		root.disable_3d = true
 	Input.action_press("aim")
@@ -82,6 +101,7 @@ func _run() -> void:
 	var pitches := _env("ADS_PITCHES", "").split_floats(",", false)
 	var marker_gap := marker.position - socket.position
 	var probe_y := _env("ADS_PROBE_Y", "")
+	var moving := _env("ADS_SAMPLE_MOVE", "0") == "1"
 	for z in probes if not probes.is_empty() else PackedFloat64Array([NAN]):
 		var label := "full aim"
 		if not is_nan(z):
@@ -93,14 +113,18 @@ func _run() -> void:
 		for pitch in pitches if not pitches.is_empty() else PackedFloat64Array([NAN]):
 			if not is_nan(pitch):
 				_player.input.camera_rig._target_pitch = deg_to_rad(pitch)
-			await _frames(60 if not is_nan(z) or not is_nan(pitch) else 0)
 			_rows.clear()
+			await _frames(60 if not is_nan(z) or not is_nan(pitch) else 0)
+			if not moving:
+				_rows.clear()
 			await _frames(30)
 			_report(label + ("" if is_nan(pitch) else ", aim pitch %.0f deg" % pitch))
-	# Pictures at the start pitch.
-	if not pitches.is_empty():
-		_player.input.camera_rig._target_pitch = deg_to_rad(_player.input.camera_rig.start_pitch_deg)
-		await _frames(60)
+	# Pictures at the start pitch (or ADS_PICTURE_PITCH).
+	var picture_pitch := _env("ADS_PICTURE_PITCH", "")
+	if not pitches.is_empty() or picture_pitch != "":
+		var degrees := float(picture_pitch) if picture_pitch != "" else _player.input.camera_rig.start_pitch_deg
+		_player.input.camera_rig._target_pitch = deg_to_rad(degrees)
+		await _frames(90)
 	_skeleton.skeleton_updated.disconnect(_sample)
 	if render:
 		await _pictures(map, out, weapon_name)
@@ -113,11 +137,12 @@ func _sample() -> void:
 	var gun := _weapons.right_weapon
 	var ik := _weapons.arm_ik_left
 	var hand := _control.hand_left
-	var socket := gun.get_node("GripSocketLeftAim") as Node3D
+	var state: Dictionary = _control._sides["L"]
+	var hand_socket := state.socket as Node3D if is_instance_valid(state.socket) else gun.get_node("GripSocketLeftAim") as Node3D
+	var socket := _control._socket_place("L", hand_socket)
 	var wrist := (_skeleton.global_transform * _skeleton.get_bone_global_pose(_skeleton.find_bone("hand_L"))).origin
 	var hollow := MechHandControl.LEFT_HOLLOW
-	hollow.z = MechHandControl.PALM_FACE_Z - float(socket.get_meta(&"grip_radius", 0.15))
-	var state: Dictionary = _control._sides["L"]
+	hollow.z = MechHandControl.PALM_FACE_Z - float(hand_socket.get_meta(&"grip_radius", 0.15))
 	var base: Transform3D = state.base
 	var turn := (base.basis.orthonormalized().inverse() * hand.transform.basis.orthonormalized()).get_rotation_quaternion()
 	var torso_basis := _weapons.torso.global_basis.orthonormalized()
@@ -127,9 +152,9 @@ func _sample() -> void:
 	_rows.append({
 		"aim": _weapons.weapon_pose.aim_amount,
 		"wrist": hand.global_position.distance_to(wrist),
-		"fist": (hand.global_transform * hollow).distance_to(socket.global_position),
+		"fist": (hand.global_transform * hollow).distance_to(socket.origin),
 		"offset": (state.offset as Vector3).length(),
-		"suggest": (gun.get_node("GripLeftAim") as Node3D).position + (state.offset as Vector3),
+		"suggest": (gun.get_node("GripLeft") as Node3D).position + (state.offset as Vector3),
 		"turn": rad_to_deg(turn.get_angle()),
 		"lean": rad_to_deg(asin(clampf(-arm.z, -1.0, 1.0))),
 		"limit": rad_to_deg(_rig.swing_limit(false)),
@@ -137,8 +162,10 @@ func _sample() -> void:
 		"drag": gun.transform.origin.distance_to(_rig._weapon_base[1].origin),
 		"elbow": torso * ik.mid_joint.global_position,
 		"shoulder": torso * ik.root_joint.global_position,
-		"palm": torso * socket.global_position,
-		"fore_axis": rad_to_deg(fore.angle_to(socket.global_basis.y)),
+		"palm": torso * socket.origin,
+		"fore_axis": rad_to_deg(fore.angle_to(socket.basis.y)),
+		"pitch": rad_to_deg(asin(clampf(-gun.global_basis.z.normalized().y, -1.0, 1.0))),
+		"low": _weapons.weapon_pose.low_aim_amount,
 	})
 
 
@@ -148,8 +175,9 @@ func _report(label: String) -> void:
 		for key: String in worst:
 			worst[key] = maxf(worst[key], absf(float(row[key])))
 	var last: Dictionary = _rows[-1] if not _rows.is_empty() else {}
-	print("%s (%d frames, aim %.2f): wrist gap %.3f m, fist to socket %.3f m, reach offset %.3f m, wrist turn %.1f deg, upper arm swing %.1f of %.1f deg, shoulder to target %.2f of the arm, rifle drag %.3f m" % [
-			label, _rows.size(), float(last.get("aim", 0.0)), worst["wrist"], worst["fist"], worst["offset"],
+	print("%s (%d frames, aim %.2f, weapon pitch %.1f deg, low aim %.2f): wrist gap %.3f m, fist to socket %.3f m, reach offset %.3f m, wrist turn %.1f deg, upper arm swing %.1f of %.1f deg, shoulder to target %.2f of the arm, rifle drag %.3f m" % [
+			label, _rows.size(), float(last.get("aim", 0.0)), float(last.get("pitch", 0.0)),
+			float(last.get("low", 0.0)), worst["wrist"], worst["fist"], worst["offset"],
 			worst["turn"], worst["lean"], float(last.get("limit", 0.0)), worst["stretch"], worst["drag"]])
 	if not last.is_empty():
 		print("    torso space: shoulder %s elbow %s socket %s; forearm to grip axis %.1f deg; suggested GripLeftAim %s" % [
