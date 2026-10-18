@@ -18,6 +18,9 @@ var part_meshes: Dictionary = {}
 ## The bone each part mesh follows.
 var mesh_bones: Dictionary = {}
 var _attachments: Dictionary = {}
+## Top bone name per Mesh resource, kept for the whole game: reading a mesh's vertex arrays takes
+## about 6 ms, and a respawn (user report 2026-10-18: a freeze each time the enemy died) read all of them again.
+static var _top_bone_names: Dictionary = {}
 
 
 func _ready() -> void:
@@ -83,6 +86,14 @@ func mesh_to_rest(mesh: MeshInstance3D) -> Transform3D:
 
 
 func _top_bone(mesh: MeshInstance3D) -> int:
+	if _top_bone_names.has(mesh.mesh):
+		return skeleton.find_bone(_top_bone_names[mesh.mesh])
+	var best := _find_top_bone(mesh)
+	_top_bone_names[mesh.mesh] = skeleton.get_bone_name(best) if best >= 0 else &""
+	return best
+
+
+func _find_top_bone(mesh: MeshInstance3D) -> int:
 	var arrays := mesh.mesh.surface_get_arrays(0)
 	var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
 	var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
