@@ -19,7 +19,8 @@ extends Node
 ## Empty hands are fists (user rule 2026-10-17): every hand with a live arm and nothing in it holds a Fist
 ## from a pool of two (right_fist, left_fist; the loadout has no fist weapon any more). Empty left punches on
 ## LMB, empty right on RMB. A fist hand that does not punch hangs relaxed (the arm IK goes to the relaxed
-## hang marker); during a punch the arm IK lets go so the punch clip drives the arm.
+## hang marker); during a punch the arm IK lets go so the punch clip drives the arm. The arm rig still
+## poses the hang under the clip (fist_hang_target), so the clip fades into the hang (user report 2026-10-18).
 ## Hand weapons can be dropped with Tab (drop_hand) and taken from the ground (WeaponPickup.begin_manual,
 ## take_from_ground): WeaponHandControl reads the keys. A weapon in a hand is a node under the torso; a
 ## weapon on the ground is a node under a WeaponDrop and is disabled.
@@ -410,6 +411,16 @@ func _update_fist_arms(delta: float) -> void:
 		var wanted: Node3D = hang if hanging else null
 		if hang != null and ik.target != wanted:
 			ik.target = wanted
+
+
+## The relaxed hang marker of a hand that holds its fist, also while the punch clip has the arm (its IK
+## target is null then), or null. SkeletalArmRig poses a released fist arm at this hang under the punch
+## clip, so the clip fades into the hang and the hand does not snap to it later (user report 2026-10-18).
+func fist_hang_target(is_right: bool) -> Node3D:
+	var fist := right_fist if is_right else left_fist
+	if fist == null or not is_instance_valid(fist) or (right_weapon if is_right else left_weapon) != fist:
+		return null
+	return _free_right_target() if is_right else _free_left_target()
 
 
 func _make_hand_control() -> void:

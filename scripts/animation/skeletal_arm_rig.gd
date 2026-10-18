@@ -10,6 +10,13 @@ extends SkeletonModifier3D
 ## Neutral arms (user rule 2026-10-11): the shoulder armor block (the upper arm mesh) is flat on top, so
 ## the elbow sits under its outer edge. Each upper arm swings from that flat pose, and the elbow stays
 ## as near to it as the hand target lets it (tucked elbows).
+## Relaxed arms (user report 2026-10-18): an arm at its relaxed hang (an empty or fist hand) is solved to
+## the still hang marker and then turned whole about the shoulder by FreeArmSwing's swing angle, so the
+## shoulder, elbow and hand swing together. A fist arm that the punch clip drives still gets the hang pose
+## under the clip (WeaponController.fist_hang_target), so the clip fades into the hang.
+## Animated arms while moving (user rule 2026-10-18): an arm that follows the animation (the War Hammer,
+## a punch) keeps only moving_raise_scale of the clip's raise to the side, unless the hand or the weapon
+## head would come too near a leg.
 ## A skeleton modifier must be a child of the Skeleton3D; this node moves itself there at start.
 ## Keep it after SkeletalHipTurn, so it runs after the hip turn and waist twist.
 
@@ -87,6 +94,28 @@ extends SkeletonModifier3D
 ## Away from the neutral elbow height the block turn fades out over this many degrees; a raised arm
 ## swings the block like before.
 @export var block_yaw_fade_deg: float = 30.0
+@export_group("Moving arms")
+## An arm that follows the animation keeps this part of the clip's raise to the side (the walk clips'
+## shallow V) while the mech moves: 0.5 = half the angle (user rule 2026-10-18). 1 = the clip as it is.
+@export_range(0.0, 1.0) var moving_raise_scale: float = 0.5
+## Ground speed (m/s) at which the lower raise is fully on (it fades in from standing).
+@export var moving_raise_speed: float = 3.0
+## How fast the lower raise fades in and out (per second).
+@export var moving_raise_blend: float = 3.0
+## The palm (grip bone) and the handle of a held melee weapon stay this far (m) from the leg bone lines
+## (thigh armor half width plus a fist): the arm lowers less where it would come nearer.
+@export var leg_clearance: float = 1.3
+## The same for the melee weapon head (its StrikePoint; the War Hammer head is 1.4 m wide).
+@export var weapon_head_clearance: float = 1.7
+## How fast the lowering comes back after a leg made it smaller, and how fast a leg makes it smaller
+## (part per second; limited both ways, so the arm does not pop).
+@export var raise_recover_speed: float = 1.5
+@export var raise_drop_speed: float = 3.0
+## The melee weapon handle reaches this part of the palm-to-head length behind the palm (the War Hammer's
+## butt end); those handle points keep leg_clearance too.
+@export var weapon_butt_share: float = 0.35
+@export var leg_bones: PackedStringArray = ["thigh_L", "shin_L", "foot_L", "thigh_R", "shin_R", "foot_R"]
+@export_group("")
 
 var _skeleton: Skeleton3D
 var _torso_offset: Transform3D
@@ -100,6 +129,10 @@ var _mount_offsets: Array = []
 ## pile bunker (user rule 2026-10-15), index 1: the right weapon.
 var _weapon_base: Array[Transform3D] = [Transform3D.IDENTITY, Transform3D.IDENTITY]
 var _weapon_moved: Array[Transform3D] = [Transform3D.IDENTITY, Transform3D.IDENTITY]
+## The relaxed arm swing of this mech (found on first use; Mech adds it at runtime).
+var _free_swing: FreeArmSwing
+## Lower raise of the animated arms now (0 = standing, 1 = moving).
+var _raise_amount: float = 0.0
 
 
 func _ready() -> void:
@@ -567,6 +600,148 @@ func _follow_shoulders() -> void:
 				* (entry[2] as Transform3D)).orthonormalized()
 
 
+## A relaxed arm (IK to a hang marker) turns whole about the shoulder by FreeArmSwing's angle: the
+## elbow and the hand go with the shoulder (user report 2026-10-18).
+func _swing_relaxed(side: Dictionary) -> void:
+	var ik := side.ik as TwoBoneIK
+	if weapons == null or (ik.target != weapons.free_left_hand and ik.target != weapons.free_right_hand):
+		return
+	if _free_swing == null or not is_instance_valid(_free_swing):
+		_free_swing = weapons.mech.get_node_or_null(^"FreeArmSwing") as FreeArmSwing if weapons.mech != null else null
+		if _free_swing == null:
+			return
+	var angle := _free_swing.right_angle if ik == ik_right else _free_swing.left_angle
+	if absf(angle) < 0.00001:
+		return
+	var axis := torso.global_basis.x.normalized()
+	ik.root_joint.global_basis = (Basis(axis, angle) * ik.root_joint.global_basis).orthonormalized()
+
+
+## The lower raise fades in with the ground speed (on the ground, not fallen).
+func _update_raise_amount(delta: float) -> void:
+	var mech := weapons.mech if weapons != null else null
+	var target := 0.0
+	if mech != null and mech.is_on_floor() and not mech.is_fallen and not mech.is_wrecked:
+		target = smoothstep(0.0, 1.0, clampf(mech.get_horizontal_speed() / maxf(moving_raise_speed, 0.01), 0.0, 1.0))
+	_raise_amount = move_toward(_raise_amount, target, moving_raise_blend * delta)
+
+
+## An arm that follows the animation: its upper arm turns toward the body (about the torso's forward
+## axis, its forward swing stays) so it keeps moving_raise_scale of the clip's raise to the side. The
+## forearm and the hand go with it. Where the palm or the held weapon would come within the clearance of
+## a leg, it lowers only as far as it may.
+func _lower_raise(side: Dictionary, right: bool) -> void:
+	var wanted := (1.0 - moving_raise_scale) * _raise_amount
+	if wanted <= 0.0:
+		side.raise_part = 0.0
+		return
+	var upper: int = side.upper
+	var upper_pose := _skeleton.get_bone_global_pose(upper)
+	var shoulder := upper_pose.origin
+	var arm := _skeleton.get_bone_global_pose(side.fore as int).origin - shoulder
+	if arm.length_squared() < 0.000001:
+		return
+	arm = arm.normalized()
+	var skin := _skeleton.global_transform
+	var torso_basis := skin.basis.orthonormalized().inverse() * torso.global_basis.orthonormalized()
+	var local := torso_basis.inverse() * arm
+	var out_sign := 1.0 if right else -1.0
+	var raise := asin(clampf(local.x * out_sign, -1.0, 1.0))
+	var sagittal := Vector3(0.0, local.y, local.z)
+	if raise <= 0.0 or sagittal.length_squared() < 0.000001:
+		side.raise_part = 0.0
+		return
+	sagittal = sagittal.normalized()
+	# Points that must keep off the legs (skeleton space): the palm, and along a held melee weapon's
+	# handle (from its butt behind the hand) to its head.
+	var palm := _skeleton.get_bone_global_pose(side.grip as int).origin
+	var points: Array = [[palm, leg_clearance]]
+	var head := _weapon_head(right)
+	if head != Vector3.INF:
+		for t: float in [-weapon_butt_share, 0.35, 0.7]:
+			points.append([palm.lerp(head, t), leg_clearance])
+		points.append([head, weapon_head_clearance])
+	var legs := _leg_segments()
+	var turn_for := func(part: float) -> Basis:
+		var lowered := raise * (1.0 - wanted * part)
+		var direction := torso_basis * (sagittal * cos(lowered) + Vector3(out_sign * sin(lowered), 0.0, 0.0))
+		return Basis(Quaternion(arm, direction.normalized()))
+	# Each point keeps its clearance, or its distance in the clip pose where the clip is nearer already.
+	var limits: Array[float] = []
+	for entry: Array in points:
+		limits.append(minf(float(entry[1]), _leg_distance(skin * (entry[0] as Vector3), legs)))
+	var clear := func(part: float) -> bool:
+		var turn: Basis = turn_for.call(part)
+		for i in points.size():
+			var point: Vector3 = skin * (shoulder + turn * ((points[i][0] as Vector3) - shoulder))
+			if _leg_distance(point, legs) < limits[i] - 0.001:
+				return false
+		return true
+	# The largest part of the wanted lowering that keeps the clearance.
+	var allowed := 1.0
+	if not clear.call(1.0):
+		var low := 0.0
+		var high := 1.0
+		for i in 8:
+			var middle := (low + high) * 0.5
+			if clear.call(middle):
+				low = middle
+			else:
+				high = middle
+		allowed = low
+	# Both ways at a limited speed (no pop): less quickly, more back slowly.
+	var last := float(side.get("raise_part", 0.0))
+	var part := clampf(allowed, last - raise_drop_speed * _delta, last + raise_recover_speed * _delta)
+	side.raise_part = part
+	if part <= 0.0:
+		return
+	var turned: Basis = turn_for.call(part) * upper_pose.basis
+	var parent_pose := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(upper))
+	_skeleton.set_bone_pose_rotation(upper, (parent_pose.basis.orthonormalized().inverse() * turned.orthonormalized()).get_rotation_quaternion())
+
+
+## Shortest distance from a point (world space) to the leg bone lines.
+static func _leg_distance(point: Vector3, legs: Array) -> float:
+	var nearest := INF
+	for segment: Array in legs:
+		nearest = minf(nearest, point.distance_to(Geometry3D.get_closest_point_to_segment(point, segment[0], segment[1])))
+	return nearest
+
+
+## The leg bone lines (world space): thigh to shin and shin to foot of each leg.
+func _leg_segments() -> Array:
+	var skin := _skeleton.global_transform
+	var segments: Array = []
+	for i in range(0, leg_bones.size() - 2, 3):
+		var joints: Array[Vector3] = []
+		for j in 3:
+			var bone := _skeleton.find_bone(leg_bones[i + j])
+			if bone >= 0:
+				joints.append(skin * _skeleton.get_bone_global_pose(bone).origin)
+		for j in joints.size() - 1:
+			segments.append([joints[j], joints[j + 1]])
+	return segments
+
+
+## The head (StrikePoint) of the melee weapon in this hand, in skeleton space at the hand's pose now, or
+## Vector3.INF (no melee weapon).
+func _weapon_head(right: bool) -> Vector3:
+	if weapons == null:
+		return Vector3.INF
+	var weapon := weapons.right_weapon if right else weapons.left_weapon
+	if weapon == null or not is_instance_valid(weapon) or not weapon is MeleeWeapon:
+		return Vector3.INF
+	var model := (weapon as MeleeWeapon).get_model()
+	var point := model.get_node_or_null(^"StrikePoint") as Node3D if is_instance_valid(model) else null
+	var holder := model.get_parent() as Node3D if point != null else null
+	if holder == null:
+		return Vector3.INF
+	# The model sits on the hand bone (BoneAttachment3D): its place in the hand bone's space is fixed.
+	var in_hand := holder.global_transform.affine_inverse() * point.global_position
+	var hand := _skeleton.find_bone((weapon as MeleeWeapon).get_hand_bone())
+	return _skeleton.get_bone_global_pose(hand) * in_hand if hand >= 0 else Vector3.INF
+
+
 static func _joint_basis(start: Vector3, end: Vector3, across: Vector3) -> Basis:
 	var y := (start - end).normalized()
 	var x := (across - y * across.dot(y)).normalized()
@@ -587,13 +762,29 @@ func _process_modification_with_delta(delta: float) -> void:
 	if jump_pose != null:
 		torso.global_transform = torso.global_transform.translated_local(jump_pose.weapon_offset())
 	var active: Array[Dictionary] = []
-	for side: Dictionary in _sides:
+	# A fist arm that the punch clip drives (no IK target) gets the hang pose under the clip: its target
+	# is the hang marker only inside this solve, so SkeletalMeleeAnimation (after this node) still sees no
+	# target and plays the clip on the arm (user report 2026-10-18: the hand snapped to the hang).
+	var borrowed: Array[TwoBoneIK] = []
+	for i in _sides.size():
+		var side := _sides[i]
 		var shoulder := side.shoulder as Node3D
 		shoulder.global_position = skin * _skeleton.get_bone_global_pose(side.upper).origin
 		var ik := side.ik as TwoBoneIK
+		if ik.target == null and weapons != null:
+			ik.target = weapons.fist_hang_target(i == 1)
+			if ik.target != null:
+				borrowed.append(ik)
 		if ik.target != null and ik.can_process():
 			active.append(side)
 	_solve_arms(active)
 	for side in active:
+		_swing_relaxed(side)
 		_pose_arm(side)
+	for ik in borrowed:
+		ik.target = null
+	_update_raise_amount(delta)
+	for i in _sides.size():
+		if not active.has(_sides[i]):
+			_lower_raise(_sides[i], i == 1)
 	_follow_shoulders()
