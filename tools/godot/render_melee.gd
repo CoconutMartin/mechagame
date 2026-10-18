@@ -24,7 +24,10 @@ const MAX_FRAMES := 900
 ## press), the move key of each combo press (optional; "" = no key; empty list = the case key stays) and
 ## the expected swings (optional, MeleeAttack file names; the log says CHECK ok or CHECK FAIL) and
 ## options (optional: "hits" = the hit count when a swing misses; "stagger" = the expected stagger points
-## per hit on the target, " knock" marks a knock-down; the log says STAGGER ok or STAGGER FAIL).
+## per hit on the target, " knock" marks a knock-down; the log says STAGGER ok or STAGGER FAIL;
+## "from_start" = each combo delay counts from the start of the swing, not from its hit, so a press can
+## come before the hit (input buffer, 2026-10-18); "walk" = the target walks to its side at this part of
+## its walk speed, 0 to 1).
 ## Chain combo cases (user rules 2026-10-18): any attack chains into any other, up to 3 swings, press
 ## within 0.6 s after the hit, S ends the chain, then the 5 s cooldown. Hammer stagger (user decision
 ## 2026-10-18): swings 1 and 2 give 25 points (a flinch), the S strike and the third swing 45 (knock-down).
@@ -58,6 +61,20 @@ const CASES := [
 	["hammer_timeout", "hammer", "right", "move_right", "combo", [0.7], ["move_left"], ["hammer_swing_d"],
 			{"stagger": ["25"]}],
 	["hammer_lmb", "hammer", "left", "", "attack", []],
+	# Input buffer (user report 2026-10-18, "combo is not working for 2H hammer"): the next press comes
+	# 0.3 s after the swing starts, before its hit. The chain goes on right after the hit.
+	["hammer_D_A_S_early", "hammer", "right", "move_right", "combo", [0.3, 0.3], ["move_left", "move_back"],
+			["hammer_swing_d", "hammer_swing_a", "hammer_down"], {"stagger": ["25", "25", "45 knock"], "from_start": true}],
+	["fist_combo_early", "fist", "left", "", "combo", [0.3, 0.3], [], ["straight_l", "straight_r_chain", "uppercut_l"],
+			{"from_start": true}],
+	["fist_hook_A_early", "fist", "left", "move_left", "combo", [0.3, 0.3], ["", "move_forward"],
+			["hook_l", "straight_r_chain", "uppercut_l"], {"from_start": true}],
+	# A target that walks to its side during the chain.
+	["hammer_D_A_S_walk", "hammer", "right", "move_right", "combo", [0.1, 0.1], ["move_left", "move_back"],
+			["hammer_swing_d", "hammer_swing_a", "hammer_down"], {"stagger": ["25", "25", "45 knock"], "walk": 0.5}],
+	["hammer_D_A_S_walk_early", "hammer", "right", "move_right", "combo", [0.3, 0.3], ["move_left", "move_back"],
+			["hammer_swing_d", "hammer_swing_a", "hammer_down"], {"stagger": ["25", "25", "45 knock"], "walk": 0.5,
+			"from_start": true}],
 ]
 
 var _out_dir := ""
@@ -151,6 +168,10 @@ func _play(map: Node, switcher: LoadoutSwitcher, case: Array, distance: float) -
 		health.max_hp[key] = 100000.0
 		health.hp[key] = 100000.0
 	var options: Dictionary = case[8] if case.size() > 8 else {}
+	# Option "walk": the target walks to its side (its MechInput is off, so the values stay as set here).
+	if options.has("walk"):
+		target.input.aim_yaw = target.rotation.y
+		target.input.move_direction = target.global_basis.x * float(options["walk"])
 	# Stagger points per hit on the target, with " stagger" or " knock" when the hit staggered or knocked
 	# it down.
 	var reactions: Array[String] = []
@@ -252,6 +273,9 @@ func _attack_case(case: Array, name: String, button: String, player: Mech, targe
 			last_attack = melee._attack
 			last_count = melee.chain_count
 			swings.append(last_attack.resource_path.get_file().get_basename())
+			# Option "from_start": the next press counts from the start of this swing.
+			if options.get("from_start", false) and presses_done < delays.size():
+				press_at = frame + int(float(delays[presses_done]) * 60.0)
 		if melee.is_playing and not step_set:
 			step_set = true
 			step = maxi(int((melee._attack.get_length() + 0.5) * 60.0) / FRAMES_PER_ATTACK, 1)
@@ -265,7 +289,7 @@ func _attack_case(case: Array, name: String, button: String, player: Mech, targe
 			if hit_distance < 0.0:
 				hit_distance = center
 			hit_distances.append("%.1f" % center)
-			if presses_done < delays.size():
+			if presses_done < delays.size() and not options.get("from_start", false):
 				press_at = frame + int(float(delays[presses_done]) * 60.0)
 		if press_at > 0 and frame >= press_at:
 			press_at = -1

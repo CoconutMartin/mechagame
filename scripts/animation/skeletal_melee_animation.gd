@@ -14,6 +14,9 @@ extends SkeletonModifier3D
 ##   strike, fist swipe) is always the last swing. A plain fist press in a chain keeps the arms
 ##   alternating like the plain combo (left, right, then a heavy uppercut; MeleeAttack.follow_ups).
 ##   The body blends from the pose of one swing into the next.
+##   Input buffer (user report 2026-10-18, "combo is not working for 2H hammer": the hammer winds up for
+##   more than 1 s and the press during the wind-up was lost): a press during a swing before its hit is
+##   remembered, and the next swing starts right after the hit. A miss clears it.
 ## After a single swing or a whole chain ends, no melee attack starts for cooldown seconds.
 ## Target tracking (user, 2026-10-15): an enemy inside the aim cone (and within target_range) turns the
 ## mech to face it, and the mech glides toward it so the strike lands at the attack's contact distance.
@@ -42,6 +45,10 @@ extends SkeletonModifier3D
 ## The next swing of a chain needs its button press within this many seconds after the swing before
 ## hit a target (and before that swing ends). User rule 2026-10-18: 0.6 s (was 0.5 s).
 @export var combo_window: float = 0.6
+## A press during a swing, from this many seconds after the swing starts until its hit, is remembered
+## (input buffer, 2026-10-18): the next swing starts right after the hit. The latest press and its move
+## key win. A miss clears it.
+@export var buffer_from: float = 0.0
 ## Most swings in one chain (user rule 2026-10-18).
 @export var max_chain_swings: int = 3
 ## Seconds to blend from the pose of one swing into the next.
@@ -137,6 +144,12 @@ var _cooldown_left: float = 0.0
 ## Mouse buttons last frame (the next swing needs a new press).
 var _fire_was_held: bool = false
 var _left_fire_was_held: bool = false
+## Input buffer (2026-10-18): the weapon of a press made before the hit (null = none) and the move key
+## of that press.
+var _buffered: MeleeWeapon
+var _buffered_direction: StringName = &""
+## Seconds since the swing started (the wind-up hold included).
+var _swing_age: float = 0.0
 ## Swing after the first of a combo: the pose is blended in from the swing before (_prev_attack held
 ## at _prev_time), not from the walk pose.
 var _chained: bool = false
@@ -201,6 +214,11 @@ func request(weapon: MeleeWeapon) -> void:
 		return
 	chain_count = 1
 	_chain_closed = direction == &"back"
+	# The press that starts the chain is no buffered press for its next swing.
+	if weapon.is_left:
+		_left_fire_was_held = mech.input.left_fire_held
+	else:
+		_fire_was_held = mech.input.fire_held
 	_begin_swing(attack, thrower, false)
 
 
@@ -270,6 +288,20 @@ func _can_chain() -> bool:
 	return chain_count < max_chain_swings and not _chain_closed
 
 
+## True while a button press is remembered for the next swing (input buffer): the swing has not hit
+## yet, buffer_from seconds have passed since it started, it has not missed and the chain has room.
+func _can_buffer() -> bool:
+	if not is_playing or _landed or _missed() or _swing_age < buffer_from or _time >= _end_time:
+		return false
+	return chain_count < max_chain_swings and not _chain_closed
+
+
+## True when the swing missed: its last strike window is over and it hit nothing.
+func _missed() -> bool:
+	return not _landed and _attack != null and _attack.strikes.size() > 0 \
+			and _time > _attack.strikes[_attack.strikes.size() - 1].y
+
+
 ## True when the mech can start an attack: standing on the ground and free (no dodge, kneel, jump
 ## charge, stun or knock-down).
 func _can_attack() -> bool:
@@ -310,6 +342,8 @@ func _begin_swing(attack: MeleeAttack, weapon: MeleeWeapon, chained: bool) -> vo
 	_hit = {}
 	_landed = false
 	_since_hit = 0.0
+	_swing_age = 0.0
+	_buffered = null
 	_fade_left = 0.0
 	_end_time = attack.animation.length
 	_lunge_done = false
@@ -348,6 +382,7 @@ func _physics_process(delta: float) -> void:
 		_finish(true)
 		return
 	_blend_left = maxf(_blend_left - delta, 0.0)
+	_swing_age += delta
 	if _landed:
 		_since_hit += delta
 	_track_target(delta)
@@ -388,7 +423,8 @@ func _keep_away(velocity: Vector3) -> Vector3:
 
 ## The next swing of a chain (user rules 2026-10-18): a new press of a melee weapon's button after the
 ## swing before hit a target (_can_chain). The move key of that moment picks the attack (_pick_attack),
-## so the attacks chain in any order. A press before the hit does nothing.
+## so the attacks chain in any order. A press before the hit is remembered (input buffer, _can_buffer;
+## the latest press wins) and starts the next swing right after the hit. A miss clears it.
 func _watch_combo_input() -> void:
 	var fire := mech.input.fire_held
 	var left_fire := mech.input.left_fire_held
@@ -396,7 +432,8 @@ func _watch_combo_input() -> void:
 	var left_pressed := left_fire and not _left_fire_was_held
 	_fire_was_held = fire
 	_left_fire_was_held = left_fire
-	if not _can_chain() or weapons == null:
+	if weapons == null or not is_playing or _missed():
+		_buffered = null
 		return
 	# The pressed weapon (the hammer takes only the right button, user 2026-10-15).
 	var pressed: MeleeWeapon = null
@@ -404,9 +441,21 @@ func _watch_combo_input() -> void:
 		pressed = weapons.right_weapon as MeleeWeapon
 	elif left_pressed and _is_usable(weapons.left_weapon):
 		pressed = weapons.left_weapon as MeleeWeapon
-	if pressed == null:
-		return
-	var direction := _input_direction()
+	if pressed != null and _can_chain():
+		_buffered = null
+		_chain_into(pressed, _input_direction())
+	elif pressed != null and _can_buffer():
+		_buffered = pressed
+		_buffered_direction = _input_direction()
+	elif _buffered != null and _can_chain():
+		var buffered := _buffered
+		_buffered = null
+		if _is_usable(buffered):
+			_chain_into(buffered, _buffered_direction)
+
+
+## Starts the next swing of the chain for a press of pressed's button with the move key direction.
+func _chain_into(pressed: MeleeWeapon, direction: StringName) -> void:
 	var next := _pick_attack(pressed, direction, chain_count)
 	var weapon := _weapon_for(next, pressed.data.kind)
 	if weapon == null:
@@ -539,6 +588,7 @@ func _strike() -> void:
 ## dodge or a fall that takes over the body). The cooldown starts.
 func _finish(fade: bool) -> void:
 	is_playing = false
+	_buffered = null
 	_fade_left = _attack.blend_out if fade else 0.0
 	_cooldown_left = cooldown
 	_blend_left = 0.0
