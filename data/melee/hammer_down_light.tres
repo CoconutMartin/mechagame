@@ -10,3 +10,4 @@ animation = ExtResource("2")
 travel = ExtResource("3")
 strikes = PackedVector2Array(0.62, 0.98)
 damage = PackedFloat32Array(300)
+chain_stagger_points = 25.0

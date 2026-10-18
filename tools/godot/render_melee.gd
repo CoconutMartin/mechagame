@@ -1,7 +1,7 @@
 extends SceneTree
 ## Melee test and render tool. Plays the fist and hammer attacks against a target mech in front of the
-## player (inside the crosshair), logs hits, combos, the cooldown and the lowest foot point, and with a
-## window saves a strip of frames per attack.
+## player (inside the crosshair), logs hits, chain combos, the cooldown and the lowest foot point, and
+## with a window saves a strip of frames per attack.
 ## Headless (log only; the targets stand 12 m and 7 m ahead):
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/render_melee.gd
 ## Render (frames in user://melee_renders/ or the folder in MELEE_OUT; one distance, 12 m):
@@ -20,8 +20,14 @@ const FRAMES_PER_ATTACK := 9
 const MAX_FRAMES := 900
 
 ## Cases: name, weapon ("fist" or "hammer"), button ("right" = RMB, "left" = LMB), move key ("" or an
-## action), kind ("attack", "combo", "cooldown") and the combo delays (seconds after each hit to the
-## next press).
+## action), kind ("attack", "combo", "cooldown"), the combo delays (seconds after each hit to the next
+## press), the move key of each combo press (optional; "" = no key; empty list = the case key stays) and
+## the expected swings (optional, MeleeAttack file names; the log says CHECK ok or CHECK FAIL) and
+## options (optional: "hits" = the hit count when a swing misses; "stagger" = the expected stagger points
+## per hit on the target, " knock" marks a knock-down; the log says STAGGER ok or STAGGER FAIL).
+## Chain combo cases (user rules 2026-10-18): any attack chains into any other, up to 3 swings, press
+## within 0.6 s after the hit, S ends the chain, then the 5 s cooldown. Hammer stagger (user decision
+## 2026-10-18): swings 1 and 2 give 25 points (a flinch), the S strike and the third swing 45 (knock-down).
 const CASES := [
 	["fist_straight_r", "fist", "right", "", "attack", []],
 	["fist_straight_l", "fist", "left", "", "attack", []],
@@ -29,15 +35,28 @@ const CASES := [
 	["fist_swipe_S", "fist", "right", "move_back", "attack", []],
 	["fist_hook_A", "fist", "left", "move_left", "attack", []],
 	["fist_hook_D", "fist", "right", "move_right", "attack", []],
-	["fist_combo_L", "fist", "left", "", "combo", [0.1, 0.1]],
-	["fist_combo_R", "fist", "right", "", "combo", [0.2, 0.3]],
-	["fist_combo_late", "fist", "left", "", "combo", [0.7, 0.1]],
+	["fist_combo_L", "fist", "left", "", "combo", [0.1, 0.1], [], ["straight_l", "straight_r_chain", "uppercut_l"]],
+	["fist_combo_R", "fist", "right", "", "combo", [0.2, 0.3], [], ["straight_r", "straight_l_chain", "uppercut_r"]],
+	["fist_combo_late", "fist", "left", "", "combo", [0.7, 0.1], [], ["straight_l"]],
+	["fist_combo_window", "fist", "left", "", "combo", [0.55, 0.55], [], ["straight_l", "straight_r_chain", "uppercut_l"]],
+	["fist_hook_A_plain_W", "fist", "left", "move_left", "combo", [0.1, 0.1], ["", "move_forward"],
+			["hook_l", "straight_r_chain", "uppercut_l"]],
+	["fist_W_S_ends", "fist", "right", "move_forward", "combo", [0.1, 0.1], ["move_back", "move_left"],
+			["uppercut_r", "swipe_r"]],
 	["fist_cooldown", "fist", "right", "", "cooldown", []],
 	["hammer_none", "hammer", "right", "", "attack", []],
 	["hammer_S", "hammer", "right", "move_back", "attack", []],
 	["hammer_A", "hammer", "right", "move_left", "attack", []],
 	["hammer_D", "hammer", "right", "move_right", "attack", []],
-	["hammer_A_no_combo", "hammer", "right", "move_left", "combo", [0.1]],
+	["hammer_D_A_S", "hammer", "right", "move_right", "combo", [0.1, 0.1], ["move_left", "move_back"],
+			["hammer_swing_d", "hammer_swing_a", "hammer_down"], {"stagger": ["25", "25", "45 knock"]}],
+	# The fourth press comes after three swings: it starts nothing, the cooldown follows.
+	["hammer_A_RMB_D", "hammer", "right", "move_left", "combo", [0.1, 0.1, 0.1], ["", "move_right", ""],
+			["hammer_swing_a", "hammer_down_light", "hammer_swing_d"], {"stagger": ["25", "25", "45 knock"]}],
+	["hammer_S_ends", "hammer", "right", "move_back", "combo", [0.1], ["move_left"], ["hammer_down"],
+			{"stagger": ["45 knock"]}],
+	["hammer_timeout", "hammer", "right", "move_right", "combo", [0.7], ["move_left"], ["hammer_swing_d"],
+			{"stagger": ["25"]}],
 	["hammer_lmb", "hammer", "left", "", "attack", []],
 ]
 
@@ -131,6 +150,18 @@ func _play(map: Node, switcher: LoadoutSwitcher, case: Array, distance: float) -
 	for key: String in health.max_hp:
 		health.max_hp[key] = 100000.0
 		health.hp[key] = 100000.0
+	var options: Dictionary = case[8] if case.size() > 8 else {}
+	# Stagger points per hit on the target, with " stagger" or " knock" when the hit staggered or knocked
+	# it down.
+	var reactions: Array[String] = []
+	if health.stability != null:
+		health.stability.hit_taken.connect(func(points: float, _from: Vector3) -> void: reactions.append("%.0f" % points))
+		health.stability.staggered.connect(func(_from: Vector3) -> void:
+			if not reactions.is_empty():
+				reactions[-1] += " stagger")
+		health.stability.knocked_down.connect(func(_from: Vector3) -> void:
+			if not reactions.is_empty():
+				reactions[-1] += " knock")
 	var hits: Array = []
 	health.damaged.connect(func(key: String, amount: float) -> void: hits.append("%s %.0f" % [key, amount]))
 	var melee := player.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
@@ -165,8 +196,12 @@ func _play(map: Node, switcher: LoadoutSwitcher, case: Array, distance: float) -
 	if key != "":
 		Input.action_release(key)
 	var lows := result.get("lows", idle_low) as Array
-	var line := "%s: start_dist=%.1f %s foot_low L=%.2f R=%.2f (idle L=%.2f R=%.2f)" % [name, start_distance,
-			result.get("text", ""), lows[0], lows[1], idle_low[0], idle_low[1]]
+	var stagger_text := "stagger=%s" % [reactions]
+	if options.has("stagger"):
+		var expected_stagger := Array(options["stagger"], TYPE_STRING, &"", null)
+		stagger_text = ("STAGGER %s " % ("ok" if reactions == expected_stagger else "FAIL")) + stagger_text
+	var line := "%s: start_dist=%.1f %s %s foot_low L=%.2f R=%.2f (idle L=%.2f R=%.2f)" % [name, start_distance,
+			stagger_text, result.get("text", ""), lows[0], lows[1], idle_low[0], idle_low[1]]
 	print(line)
 	_log.append(line)
 	side_camera.queue_free()
@@ -185,7 +220,14 @@ func _attack_case(case: Array, name: String, button: String, player: Mech, targe
 	if started:
 		print("  target=%s aim=%s" % [melee._target, melee.weapons.mech_aim.aim_direction if melee.weapons.mech_aim != null else "none"])
 	var delays: Array = case[5]
+	var press_keys: Array = case[6] if case.size() > 6 else []
+	var expected: Array = case[7] if case.size() > 7 else []
+	var options: Dictionary = case[8] if case.size() > 8 else {}
+	var held_key: String = case[3]
 	var swings: Array[String] = []
+	var last_count := 0
+	var hit_distances: Array[String] = []
+	var min_center := INF
 	var swing_hit_frame := {}
 	var press_at := -1
 	var presses_done := 0
@@ -205,42 +247,53 @@ func _attack_case(case: Array, name: String, button: String, player: Mech, targe
 	while frame < MAX_FRAMES:
 		await _frames(1)
 		frame += 1
-		if melee.is_playing and melee._attack != last_attack:
+		# A new swing: another attack, or the same attack again in a chain.
+		if melee.is_playing and (melee._attack != last_attack or melee.chain_count != last_count):
 			last_attack = melee._attack
-			swings.append((last_attack.animation.resource_path.get_file().get_basename()))
+			last_count = melee.chain_count
+			swings.append(last_attack.resource_path.get_file().get_basename())
 		if melee.is_playing and not step_set:
 			step_set = true
-			var estimate := 0.0
-			for attack in melee._sequence:
-				estimate += attack.get_length()
-			if case[4] != "combo":
-				estimate = melee._attack.get_length()
-			step = maxi(int((estimate + 0.5) * 60.0) / FRAMES_PER_ATTACK, 1)
+			step = maxi(int((melee._attack.get_length() + 0.5) * 60.0) / FRAMES_PER_ATTACK, 1)
 			if case[4] == "combo":
-				# The combo ends early (the next press comes soon after each hit): more frames.
+				# A chain plays several swings: more frames.
 				step = 8
 		# Combo presses: after the swing hit, wait the delay, then press again.
 		if melee.is_playing and melee._landed and not swing_hit_frame.has(swings.size()):
 			swing_hit_frame[swings.size()] = frame
+			var center := player.global_position.distance_to(target.global_position)
 			if hit_distance < 0.0:
-				hit_distance = player.global_position.distance_to(target.global_position)
+				hit_distance = center
+			hit_distances.append("%.1f" % center)
 			if presses_done < delays.size():
 				press_at = frame + int(float(delays[presses_done]) * 60.0)
 		if press_at > 0 and frame >= press_at:
 			press_at = -1
+			# The move key of this press (the chain picks the attack from it).
+			if presses_done < press_keys.size() and press_keys[presses_done] != held_key:
+				if held_key != "":
+					Input.action_release(held_key)
+				held_key = press_keys[presses_done]
+				if held_key != "":
+					Input.action_press(held_key)
+				await _frames(2)
+				frame += 2
 			presses_done += 1
 			Input.action_press(button)
 			await _frames(2)
 			Input.action_release(button)
 			frame += 2
+		if melee.is_playing:
+			min_center = minf(min_center, player.global_position.distance_to(target.global_position))
 		if melee.is_playing and is_instance_valid(melee._weapon):
 			var point := melee._weapon.get_strike_point()
 			for hitbox in target.find_children("*", "PartHitbox", true, false):
 				min_distance = minf(min_distance, (hitbox as Node3D).global_position.distance_to(point))
 			if OS.get_environment("MELEE_TRACE") != "" and frame % 3 == 0:
 				var local := player.global_transform.affine_inverse() * point
-				print("  t=%.2f strike_local=(%.1f, %.1f, %.1f) dist=%.1f" % [melee._time, local.x, local.y, local.z,
-						player.global_position.distance_to(target.global_position)])
+				print("  t=%.2f strike_local=(%.1f, %.1f, %.1f) dist=%.1f target=%s lunge=%.1f done=%s hold=%.2f target_down=%s" % [melee._time,
+						local.x, local.y, local.z, player.global_position.distance_to(target.global_position),
+						melee._target != null, melee._lunge_velocity, melee._lunge_done, melee._hold_time, target.is_fallen])
 		min_sole = minf(min_sole, melee.sole_low)
 		min_after = minf(min_after, melee.sole_after)
 		var current: Array = probe.lows
@@ -260,8 +313,17 @@ func _attack_case(case: Array, name: String, button: String, player: Mech, targe
 				break
 		elif not started and frame > 60:
 			break
+	if held_key != "" and held_key != case[3]:
+		Input.action_release(held_key)
 	var text := "started=%s swings=%s hits=%s landed_dist=%.1f closest_hitbox_to_strike=%.2f m cooldown_left=%.1f clip_sole_low=%.2f after_clamp=%.2f" % [
 			started, swings, hits, hit_distance, min_distance, melee.get_cooldown_left(), min_sole, min_after]
+	if case[4] == "combo":
+		text += " presses=%d hit_dist_per_swing=%s closest_center=%.1f" % [presses_done, hit_distances, min_center]
+	if not expected.is_empty():
+		# Each swing hits once (option "hits": the hit count when a swing misses).
+		var ok := swings == Array(expected, TYPE_STRING, &"", null) and hits.size() == int(options.get("hits", expected.size())) \
+				and melee.get_cooldown_left() > melee.cooldown - 1.0
+		text = ("CHECK %s " % ("ok" if ok else "FAIL")) + text
 	return {"text": text + " lowest=%s" % [worst_names], "lows": lows}
 
 

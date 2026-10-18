@@ -5,13 +5,16 @@ extends SkeletonModifier3D
 ##   Fist (its own arm's button): no key = straight punch; W = uppercut; S = overhead swing ("Mutant
 ##   Swiping"); A = left fist hook, swings in toward the right; D = right fist hook, swings in toward
 ##   the left. The hooks need a fist on that arm.
-##   Fist combo (user, 2026-10-15): the plain punch (no key) goes on for up to 3 swings: left, right, then
-##   a heavy uppercut (MeleeAttack.follow_ups). The next swing plays when its button press comes within
-##   combo_window seconds after the swing before hit a target, and before that swing ends. The body
-##   blends from the pose of one swing into the next.
 ##   Hammer (RMB only, user 2026-10-15): S = downward strike; no key or W = a weaker downward strike;
-##   D = one swing from the right to the left; A = one swing from the left to the right. No combos.
-## After one swing or a whole combo ends, no melee attack starts for cooldown seconds.
+##   D = one swing from the right to the left; A = one swing from the left to the right.
+##   Chain combo (user rules 2026-10-18; replaces the plain fist combo of 2026-10-15): any attack can
+##   chain into the next one, in any order, up to max_chain_swings swings. The next swing plays when a new
+##   press of the weapon's button (with the move key of that moment) comes within combo_window seconds
+##   after the swing before hit a target, and before that swing ends. An S attack (hammer downward
+##   strike, fist swipe) is always the last swing. A plain fist press in a chain keeps the arms
+##   alternating like the plain combo (left, right, then a heavy uppercut; MeleeAttack.follow_ups).
+##   The body blends from the pose of one swing into the next.
+## After a single swing or a whole chain ends, no melee attack starts for cooldown seconds.
 ## Target tracking (user, 2026-10-15): an enemy inside the aim cone (and within target_range) turns the
 ## mech to face it, and the mech glides toward it so the strike lands at the attack's contact distance.
 ## Without a target the attack plays in place.
@@ -33,12 +36,14 @@ extends SkeletonModifier3D
 @export var key_dead_zone: float = 0.3
 ## Most hit boxes one strike query returns.
 @export var max_query_results: int = 32
-## No melee attack starts for this many seconds after a swing or a whole combo ended (anti spam).
+## No melee attack starts for this many seconds after a swing or a whole chain ended (anti spam).
 @export var cooldown: float = 5.0
 @export_group("Combo")
-## The next swing of a fist combo needs its button press within this many seconds after the swing
-## before hit a target (and before that swing ends).
-@export var combo_window: float = 0.5
+## The next swing of a chain needs its button press within this many seconds after the swing before
+## hit a target (and before that swing ends). User rule 2026-10-18: 0.6 s (was 0.5 s).
+@export var combo_window: float = 0.6
+## Most swings in one chain (user rule 2026-10-18).
+@export var max_chain_swings: int = 3
 ## Seconds to blend from the pose of one swing into the next.
 @export var combo_blend: float = 0.25
 @export_group("Targeting")
@@ -110,6 +115,8 @@ const LEG_BONES: PackedStringArray = ["pelvis", "thigh_L", "shin_L", "foot_L", "
 
 ## True while an attack plays (not its blend out).
 var is_playing: bool = false
+## Swings played so far in the running chain (1 = the first swing; for tests).
+var chain_count: int = 0
 ## Lowest sole point of the last clip pose before the lift, in meters above the ground (for tests).
 var sole_low: float = 0.0
 ## The same after the foot clamp (for tests).
@@ -120,9 +127,8 @@ var _weapon: MeleeWeapon
 var _time: float = 0.0
 var _end_time: float = 0.0
 var _direction: Vector3 = Vector3.ZERO
-## The swings of the running combo (the first attack and its follow-ups) and the one that plays.
-var _sequence: Array[MeleeAttack] = []
-var _step: int = 0
+## True when the swing that plays is the last of its chain (an S attack, user rule 2026-10-18).
+var _chain_closed: bool = false
 ## True when this swing hit a target, and the seconds since.
 var _landed: bool = false
 var _since_hit: float = 0.0
@@ -172,49 +178,96 @@ func is_ready() -> bool:
 	return not is_playing and _cooldown_left <= 0.0 and _can_attack()
 
 
-## Seconds since the swing hit a target while the next swing of a fist combo can still start (a fist
-## button press now continues it); -1 when it cannot (for the AI).
+## Seconds since the swing hit a target while the next swing of a chain can still start (a button
+## press now continues it); -1 when it cannot (for the AI).
 func get_combo_wait() -> float:
-	if not is_playing or not _landed or _since_hit > combo_window or _step + 1 >= _sequence.size() or _time >= _end_time:
+	if not _can_chain():
 		return -1.0
 	return _since_hit
 
 
-## The mouse button of a melee weapon was pressed: starts the attack for the move key. The next swings
-## of a fist combo are read in _watch_combo_input.
+## The mouse button of a melee weapon was pressed: starts the first swing of a chain for the move key.
+## The next swings of the chain are read in _watch_combo_input.
 func request(weapon: MeleeWeapon) -> void:
 	if is_playing or _cooldown_left > 0.0 or not _can_attack():
 		return
+	# The hammer needs the right mouse button (user, 2026-10-15); the left button does nothing.
+	if weapon.data.kind == WeaponData.Kind.HAMMER and not mech.input.fire_held:
+		return
 	var direction := _input_direction()
+	var attack := _pick_attack(weapon, direction, 0)
+	var thrower := _weapon_for(attack, weapon.data.kind)
+	if thrower == null:
+		return
+	chain_count = 1
+	_chain_closed = direction == &"back"
+	_begin_swing(attack, thrower, false)
+
+
+## The attack for a press of weapon's button with the move key direction, as swing number place of a
+## chain (0 = the first swing). Null when the press throws nothing.
+##   Hammer: S = downward strike, A and D = the full swings, no key or W = the light strike.
+##   Fist: W = uppercut and S = swipe of that fist's arm, A = left hook, D = right hook. No key: the
+##   straight punch of that arm; later in a chain the plain combo goes on with the other arm than the
+##   swing before (_plain_follow_up).
+func _pick_attack(weapon: MeleeWeapon, direction: StringName, place: int) -> MeleeAttack:
 	if weapon.data.kind == WeaponData.Kind.HAMMER:
-		# The hammer needs the right mouse button (user, 2026-10-15); the left button does nothing.
-		if not mech.input.fire_held:
-			return
 		match direction:
 			&"back":
-				_start(hammer_down, weapon)
+				return hammer_down
 			&"left":
-				_start(hammer_swing_a, weapon)
+				return hammer_swing_a
 			&"right":
-				_start(hammer_swing_d, weapon)
+				return hammer_swing_d
 			_:
-				_start(hammer_down_light, weapon)
-		return
+				return hammer_down_light
 	match direction:
 		&"forward":
-			_start(uppercut_l if weapon.is_left else uppercut_r, weapon)
+			return uppercut_l if weapon.is_left else uppercut_r
 		&"back":
-			_start(swipe_l if weapon.is_left else swipe_r, weapon)
+			return swipe_l if weapon.is_left else swipe_r
 		&"left":
-			var left_fist := weapons.left_weapon as MeleeWeapon
-			if left_fist != null:
-				_start(hook_l, left_fist)
+			return hook_l
 		&"right":
-			var right_fist := weapons.right_weapon as MeleeWeapon
-			if right_fist != null and right_fist.data.kind == WeaponData.Kind.FIST:
-				_start(hook_r, right_fist)
-		_:
-			_start(straight_l if weapon.is_left else straight_r, weapon)
+			return hook_r
+	if place == 0 or _attack == null:
+		return straight_l if weapon.is_left else straight_r
+	return _plain_follow_up(place, not _attack.left_arm)
+
+
+## The plain punch for swing number place of a chain (1 or 2), thrown by the left arm or not. It comes
+## from the follow_ups of the straight punch whose plain combo has this arm at this place (the arms
+## alternate: straight L -> straight R -> uppercut L, and the mirror). Null past the follow-ups.
+func _plain_follow_up(place: int, left: bool) -> MeleeAttack:
+	var first_left := left if place % 2 == 0 else not left
+	var first := straight_l if first_left else straight_r
+	if first == null or place - 1 >= first.follow_ups.size():
+		return null
+	return first.follow_ups[place - 1]
+
+
+## The weapon that throws attack: the weapon on the attack's arm (MeleeAttack.left_arm; the hammer is
+## on the right arm). Null when that arm has no usable weapon of kind (a broken or missing fist).
+func _weapon_for(attack: MeleeAttack, kind: WeaponData.Kind) -> MeleeWeapon:
+	if attack == null or weapons == null:
+		return null
+	var weapon := (weapons.left_weapon if attack.left_arm else weapons.right_weapon) as MeleeWeapon
+	if not _is_usable(weapon) or weapon.data.kind != kind:
+		return null
+	return weapon
+
+
+func _is_usable(weapon: MechWeapon) -> bool:
+	return is_instance_valid(weapon) and weapon is MeleeWeapon and weapon.data != null \
+			and weapon.process_mode != Node.PROCESS_MODE_DISABLED and is_instance_valid((weapon as MeleeWeapon).get_model())
+
+
+## True while a button press continues the chain: the swing hit a target less than combo_window
+## seconds ago, it still plays, the chain has room for one more swing and the swing is no S attack.
+func _can_chain() -> bool:
+	if not is_playing or not _landed or _since_hit > combo_window or _time >= _end_time:
+		return false
+	return chain_count < max_chain_swings and not _chain_closed
 
 
 ## True when the mech can start an attack: standing on the ground and free (no dodge, kneel, jump
@@ -241,15 +294,7 @@ func _input_direction() -> StringName:
 	return &"left" if local.x < 0.0 else &"right"
 
 
-## A new attack (a combo's first swing).
-func _start(attack: MeleeAttack, weapon: MeleeWeapon) -> void:
-	_sequence = [attack]
-	_sequence.append_array(attack.follow_ups)
-	_step = 0
-	_begin_swing(attack, weapon, false)
-
-
-## Starts one swing. chained = the next swing of a combo: it blends in from the pose of the swing before.
+## Starts one swing. chained = the next swing of a chain: it blends in from the pose of the swing before.
 func _begin_swing(attack: MeleeAttack, weapon: MeleeWeapon, chained: bool) -> void:
 	if chained:
 		_prev_attack = _attack
@@ -272,7 +317,7 @@ func _begin_swing(attack: MeleeAttack, weapon: MeleeWeapon, chained: bool) -> vo
 	if not chained:
 		_lunge_velocity = 0.0
 	var target := _find_target()
-	# A combo keeps its target while it stays in range, even when the aim moved off it.
+	# A chain keeps its target while it stays in range, even when the aim moved off it.
 	if target == null and chained and _is_valid_target(_target) and _flat_offset(_target).length() <= target_range:
 		target = _target
 	_target = target
@@ -341,7 +386,9 @@ func _keep_away(velocity: Vector3) -> Vector3:
 	return velocity
 
 
-## The next swing of a fist combo: a new press of a fist button after the swing before hit a target.
+## The next swing of a chain (user rules 2026-10-18): a new press of a melee weapon's button after the
+## swing before hit a target (_can_chain). The move key of that moment picks the attack (_pick_attack),
+## so the attacks chain in any order. A press before the hit does nothing.
 func _watch_combo_input() -> void:
 	var fire := mech.input.fire_held
 	var left_fire := mech.input.left_fire_held
@@ -349,22 +396,25 @@ func _watch_combo_input() -> void:
 	var left_pressed := left_fire and not _left_fire_was_held
 	_fire_was_held = fire
 	_left_fire_was_held = left_fire
-	if not is_playing or not _landed or _since_hit > combo_window or _step + 1 >= _sequence.size():
+	if not _can_chain() or weapons == null:
 		return
-	if _time >= _end_time or weapons == null:
+	# The pressed weapon (the hammer takes only the right button, user 2026-10-15).
+	var pressed: MeleeWeapon = null
+	if right_pressed and _is_usable(weapons.right_weapon):
+		pressed = weapons.right_weapon as MeleeWeapon
+	elif left_pressed and _is_usable(weapons.left_weapon):
+		pressed = weapons.left_weapon as MeleeWeapon
+	if pressed == null:
 		return
-	if not ((right_pressed and _is_fist(weapons.right_weapon)) or (left_pressed and _is_fist(weapons.left_weapon))):
+	var direction := _input_direction()
+	var next := _pick_attack(pressed, direction, chain_count)
+	var weapon := _weapon_for(next, pressed.data.kind)
+	if weapon == null:
 		return
-	var next := _sequence[_step + 1]
-	var weapon := (weapons.left_weapon if next.left_arm else weapons.right_weapon) as MeleeWeapon
-	if not _is_fist(weapon) or weapon.process_mode == Node.PROCESS_MODE_DISABLED or not is_instance_valid(weapon.get_model()):
-		return
-	_step += 1
+	chain_count += 1
+	# S is always the last swing of a chain (user rule 2026-10-18).
+	_chain_closed = direction == &"back"
 	_begin_swing(next, weapon, true)
-
-
-func _is_fist(weapon: MechWeapon) -> bool:
-	return weapon is MeleeWeapon and is_instance_valid(weapon) and weapon.data.kind == WeaponData.Kind.FIST
 
 
 ## The enemy inside the aim cone and within target_range (the one closest to the aim), or null.
@@ -656,11 +706,17 @@ func _chain_pose(skeleton: Skeleton3D, bone: int) -> Transform3D:
 
 
 ## Stagger points of the swing that plays (MechStability): the weapon's, or its finisher points on the
-## last swing of a fist combo.
+## last swing of a full chain (swing number max_chain_swings; before 2026-10-18 the third swing of the
+## plain fist combo). Swing 1 or 2 of a chain that is no S attack uses the attack's chain_stagger_points
+## when it has them (user decision 2026-10-18: hammer 25, no knock-down; the S strike and the third
+## swing keep the weapon's 45, a knock-down).
 func _stagger_points() -> float:
 	if _weapon == null or not is_instance_valid(_weapon) or _weapon.data == null:
 		return 0.0
 	var data := _weapon.data
-	if _sequence.size() > 1 and _step == _sequence.size() - 1 and data.stagger_finisher_points > 0.0:
+	var last := max_chain_swings > 1 and chain_count >= max_chain_swings
+	if last and data.stagger_finisher_points > 0.0:
 		return data.stagger_finisher_points
+	if not last and not _chain_closed and _attack != null and _attack.chain_stagger_points >= 0.0:
+		return _attack.chain_stagger_points
 	return data.stagger_points

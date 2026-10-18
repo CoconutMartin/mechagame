@@ -17,14 +17,19 @@ extends Resource
 @export var blend_in: float = 0.1
 ## Blend out at the end, in seconds.
 @export var blend_out: float = 0.25
-## Fist attacks: true when the left fist throws this attack (the next swing of a combo needs that fist).
+## Fist attacks: true when the left fist throws this attack (the swing needs that fist).
 @export var left_arm: bool = false
-## Combo: the swings that follow this one, in order. Each plays only when its input comes in time after
-## the swing before hit a target. Empty = a single swing.
+## Plain fist combo: the plain punches (no move key) that follow this straight punch in a chain, in
+## order (the arms alternate). Since 2026-10-18 any attack chains into any other (SkeletalMeleeAnimation);
+## a plain press in a chain plays the follow-up for its place and arm. Empty = none.
 @export var follow_ups: Array[MeleeAttack] = []
 ## Distance between the two mech centers (m) where the strike lands. A target in the aim cone is
 ## approached until this distance (mechs collide at about 5.2 m).
 @export var contact_distance: float = 6.0
+## Stagger points of this swing as swing 1 or 2 of a chain (user decision 2026-10-18: the hammer swings
+## give 25, a flinch, no knock-down). The S attack and the last swing of a full chain use the weapon's
+## points (WeaponData.stagger_points). Below 0 = always the weapon's points.
+@export var chain_stagger_points: float = -1.0
 ## During the attack the mech moves no closer than this to another mech (center to center, m), so wide
 ## swings do not reach into it (user rule 2026-10-15: mechs collide, no clipping). 0 = only the bodies
 ## collide (about 5.2 m).
