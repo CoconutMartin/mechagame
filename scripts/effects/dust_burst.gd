@@ -7,14 +7,51 @@ var box: Vector3 = Vector3(4.0, 4.0, 4.0)
 ## Dust opacity: 1 = solid, 0 = clear (PixelSmoke.set_opacity).
 var opacity: float = 1.0
 
+## Most new bursts in one physics frame (phase 5a, 2026-10-19: 45 chunks breaking at once made 45
+## bursts, each with its own mesh, material, curve and ramp). More in the same frame are skipped.
+static var max_per_frame: int = 12
+static var _frame: int = -1
+static var _made: int = 0
+## Shared by every burst.
+static var _curve: Curve
+static var _ramp: Gradient
+static var _quad: QuadMesh
+
 
 static func create(world: Node, point: Vector3, size: Vector3, alpha: float = 1.0) -> DustBurst:
+	var frame := Engine.get_physics_frames()
+	if frame != _frame:
+		_frame = frame
+		_made = 0
+	if _made >= max_per_frame:
+		return null
+	_made += 1
 	var dust := DustBurst.new()
 	dust.box = size
 	dust.opacity = alpha
 	world.add_child(dust)
 	dust.global_position = point
 	return dust
+
+
+static func _shared_look() -> void:
+	if _quad != null:
+		return
+	_curve = Curve.new()
+	_curve.add_point(Vector2(0.0, 0.4))
+	_curve.add_point(Vector2(0.3, 1.0))
+	_curve.add_point(Vector2(1.0, 1.5))
+	_ramp = Gradient.new()
+	_ramp.set_color(0, Color(0.5, 0.48, 0.45, 0.85))
+	_ramp.set_color(1, Color(0.46, 0.45, 0.43, 0.0))
+	_quad = QuadMesh.new()
+	_quad.size = Vector2.ONE
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	material.vertex_color_use_as_albedo = true
+	material.albedo_texture = DamageSmoke._puff_texture()
+	_quad.material = material
 
 
 func _ready() -> void:
@@ -36,24 +73,10 @@ func _ready() -> void:
 	var size := maxf(box.x, box.z)
 	scale_amount_min = size * 0.45
 	scale_amount_max = size * 0.9
-	var curve := Curve.new()
-	curve.add_point(Vector2(0.0, 0.4))
-	curve.add_point(Vector2(0.3, 1.0))
-	curve.add_point(Vector2(1.0, 1.5))
-	scale_amount_curve = curve
-	var ramp := Gradient.new()
-	ramp.set_color(0, Color(0.5, 0.48, 0.45, 0.85))
-	ramp.set_color(1, Color(0.46, 0.45, 0.43, 0.0))
-	color_ramp = ramp
-	var quad := QuadMesh.new()
-	quad.size = Vector2.ONE
-	var material := StandardMaterial3D.new()
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	material.vertex_color_use_as_albedo = true
-	material.albedo_texture = DamageSmoke._puff_texture()
-	quad.material = material
-	mesh = quad
+	_shared_look()
+	scale_amount_curve = _curve
+	color_ramp = _ramp
+	mesh = _quad
 	# Before register (it reads the opacity), so the look is built once.
 	set_meta(&"opacity", clampf(snappedf(opacity, PixelSmoke.OPACITY_STEP), 0.0, 1.0))
 	PixelSmoke.register(self)

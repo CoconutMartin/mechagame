@@ -57,6 +57,9 @@ var _floor_lost := {}
 var _collapsed_from: int = -1
 ## Chunks waiting to fall (lowest first).
 var _fall_queue: Array = []
+## True after a break: the support check runs once in the next physics frame (phase 5a, 2026-10-19: one
+## check per broken chunk cost 14 ms when 45 chunks broke in one frame).
+var _support_dirty: bool = false
 var _queued := {}
 
 
@@ -134,7 +137,7 @@ func break_chunk(chunk: UrbanChunk) -> void:
 	chunk.queue_free()
 	if generator.def.facade_only and _counts_for_floor(chunk):
 		_check_floor(chunk.floor_index)
-	_drop_unsupported()
+	_support_dirty = true
 
 
 ## Breaks a box into rubble (and dust unless it is glass). hurts: the impact hurts mechs near it.
@@ -222,6 +225,9 @@ func _drop_unsupported() -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if _support_dirty:
+		_support_dirty = false
+		_drop_unsupported()
 	var count := 0
 	while not _fall_queue.is_empty() and count < fall_per_frame:
 		# Untyped: a queued chunk can be freed meanwhile (broken by a hit or a mech walking through).
