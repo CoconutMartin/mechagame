@@ -11,9 +11,9 @@ extends SceneTree
 ## "right=auto_cannon,left=warden_shield,back_left=missile_pod_l,back_right=missile_pod_r", "-" = empty),
 ## JUMP_FALL (a start height in m: the mech is dropped from there), JUMP_VIEW (side, front, front_left, game: the game camera), JUMP_CAM_DIST (m, default 30), JUMP_FOV (degrees, default 32),
 ## JUMP_CLEAR=0 (no clearance check: faster),
-## JUMP_CLEAR_EVERY (check every n frames), JUMP_STOP_AT (s), JUMP_LIFT ("x,y,z": SkeletalJumpPose.clip_weapon_lift).
+## JUMP_CLEAR_EVERY (check every n frames), JUMP_STOP_AT (s), JUMP_GUARD_HEIGHT (m), JUMP_GUARD_FORWARD (m).
 ## Clearance (phase 4, 2026-10-19): every frame the points of the weapon, shield, pod and hand meshes are
-## tested against the leg armor boxes (each leg mesh's rest box on its main bone, CLEAR_MARGIN smaller);
+## tested against the leg, pelvis, torso and head armor boxes (each leg mesh's rest box on its main bone, CLEAR_MARGIN smaller);
 ## the log column "clear" counts the points inside, and the summary names the worst frame and the meshes.
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
@@ -73,9 +73,10 @@ func _run() -> void:
 	probe.mech = player
 	(player.find_child("Skeleton3D", true, false) as Skeleton3D).add_child(probe)
 	var pose := player.find_child("JumpPose", true, false) as SkeletalJumpPose
-	if OS.get_environment("JUMP_LIFT") != "":
-		var v := OS.get_environment("JUMP_LIFT").split_floats(",")
-		pose.clip_weapon_lift = Vector3(v[0], v[1], v[2])
+	if OS.get_environment("JUMP_GUARD_HEIGHT") != "":
+		pose.guard_height = float(OS.get_environment("JUMP_GUARD_HEIGHT"))
+	if OS.get_environment("JUMP_GUARD_FORWARD") != "":
+		player.find_child("ArmRig", true, false).set("guard_forward", float(OS.get_environment("JUMP_GUARD_FORWARD")))
 	var recovery := player.landing_recovery
 	await _frames(5)
 	var origin := player.global_position
@@ -230,7 +231,9 @@ class LegProbe extends SkeletonModifier3D:
 		var skeleton := get_skeleton()
 		if globals.is_empty():
 			return {"count": 0, "names": "", "depth": 0.0, "deepest": ""}
-		var legs := skeleton.find_children("Leg_*", "MeshInstance3D", true, false)
+		var legs: Array[Node] = []
+		for pattern in ["Leg_*", "Torso", "Head_*", "Pelvis", "Waist_Joint", "Neck_joint"]:
+			legs.append_array(skeleton.find_children(pattern, "MeshInstance3D", true, false))
 		var inverse := skeleton.global_transform.affine_inverse()
 		var count := 0
 		var deepest := 0.0
