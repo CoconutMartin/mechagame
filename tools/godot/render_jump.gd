@@ -96,6 +96,9 @@ func _run() -> void:
 	var clear_worst_t := 0.0
 	var clear_worst_names := ""
 	var clear_frames := 0
+	var clear_worst_depth := 0.0
+	var clear_worst_depth_t := 0.0
+	var clear_worst_depth_name := ""
 	var max_frames := 60 * 14
 	while frame < max_frames:
 		await _frames(1)
@@ -129,11 +132,15 @@ func _run() -> void:
 				t, phase, height, player.velocity.y, pose.crouch, pose.landing, pose.air, w[0], w[1], w[2],
 				0.0 if d == null else d.times[0], 0.0 if d == null else d.times[1], 0.0 if d == null else d.times[2],
 				-1.0 if d == null or d.time_to_impact == INF else d.time_to_impact, recovery.time_left, low]
-		var hits := probe.clearance(player) if OS.get_environment("JUMP_CLEAR") != "0" else {"count": 0, "names": ""}
-		line += " depth=%.2f clear=%d" % [pose.clip_depth, hits.count]
+		var hits := probe.clearance(player) if OS.get_environment("JUMP_CLEAR") != "0" else {"count": 0, "names": "", "depth": 0.0, "deepest": ""}
+		line += " depth=%.2f clear=%d in=%.2f %s" % [pose.clip_depth, hits.count, hits.depth, hits.deepest]
 		if hits.count > 0:
 			clear_frames += 1
 			line += " " + hits.names
+		if hits.depth > clear_worst_depth:
+			clear_worst_depth = hits.depth
+			clear_worst_depth_t = t
+			clear_worst_depth_name = hits.deepest
 		if hits.count > clear_worst:
 			clear_worst = hits.count
 			clear_worst_t = t
@@ -160,6 +167,7 @@ func _run() -> void:
 			min_low_floor, min_low, low_after_land])
 	print("  CLEAR weapons/hands inside leg armor: worst %d points at t=%.2f (%s), %d frames with any" % [
 			clear_worst, clear_worst_t, clear_worst_names, clear_frames])
+	print("  CLEAR deepest point %.2f m inside at t=%.2f (%s)" % [clear_worst_depth, clear_worst_depth_t, clear_worst_depth_name])
 	quit()
 
 
@@ -212,10 +220,12 @@ class LegProbe extends SkeletonModifier3D:
 	func clearance(player: Mech) -> Dictionary:
 		var skeleton := get_skeleton()
 		if globals.is_empty():
-			return {"count": 0, "names": ""}
+			return {"count": 0, "names": "", "depth": 0.0, "deepest": ""}
 		var legs := skeleton.find_children("Leg_*", "MeshInstance3D", true, false)
 		var inverse := skeleton.global_transform.affine_inverse()
 		var count := 0
+		var deepest := 0.0
+		var deepest_name := ""
 		var hit_names := {}
 		for node in player.find_children("*", "MeshInstance3D", true, false):
 			var mesh := node as MeshInstance3D
@@ -234,15 +244,22 @@ class LegProbe extends SkeletonModifier3D:
 				var hit := ""
 				for leg in legs:
 					for box: Array in _boxes_of(skeleton, leg as MeshInstance3D):
-						if (box[1] as AABB).has_point(globals[box[0]].affine_inverse() * local):
+						var aabb := box[1] as AABB
+						var q := globals[box[0]].affine_inverse() * local
+						if aabb.has_point(q):
 							hit = leg.name
+							var inner := (q - aabb.position).min(aabb.end - q)
+							var d := minf(inner.x, minf(inner.y, inner.z)) + CLEAR_MARGIN
+							if d > deepest:
+								deepest = d
+								deepest_name = "%s>%s" % [_label(mesh), leg.name]
 							break
 					if hit != "":
 						break
 				if hit != "":
 					count += 1
 					hit_names["%s>%s" % [_label(mesh), hit]] = true
-		return {"count": count, "names": ",".join(hit_names.keys())}
+		return {"count": count, "names": ",".join(hit_names.keys()), "depth": deepest, "deepest": deepest_name}
 
 	func _label(mesh: MeshInstance3D) -> String:
 		var parent := mesh.get_parent()
