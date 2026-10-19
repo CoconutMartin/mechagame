@@ -23,7 +23,7 @@ const NOT_CARRYING := [UrbanChunk.Kind.GLASS, UrbanChunk.Kind.DOOR]
 @export var touch_gap: float = 0.08
 ## Rubble pieces per cubic meter of a broken chunk, and the limits per chunk.
 @export var rubble_per_m3: float = 1.2
-@export var min_rubble: int = 2
+@export var min_rubble: int = 3
 @export var max_rubble: int = 6
 ## Opacity of the dust when a chunk breaks (0 = clear, 1 = solid; user request 2026-10-15: 50%).
 @export_range(0.0, 1.0) var dust_opacity: float = 0.5
@@ -34,6 +34,20 @@ const NOT_CARRYING := [UrbanChunk.Kind.GLASS, UrbanChunk.Kind.DOOR]
 @export var rubble_speed: float = 5.0
 ## Most falling chunk bodies at once in the level; more unsupported chunks break where they are.
 @export var max_falling: int = 60
+
+@export_group("Wear (phase 5b)")
+## A chunk below this part of its HP shows cracks and turns darker (ChunkCracks).
+@export_range(0.0, 1.0) var crack_below: float = 0.5
+## Blasts (missiles) and hits of at least this damage (cannon shells) leave a scorch mark (ScorchMark).
+@export var scorch_min_damage: float = 150.0
+## Scorch mark size (m across) for a blast and for a heavy shell.
+@export var scorch_blast_size: float = 3.5
+@export var scorch_shell_size: float = 1.6
+## Bent bars on each face a broken concrete chunk shared with a standing neighbor (Rebar), a range.
+@export var rebar_per_face: Vector2i = Vector2i(2, 4)
+## Materials whose breaks show rebar (MaterialDef.display_name).
+@export var rebar_materials: PackedStringArray = ["Concrete"]
+@export_group("")
 ## Damage to mech hitboxes where a falling chunk lands (full at the center), and the radius. 0 = off.
 @export var fall_damage: float = 0.0  # off since 2026-10-16 (user); 125 on 2026-10-15, 250 before
 @export var fall_radius: float = 6.0
@@ -113,9 +127,12 @@ func setup(building: BuildingGenerator) -> void:
 
 
 ## A hit on a chunk (UrbanChunk.on_hit).
-func damage(chunk: UrbanChunk, amount: float) -> void:
+func damage(chunk: UrbanChunk, amount: float, from: Vector3 = Vector3.INF, kind: StringName = &"") -> void:
 	if not _links.has(chunk) or amount <= 0.0:
 		return
+	var glass := chunk.kind == UrbanChunk.Kind.GLASS
+	if not glass and (kind == &"blast" or amount >= scorch_min_damage):
+		ScorchMark.add(chunk, from, scorch_blast_size if kind == &"blast" else scorch_shell_size)
 	var threshold := chunk.material_def.damage_threshold if chunk.material_def != null else 0.0
 	# A hit below the material's threshold still counts, but less (user request 2026-10-12: weak
 	# guns wear walls down): x hit / threshold (an SMG shot of 35 on concrete (80) does 15).
@@ -124,12 +141,20 @@ func damage(chunk: UrbanChunk, amount: float) -> void:
 	chunk.hp -= amount
 	if chunk.hp <= 0.0:
 		break_chunk(chunk)
+	elif not glass and chunk.hp < chunk.max_hp * crack_below:
+		ChunkCracks.add(chunk, _boxes_in_chunk(chunk))
 
 
 ## Breaks a chunk into rubble where it stands, then drops what lost its support.
 func break_chunk(chunk: UrbanChunk) -> void:
 	if not _links.has(chunk):
 		return
+	if chunk.material_def != null and chunk.material_def.display_name in rebar_materials:
+		var neighbors := []
+		for other: UrbanChunk in _links[chunk]:
+			if other.kind not in NOT_CARRYING:
+				neighbors.append([other, _boxes_of(other)])
+		Rebar.spawn(generator, _boxes_of(chunk), neighbors, rebar_per_face, touch_gap)
 	_remove(chunk)
 	for box: AABB in _boxes_of(chunk):
 		shatter(Transform3D(generator.global_basis, generator.global_transform * box.get_center()), box.size,
@@ -303,6 +328,17 @@ func _fall(chunk: UrbanChunk) -> void:
 	_falling_now += 1
 	body.tree_exited.connect(func() -> void: _falling_now -= 1)
 	chunk.queue_free()
+
+
+## The chunk's boxes in its own space (from its collision shapes).
+func _boxes_in_chunk(chunk: UrbanChunk) -> Array[AABB]:
+	var boxes: Array[AABB] = []
+	for child in chunk.get_children():
+		var shape := child as CollisionShape3D
+		if shape != null and shape.shape is BoxShape3D:
+			var size := (shape.shape as BoxShape3D).size
+			boxes.append(AABB(shape.position - size * 0.5, size))
+	return boxes
 
 
 ## The chunk's boxes in building space (from its collision shapes).

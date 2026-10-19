@@ -87,6 +87,7 @@ func _hide(chunk: UrbanChunk) -> void:
 		saved.append([piece.x, piece.y, mm.get_instance_transform(piece.y)])
 		mm.set_instance_transform(piece.y, Transform3D(Basis.from_scale(Vector3.ZERO), Vector3.ZERO))
 	_hidden[chunk] = saved
+	_set_marks_visible(chunk, false)
 
 
 ## Puts a chunk's pieces back, unless it broke or fell meanwhile (BuildingDamage hid it for good).
@@ -102,6 +103,14 @@ func _show(chunk: UrbanChunk) -> void:
 	var generator := chunk.building as BuildingGenerator
 	for entry: Array in saved:
 		(generator.multimeshes[entry[0]] as MultiMesh).set_instance_transform(entry[1], entry[2])
+	_set_marks_visible(chunk, true)
+
+
+## The chunk's own meshes (cracks, scorch marks, rebar: phase 5b) hide and show with it.
+func _set_marks_visible(chunk: UrbanChunk, on: bool) -> void:
+	for child in chunk.get_children():
+		if child is Node3D and not child is CollisionShape3D:
+			(child as Node3D).visible = on
 
 
 func _show_all() -> void:

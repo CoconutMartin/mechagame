@@ -9,8 +9,6 @@ extends RigidBody3D
 static var max_count: int = 220
 # Untyped: a typed read of a freed piece is an error.
 static var _all: Array = []
-## One unit box mesh for every piece (scaled per piece; phase 5a: a new mesh per piece was slow).
-static var _unit_box: BoxMesh
 
 ## Seconds the piece lies on the ground before it sinks.
 @export var life: float = 14.0
@@ -32,9 +30,8 @@ static func spawn(world: Node, point: Vector3, size: Vector3, tint: Color, veloc
 	piece.collision_mask = 1 | 16  # world and buildings
 	piece.mass = maxf(size.x * size.y * size.z * 2.0, 0.5)
 	var mesh := MeshInstance3D.new()
-	if _unit_box == null:
-		_unit_box = BoxMesh.new()
-	mesh.mesh = _unit_box
+	# A shared rough unit piece, scaled (phase 5a: a new mesh per piece was slow; 5b: jagged pieces).
+	mesh.mesh = RubbleShapes.pick()
 	mesh.scale = size
 	mesh.material_override = GridMaterials.get_material(tint, false)
 	piece.add_child(mesh)
