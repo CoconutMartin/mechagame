@@ -33,7 +33,7 @@ var min_land_speed: float = 0.6
 var max_land_speed: float = 1.5
 ## Part of the rise time (launch to the top) the tuck of jump_up takes; slowest and fastest playback.
 var rise_part: float = 0.85
-var min_rise_speed: float = 0.4
+var min_rise_speed: float = 0.25
 var max_rise_speed: float = 1.5
 
 ## Per layer now.

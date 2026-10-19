@@ -8,5 +8,7 @@ script = ExtResource("1")
 animation = ExtResource("2")
 contact_time = 0.37
 hold_time = 1.3
+cut_from = 0.61
+cut_to = 0.77
 blend_in = 0.15
 blend_out = 0.35

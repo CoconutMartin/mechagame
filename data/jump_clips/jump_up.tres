@@ -6,7 +6,8 @@
 [resource]
 script = ExtResource("1")
 animation = ExtResource("2")
-crouch_time = 0.55
+crouch_time = 0.65
 takeoff_time = 0.88
+hold_time = 1.17
 blend_in = 0.2
 blend_out = 0.25

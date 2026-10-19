@@ -79,8 +79,23 @@ func _sole_points(foot: int, left: bool) -> PackedVector3Array:
 	return points
 
 
-## Rotations of the clip at time (seconds), by bone index (no arm bones).
+## Rotations of the clip at time (play seconds, AirClip cut taken out), by bone index (no arm bones).
 func sample(clip: AirClip, time: float) -> Dictionary:
+	if not clip.has_cut():
+		return _sample_at(clip, time)
+	var fade := smoothstep(clip.cut_from - clip.cut_blend, clip.cut_from + clip.cut_blend, time)
+	if fade <= 0.0:
+		return _sample_at(clip, time)
+	var after := _sample_at(clip, time + clip.cut_to - clip.cut_from)
+	if fade >= 1.0:
+		return after
+	var before := _sample_at(clip, time)
+	for bone: int in after:
+		after[bone] = (before[bone] as Quaternion).slerp(after[bone] as Quaternion, fade)
+	return after
+
+
+func _sample_at(clip: AirClip, time: float) -> Dictionary:
 	var animation := clip.animation
 	if not _tracks.has(animation):
 		_cache(animation)

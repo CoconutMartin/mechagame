@@ -16,6 +16,12 @@ extends Resource
 ## Seconds into the clip where the pose holds: a fall holds there while the mech is in the air; a
 ## landing holds there until the recovery ends. 0 = the end of the clip.
 @export var hold_time: float = 0.0
+## A part of the clip that is left out (clip seconds cut_from to cut_to; equal = no cut). The times
+## given to the clip are then play times with the cut taken out; the two sides cross-fade over
+## cut_blend seconds on each side of the cut (AirClipBody.sample).
+@export var cut_from: float = 0.0
+@export var cut_to: float = 0.0
+@export var cut_blend: float = 0.08
 ## Blend into the clip, in seconds.
 @export var blend_in: float = 0.15
 ## Blend out of the clip, in seconds.
@@ -26,6 +32,13 @@ extends Resource
 @export_range(0.0, 1.0) var lift_scale: float = 0.0
 
 
-## The held frame in seconds.
+## The held frame in seconds (play time: the cut taken out).
 func get_hold_time() -> float:
-	return hold_time if hold_time > 0.0 else animation.length
+	var hold := hold_time if hold_time > 0.0 else animation.length
+	if has_cut() and hold > cut_from:
+		hold -= minf(hold, cut_to) - cut_from
+	return hold
+
+
+func has_cut() -> bool:
+	return cut_to > cut_from
