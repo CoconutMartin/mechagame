@@ -71,6 +71,8 @@ extends SkeletonModifier3D
 ## The weapon frame (held weapons, shield, free hand places) moves this much (torso space: +Y up, -Z
 ## forward) at the deepest crouch, so the thighs coming up keep off the arms (SkeletalArmRig).
 @export var weapon_lift: Vector3 = Vector3(0.0, 0.8, -0.15)
+## The same for the clip poses (Jumping_Up, Landing: deeper lean, thighs higher), at clip_depth 1.
+@export var clip_weapon_lift: Vector3 = Vector3(0.0, 1.4, -0.5)
 
 @export_group("Clips")
 ## Jumping_Up: the charge crouch, the push and the tuck while rising.
@@ -116,7 +118,9 @@ func _ready() -> void:
 
 ## Weapon offset now (torso space): weapon_lift by the crouch or landing depth.
 func weapon_offset() -> Vector3:
-	return weapon_lift * clampf(maxf(maxf(crouch, landing), clip_depth), 0.0, 1.0)
+	var coded := weapon_lift * clampf(maxf(crouch, landing), 0.0, 1.0)
+	var clip := clip_weapon_lift * clampf(clip_depth, 0.0, 1.0)
+	return clip if clip.y > coded.y else coded
 
 
 func _process_modification_with_delta(delta: float) -> void:

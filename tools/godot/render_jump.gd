@@ -130,7 +130,7 @@ func _run() -> void:
 				0.0 if d == null else d.times[0], 0.0 if d == null else d.times[1], 0.0 if d == null else d.times[2],
 				-1.0 if d == null or d.time_to_impact == INF else d.time_to_impact, recovery.time_left, low]
 		var hits := probe.clearance(player) if OS.get_environment("JUMP_CLEAR") != "0" else {"count": 0, "names": ""}
-		line += " clear=%d" % hits.count
+		line += " depth=%.2f clear=%d" % [pose.clip_depth, hits.count]
 		if hits.count > 0:
 			clear_frames += 1
 			line += " " + hits.names
