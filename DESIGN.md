@@ -989,6 +989,10 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
   - Test: `render_jump.gd` (9 m: no foot under the ground; the feet hover about 0.05 m in the charge and landing; 0.4 s and 1 s charges play every clip). Clearance check (`render_jump.gd` CLEAR lines, leg, pelvis, torso and head armor boxes, so approximate): Beam Rifle at most 0.06 m (right fingers, head) over the whole jump; Auto Cannon + shield + pods: up to 0.6 m (shield frame, left thigh) as the guard comes on. The shield turns high and flat over the head in the guard: check the look. Headless tests (stability, hit reactions, weapon hands, ranges, range, break time): 0 failures.
 
 ## Reminders for the user
+- Open (2026-10-19): test phase 4 (jump and landing) in play with the Beam Rifle: 0.5 s, 1 s and 3 s charges (launch at the release), the rise, fall and landing (the rifle off the body, back in its own hold as the mech stands up), a walk-off of more than 1 m, a jump with W held.
+- Open (2026-10-19): the shield in the jump guard turns high and flat over the head. Decide: shield stays in its normal place during the jump (only the gun arm lifts), or keep it.
+- Open (2026-10-19): phase 3 items not tested by the user: Tab drop and pick-up, the respawn and part-break freeze fixes, the hammer combo with the input buffer, the SMG flinch count, the Shoulder Cannon values, the quarter weapon ranges (an AI with an SMG keeps 40 to 80 m away, outside the SMG's 65 m).
+- Open (2026-10-19): check the camera lead limit (15 degrees) and the torso turn speed in play.
 - Closed (2026-10-16): weapon cooldowns set by the user (see the stagger phase). Reloads not changed.
 
 - Closed: upload individual mech parts made with Hunyuan3D, to combine in Blender with proper joints. Done 2026-10-07 as Medium (`models/medium/medium.blend`).
