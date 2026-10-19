@@ -75,7 +75,7 @@ extends SkeletonModifier3D
 ## the weapon frame (weapons, shield, free hand places) rises straight up until its origin is at least
 ## this high above the feet (m; the torso frame stands about 5.6 m high), so the clip poses (Jumping_Up,
 ## Landing: deep lean, thighs high) keep the knees off the weapons and hands. The arms reach up toward it.
-@export var guard_height: float = 7.0
+@export var guard_height: float = 6.5
 
 @export_group("Guard")
 ## Guard (user choice 2026-10-19: "the arms lift the weapon up to the chest"): during the charge, a

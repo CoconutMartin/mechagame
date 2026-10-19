@@ -54,7 +54,7 @@ extends SkeletonModifier3D
 @export var guard_left: Vector3 = Vector3(-1.3, 0.9, -2.0)
 @export var guard_right: Vector3 = Vector3(1.3, 0.9, -2.0)
 ## Jump guard: the weapon frame moves this far forward (m, level) at full guard.
-@export var guard_forward: float = 1.0
+@export var guard_forward: float = 2.0
 @export var head_bone: StringName = &"head"
 ## In the sniping stance the right elbow tucks toward this direction (torso space: out to the side and
 ## a little down, inside max_lift_deg), like the reference's raised right elbow.
