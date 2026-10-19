@@ -16,19 +16,33 @@ static var _material: StandardMaterial3D
 
 
 ## Bars for the hole of a broken chunk. hole: its boxes, neighbors: [chunk, its boxes] pairs, all boxes
-## in the space of `space` (the building). per_face: bars per shared face (a range).
-static func spawn(space: Node3D, hole: Array[AABB], neighbors: Array, per_face: Vector2i, gap: float) -> void:
+## in the space of `space` (the building). per_face: bars on the face shared with each neighbor (a
+## range), most: bars for the whole hole.
+static func spawn(space: Node3D, hole: Array[AABB], neighbors: Array, per_face: Vector2i, gap: float,
+		most: int) -> void:
 	_setup()
+	var left := most
+	neighbors.shuffle()
 	for pair: Array in neighbors:
 		var other := pair[0] as UrbanChunk
-		if not is_instance_valid(other):
+		if not is_instance_valid(other) or left <= 0:
 			continue
+		# One shared face per neighbor (the largest), a few bars on it.
+		var best := AABB()
+		var best_hole := AABB()
+		var best_keep := AABB()
 		for box_a: AABB in hole:
 			for box_b: AABB in pair[1]:
 				var shared := box_a.grow(gap).intersection(box_b.grow(gap))
-				if not shared.has_volume():
-					continue
-				_bars_on_face(space, other, box_a, box_b, shared, randi_range(per_face.x, per_face.y))
+				if shared.has_volume() and shared.get_volume() > best.get_volume():
+					best = shared
+					best_hole = box_a
+					best_keep = box_b
+		if not best.has_volume():
+			continue
+		var count := mini(randi_range(per_face.x, per_face.y), left)
+		left -= count
+		_bars_on_face(space, other, best_hole, best_keep, best, count)
 
 
 ## Bars on the face shared by the hole box and the neighbor box; they point from the neighbor into the hole.

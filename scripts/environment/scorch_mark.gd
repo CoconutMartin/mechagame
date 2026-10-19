@@ -20,12 +20,16 @@ static var _material: StandardMaterial3D
 static func add(chunk: UrbanChunk, from: Vector3, size: float) -> void:
 	if from == Vector3.INF or not chunk.is_inside_tree():
 		return
-	var target := chunk.global_transform * _center(chunk)
-	if from.distance_squared_to(target) < 0.01:
-		return
-	var query := PhysicsRayQueryParameters3D.create(from, target + (target - from).normalized() * 2.0, chunk.collision_layer)
-	var hit := chunk.get_world_3d().direct_space_state.intersect_ray(query)
-	if hit.is_empty() or hit.collider != chunk:
+	# Toward each of its boxes, nearest first: the middle of a wall around a window is the opening.
+	var hit := {}
+	var space := chunk.get_world_3d().direct_space_state
+	for target in _box_centers(chunk, from):
+		var query := PhysicsRayQueryParameters3D.create(from, target + (target - from).normalized() * 2.0, chunk.collision_layer)
+		hit = space.intersect_ray(query)
+		if not hit.is_empty() and hit.collider == chunk:
+			break
+		hit = {}
+	if hit.is_empty():
 		return
 	_setup()
 	while _all.size() >= max_count:
@@ -46,15 +50,14 @@ static func add(chunk: UrbanChunk, from: Vector3, size: float) -> void:
 	mark.tree_exited.connect(func() -> void: _all.erase(mark))
 
 
-## The middle of the chunk's collision boxes (chunk space).
-static func _center(chunk: UrbanChunk) -> Vector3:
-	var sum := Vector3.ZERO
-	var count := 0
+## The middles of the chunk's collision boxes (world), nearest to `from` first.
+static func _box_centers(chunk: UrbanChunk, from: Vector3) -> Array[Vector3]:
+	var centers: Array[Vector3] = []
 	for child in chunk.get_children():
 		if child is CollisionShape3D:
-			sum += (child as CollisionShape3D).position
-			count += 1
-	return sum / count if count > 0 else Vector3.ZERO
+			centers.append((child as CollisionShape3D).global_position)
+	centers.sort_custom(func(a: Vector3, b: Vector3) -> bool: return a.distance_squared_to(from) < b.distance_squared_to(from))
+	return centers
 
 
 static func _setup() -> void:

@@ -9,7 +9,7 @@ const TEXTURE := preload("res://assets/textures/decals/crack_overlay.png")
 ## The shell stands this far out of the chunk's faces (m).
 const LIFT := 0.03
 ## Meters per crack texture repeat.
-const TEXTURE_SCALE_M := 3.0
+const TEXTURE_SCALE_M := 1.5
 
 static var _mesh: BoxMesh
 static var _material: StandardMaterial3D

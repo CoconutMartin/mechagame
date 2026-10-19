@@ -44,7 +44,9 @@ const NOT_CARRYING := [UrbanChunk.Kind.GLASS, UrbanChunk.Kind.DOOR]
 @export var scorch_blast_size: float = 3.5
 @export var scorch_shell_size: float = 1.6
 ## Bent bars on each face a broken concrete chunk shared with a standing neighbor (Rebar), a range.
-@export var rebar_per_face: Vector2i = Vector2i(2, 4)
+@export var rebar_per_face: Vector2i = Vector2i(1, 2)
+## Most bars for one broken chunk.
+@export var rebar_per_break: int = 6
 ## Materials whose breaks show rebar (MaterialDef.display_name).
 @export var rebar_materials: PackedStringArray = ["Concrete"]
 @export_group("")
@@ -154,7 +156,7 @@ func break_chunk(chunk: UrbanChunk) -> void:
 		for other: UrbanChunk in _links[chunk]:
 			if other.kind not in NOT_CARRYING:
 				neighbors.append([other, _boxes_of(other)])
-		Rebar.spawn(generator, _boxes_of(chunk), neighbors, rebar_per_face, touch_gap)
+		Rebar.spawn(generator, _boxes_of(chunk), neighbors, rebar_per_face, touch_gap, rebar_per_break)
 	_remove(chunk)
 	for box: AABB in _boxes_of(chunk):
 		shatter(Transform3D(generator.global_basis, generator.global_transform * box.get_center()), box.size,
