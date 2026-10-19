@@ -18,7 +18,7 @@ Since 2026-10-11 (user request) the game has one mech: **Sanggigilid** (the rigg
 | 6 | Pilot creation and skill tree | Skipped for now (user request, after Phase 5) |
 | 7 | Save/load builds (JSON) and 4 preset archetype loadouts | Skipped for now (user request, after Phase 5) |
 | 8 | Realistic graphics pass and complete mech animation | Done: 8a graphics (materials, CC0 textures), 8b animation (hit reactions, foot planting, idle motion, turn steps) |
-| Urban | Urban map (replaces the Phase 4 test map): layout, buildings from data, props, textures, lighting; then destruction | Checkpoint 1 done (layout, textures, props, no building destruction yet). Checkpoint 2 (destruction) next |
+| Urban | Urban map (replaces the Phase 4 test map): layout, buildings from data, props, textures, lighting; then destruction | Checkpoint 1 and 2 done (2026-10-12: break, support, collapse, craters). New phase 5 (2026-10-19): destruction improvements, see "Phase 5: building destruction" |
 
 ## Controls
 
@@ -980,6 +980,11 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 
 - Handoff 2026-10-18: `docs/HANDOFF_phase3_melee_arms.md` (next: ask about the untested items, then phase 4 jump and landing).
 
+- Phase 5: building destruction improvements (user answers 2026-10-19; building destruction already exists, see "Building damage"). Steps in this order:
+  - 5a Performance: measure the frame time in big breaks and collapses (`tools/godot/test_building_perf.gd`, cases office, tower, shoot, walk) and fix the worst costs, so 5b and 5c start from a fast base.
+  - 5b Break look: crack stage (a chunk below 50% HP shows cracks and turns darker), jagged pieces (a broken chunk splits into 3 to 6 rough pieces in place of plain boxes), rebar (bent steel bars at concrete break edges), scorch (missile and cannon hits leave black burn marks).
+  - 5c Collapse feel: the part above a failed floor tilts toward the damaged side and falls as one mass, then breaks on the ground; a big dust cloud spreads over the street and clears slowly; the ground shakes the camera of nearby mechs (stronger when closer). No warning creak.
+  - 5d Gameplay: falling debris keeps 0 damage and no stagger (user choice); add a camera shake when a mech goes through a building.
 - Phase 4: jump and landing clips (user answers 2026-10-18), awaiting the user's look check:
   - Jumping_Up (`data/animations/jump_up.res`, `data/jump_clips/jump_up.tres`) drives the charge crouch (clip 0 to 0.55 s follows the charge), the push (0.55 to 0.88 s) and the tuck while rising (0.88 s to the end, timed to end at 85% of the rise, then held). Jumping_Down stays the fall pose.
   - Launch at the release (user choice 2026-10-19, replaces the 0.45 s ground push): `MechJumpCharge.push_time` 0. The rest of the push (crouch to takeoff) plays in the first 0.12 s of the rise (`JumpClipDirector.air_push_time`), then the tuck. A push_time above 0 still gives a ground push (`is_pushing`). Height and hang time are unchanged.
