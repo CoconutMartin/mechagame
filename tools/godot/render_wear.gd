@@ -42,17 +42,17 @@ func _run() -> void:
 	var min_z := INF
 	for chunk: UrbanChunk in building.chunks:
 		if chunk.kind == UrbanChunk.Kind.WALL:
-			min_z = minf(min_z, chunk.position.z)
+			min_z = minf(min_z, _local(building, chunk).z)
 	for chunk: UrbanChunk in building.chunks:
-		if chunk.kind == UrbanChunk.Kind.WALL and chunk.position.z < min_z + 0.5 and chunk.floor_index in [1, 2]:
+		if chunk.kind == UrbanChunk.Kind.WALL and _local(building, chunk).z < min_z + 0.5 and chunk.floor_index in [1, 2]:
 			front.append(chunk)
 	front.sort_custom(func(a: UrbanChunk, b: UrbanChunk) -> bool:
-		return a.floor_index * 1000 + a.position.x < b.floor_index * 1000 + b.position.x)
+		return a.floor_index * 1000 + _local(building, a).x < b.floor_index * 1000 + _local(building, b).x)
 	print("front wall chunks on floors 1 and 2: ", front.size())
 	var normal := -building.global_basis.z
 	var middle := Vector3.ZERO
 	for chunk in front:
-		middle += chunk.global_position
+		middle += _center(chunk)
 	middle /= front.size()
 	var camera := Camera3D.new()
 	camera.fov = 55.0
@@ -74,21 +74,37 @@ func _run() -> void:
 	await _shot("wear_1_cracks")
 	# 2: a blast in front of one chunk, a heavy shell on another.
 	var blast_target: UrbanChunk = front[mini(3, count - 1)]
-	blast_target.on_hit(1.0, blast_target.global_position + normal * 2.0, &"blast")
+	blast_target.on_hit(1.0, _center(blast_target) + normal * 2.0, &"blast")
 	var shell_target: UrbanChunk = front[mini(half + 3, count - 1)]
-	shell_target.on_hit(160.0, shell_target.global_position + normal * 10.0, &"")
+	shell_target.on_hit(160.0, _center(shell_target) + normal * 10.0, &"")
 	await _frames(3)
 	await _shot("wear_2_scorch")
 	# 3: a concrete chunk breaks (rebar on its neighbors, rubble).
 	var broken: UrbanChunk = front[mini(half + 2, count - 1)]
-	broken.on_hit(1.0e9, broken.global_position + normal * 10.0, &"")
+	var hole := _center(broken)
+	broken.on_hit(1.0e9, hole + normal * 10.0, &"")
 	await _frames(12)
 	await _shot("wear_3_break")
-	await _frames(180)
+	await _frames(100)
 	await _shot("wear_4_rubble")
 	# Close view of the hole.
-	camera.global_position = broken.global_position + normal * 6.0 + Vector3.UP * 0.5 + building.global_basis.x * 2.0
-	camera.look_at(broken.global_position, Vector3.UP)
+	camera.global_position = hole + normal * 6.0 + Vector3.UP * 0.5 + building.global_basis.x * 2.0
+	camera.look_at(hole, Vector3.UP)
 	await _frames(3)
 	await _shot("wear_5_hole_close")
 	quit()
+
+
+## The middle of a chunk's collision boxes (world). Chunk nodes stand at the building origin.
+func _center(chunk: UrbanChunk) -> Vector3:
+	var sum := Vector3.ZERO
+	var count := 0
+	for child in chunk.get_children():
+		if child is CollisionShape3D:
+			sum += (child as CollisionShape3D).global_position
+			count += 1
+	return sum / count if count > 0 else chunk.global_position
+
+
+func _local(building: Node3D, chunk: UrbanChunk) -> Vector3:
+	return building.global_transform.affine_inverse() * _center(chunk)
