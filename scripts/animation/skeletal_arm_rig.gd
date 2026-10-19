@@ -647,8 +647,7 @@ func refresh_torso() -> void:
 		return
 	torso.global_transform = (_skeleton.global_transform * _skeleton.get_bone_global_pose(_skeleton.find_bone(torso_bone)).orthonormalized() \
 			* _torso_offset).orthonormalized()
-	if jump_pose != null:
-		torso.global_transform = torso.global_transform.translated_local(jump_pose.weapon_offset())
+	_jump_lift()
 	_follow_shoulders()
 
 
@@ -659,6 +658,17 @@ func _follow_shoulders() -> void:
 		var bone: int = entry[1]
 		(entry[0] as Node3D).global_transform = (skin * _skeleton.get_bone_global_pose(bone).orthonormalized() \
 				* (entry[2] as Transform3D)).orthonormalized()
+
+
+## Jump crouch lift (SkeletalJumpPose.weapon_offset, torso space) and jump guard rise (straight up).
+func _jump_lift() -> void:
+	if jump_pose == null:
+		return
+	torso.global_transform = torso.global_transform.translated_local(jump_pose.weapon_offset())
+	if jump_pose.mech != null:
+		var up := jump_pose.mech.global_basis.y.normalized()
+		var height := (torso.global_position - jump_pose.mech.global_position).dot(up)
+		torso.global_position += up * jump_pose.guard_rise(height)
 
 
 ## Jump guard: a relaxed arm (free or fist hand) aims at a place between its hang marker and the guard
@@ -983,8 +993,7 @@ func _process_modification_with_delta(delta: float) -> void:
 			* _torso_offset).orthonormalized()
 	# Jump and landing crouch: the weapon frame (weapons, shield, free hand places) lifts, so the thighs
 	# coming up keep off the arms.
-	if jump_pose != null:
-		torso.global_transform = torso.global_transform.translated_local(jump_pose.weapon_offset())
+	_jump_lift()
 	var active: Array[Dictionary] = []
 	# A fist arm that the punch clip drives (no IK target) gets the hang pose under the clip: its target
 	# is the hang marker only inside this solve, so SkeletalMeleeAnimation (after this node) still sees no

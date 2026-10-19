@@ -71,14 +71,15 @@ extends SkeletonModifier3D
 ## The weapon frame (held weapons, shield, free hand places) moves this much (torso space: +Y up, -Z
 ## forward) at the deepest crouch, so the thighs coming up keep off the arms (SkeletalArmRig).
 @export var weapon_lift: Vector3 = Vector3(0.0, 0.8, -0.15)
-## Jump guard lift (user choice 2026-10-19: "the arms lift the weapon up to the chest"): the weapon
-## frame moves this much at full guard, so the clip poses (Jumping_Up, Landing: deeper lean, thighs
-## higher) keep the knees off the weapons and hands.
-@export var clip_weapon_lift: Vector3 = Vector3(0.0, 2.8, -0.3)
+## Jump guard height (user choice 2026-10-19: "the arms lift the weapon up to the chest"): at full guard
+## the weapon frame (weapons, shield, free hand places) rises straight up until its origin is at least
+## this high above the feet (m; the torso frame stands about 5.6 m high), so the clip poses (Jumping_Up,
+## Landing: deep lean, thighs high) keep the knees off the weapons and hands. The arms reach up toward it.
+@export var guard_height: float = 7.0
 
 @export_group("Guard")
 ## Guard (user choice 2026-10-19: "the arms lift the weapon up to the chest"): during the charge, a
-## clip jump, the fall and the landing clip the weapon frame lifts by clip_weapon_lift and free or fist
+## clip jump, the fall and the landing clip the weapon frame rises to guard_height and free or fist
 ## hands go to a guard place in front of the chest (SkeletalArmRig), so the knees coming up keep off the
 ## weapons and hands. How fast the guard comes on and goes off (per second).
 @export var guard_in_speed: float = 4.0
@@ -130,9 +131,12 @@ func _ready() -> void:
 
 ## Weapon offset now (torso space): weapon_lift by the crouch or landing depth.
 func weapon_offset() -> Vector3:
-	var coded := weapon_lift * clampf(maxf(crouch, landing), 0.0, 1.0)
-	var clip := clip_weapon_lift * smoothstep(0.0, 1.0, guard)
-	return clip if clip.y > coded.y else coded
+	return weapon_lift * clampf(maxf(crouch, landing), 0.0, 1.0)
+
+
+## Jump guard: how far (m) the weapon frame rises straight up when its origin is height m above the feet.
+func guard_rise(height: float) -> float:
+	return maxf(guard_height - height, 0.0) * smoothstep(0.0, 1.0, guard)
 
 
 func _process_modification_with_delta(delta: float) -> void:
