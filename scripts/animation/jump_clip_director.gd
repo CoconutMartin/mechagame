@@ -3,8 +3,9 @@ extends RefCounted
 ## Decides which jump, fall and landing clips play and at which time (user requests 2026-10-15 and
 ## phase 4, 2026-10-18). Three layers, each over the one before it (the last one that is full hides the rest):
 ##   0 jump_up (Jumping_Up): its crouch follows the jump charge (0 to crouch_time), the release plays the
-##     push to takeoff_time over MechJumpCharge.push_time, and the rest of the clip (the legs tuck) plays
-##     while the mech rises, timed to end near the top of the jump, then holds.
+##     push to takeoff_time (over MechJumpCharge.push_time on the ground, or in air_push_time after the
+##     launch when push_time is 0), and the rest of the clip (the legs tuck) plays while the mech rises,
+##     timed to end near the top of the jump, then holds.
 ##   1 fall_start (Jumping_Down): from the top of a jump or the walk off an edge, the start of the fall;
 ##     it plays to its hold frame and holds while the mech is in the air.
 ##   2 landing (Landing): the clip time follows the predicted time to impact (ray down, gravity), so its
@@ -35,6 +36,8 @@ var max_land_speed: float = 1.5
 var rise_part: float = 0.85
 var min_rise_speed: float = 0.25
 var max_rise_speed: float = 1.5
+## Seconds the push (crouch to takeoff_time) takes in the air when the mech launches at the release.
+var air_push_time: float = 0.12
 
 ## Per layer now.
 var weights: Array[float] = [0.0, 0.0, 0.0]
@@ -100,12 +103,13 @@ func _update_charge(targets: Array[float]) -> void:
 	if jump_charge == null or not jump_charge.is_charging:
 		_release_time = -1.0
 		return
+	# A launch can follow in any frame of the charge.
+	_rising = true
 	targets[0] = 1.0
 	if jump_charge.is_pushing:
 		if _release_time < 0.0:
 			_release_time = times[0]
 		times[0] = lerpf(_release_time, jump_up.takeoff_time, smoothstep(0.0, 1.0, jump_charge.push))
-		_rising = true
 	else:
 		_release_time = -1.0
 		times[0] = jump_up.crouch_time * smoothstep(0.0, 1.0, jump_charge.charge)
@@ -118,13 +122,24 @@ func _update_rise(delta: float, targets: Array[float]) -> void:
 	if mech.velocity.y <= 0.0:
 		_rising = false
 		return
+	var hold := jump_up.get_hold_time()
 	if _air_time <= delta * 1.5:
 		var rise_time := mech.velocity.y / maxf(_gravity * mech.gravity_scale, 0.1)
-		var span := jump_up.get_hold_time() - jump_up.takeoff_time
-		_rise_speed = clampf(span / maxf(rise_time * rise_part, 0.05), min_rise_speed, max_rise_speed)
-		times[0] = jump_up.takeoff_time
+		var span := hold - jump_up.takeoff_time
+		var push_left := maxf(jump_up.takeoff_time - times[0], 0.0) / _air_push_speed()
+		var tuck_time := maxf(rise_time * rise_part - push_left, 0.05)
+		_rise_speed = clampf(span / tuck_time, min_rise_speed, max_rise_speed)
 	targets[0] = 1.0
-	times[0] = minf(times[0] + delta * _rise_speed, jump_up.get_hold_time())
+	if times[0] < jump_up.takeoff_time:
+		# Launched at the release: the rest of the push, fast.
+		times[0] = minf(times[0] + delta * _air_push_speed(), jump_up.takeoff_time)
+	else:
+		times[0] = minf(times[0] + delta * _rise_speed, hold)
+
+
+## Clip seconds per second of the push in the air (crouch_time to takeoff_time in air_push_time).
+func _air_push_speed() -> float:
+	return (jump_up.takeoff_time - jump_up.crouch_time) / maxf(air_push_time, 0.01)
 
 
 ## In the air: the fall start, then the touchdown clip by the predicted time to impact.

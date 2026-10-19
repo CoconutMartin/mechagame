@@ -5,8 +5,9 @@ extends Node
 ## Height = full_height x charge. The charge follows height_at_second:
 ## 1 s = 33%, 2 s = 63%, 3 s = 100%. Values between whole seconds are blended.
 ## Charging uses energy at a steady rate. If energy runs out, the charge stops growing.
-## Push (phase 4, user choice 2026-10-18 "heavy, slow push"): after the release the legs push off for
-## push_time on the ground (is_pushing; the mech still counts as charging and stands still), then it launches.
+## Push (phase 4): with push_time above 0 the legs push off for push_time on the ground after the release
+## (is_pushing; the mech still counts as charging and stands still), then it launches. User choice
+## 2026-10-19: 0, the mech launches as soon as jump is released.
 
 @export var mech: Mech
 @export var input: MechInput
@@ -26,7 +27,7 @@ extends Node
 ## This lets you release the move key and Space at the same time.
 @export var direction_memory: float = 0.25
 ## Seconds of the leg push on the ground between the release and the launch (0 = launch at once).
-@export var push_time: float = 0.45
+@export var push_time: float = 0.0
 
 ## 0 to 1: fraction of full height while charging.
 var charge: float = 0.0
