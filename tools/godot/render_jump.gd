@@ -259,7 +259,8 @@ class LegProbe extends SkeletonModifier3D:
 							var d := minf(inner.x, minf(inner.y, inner.z)) + CLEAR_MARGIN
 							if d > deepest:
 								deepest = d
-								deepest_name = "%s>%s" % [_label(mesh), leg.name]
+								var rel := player.global_transform.affine_inverse() * (skeleton.global_transform * local)
+								deepest_name = "%s>%s@(%.1f,%.1f,%.1f)%s" % [_label(mesh), leg.name, rel.x, rel.y, rel.z, mesh.get_path()]
 							break
 					if hit != "":
 						break

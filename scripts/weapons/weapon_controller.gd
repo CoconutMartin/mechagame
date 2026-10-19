@@ -138,7 +138,7 @@ var _picking_left: bool = false
 ## Seconds left that a fist arm stays free for the punch clip.
 var _swing_hold: float = 0.0
 var _melee: SkeletalMeleeAnimation
-
+var _jump_pose: SkeletalJumpPose
 
 func _ready() -> void:
 	# After MechInput (-10), before WeaponPose (5) and the weapons.
@@ -1130,6 +1130,13 @@ func _two_handed() -> bool:
 	return right_data != null and right_data.two_handed
 
 
+## True while the jump guard holds one-hand guns up (SkeletalJumpPose.guard, user choice 2026-10-19).
+func _jump_guard() -> bool:
+	if _jump_pose == null:
+		_jump_pose = mech.find_child("JumpPose", true, false) as SkeletalJumpPose
+	return _jump_pose != null and _jump_pose.guard > 0.5
+
+
 func _physics_process(delta: float) -> void:
 	_update_fist_arms(delta)
 	if mech.is_wrecked or mech.is_fallen:
@@ -1173,12 +1180,12 @@ func _physics_process(delta: float) -> void:
 			# slowly (WeaponPose.lower_speed), so walking comes back early in the lowering.
 			input.stance_lock = weapon_pose.wants_raise or weapon_pose.aim_amount > 0.85
 		else:
-			weapon_pose.wants_raise = input.fire_held and right_on and right_data.kind == WeaponData.Kind.GUN
+			weapon_pose.wants_raise = right_data.kind == WeaponData.Kind.GUN and ((input.fire_held and right_on) or _jump_guard())
 		if input.reload_pressed:
 			right_weapon.start_reload()
 	# A one-hand gun in the left hand: raised while LMB is held, like the right one on RMB.
 	if left_weapon != null and left_pose != null and not left_weapon is MeleeWeapon:
-		left_pose.wants_raise = input.left_fire_held and _may_fire(left_weapon) and left_data.kind == WeaponData.Kind.GUN
+		left_pose.wants_raise = left_data.kind == WeaponData.Kind.GUN and ((input.left_fire_held and _may_fire(left_weapon)) or _jump_guard())
 		if input.reload_pressed:
 			left_weapon.start_reload()
 	if input.reload_pressed:

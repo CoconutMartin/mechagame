@@ -74,6 +74,14 @@ extends SkeletonModifier3D
 ## The same for the clip poses (Jumping_Up, Landing: deeper lean, thighs higher), at clip_depth 1.
 @export var clip_weapon_lift: Vector3 = Vector3(0.0, 1.4, -0.5)
 
+@export_group("Guard")
+## Guard (user choice 2026-10-19: "the arms lift the weapon up to the chest"): during the charge, a
+## clip jump, the fall and the landing clip, one-hand guns take their raised hold (WeaponController) and
+## free or fist hands go to a guard place in front of the chest (SkeletalArmRig), so the knees coming up
+## keep off the hands. How fast the guard comes on and goes off (per second).
+@export var guard_in_speed: float = 4.0
+@export var guard_out_speed: float = 2.5
+
 @export_group("Clips")
 ## Jumping_Up: the charge crouch, the push and the tuck while rising.
 @export var jump_up_clip: AirClip = preload("res://data/jump_clips/jump_up.tres")
@@ -104,6 +112,8 @@ var landing: float = 0.0
 var director: JumpClipDirector
 ## Crouch depth of the clip pose now (0 to 1), for the weapon lift.
 var clip_depth: float = 0.0
+## Guard now (0 to 1): see guard_in_speed.
+var guard: float = 0.0
 
 var _clip_body: AirClipBody
 var _landing_speed: float = 0.0
@@ -191,6 +201,8 @@ func _update_weights(delta: float) -> void:
 	var on_floor := mech.is_on_floor()
 	# A: the crouch follows the charge; the launch (charge back to 0) lets go fast.
 	var charging := jump_charge != null and jump_charge.is_charging and on_floor and free
+	var guard_on := free and (charging or director.is_active())
+	guard = move_toward(guard, 1.0 if guard_on else 0.0, (guard_in_speed if guard_on else guard_out_speed) * delta)
 	var crouch_target := smoothstep(0.0, 1.0, jump_charge.charge) if charging else 0.0
 	crouch = move_toward(crouch, crouch_target, (charge_in_speed if crouch_target > crouch else charge_out_speed) * delta)
 	# A2 and B0: the flight of a jump or a fall (not a dodge hop or the boost exit leap).

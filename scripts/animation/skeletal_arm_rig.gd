@@ -49,6 +49,10 @@ extends SkeletonModifier3D
 @export var stance: SkeletalAimStance
 ## Optional. The jump and landing crouch lifts the weapon frame (SkeletalJumpPose.weapon_offset).
 @export var jump_pose: SkeletalJumpPose
+## Jump guard (SkeletalJumpPose.guard): free and fist hands go to these places (torso frame: +X right,
+## +Y up, -Z forward) in front of the chest.
+@export var guard_left: Vector3 = Vector3(-1.3, 0.9, -2.0)
+@export var guard_right: Vector3 = Vector3(1.3, 0.9, -2.0)
 @export var head_bone: StringName = &"head"
 ## In the sniping stance the right elbow tucks toward this direction (torso space: out to the side and
 ## a little down, inside max_lift_deg), like the reference's raised right elbow.
@@ -150,6 +154,7 @@ extends SkeletonModifier3D
 @export_group("")
 
 var _skeleton: Skeleton3D
+var _guard_markers: Array[Marker3D] = [null, null]
 var _torso_offset: Transform3D
 var _sides: Array[Dictionary] = []
 ## Seconds since the last modification (the elbow speed limit).
@@ -656,6 +661,36 @@ func _follow_shoulders() -> void:
 				* (entry[2] as Transform3D)).orthonormalized()
 
 
+## Jump guard: a relaxed arm (free or fist hand) aims at a place between its hang marker and the guard
+## place, by SkeletalJumpPose.guard. Returns {ik: its own target} to put back after the solve.
+func _guard_hands(active: Array[Dictionary]) -> Dictionary:
+	var swapped := {}
+	if jump_pose == null or jump_pose.guard <= 0.001:
+		return swapped
+	for side in active:
+		var ik := side.ik as TwoBoneIK
+		if not _is_relaxed(ik):
+			continue
+		var right := ik == ik_right
+		var marker := _guard_marker(right)
+		var place := torso.global_transform * (guard_right if right else guard_left)
+		marker.global_transform = Transform3D(ik.target.global_basis,
+				ik.target.global_position.lerp(place, smoothstep(0.0, 1.0, jump_pose.guard)))
+		swapped[ik] = ik.target
+		ik.target = marker
+	return swapped
+
+
+func _guard_marker(right: bool) -> Marker3D:
+	var key := 1 if right else 0
+	if _guard_markers[key] == null:
+		var marker := Marker3D.new()
+		marker.name = "HandGuardR" if right else "HandGuardL"
+		torso.add_child(marker)
+		_guard_markers[key] = marker
+	return _guard_markers[key]
+
+
 ## True when the arm's IK goes to a relaxed hang marker (a free or fist hand).
 func _is_relaxed(ik: TwoBoneIK) -> bool:
 	return weapons != null and ik.target != null and (ik.target == weapons.free_left_hand or ik.target == weapons.free_right_hand)
@@ -966,11 +1001,14 @@ func _process_modification_with_delta(delta: float) -> void:
 				borrowed.append(ik)
 		if ik.target != null and ik.can_process():
 			active.append(side)
+	var guarded := _guard_hands(active)
 	_solve_arms(active)
 	for side in active:
 		_swing_relaxed(side)
 		_pose_arm(side)
 		_clip_swing(side, side.ik == ik_right)
+	for ik: TwoBoneIK in guarded:
+		ik.target = guarded[ik]
 	for ik in borrowed:
 		ik.target = null
 	_update_raise_amount(delta)
