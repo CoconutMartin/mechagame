@@ -39,7 +39,7 @@ func _run() -> void:
 		case = "office"
 	var frames := int(OS.get_environment("PERF_FRAMES")) if OS.get_environment("PERF_FRAMES") != "" else 360
 	var player := map.get_tree().get_first_node_in_group(&"player") as Mech
-	var queue: Array[UrbanChunk] = []
+	var queue: Array = []
 	match case:
 		"office":
 			queue = _ground_chunks(map, "Office5F")
@@ -65,9 +65,10 @@ func _run() -> void:
 		for i in count:
 			if queue.is_empty():
 				break
-			var chunk: UrbanChunk = queue.pop_back()
-			if is_instance_valid(chunk) and chunk.is_inside_tree():
-				chunk.on_hit(1.0e9)
+			# Untyped: a queued chunk can be freed meanwhile (it fell or broke).
+			var chunk: Variant = queue.pop_back()
+			if is_instance_valid(chunk) and (chunk as UrbanChunk).is_inside_tree():
+				(chunk as UrbanChunk).on_hit(1.0e9)
 		await _frames(1)
 		var now := Time.get_ticks_usec()
 		var ms := (now - last) / 1000.0
