@@ -73,6 +73,8 @@ func _run() -> void:
 		var ms := (now - last) / 1000.0
 		last = now
 		_times.append(ms)
+		if frame % 30 == 0:
+			print("  f%d %.1f ms, %d chunks left in the queue" % [frame, ms, queue.size()])
 		log.append("f%d ms=%.1f phys=%.1f proc=%.1f rubble=%d falling=%d nodes=%d draws=%d" % [frame, ms,
 				Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 				Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
