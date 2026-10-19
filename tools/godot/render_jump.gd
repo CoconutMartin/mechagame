@@ -9,7 +9,7 @@ extends SceneTree
 ## Environment: JUMP_CHARGE (s, default 3), JUMP_OUT, JUMP_STEP (frames between pictures, default 6),
 ## JUMP_WEAPONS ("" = the map loadout; else slot=weapon pairs, e.g.
 ## "right=auto_cannon,left=warden_shield,back_left=missile_pod_l,back_right=missile_pod_r", "-" = empty),
-## JUMP_FALL (a start height in m: the mech is dropped from there), JUMP_VIEW (side, front, front_left), JUMP_CAM_DIST (m, default 30), JUMP_FOV (degrees, default 32),
+## JUMP_FALL (a start height in m: the mech is dropped from there), JUMP_VIEW (side, front, front_left, game: the game camera), JUMP_CAM_DIST (m, default 30), JUMP_FOV (degrees, default 32),
 ## JUMP_CLEAR=0 (no clearance check: faster),
 ## JUMP_CLEAR_EVERY (check every n frames), JUMP_STOP_AT (s), JUMP_LIFT ("x,y,z": SkeletalJumpPose.clip_weapon_lift).
 ## Clearance (phase 4, 2026-10-19): every frame the points of the weapon, shield, pod and hand meshes are
@@ -63,10 +63,11 @@ func _run() -> void:
 			side = forward
 		"front_left":
 			side = (forward - forward.cross(Vector3.UP)).normalized()
+	var game_view := OS.get_environment("JUMP_VIEW") == "game"
 	var camera := Camera3D.new()
 	camera.fov = float(OS.get_environment("JUMP_FOV")) if OS.get_environment("JUMP_FOV") != "" else 32.0
 	map.add_child(camera)
-	camera.current = true
+	camera.current = not game_view
 	_hide_trees_near(map, player.global_position + side * 40.0, player.global_position)
 	var probe := LegProbe.new()
 	probe.mech = player
@@ -151,7 +152,8 @@ func _run() -> void:
 			clear_worst_t = t
 			clear_worst_names = hits.names
 		log.append(line)
-		_follow(camera, player, side, origin)
+		if not game_view:
+			_follow(camera, player, side, origin)
 		# During the charge only the last pictures are saved.
 		var wanted := frame % step == 0 and (released or t >= charge - 0.4 or drop > 0.0)
 		if _render and wanted and shot < 400:

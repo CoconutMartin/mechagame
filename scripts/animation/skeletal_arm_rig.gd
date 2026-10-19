@@ -53,6 +53,8 @@ extends SkeletonModifier3D
 ## +Y up, -Z forward) in front of the chest.
 @export var guard_left: Vector3 = Vector3(-1.3, 0.9, -2.0)
 @export var guard_right: Vector3 = Vector3(1.3, 0.9, -2.0)
+## Jump guard: the weapon frame moves this far forward (m, level) at full guard.
+@export var guard_forward: float = 1.0
 @export var head_bone: StringName = &"head"
 ## In the sniping stance the right elbow tucks toward this direction (torso space: out to the side and
 ## a little down, inside max_lift_deg), like the reference's raised right elbow.
@@ -665,10 +667,22 @@ func _jump_lift() -> void:
 	if jump_pose == null:
 		return
 	torso.global_transform = torso.global_transform.translated_local(jump_pose.weapon_offset())
-	if jump_pose.mech != null:
-		var up := jump_pose.mech.global_basis.y.normalized()
-		var height := (torso.global_position - jump_pose.mech.global_position).dot(up)
-		torso.global_position += up * jump_pose.guard_rise(height)
+	if jump_pose.mech == null or jump_pose.guard <= 0.001:
+		return
+	# The guard: the frame turns level (the torso lean taken out, the turn about the up axis kept), moves
+	# forward and rises, so the held weapons keep off the leaning body and the knees (user report
+	# 2026-10-19: the rifle went into the body in the landing).
+	var amount := smoothstep(0.0, 1.0, jump_pose.guard)
+	var up := jump_pose.mech.global_basis.y.normalized()
+	var forward := -torso.global_basis.z
+	forward = (forward - up * forward.dot(up)).normalized()
+	if forward.length_squared() > 0.5:
+		var level := Basis.looking_at(forward, up)
+		var turned := Quaternion(torso.global_basis.orthonormalized()).slerp(Quaternion(level), amount)
+		torso.global_basis = Basis(turned)
+		torso.global_position += forward * guard_forward * amount
+	var height := (torso.global_position - jump_pose.mech.global_position).dot(up)
+	torso.global_position += up * jump_pose.guard_rise(height)
 
 
 ## Jump guard: a relaxed arm (free or fist hand) aims at a place between its hang marker and the guard
