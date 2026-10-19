@@ -10,7 +10,8 @@ extends SceneTree
 ## JUMP_WEAPONS ("" = the map loadout; else slot=weapon pairs, e.g.
 ## "right=auto_cannon,left=warden_shield,back_left=missile_pod_l,back_right=missile_pod_r", "-" = empty),
 ## JUMP_FALL (a start height in m: the mech is dropped from there), JUMP_VIEW (side, front, front_left), JUMP_CAM_DIST (m, default 30), JUMP_FOV (degrees, default 32),
-## JUMP_CLEAR=0 (no clearance check: faster).
+## JUMP_CLEAR=0 (no clearance check: faster),
+## JUMP_CLEAR_EVERY (check every n frames), JUMP_STOP_AT (s), JUMP_LIFT ("x,y,z": SkeletalJumpPose.clip_weapon_lift).
 ## Clearance (phase 4, 2026-10-19): every frame the points of the weapon, shield, pod and hand meshes are
 ## tested against the leg armor boxes (each leg mesh's rest box on its main bone, CLEAR_MARGIN smaller);
 ## the log column "clear" counts the points inside, and the summary names the worst frame and the meshes.
@@ -71,6 +72,9 @@ func _run() -> void:
 	probe.mech = player
 	(player.find_child("Skeleton3D", true, false) as Skeleton3D).add_child(probe)
 	var pose := player.find_child("JumpPose", true, false) as SkeletalJumpPose
+	if OS.get_environment("JUMP_LIFT") != "":
+		var v := OS.get_environment("JUMP_LIFT").split_floats(",")
+		pose.clip_weapon_lift = Vector3(v[0], v[1], v[2])
 	var recovery := player.landing_recovery
 	await _frames(5)
 	var origin := player.global_position
@@ -132,7 +136,8 @@ func _run() -> void:
 				t, phase, height, player.velocity.y, pose.crouch, pose.landing, pose.air, w[0], w[1], w[2],
 				0.0 if d == null else d.times[0], 0.0 if d == null else d.times[1], 0.0 if d == null else d.times[2],
 				-1.0 if d == null or d.time_to_impact == INF else d.time_to_impact, recovery.time_left, low]
-		var hits := probe.clearance(player) if OS.get_environment("JUMP_CLEAR") != "0" else {"count": 0, "names": "", "depth": 0.0, "deepest": ""}
+		var every := int(OS.get_environment("JUMP_CLEAR_EVERY")) if OS.get_environment("JUMP_CLEAR_EVERY") != "" else 1
+		var hits := probe.clearance(player) if OS.get_environment("JUMP_CLEAR") != "0" and frame % every == 0 else {"count": 0, "names": "", "depth": 0.0, "deepest": ""}
 		line += " depth=%.2f clear=%d in=%.2f %s" % [pose.clip_depth, hits.count, hits.depth, hits.deepest]
 		if hits.count > 0:
 			clear_frames += 1
@@ -154,6 +159,8 @@ func _run() -> void:
 			var image := root.get_viewport().get_texture().get_image()
 			image.save_png("%s/jump_%03d_%s.png" % [_out_dir, shot, phase])
 			shot += 1
+		if OS.get_environment("JUMP_STOP_AT") != "" and t >= float(OS.get_environment("JUMP_STOP_AT")):
+			break
 		if landed_frame >= 0 and not recovery.is_recovering() and frame > landed_frame + 90:
 			break
 	var file := FileAccess.open(_out_dir + "/jump_log.txt", FileAccess.WRITE)
