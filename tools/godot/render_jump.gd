@@ -11,7 +11,8 @@ extends SceneTree
 ## "right=auto_cannon,left=warden_shield,back_left=missile_pod_l,back_right=missile_pod_r", "-" = empty),
 ## JUMP_FALL (a start height in m: the mech is dropped from there), JUMP_VIEW (side, front, front_left, game: the game camera), JUMP_CAM_DIST (m, default 30), JUMP_FOV (degrees, default 32),
 ## JUMP_CLEAR=0 (no clearance check: faster),
-## JUMP_CLEAR_EVERY (check every n frames), JUMP_STOP_AT (s), JUMP_GUARD_HEIGHT (m), JUMP_GUARD_FORWARD (m).
+## JUMP_CLEAR_EVERY (check every n frames), JUMP_STOP_AT (s), JUMP_GUARD_HEIGHT (m), JUMP_GUARD_FORWARD (m),
+## JUMP_TAIL (frames after the landing before the run ends, default 90).
 ## Clearance (phase 4, 2026-10-19): every frame the points of the weapon, shield, pod and hand meshes are
 ## tested against the leg, pelvis, torso and head armor boxes (each leg mesh's rest box on its main bone, CLEAR_MARGIN smaller);
 ## the log column "clear" counts the points inside, and the summary names the worst frame and the meshes.
@@ -140,7 +141,7 @@ func _run() -> void:
 				-1.0 if d == null or d.time_to_impact == INF else d.time_to_impact, recovery.time_left, low]
 		var every := int(OS.get_environment("JUMP_CLEAR_EVERY")) if OS.get_environment("JUMP_CLEAR_EVERY") != "" else 1
 		var hits := probe.clearance(player) if OS.get_environment("JUMP_CLEAR") != "0" and frame % every == 0 else {"count": 0, "names": "", "depth": 0.0, "deepest": ""}
-		line += " depth=%.2f clear=%d in=%.2f %s" % [pose.clip_depth, hits.count, hits.depth, hits.deepest]
+		line += " guard=%.2f depth=%.2f clear=%d in=%.2f %s" % [pose.guard, pose.clip_depth, hits.count, hits.depth, hits.deepest]
 		if hits.count > 0:
 			clear_frames += 1
 			line += " " + hits.names
@@ -164,7 +165,8 @@ func _run() -> void:
 			shot += 1
 		if OS.get_environment("JUMP_STOP_AT") != "" and t >= float(OS.get_environment("JUMP_STOP_AT")):
 			break
-		if landed_frame >= 0 and not recovery.is_recovering() and frame > landed_frame + 90:
+		var tail := int(OS.get_environment("JUMP_TAIL")) if OS.get_environment("JUMP_TAIL") != "" else 90
+		if landed_frame >= 0 and not recovery.is_recovering() and frame > landed_frame + tail:
 			break
 	var file := FileAccess.open(_out_dir + "/jump_log.txt", FileAccess.WRITE)
 	for line in log:

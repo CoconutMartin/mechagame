@@ -84,6 +84,9 @@ extends SkeletonModifier3D
 ## weapons and hands. How fast the guard comes on and goes off (per second).
 @export var guard_in_speed: float = 4.0
 @export var guard_out_speed: float = 2.5
+## The guard goes off this many seconds before the landing recovery ends, so the weapons are back in
+## their own hold as the mech stands up (user request 2026-10-19).
+@export var guard_release_lead: float = 0.5
 
 @export_group("Clips")
 ## Jumping_Up: the charge crouch, the push and the tuck while rising.
@@ -207,7 +210,8 @@ func _update_weights(delta: float) -> void:
 	var on_floor := mech.is_on_floor()
 	# A: the crouch follows the charge; the launch (charge back to 0) lets go fast.
 	var charging := jump_charge != null and jump_charge.is_charging and on_floor and free
-	var guard_on := free and (charging or director.is_active())
+	var standing_up := on_floor and landing_recovery != null and landing_recovery.time_left < guard_release_lead
+	var guard_on := free and (charging or (director.is_active() and not standing_up))
 	guard = move_toward(guard, 1.0 if guard_on else 0.0, (guard_in_speed if guard_on else guard_out_speed) * delta)
 	var crouch_target := smoothstep(0.0, 1.0, jump_charge.charge) if charging else 0.0
 	crouch = move_toward(crouch, crouch_target, (charge_in_speed if crouch_target > crouch else charge_out_speed) * delta)
