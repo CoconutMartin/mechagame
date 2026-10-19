@@ -71,14 +71,16 @@ extends SkeletonModifier3D
 ## The weapon frame (held weapons, shield, free hand places) moves this much (torso space: +Y up, -Z
 ## forward) at the deepest crouch, so the thighs coming up keep off the arms (SkeletalArmRig).
 @export var weapon_lift: Vector3 = Vector3(0.0, 0.8, -0.15)
-## The same for the clip poses (Jumping_Up, Landing: deeper lean, thighs higher), at clip_depth 1.
-@export var clip_weapon_lift: Vector3 = Vector3(0.0, 1.4, -0.5)
+## Jump guard lift (user choice 2026-10-19: "the arms lift the weapon up to the chest"): the weapon
+## frame moves this much at full guard, so the clip poses (Jumping_Up, Landing: deeper lean, thighs
+## higher) keep the knees off the weapons and hands.
+@export var clip_weapon_lift: Vector3 = Vector3(0.0, 2.8, -0.3)
 
 @export_group("Guard")
 ## Guard (user choice 2026-10-19: "the arms lift the weapon up to the chest"): during the charge, a
-## clip jump, the fall and the landing clip, one-hand guns take their raised hold (WeaponController) and
-## free or fist hands go to a guard place in front of the chest (SkeletalArmRig), so the knees coming up
-## keep off the hands. How fast the guard comes on and goes off (per second).
+## clip jump, the fall and the landing clip the weapon frame lifts by clip_weapon_lift and free or fist
+## hands go to a guard place in front of the chest (SkeletalArmRig), so the knees coming up keep off the
+## weapons and hands. How fast the guard comes on and goes off (per second).
 @export var guard_in_speed: float = 4.0
 @export var guard_out_speed: float = 2.5
 
@@ -129,7 +131,7 @@ func _ready() -> void:
 ## Weapon offset now (torso space): weapon_lift by the crouch or landing depth.
 func weapon_offset() -> Vector3:
 	var coded := weapon_lift * clampf(maxf(crouch, landing), 0.0, 1.0)
-	var clip := clip_weapon_lift * clampf(clip_depth, 0.0, 1.0)
+	var clip := clip_weapon_lift * smoothstep(0.0, 1.0, guard)
 	return clip if clip.y > coded.y else coded
 
 
