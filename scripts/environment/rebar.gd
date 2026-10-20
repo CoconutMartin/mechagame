@@ -10,6 +10,10 @@ const RADIUS := 0.05
 const COLOR := Color(0.24, 0.16, 0.11)
 
 static var max_count: int = 300
+## Most new bars in one physics frame (phase 5b: 44 chunks breaking at once made 264 bars, 45 ms).
+static var max_per_frame: int = 12
+static var _frame: int = -1
+static var _made: int = 0
 static var _all: Array = []
 static var _mesh: CylinderMesh
 static var _material: StandardMaterial3D
@@ -21,7 +25,11 @@ static var _material: StandardMaterial3D
 static func spawn(space: Node3D, hole: Array[AABB], neighbors: Array, per_face: Vector2i, gap: float,
 		most: int) -> void:
 	_setup()
-	var left := most
+	var frame := Engine.get_physics_frames()
+	if frame != _frame:
+		_frame = frame
+		_made = 0
+	var left := mini(most, max_per_frame - _made)
 	neighbors.shuffle()
 	for pair: Array in neighbors:
 		var other := pair[0] as UrbanChunk
@@ -42,6 +50,7 @@ static func spawn(space: Node3D, hole: Array[AABB], neighbors: Array, per_face: 
 			continue
 		var count := mini(randi_range(per_face.x, per_face.y), left)
 		left -= count
+		_made += count
 		_bars_on_face(space, other, best_hole, best_keep, best, count)
 
 
