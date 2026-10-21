@@ -2,7 +2,8 @@ extends SceneTree
 ## Building collapse render (phase 5c): the ground floor of a building (COLLAPSE_BUILDING, default
 ## Office5F) breaks on one side first, then the rest, and pictures are saved every COLLAPSE_STEP physics
 ## frames (default 15) for COLLAPSE_SECONDS (default 8) from COLLAPSE_DISTANCE m (default 75) in front and
-## 0.35 of that above. The other buildings are hidden (they block the view).
+## 0.35 of that above. The other buildings are hidden (they block the view). At 70% of the time, 8 chunks
+## of the leaning mass break (it stays breakable).
 ## Pictures in COLLAPSE_OUT (default user://collapse_renders/).
 ## Run: xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 \
 ##   --resolution 1280x720 --fixed-fps 60 --script res://tools/godot/render_collapse.gd
@@ -70,6 +71,16 @@ func _run() -> void:
 				var chunk: Variant = ground.pop_front()
 				if is_instance_valid(chunk) and (chunk as UrbanChunk).is_inside_tree():
 					(chunk as UrbanChunk).on_hit(1.0e9)
+		# After the mass stopped: break some of its chunks (the leaning part stays breakable).
+		if frame == int(frames * 0.7):
+			var broken := 0
+			for mass in map.find_children("*", "CollapseMass", true, false):
+				var parts := (mass as Node).get_children().filter(func(n: Node) -> bool: return n is UrbanChunk)
+				parts.shuffle()
+				for chunk: UrbanChunk in parts.slice(0, 8):
+					chunk.on_hit(1.0e9, chunk.global_position + front * 20.0, &"")
+					broken += 1
+			print("broke %d chunks of the leaning mass" % broken)
 		await _frames(1)
 		if frame % step == 0:
 			await RenderingServer.frame_post_draw

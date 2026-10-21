@@ -309,6 +309,11 @@ func _finish_chunk(chunk: UrbanChunk) -> void:
 	_add(chunk)
 
 
+## The material of a MultiMesh slot (a CollapseMass draws the same boxes).
+func slot_material(slot: int) -> Material:
+	return _slots[slot].get_material()
+
+
 func _make_multimeshes() -> void:
 	var box := BoxMesh.new()
 	for slot in _slots.size():

@@ -18,11 +18,18 @@ var hp: float = 0.0
 var building: Node3D
 ## Its instances in the building's MultiMeshes: Vector2i(multimesh slot, instance index).
 var pieces: Array[Vector2i] = []
+## The MultiMeshes its pieces are in when they are not the building's (a leaning CollapseMass, phase 5c).
+var look: Array[MultiMesh] = []
 ## The building's damage node (null for buildings that take no damage).
 var damage_owner: BuildingDamage
 
 
 ## Weapons and blasts call this.
+## The MultiMeshes that draw its pieces (indexed by `pieces` slot).
+func get_look(generator: BuildingGenerator) -> Array[MultiMesh]:
+	return look if not look.is_empty() else generator.multimeshes
+
+
 func on_hit(damage: float, from: Vector3 = Vector3.INF, kind: StringName = &"") -> void:
 	if damage_owner != null:
 		damage_owner.damage(self, damage, from, kind)

@@ -82,8 +82,9 @@ func _collect(from: Vector3, to: Vector3, found: Dictionary) -> void:
 func _hide(chunk: UrbanChunk) -> void:
 	var generator := chunk.building as BuildingGenerator
 	var saved: Array = []
+	var look := chunk.get_look(generator)
 	for piece: Vector2i in chunk.pieces:
-		var mm: MultiMesh = generator.multimeshes[piece.x]
+		var mm: MultiMesh = look[piece.x]
 		saved.append([piece.x, piece.y, mm.get_instance_transform(piece.y)])
 		mm.set_instance_transform(piece.y, Transform3D(Basis.from_scale(Vector3.ZERO), Vector3.ZERO))
 	_hidden[chunk] = saved
@@ -100,9 +101,9 @@ func _show(chunk: UrbanChunk) -> void:
 		return
 	if is_instance_valid(chunk.damage_owner) and not chunk.damage_owner.is_standing(chunk):
 		return
-	var generator := chunk.building as BuildingGenerator
+	var look := chunk.get_look(chunk.building as BuildingGenerator)
 	for entry: Array in saved:
-		(generator.multimeshes[entry[0]] as MultiMesh).set_instance_transform(entry[1], entry[2])
+		(look[entry[0]] as MultiMesh).set_instance_transform(entry[1], entry[2])
 	_set_marks_visible(chunk, true)
 
 
