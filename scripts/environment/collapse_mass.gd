@@ -7,13 +7,14 @@ extends Node3D
 ## It has no collision and does no damage (user choice 2026-10-19: falling debris stays harmless).
 ## BuildingDamage makes it; the chunks are already gone from the building when it starts.
 
-## Tip speed up (radians per second squared) and the fastest tip (radians per second).
-@export var tip_acceleration: float = 1.1
+## Tip speed up (radians per second squared) for a mass 12 m tall; it grows as the mass leans
+## (x (0.35 + 1.5 sin angle), like a real topple) and is less for a taller mass (x 12 m / its height).
+@export var tip_acceleration: float = 1.6
 @export var max_tip_speed: float = 1.6
 ## How fast the mass sinks while it tips (part of gravity).
 @export var sink_gravity: float = 0.45
 ## It breaks when its middle is this part of its height above the ground, or at this tip (radians).
-@export var break_height: float = 0.3
+@export var break_height: float = 0.12
 @export var max_tip: float = 1.3
 ## Rubble pieces at the impact (most).
 @export var impact_rubble: int = 30
@@ -85,7 +86,9 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_age += delta
-	_tip_speed = minf(_tip_speed + tip_acceleration * delta, max_tip_speed)
+	var lean := 0.35 + 1.5 * sin(_angle)
+	var tall := 12.0 / maxf(_bounds.size.y, 12.0)
+	_tip_speed = minf(_tip_speed + tip_acceleration * tall * lean * delta, max_tip_speed)
 	_angle += _tip_speed * delta
 	_sink_speed += ProjectSettings.get_setting("physics/3d/default_gravity") * sink_gravity * delta
 	global_position.y -= _sink_speed * delta
