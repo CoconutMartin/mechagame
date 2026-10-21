@@ -39,8 +39,9 @@ const NOT_CARRYING := [UrbanChunk.Kind.GLASS, UrbanChunk.Kind.DOOR]
 ## A group of at least this many chunks that loses its support at once falls as one mass (CollapseMass);
 ## smaller groups fall chunk by chunk.
 @export var mass_min_chunks: int = 10
-## Chunks of a mass are freed this many per physics frame (700 at once cost 50 ms).
-@export var free_per_frame: int = 60
+## Chunks of a mass are freed this many per physics frame (700 at once cost 50 ms; 60 per frame still gave
+## a 17 ms physics frame).
+@export var free_per_frame: int = 30
 
 @export_group("Wear (phase 5b)")
 ## A chunk below this part of its HP shows cracks and turns darker (ChunkCracks).
