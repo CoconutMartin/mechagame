@@ -1,7 +1,8 @@
 extends SceneTree
 ## Building collapse render (phase 5c): the ground floor of a building (COLLAPSE_BUILDING, default
 ## Office5F) breaks on one side first, then the rest, and pictures are saved every COLLAPSE_STEP physics
-## frames (default 15) for COLLAPSE_SECONDS (default 8) from COLLAPSE_DISTANCE m (default 75) in front.
+## frames (default 15) for COLLAPSE_SECONDS (default 8) from COLLAPSE_DISTANCE m (default 75) in front and
+## 0.35 of that above. The other buildings are hidden (they block the view).
 ## Pictures in COLLAPSE_OUT (default user://collapse_renders/).
 ## Run: xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 \
 ##   --resolution 1280x720 --fixed-fps 60 --script res://tools/godot/render_collapse.gd
@@ -44,9 +45,17 @@ func _run() -> void:
 	camera.fov = 60.0
 	map.add_child(camera)
 	var target := building.global_position + Vector3.UP * height * 0.45
-	camera.global_position = target + front * float(_env("COLLAPSE_DISTANCE", "75")) + Vector3.UP * 4.0
+	var distance := float(_env("COLLAPSE_DISTANCE", "75"))
+	camera.global_position = target + front * distance + Vector3.UP * distance * 0.35
 	camera.look_at(target, Vector3.UP)
 	camera.current = true
+	# Only the building that collapses: the others would block the view.
+	for group_name in ["Buildings", "EdgeBuildings"]:
+		var group := map.get_node_or_null(group_name)
+		if group != null:
+			for child in group.get_children():
+				if child != building and child is Node3D:
+					(child as Node3D).visible = false
 	for node in map.get_tree().get_nodes_in_group(&"lockable"):
 		if node is Mech and not node.is_in_group(&"player"):
 			(node as Node3D).visible = false
