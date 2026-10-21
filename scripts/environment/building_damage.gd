@@ -35,6 +35,13 @@ const NOT_CARRYING := [UrbanChunk.Kind.GLASS, UrbanChunk.Kind.DOOR]
 ## Most falling chunk bodies at once in the level; more unsupported chunks break where they are.
 @export var max_falling: int = 60
 
+@export_group("Collapse (phase 5c)")
+## A group of at least this many chunks that loses its support at once falls as one mass (CollapseMass);
+## smaller groups fall chunk by chunk.
+@export var mass_min_chunks: int = 10
+## Chunks of a mass are freed this many per physics frame (700 at once cost 50 ms).
+@export var free_per_frame: int = 60
+
 @export_group("Wear (phase 5b)")
 ## A chunk below this part of its HP shows cracks and turns darker (ChunkCracks).
 @export_range(0.0, 1.0) var crack_below: float = 0.5
@@ -76,6 +83,10 @@ var _fall_queue: Array = []
 ## True after a break: the support check runs once in the next physics frame (phase 5a, 2026-10-19: one
 ## check per broken chunk cost 14 ms when 45 chunks broke in one frame).
 var _support_dirty: bool = false
+## Chunks that left the building (a mass) and wait to be freed, a few per frame.
+var _free_queue: Array = []
+## World place of the last broken chunk: a collapsing mass tips toward it.
+var _last_break: Vector3 = Vector3.INF
 var _queued := {}
 
 
@@ -157,6 +168,7 @@ func break_chunk(chunk: UrbanChunk) -> void:
 			if other.kind not in NOT_CARRYING:
 				neighbors.append([other, _boxes_of(other)])
 		Rebar.spawn(generator, _boxes_of(chunk), neighbors, rebar_per_face, touch_gap, rebar_per_break)
+	_last_break = generator.global_transform * _bounds_of(chunk).get_center()
 	_remove(chunk)
 	for box: AABB in _boxes_of(chunk):
 		shatter(Transform3D(generator.global_basis, generator.global_transform * box.get_center()), box.size,
@@ -240,12 +252,18 @@ func _drop_unsupported() -> void:
 			if not supported.has(other):
 				supported[other] = true
 				open.append(other)
-	var added := false
+	var loose: Array[UrbanChunk] = []
 	for chunk: UrbanChunk in _links.keys():
 		if not supported.has(chunk) and not _queued.has(chunk):
-			_queued[chunk] = true
-			_fall_queue.append(chunk)
-			added = true
+			loose.append(chunk)
+	if loose.size() >= mass_min_chunks:
+		_collapse_as_mass(loose)
+		return
+	var added := false
+	for chunk in loose:
+		_queued[chunk] = true
+		_fall_queue.append(chunk)
+		added = true
 	if added:
 		_fall_queue = _fall_queue.filter(func(c: Variant) -> bool: return is_instance_valid(c))
 		_fall_queue.sort_custom(func(a: UrbanChunk, b: UrbanChunk) -> bool: return a.position.y < b.position.y)
@@ -255,6 +273,10 @@ func _physics_process(_delta: float) -> void:
 	if _support_dirty:
 		_support_dirty = false
 		_drop_unsupported()
+	for i in mini(free_per_frame, _free_queue.size()):
+		var gone: Variant = _free_queue.pop_back()
+		if is_instance_valid(gone):
+			(gone as Node).queue_free()
 	var count := 0
 	while not _fall_queue.is_empty() and count < fall_per_frame:
 		# Untyped: a queued chunk can be freed meanwhile (broken by a hit or a mech walking through).
@@ -263,6 +285,39 @@ func _physics_process(_delta: float) -> void:
 		if is_instance_valid(chunk) and _links.has(chunk):
 			_fall(chunk as UrbanChunk)
 			count += 1
+
+
+## A large loose group falls as one mass (CollapseMass): its chunks leave the building now and the mass
+## draws their boxes, tips toward the last break and breaks on the ground.
+func _collapse_as_mass(loose: Array[UrbanChunk]) -> void:
+	var mass := CollapseMass.new()
+	mass.building = self
+	var center := Vector3.ZERO
+	for chunk in loose:
+		var look := _look(chunk)
+		for box: AABB in _boxes_of(chunk):
+			var place := generator.global_transform * Transform3D(Basis.from_scale(box.size), box.get_center())
+			mass.boxes.append([place, look if look != null else GridMaterials.get_material(_debris_color(chunk), false)])
+			center += place.origin
+		mass.debris_color = _debris_color(chunk)
+	center /= maxf(mass.boxes.size(), 1)
+	var toward := (_last_break - center) if _last_break != Vector3.INF else Vector3(randf_range(-1, 1), 0, randf_range(-1, 1))
+	toward.y = 0.0
+	mass.tip_direction = toward.normalized() if toward.length_squared() > 0.01 else Vector3.FORWARD
+	mass.ground_y = generator.global_position.y
+	for chunk in loose:
+		_remove(chunk)
+		_queued.erase(chunk)
+		# Hidden now (its boxes left the MultiMeshes in _remove), freed a few per frame.
+		chunk.process_mode = Node.PROCESS_MODE_DISABLED
+		for child in chunk.get_children():
+			if child is Node3D and not child is CollisionShape3D:
+				(child as Node3D).visible = false
+		_free_queue.append(chunk)
+	if mass.boxes.is_empty():
+		mass.free()
+		return
+	_world().add_child(mass)
 
 
 ## Towers: a floor that lost collapse_fraction of its walls and columns gives way; every chunk from that
@@ -331,6 +386,15 @@ func _fall(chunk: UrbanChunk) -> void:
 	_falling_now += 1
 	body.tree_exited.connect(func() -> void: _falling_now -= 1)
 	chunk.queue_free()
+
+
+## All the chunk's boxes in one (building space).
+func _bounds_of(chunk: UrbanChunk) -> AABB:
+	var boxes := _boxes_of(chunk)
+	var bounds := boxes[0] if not boxes.is_empty() else AABB(chunk.position, Vector3.ZERO)
+	for box in boxes:
+		bounds = bounds.merge(box)
+	return bounds
 
 
 ## The chunk's boxes in its own space (from its collision shapes).
