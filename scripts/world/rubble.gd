@@ -19,7 +19,9 @@ var _age: float = 0.0
 var _size: Vector3 = Vector3.ONE
 
 
-static func spawn(world: Node, point: Vector3, size: Vector3, tint: Color, velocity: Vector3) -> Rubble:
+## look: the material of what broke (phase 5b, user request 2026-10-21: rubble in the wall's own color and
+## texture); null = the plain grid material in tint.
+static func spawn(world: Node, point: Vector3, size: Vector3, tint: Color, velocity: Vector3, look: Material = null) -> Rubble:
 	while _all.size() >= max_count:
 		var oldest: Variant = _all.pop_front()
 		if is_instance_valid(oldest):
@@ -33,7 +35,7 @@ static func spawn(world: Node, point: Vector3, size: Vector3, tint: Color, veloc
 	# A shared rough unit piece, scaled (phase 5a: a new mesh per piece was slow; 5b: jagged pieces).
 	mesh.mesh = RubbleShapes.pick()
 	mesh.scale = size
-	mesh.material_override = GridMaterials.get_material(tint, false)
+	mesh.material_override = look if look != null else GridMaterials.get_material(tint, false)
 	piece.add_child(mesh)
 	var shape := CollisionShape3D.new()
 	var box_shape := BoxShape3D.new()

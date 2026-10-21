@@ -160,7 +160,7 @@ func break_chunk(chunk: UrbanChunk) -> void:
 	_remove(chunk)
 	for box: AABB in _boxes_of(chunk):
 		shatter(Transform3D(generator.global_basis, generator.global_transform * box.get_center()), box.size,
-				_debris_color(chunk), Vector3.ZERO, false, chunk.kind == UrbanChunk.Kind.GLASS)
+				_debris_color(chunk), Vector3.ZERO, false, chunk.kind == UrbanChunk.Kind.GLASS, false, _look(chunk))
 	chunk.queue_free()
 	if generator.def.facade_only and _counts_for_floor(chunk):
 		_check_floor(chunk.floor_index)
@@ -171,7 +171,7 @@ func break_chunk(chunk: UrbanChunk) -> void:
 ## light: one rubble piece and dust only now and then (many chunks at once, a tower collapse).
 ## FallingChunk calls it when a falling chunk lands.
 func shatter(place: Transform3D, size: Vector3, color: Color, velocity: Vector3, hurts: bool, glass: bool = false,
-		light: bool = false) -> void:
+		light: bool = false, look: Material = null) -> void:
 	var world := _world()
 	color.a = 1.0
 	if not glass and (not light or randf() < 0.3):
@@ -187,7 +187,7 @@ func shatter(place: Transform3D, size: Vector3, color: Color, velocity: Vector3,
 			piece = Vector3(side * 0.5, side * 0.5, 0.05)
 		var offset := Vector3(randf_range(-0.4, 0.4) * size.x, randf_range(-0.4, 0.4) * size.y, randf_range(-0.4, 0.4) * size.z)
 		var away := (offset.normalized() + Vector3.UP * 0.5) * rubble_speed * randf_range(0.5, 1.0)
-		Rubble.spawn(world, place * offset, piece, color * randf_range(0.85, 1.05), velocity * 0.3 + away)
+		Rubble.spawn(world, place * offset, piece, color * randf_range(0.85, 1.05), velocity * 0.3 + away, look)
 	if hurts and fall_damage > 0.0:
 		Blast.apply(generator.get_world_3d(), place.origin, fall_radius, fall_damage, [], HITBOX_MASK)
 
@@ -298,7 +298,7 @@ func _fall(chunk: UrbanChunk) -> void:
 	if _falling_now >= max_falling or boxes.is_empty():
 		for box: AABB in boxes:
 			shatter(Transform3D(generator.global_basis, generator.global_transform * box.get_center()), box.size,
-					color, Vector3.ZERO, false, chunk.kind == UrbanChunk.Kind.GLASS, true)
+					color, Vector3.ZERO, false, chunk.kind == UrbanChunk.Kind.GLASS, true, _look(chunk))
 		chunk.queue_free()
 		return
 	var bounds := boxes[0]
@@ -308,6 +308,7 @@ func _fall(chunk: UrbanChunk) -> void:
 	body.building = self
 	body.size = bounds.size
 	body.tint = color
+	body.look = _look(chunk)
 	body.mass = maxf(chunk.volume * (chunk.material_def.density if chunk.material_def != null else 2.0) * 0.2, 5.0)
 	var material: Material = chunk.material_def.get_material() if chunk.material_def != null else null
 	for box: AABB in boxes:
@@ -361,6 +362,11 @@ func _touch(a: Array, b: Array) -> bool:
 			if grown.intersects(box_b):
 				return true
 	return false
+
+
+## The chunk's own material for its rubble (null: no material, rubble in the debris color).
+func _look(chunk: UrbanChunk) -> Material:
+	return chunk.material_def.get_material() if chunk.material_def != null else null
 
 
 func _debris_color(chunk: UrbanChunk) -> Color:

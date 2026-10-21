@@ -1,7 +1,7 @@
 """Writes the building wear textures (phase 5b, user choice 2026-10-19):
 assets/textures/decals/scorch.png (256 x 256 RGBA): a black burn mark with soot fading out (alpha).
-assets/textures/decals/crack_overlay.png (512 x 512 RGBA): the cracks of cracks.png over a light dark
-film (so a cracked chunk looks darker everywhere), for ChunkCracks.
+assets/textures/decals/crack_overlay.png (512 x 512 RGBA): thick dark branching cracks (they wrap, so
+the texture repeats) over a light dark film (a cracked chunk looks darker everywhere), for ChunkCracks.
 
 Run from the project root: python3 tools/map_gen/wear_textures.py
 """
@@ -34,14 +34,41 @@ for i in range(10):
 img = img.filter(ImageFilter.GaussianBlur(1.2))
 img.save("assets/textures/decals/scorch.png")
 
-# Crack overlay: the existing cracks with a dark film under them.
-cracks = Image.open("assets/textures/decals/cracks.png").convert("RGBA")
-out = Image.new("RGBA", cracks.size, (0, 0, 0, 0))
+# Crack overlay (user request 2026-10-21: stronger crack lines): thick dark branching cracks drawn
+# here (wrap around the edges, so the texture repeats without seams) over a light dark film.
+CS = 512
+cracks = Image.new("RGBA", (CS, CS), (0, 0, 0, 0))
+draw = ImageDraw.Draw(cracks)
+
+
+def crack(x, y, angle, length, width, depth):
+    while length > 0 and width >= 1:
+        step = random.uniform(10, 22)
+        angle += random.uniform(-0.6, 0.6)
+        nx, ny = x + math.cos(angle) * step, y + math.sin(angle) * step
+        for ox in (-CS, 0, CS):
+            for oy in (-CS, 0, CS):
+                draw.line([(x + ox, y + oy), (nx + ox, ny + oy)], fill=(14, 13, 12, 245), width=int(width))
+        x, y, length = nx % CS, ny % CS, length - step
+        width *= random.uniform(0.95, 1.0)
+        if depth < 3 and random.random() < 0.18:
+            crack(x, y, angle + random.choice((-1, 1)) * random.uniform(0.6, 1.2), length * 0.6, width * 0.55,
+                  depth + 1)
+
+
+for i in range(7):
+    crack(random.uniform(0, CS), random.uniform(0, CS), random.uniform(0, math.tau), random.uniform(220, 420),
+          random.uniform(7, 10), 0)
+cracks = cracks.filter(ImageFilter.GaussianBlur(0.7))
+out = Image.new("RGBA", (CS, CS), (0, 0, 0, 0))
 cp, op = cracks.load(), out.load()
-for y in range(cracks.size[1]):
-    for x in range(cracks.size[0]):
+for y in range(CS):
+    for x in range(CS):
         r, g, b, a = cp[x, y]
-        film = 70 + random.randint(-12, 12)
-        op[x, y] = (r, g, b, max(a, film))
+        film = 55 + random.randint(-10, 10)
+        if a > film:
+            op[x, y] = (r, g, b, a)
+        else:
+            op[x, y] = (20, 19, 18, film)
 out.save("assets/textures/decals/crack_overlay.png")
 print("wrote scorch.png and crack_overlay.png")

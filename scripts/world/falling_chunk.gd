@@ -8,6 +8,8 @@ extends RigidBody3D
 var building: Node
 var size: Vector3 = Vector3.ONE
 var tint: Color = Color.GRAY
+## The material of the block (BuildingDamage): its rubble gets it too. null = rubble in tint.
+var look: Material
 
 var _age: float = 0.0
 var _broken: bool = false
@@ -33,5 +35,8 @@ func _break() -> void:
 		return
 	_broken = true
 	if building != null:
-		building.call(&"shatter", global_transform, size, tint, linear_velocity, true)
+		if look != null:
+			building.call(&"shatter", global_transform, size, tint, linear_velocity, true, false, false, look)
+		else:
+			building.call(&"shatter", global_transform, size, tint, linear_velocity, true)
 	queue_free()
