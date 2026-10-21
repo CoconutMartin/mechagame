@@ -12,6 +12,9 @@ extends Node3D
 @export var max_tip_speed: float = 1.6
 ## How fast the mass sinks while it tips (part of gravity).
 @export var sink_gravity: float = 0.45
+## It breaks when its middle is this part of its height above the ground, or at this tip (radians).
+@export var break_height: float = 0.3
+@export var max_tip: float = 1.3
 ## Rubble pieces at the impact (most).
 @export var impact_rubble: int = 30
 ## Rubble pieces made per physics frame after the impact (all at once cost 50 ms).
@@ -38,11 +41,13 @@ var _sink_speed: float = 0.0
 var _axis: Vector3 = Vector3.RIGHT
 var _corners: PackedVector3Array = []
 var _bounds: AABB
+var _pivot_start: Vector3
 var _age: float = 0.0
 
 
 func _ready() -> void:
-	# The pivot: the bottom edge of the mass on the tip side; the mass hangs from it.
+	# The pivot: the bottom edge on the side that still stands (away from the tip side); the tip side
+	# drops first and the mass turns over this edge.
 	_bounds = AABB()
 	var first := true
 	for entry: Array in boxes:
@@ -51,7 +56,8 @@ func _ready() -> void:
 		first = false
 	var center := _bounds.get_center()
 	var reach := absf(tip_direction.x) * _bounds.size.x * 0.5 + absf(tip_direction.z) * _bounds.size.z * 0.5
-	global_position = Vector3(center.x, _bounds.position.y, center.z) + tip_direction * reach
+	global_position = Vector3(center.x, _bounds.position.y, center.z) - tip_direction * reach
+	_pivot_start = global_position
 	_axis = Vector3.UP.cross(tip_direction).normalized()
 	# The look: one MultiMesh per material, boxes relative to the pivot.
 	var by_material := {}
@@ -84,10 +90,10 @@ func _physics_process(delta: float) -> void:
 	_sink_speed += ProjectSettings.get_setting("physics/3d/default_gravity") * sink_gravity * delta
 	global_position.y -= _sink_speed * delta
 	global_basis = Basis(_axis, _angle)
-	var lowest := INF
-	for corner in _corners:
-		lowest = minf(lowest, (global_transform * corner).y)
-	if lowest <= ground_y + 0.3 and _angle > 0.15 or _age > 6.0:
+	# It breaks when its middle comes down near the ground or it has tipped far over (it has no
+	# collision; the part under the ground is hidden by the dust).
+	var middle := (global_transform * (_bounds.get_center() - _pivot_start)).y
+	if middle <= ground_y + maxf(_bounds.size.y * break_height, 1.5) or _angle >= max_tip or _age > 6.0:
 		_impact()
 
 

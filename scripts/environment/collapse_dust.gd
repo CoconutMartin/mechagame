@@ -20,7 +20,7 @@ func _ready() -> void:
 	name = "CollapseDust"
 	one_shot = true
 	explosiveness = 0.8
-	amount = 64
+	amount = 110
 	lifetime = 9.0
 	local_coords = false
 	emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
@@ -33,14 +33,14 @@ func _ready() -> void:
 	initial_velocity_max = 11.0
 	damping_min = 1.2
 	damping_max = 2.0
-	var size := clampf(maxf(footprint.x, footprint.y) * 0.35, 6.0, 18.0)
+	var size := clampf(maxf(footprint.x, footprint.y) * 0.5, 8.0, 26.0)
 	scale_amount_min = size * 0.6
 	scale_amount_max = size
 	DustBurst._shared_look()
 	scale_amount_curve = DustBurst._curve
 	color_ramp = DustBurst._ramp
 	mesh = DustBurst._quad
-	set_meta(&"opacity", 0.75)
+	set_meta(&"opacity", 1.0)
 	PixelSmoke.register(self)
 	set_deferred(&"emitting", true)
 	finished.connect(queue_free)
