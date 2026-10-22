@@ -413,6 +413,12 @@ func _update_fist_arms(delta: float) -> void:
 			ik.target = wanted
 
 
+## True while a fist arm punches and for fist_hang_delay seconds after (MechHandControl closes the hand
+## then; at rest an empty hand is open and relaxed, user report 2026-10-22).
+func is_punching() -> bool:
+	return _swing_hold > 0.0
+
+
 ## The relaxed hang marker of a hand that holds its fist, also while the punch clip has the arm (its IK
 ## target is null then), or null. SkeletalArmRig poses a released fist arm at this hang under the punch
 ## clip, so the clip fades into the hang and the hand does not snap to it later (user report 2026-10-18).

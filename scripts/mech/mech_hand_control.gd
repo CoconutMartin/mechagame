@@ -74,6 +74,7 @@ func _process(delta: float) -> void:
 	# A fist in the right hand is no gun: the hand makes a fist (user rule 2026-10-17: empty hands hold fists).
 	var fist_right := weapons.right_weapon is MeleeWeapon and weapons.right_data != null \
 			and weapons.right_data.kind == WeaponData.Kind.FIST
+	var punching := weapons.is_punching()
 	var gun := weapons.right_weapon if weapons.right_weapon != null and is_instance_valid(weapons.right_weapon) \
 			and not fist_right else null
 	var two_hand := gun != null and weapons.two_handed_left_grip()
@@ -90,10 +91,12 @@ func _process(delta: float) -> void:
 		elif gun != null and not gun is PileBunkerWeapon:
 			var grip := _grip_pose(grip_bones[1])
 			hand_right.set_grip(grip * PALM_HOLLOW, grip.basis.y, grip_radius)
-		elif gun != null or fist_right:
+		elif gun != null:
 			hand_right.mode = MechHand.Mode.FIST
 		else:
-			hand_right.mode = MechHand.Mode.FIST if moving else MechHand.Mode.RELAXED
+			# An empty hand (it holds a Fist weapon without a model): the jointed hand makes the fist for a
+			# punch and while the mech moves; at rest it stays relaxed (user report 2026-10-22).
+			hand_right.mode = MechHand.Mode.FIST if moving or punching else MechHand.Mode.RELAXED
 	if is_instance_valid(hand_left) and hand_left.visible:
 		if socket_l != null:
 			var place := _left_socket_place(socket_l, gun) if two_hand else socket_l.global_transform.orthonormalized()
@@ -101,10 +104,10 @@ func _process(delta: float) -> void:
 		elif two_hand:
 			var grip := _grip_pose(grip_bones[0])
 			hand_left.set_grip(grip.origin, grip.basis.y, forestock_radius)
-		elif weapons.left_data != null:
+		elif weapons.left_data != null and weapons.left_data.kind != WeaponData.Kind.FIST:
 			hand_left.mode = MechHand.Mode.FIST
 		else:
-			hand_left.mode = MechHand.Mode.FIST if moving else MechHand.Mode.RELAXED
+			hand_left.mode = MechHand.Mode.FIST if moving or punching else MechHand.Mode.RELAXED
 
 
 ## The weapon's socket marker, or null (no weapon, or a weapon without sockets).
