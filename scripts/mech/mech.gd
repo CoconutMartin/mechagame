@@ -48,11 +48,11 @@ signal landed(fall_speed: float)
 @export var walk_stop_steps: int = 2
 ## Steps the mech takes to stop after landing from a jump with sideways speed.
 @export var landing_stop_steps: int = 3
-## After a step dodge from a walk (user rule 2026-10-15): the next steps are this slow (x walk and
-## run speed; 0.4 = the broken leg speed, SkeletalPartBreaker.one_leg_speed_scale).
-@export var step_dodge_speed_scale: float = 0.4
-## How many footsteps the step dodge slow-down lasts.
-@export var step_dodge_slow_steps: int = 3
+## Speed change right after a dodge handed the mech back to a held move key (m/s per second). The mech
+## goes from the dodge speed to the key's speed at this rate, up or down (15 takes 0.6 s from 17 m/s to a walk).
+@export var dodge_exit_acceleration: float = 15.0
+## Seconds the faster speed change above lasts after the dodge ended.
+@export var dodge_exit_time: float = 0.8
 ## Slowdown while the mech charges its jump jets (m/s per second). The mech stands still to charge.
 @export var jump_charge_brake: float = 9.0
 
@@ -217,8 +217,8 @@ var leg_turn_rate: float = 0.0
 var _exit_deceleration: float = 0.0
 var _stop_deceleration: float = 0.0
 var _landing_stop: bool = false
-## Footsteps left at the step dodge speed (step_dodge_speed_scale).
-var _slow_steps_left: int = 0
+## Seconds left of the faster speed gain after a dodge (dodge_exit_acceleration).
+var _dodge_exit_left: float = 0.0
 var _airborne: bool = false
 var _in_exit_leap: bool = false
 var _skid_stop_plan: PackedFloat32Array = PackedFloat32Array()
@@ -346,13 +346,17 @@ func cancel_landing_steps() -> void:
 	_stop_deceleration = 0.0
 
 
-## The next step_dodge_slow_steps footsteps are slow (MechDodge after a step dodge from a walk).
-func start_slow_steps() -> void:
-	_slow_steps_left = step_dodge_slow_steps
-	# The step lands at the slow speed: the dodge momentum does not carry into these steps.
-	var horizontal := Vector3(velocity.x, 0.0, velocity.z).limit_length(walk_speed * step_dodge_speed_scale)
-	velocity.x = horizontal.x
-	velocity.z = horizontal.z
+## A dodge handed the mech back to a held move key (MechDodge). The mech goes from its dodge speed to the
+## key's speed at dodge_exit_acceleration for dodge_exit_time (no slow steps).
+func start_dodge_exit() -> void:
+	_dodge_exit_left = dodge_exit_time
+
+
+## Walk speed toward the held move key now, in m/s (0 with no key). Used by SkeletalDodgeAnimation.
+func get_key_walk_speed() -> float:
+	if input == null or input.move_direction.length_squared() < 0.001:
+		return 0.0
+	return _get_walk_speed(input.move_direction)
 
 
 ## World yaw where the torso and the mech aim point.
@@ -456,7 +460,6 @@ func get_run_speed() -> float:
 
 func _on_footstep(_strength: float) -> void:
 	_walk_steps += 1
-	_slow_steps_left = maxi(_slow_steps_left - 1, 0)
 	if is_running:
 		_run_steps_done += 1
 
@@ -569,13 +572,18 @@ func _update_horizontal(delta: float) -> void:
 		target = _limit_for_shield(wish * get_boost_speed())
 		rate = boost_acceleration
 	elif is_running:
-		target = _limit_for_shield(wish * get_run_speed() * _slow_factor())
+		target = _limit_for_shield(wish * get_run_speed())
 		rate = acceleration
 	else:
-		target = _limit_for_shield(wish * _get_walk_speed(wish) * _slow_factor())
+		target = _limit_for_shield(wish * _get_walk_speed(wish))
 		rate = _get_exit_deceleration() if is_exiting_boost and on_floor else acceleration
 
-	var horizontal := Vector3(velocity.x, 0.0, velocity.z).move_toward(target, rate * delta)
+	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+	_dodge_exit_left = maxf(_dodge_exit_left - delta, 0.0)
+	if _dodge_exit_left > 0.0 and has_input:
+		# Just after a dodge: go to the key's speed at once (no slow steps, no long glide).
+		rate = maxf(rate, dodge_exit_acceleration)
+	horizontal = horizontal.move_toward(target, rate * delta)
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 
@@ -588,7 +596,6 @@ func _update_horizontal(delta: float) -> void:
 		_stop_deceleration = 0.0
 		is_exiting_boost = false
 		_landing_stop = false
-		_slow_steps_left = 0
 
 
 ## Skid stop: the feet slide and the mech slows fast. At the end: heavy steps to a stop,
@@ -634,11 +641,6 @@ func _limit_for_shield(target: Vector3) -> Vector3:
 	var speed := target.length()
 	var limit := lerpf(speed, minf(speed, shield.get_speed_limit()), shield.amount)
 	return target.limit_length(limit)
-
-
-## Speed factor after a step dodge (1 = normal).
-func _slow_factor() -> float:
-	return step_dodge_speed_scale if _slow_steps_left > 0 else 1.0
 
 
 ## Walk speed for a move direction. Moving to the side (and backward) is slower than forward.

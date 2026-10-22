@@ -10,8 +10,8 @@ extends Node
 ## No landing delay.
 ## A mech with a SkeletalDodgeAnimation plays a dodge animation (roll or step) instead of the hop
 ## (user requests 2026-10-13); the clip depends on the direction, the weight class and the speed.
-## A dodge from a walk (the quick step, W + double Space) ends with a landing: the short landing delay
-## and the 3 landing steps (user request 2026-10-15). A dodge from a run or boost keeps its momentum.
+## A dodge animation ends into the walk at once when a move key is held, at the walk speed or the dodge
+## speed if that is higher (user request 2026-10-22: no slow steps after a dodge step).
 ## A shield with WeaponData.blocks_dodge (Hex Shield) turns every dodge into a shield dash (user request
 ## 2026-10-16): the mech dashes forward behind the raised shield, bashes a mech in its way (ShieldBash)
 ## and stops. A mech with that shield and no SkeletalDodgeAnimation cannot dodge. A heavily compromised
@@ -288,12 +288,12 @@ func _end_roll() -> void:
 		_dashing = false
 		if _weapons != null and _weapons.mech_shield != null:
 			_weapons.mech_shield.force_up = false
-	# A step dodge from a walk (quick step): the next 3 steps are at the broken leg speed (user rule
-	# 2026-10-15). A roll ends with no stop and no slow-down.
-	if not _from_fast and not _rolling and not mech.is_fallen and not mech.is_wrecked:
-		mech.start_slow_steps()
-	# A move key ended the dodge (SkeletalDodgeAnimation.release_at): walk at once.
-	_recover_left = 0.0 if input.move_direction.length_squared() > 0.01 else recovery_time
+	# A move key ended the dodge (SkeletalDodgeAnimation.release_at): walk at once, no slow steps
+	# (user request 2026-10-22; the quick step slow-down of 2026-10-15 is gone).
+	var walks_on := input.move_direction.length_squared() > 0.01
+	_recover_left = 0.0 if walks_on else recovery_time
+	if walks_on and not mech.is_fallen and not mech.is_wrecked:
+		mech.start_dodge_exit()
 	dodge_ended.emit()
 
 

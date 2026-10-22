@@ -39,6 +39,9 @@ extends SkeletonModifier3D
 @export_range(0.0, 1.0) var release_at: float = 0.7
 ## Seconds for the body to blend from the clip into the walk after a move key ended the dodge.
 @export var release_fade: float = 0.35
+## From this part of the clip on (0 to 1), a held move key in the dodge direction keeps the dodge at the
+## walk speed or faster, so the slow end of a clip (step back) does not dip below the walk it hands over to.
+@export_range(0.0, 1.0) var walk_floor_at: float = 0.5
 
 ## Bones the clips do not move: the arms keep holding the weapon.
 const ARM_BONES: Array[String] = ["upper_arm_L", "forearm_L", "hand_L", "upper_arm_R", "forearm_R", "hand_R"]
@@ -161,6 +164,7 @@ func _physics_process(delta: float) -> void:
 		_after += delta
 	# The mech keeps its speed: the clip can slow down faster than the momentum fades.
 	_momentum = maxf(clip_speed, _momentum * exp(-delta / maxf(clip.slide_time, 0.01)))
+	_momentum = maxf(_momentum, _get_walk_floor())
 	if _halted:
 		_momentum = 0.0
 	mech.root_motion_active = true
@@ -171,6 +175,16 @@ func _physics_process(delta: float) -> void:
 		mech.root_motion_velocity = Vector3.ZERO
 		if _finished_callback.is_valid():
 			_finished_callback.call()
+
+
+## Walk speed of a held move key that points the way of the dodge, after walk_floor_at of the clip (else 0).
+func _get_walk_floor() -> float:
+	if _halted or _time < clip.animation.length * walk_floor_at:
+		return 0.0
+	var wish := mech.input.move_direction
+	if wish.length_squared() < 0.01 or wish.normalized().dot(_direction) < 0.5:
+		return 0.0
+	return mech.get_key_walk_speed()
 
 
 ## A move key after release_at of the clip, while the mech can walk.
