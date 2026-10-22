@@ -36,7 +36,13 @@ enum Slot { ARM, BACK }
 ## stagger more. Shotgun: per pellet. Beam: for the whole beam. Pile Bunker: at no power (full power x2).
 @export var stagger_points: float = 0.0
 ## Most stagger points one shot gives (all pellets of a shotgun blast, all missiles of a volley). 0 = no cap.
+## Beam rifle: above 0 the beam gives its stagger_points evenly over its ticks (a beam that hits only part of
+## the time gives only that part) and this is the most a full beam may give. 0 = the old beam rule.
 @export var stagger_cap_per_shot: float = 0.0
+## Seconds the target's stagger meter keeps its points after a hit of this weapon, before it starts to fall.
+## 0 = MechStability.decay_delay. A slow gun sets about its time between shots plus half a second, so its
+## hits still add up (Auto Cannon: 3 shots stagger). The longest hold of the hits in the meter counts.
+@export var stagger_hold_s: float = 0.0
 ## Fist: stagger points of the last swing of a combo (0 = stagger_points).
 @export var stagger_finisher_points: float = 0.0
 

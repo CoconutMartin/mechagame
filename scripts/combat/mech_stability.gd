@@ -4,7 +4,8 @@ extends Node
 ## brace and a stability bar on the target). Each weapon hit adds stagger points (WeaponData
 ## .stagger_points), scaled by the mech's weight class and by the brace (kneeling). Points from one shot
 ## (shotgun pellets, a beam's ticks, a missile volley) add up to at most that shot's cap. The meter
-## falls after decay_delay seconds with no new points. At threshold the mech staggers once (signal
+## falls after decay_delay seconds with no new points (a slow weapon can hold it longer: stagger_hold_s, so
+## its hits still add up between shots). At threshold the mech staggers once (signal
 ## staggered), the meter goes to 0 and for protection_time seconds new points are ignored (not kept).
 ## One big shot (knock_points or more from one shot) knocks the mech down instead (signal knocked_down):
 ## the War Hammer, a full Pile Bunker (user choice 2026-10-17: only big single hits; two Auto Cannon
@@ -46,7 +47,8 @@ var mech: Mech
 ## Meter now (0 to threshold).
 var value: float = 0.0
 
-var _since_points: float = 0.0
+## Seconds left before the meter starts to fall.
+var _hold_left: float = 0.0
 var _protection_left: float = 0.0
 ## Points per shot id this far (for the per-shot caps); entries go after shot_memory seconds.
 var _shots: Dictionary = {}
@@ -67,10 +69,12 @@ static func of_body(body: Object) -> MechStability:
 
 ## Adds a weapon's stagger points to whatever body a hit landed on (nothing for non-mech bodies).
 ## shot_id: one number per shot (0 = its own shot); cap: most points that shot gives (0 = no cap).
-static func hit_body(body: Object, points: float, shot_id: int = 0, cap: float = 0.0, from: Vector3 = Vector3.INF) -> void:
+## hold: seconds the meter keeps these points before it falls (0 = decay_delay; WeaponData.stagger_hold_s).
+static func hit_body(body: Object, points: float, shot_id: int = 0, cap: float = 0.0, from: Vector3 = Vector3.INF,
+		hold: float = 0.0) -> void:
 	var stability := of_body(body)
 	if stability != null:
-		stability.add_hit(points, shot_id, cap, from)
+		stability.add_hit(points, shot_id, cap, from, hold)
 
 
 ## A new shot id (pellets of one blast, ticks of one beam, missiles of one volley share it).
@@ -103,7 +107,8 @@ func get_scale() -> float:
 
 
 ## Adds the points of one hit. Returns the points added to the meter (after scale and cap).
-func add_hit(points: float, shot_id: int = 0, cap: float = 0.0, from: Vector3 = Vector3.INF) -> float:
+## hold: seconds before the meter falls (0 = decay_delay). The longest hold still running counts.
+func add_hit(points: float, shot_id: int = 0, cap: float = 0.0, from: Vector3 = Vector3.INF, hold: float = 0.0) -> float:
 	if not is_finite(points) or points <= 0.0:
 		return 0.0
 	var scaled := points * get_scale()
@@ -133,7 +138,7 @@ func add_hit(points: float, shot_id: int = 0, cap: float = 0.0, from: Vector3 = 
 		knocked_down.emit(from)
 		return scaled
 	value += scaled
-	_since_points = 0.0
+	_hold_left = maxf(_hold_left, maxf(decay_delay, hold) if is_finite(hold) else decay_delay)
 	if value >= threshold:
 		_reset_after_stagger()
 		staggered.emit(from)
@@ -146,11 +151,11 @@ func advance(delta: float) -> void:
 		return
 	_clock += delta
 	_protection_left = maxf(_protection_left - delta, 0.0)
-	_since_points += delta
-	if _since_points > decay_delay:
-		# Only the time past the delay counts in the frame the delay ends.
-		var falling := minf(delta, _since_points - decay_delay)
-		value = maxf(value - decay_rate * falling, 0.0)
+	# Only the time past the hold counts in the frame the hold ends.
+	var waiting := minf(delta, _hold_left)
+	_hold_left -= waiting
+	if delta > waiting:
+		value = maxf(value - decay_rate * (delta - waiting), 0.0)
 	for id in _shots.keys():
 		if _clock - float(_shots[id][1]) > SHOT_MEMORY:
 			_shots.erase(id)
@@ -165,5 +170,5 @@ func _physics_process(delta: float) -> void:
 func _reset_after_stagger() -> void:
 	value = clampf(threshold * after_stagger_fraction, 0.0, threshold)
 	_protection_left = maxf(protection_time, 0.0)
-	_since_points = 0.0
+	_hold_left = maxf(decay_delay, 0.0)
 	_recent.clear()

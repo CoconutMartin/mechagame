@@ -98,7 +98,7 @@ func _impact(point: Vector3, normal: Vector3, hit_body: Object = null) -> void:
 		hit_body.on_hit(hit_damage, point - velocity.normalized() * 10.0)
 		if weapon_data != null and weapon_data.stagger_points > 0.0:
 			MechStability.hit_body(hit_body, weapon_data.stagger_points, shot_id, weapon_data.stagger_cap_per_shot,
-					point - velocity.normalized() * 10.0)
+					point - velocity.normalized() * 10.0, weapon_data.stagger_hold_s)
 	if hit_body is GroundSlab and hit_damage >= crater_min_damage and normal.y > 0.7:
 		Crater.spawn(get_parent(), point, crater_radius * sqrt(damage / crater_min_damage), hit_body as Node)
 	if mark_scene != null and not (hit_body is PartHitbox or hit_body is TargetDummy):

@@ -43,6 +43,10 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 ## Aim kick of the shot, given when the beam ends.
 ## Shot id of the beam that fires now (its stagger cap, MechStability).
 var _stagger_shot: int = 0
+## Even stagger (WeaponData.stagger_cap_per_shot above 0): points this beam may still give, and the
+## points of each tick that hits (the full beam's points over all its ticks).
+var _stagger_left: float = 0.0
+var _stagger_tick: float = 0.0
 var _end_kick: float = 0.0
 var charge: float = 0.0
 ## Seconds left in the beam discharge. 0 = not firing.
@@ -116,6 +120,9 @@ func _start_discharge() -> void:
 	discharge_left = maxf(discharge_time * charge, min_discharge)
 	_tick = 0.0
 	_stagger_shot = MechStability.new_shot_id()
+	if _even_stagger():
+		_stagger_left = minf(data.stagger_points, data.stagger_cap_per_shot) * _power
+		_stagger_tick = _stagger_left / maxf(roundf(discharge_left / tick_time), 1.0)
 	_beam = BEAM.instantiate() as BeamShot
 	_beam.width *= lerpf(0.5, 1.6, charge)
 	_beam.hold = true
@@ -150,7 +157,12 @@ func _update_discharge(delta: float) -> void:
 			var falloff := data.damage_factor(origin.distance_to(hit.position))
 			_impact(hit.position, hit.normal, hit.collider, data.damage * _power * share * 2.0 * falloff)
 			# Stagger: the beam's points over its ticks, capped at the points of one full shot.
-			if data.stagger_points > 0.0:
+			if _even_stagger():
+				# Only the ticks that hit give points, so a beam that misses part of the time staggers less.
+				var given := minf(_stagger_tick, _stagger_left)
+				_stagger_left -= given
+				MechStability.hit_body(hit.collider, given, 0, 0.0, controller.mech.global_position)
+			elif data.stagger_points > 0.0:
 				MechStability.hit_body(hit.collider, data.stagger_points * _power * share * 2.0, _stagger_shot,
 						data.stagger_points * _power, controller.mech.global_position)
 		# The beam shakes the view while it fires.
@@ -160,6 +172,12 @@ func _update_discharge(delta: float) -> void:
 	if discharge_left <= 0.0:
 		discharge_left = 0.0
 		_end_discharge()
+
+
+## True when the beam gives its stagger points evenly over its ticks (no per-shot id, so the points of the
+## ticks do not add up to a knock-down).
+func _even_stagger() -> bool:
+	return data.stagger_points > 0.0 and data.stagger_cap_per_shot > 0.0
 
 
 ## The beam ends: the aim kick comes now and the beam fades.

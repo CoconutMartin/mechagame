@@ -985,6 +985,13 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
   - Stagger clip ("Receive torso punch") plays 1.5 x faster (`speed_scale` 1.5 in `data/stagger/punch.tres`; 1.22 s to 0.81 s).
   - Tests: `test_stability.gd` (67 checks) and `test_hit_reactions.gd` pass.
   - Shoulder Cannon balance (user agreed to the proposal 2026-10-17): it must stop to fire and has a 5 s cooldown, so it hits harder and steadier than the hand Auto Cannon: damage 200 (hand 165), stagger points 35 (hand 28), spread 0.15 deg (hand 0.3), recoil 2 deg up and 0.75 side (hand 4 and 1.5). One hit from each shoulder (35 + 35) does not knock down (one shot only). `tools/mech_gen/auto_cannon.py` (`SHOULDER`) is in step with the .tres.
+- Stagger rules and recoil (user requests 2026-10-22; replaces the 2026-10-17 values of the hand Auto Cannon, SMG and Beam Rifle). Enemy: medium mech, standing; the points are not scaled by range (only `range_m` ends a bullet).
+  - Auto Cannon: 34 points per hit and `WeaponData.stagger_hold_s` 4.6 (the meter holds 4.6 s after a hit; the cannon fires every 4 s). 2 hits = 68, no stagger; 3 hits = 102, stagger. No knock-down (34 < 45). 5.1 s between hits: no stagger.
+  - SMG: 2.7 points per bullet. 36 of 45 (80%) = 97.2, no stagger; 38 (85%) = 102.6, stagger.
+  - Beam Rifle: `stagger_points` 102 with `stagger_cap_per_shot` 102 = even beam: the beam's points x power (lerp 0.25 to 1 by charge) spread over its ticks (full beam 20 ticks, 5.1 each), no knock-down. A full charge that hits the whole beam staggers at its end; 95% charge (99.0) or 90% of the ticks (91.8) does not. Ticks of 5.1 now make small flinches (old 1.6 made none). Beam Sniper unchanged.
+  - `MechStability.add_hit` and `hit_body` take `hold`; the longest hold running counts (hold 0 = as before). `bullet.gd` passes the weapon's hold.
+  - Recoil table (aim up / side in degrees, model kick, shake trauma / kick; side is about 0.4 x up; the crosshair has no auto recovery): SMG 0.5 / 0.2, 0.25 m 2 deg, 0.08 / 0.04. Missile pods 0.3 / 0.12, 0.08 / 0.10. Heavy Rifle 2.0 / 0.8, 0.7 m 10 deg, 0.25 / 0.12. Shotgun 3.0 / 1.2, 0.6 m 8 deg, 0.30 / 0.15. Auto Cannon (hand, +50% recoil) 6.0 / 2.25, 1.2 m 6 deg, 0.45 / 0.30. Shoulder Cannon 2.0 / 0.75, 0.35 / 0.25. Beam Rifle and Sniper unchanged (3.5 / 0.5).
+  - Test: `tools/godot/test_stagger_rules.gd` (36 checks, both sides of each rule). `test_stability.gd` expects the new values.
 
 - Handoff 2026-10-16: `docs/HANDOFF_stagger_ranges_fixes.md` (next pipeline: flinch review and three stagger items, open reminders, phase 3 pick-up and free-hand fist, phase 4 jump clips from `models/mixamo/library/Jumping_Up.fbx` and `Landing.fbx`).
 

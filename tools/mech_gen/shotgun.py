@@ -123,7 +123,7 @@ if __name__ == "__main__":
         "display_name": '"Shotgun"', "weight_t": 2.5, "hp": 250.0, "kind": 0, "slot": 0,
         "fire_rate": round(1 / 1.1, 4), "damage": 9.0, "pellets": 8, "projectile_speed": 350.0, "spread_deg": 6.0,
         "recoil_up_deg": 3.0, "recoil_side_deg": 1.2, "model_kick_back": 0.6, "model_kick_up_deg": 8.0,
-        "shake_trauma": 0.045, "shake_kick": 0.065, "magazine": 6, "reload_time": 3.0,
+        "shake_trauma": 0.3, "shake_kick": 0.15, "magazine": 6, "reload_time": 3.0,
         "rest_transform": gun_on_forearm_rest(GRIP, OUT_DEG), "aim_anchor": v3(gun_aim_anchor(GRIP, OUT_DEG)),
         "right_pole_rest": v3((0.4, -1.0, 0.5)), "right_pole_aim": v3((0.4, -1.0, 0.5))},
         "res://scenes/weapons/shotgun.tscn")
