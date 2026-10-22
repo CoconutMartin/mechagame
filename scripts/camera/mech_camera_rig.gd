@@ -29,6 +29,8 @@ extends Node3D
 @export var max_torso_lead_deg: float = 15.0
 ## Vertical mouse aim speed = mouse sensitivity x this value. 0.3 = 70% slower than horizontal.
 @export var pitch_sensitivity_scale: float = 0.3
+## Horizontal mouse aim speed = mouse sensitivity x this value (1.5 since 2026-10-22, user request: +50%).
+@export var yaw_sensitivity_scale: float = 1.5
 ## Arrow keys (aim_left / aim_right / aim_up / aim_down) aim like a mouse moving this many pixels per
 ## second (user request 2026-10-13: an alternative to the mouse). 600 = about 86 deg/s sideways.
 @export var key_aim_pixels_per_second: float = 600.0
@@ -162,7 +164,7 @@ func apply_mouse_motion(relative: Vector2) -> void:
 				deg_to_rad(free_camera_max_pitch_deg))
 		return
 	var sensitivity := mouse_sensitivity * sensitivity_scale * class_factor
-	var turn := Vector2(-relative.x * sensitivity, -relative.y * sensitivity * pitch_sensitivity_scale)
+	var turn := Vector2(-relative.x * sensitivity * yaw_sensitivity_scale, -relative.y * sensitivity * pitch_sensitivity_scale)
 	if free_aim != null and free_camera_amount <= 0.0:
 		# The mech aim moves first. The camera turns by the part past the box edge.
 		turn = free_aim.take_motion(turn * rad_to_deg(1.0)) * deg_to_rad(1.0)
