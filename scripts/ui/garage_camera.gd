@@ -1,7 +1,8 @@
 class_name GarageCamera
 extends Camera3D
-## Garage view (Phase 5): stands still in front of the mech. Drag with the right mouse button to turn it,
-## the mouse wheel moves it in and out. The arrow keys too (user request 2026-10-13): left and right
+## Garage view (Phase 5): stands still in front of the mech. Drag with the right mouse button to turn it
+## all the way around and up and down (free look, user request 2026-10-22), drag with the middle mouse
+## button to move the look point, the mouse wheel moves it in and out (close up to min_distance). The arrow keys too (user request 2026-10-13): left and right
 ## turn it, up and down move it in and out (not while a list is open: the list uses the arrows then).
 ## It runs while the game is paused.
 
@@ -9,9 +10,13 @@ extends Camera3D
 @export var look_height: float = 5.5
 ## Distance from the mech, in meters (start, nearest, farthest).
 @export var distance: float = 19.0
-@export var min_distance: float = 10.0
-@export var max_distance: float = 32.0
-## Camera height above the look point, in meters.
+@export var min_distance: float = 2.0
+@export var max_distance: float = 80.0
+## Up and down turn limit, in degrees (90 = straight down or up; a little less keeps look_at stable).
+@export var max_pitch_deg: float = 88.0
+## Look point move per pixel of middle mouse drag, as a part of the distance.
+@export var pan_per_pixel: float = 0.002
+## Start camera height above the look point, in meters (sets the start pitch).
 @export var height: float = 2.5
 ## Turn speed with no input, in degrees per second (0 = still, user request).
 @export var auto_turn_deg: float = 0.0
@@ -23,7 +28,11 @@ extends Camera3D
 
 var target: Node3D
 var _yaw: float = 0.0
+var _pitch: float = 0.0
 var _dragging: bool = false
+var _panning: bool = false
+## Look point offset from the mech, set by the middle mouse drag.
+var _pan: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
@@ -34,6 +43,8 @@ func _ready() -> void:
 func start(new_target: Node3D) -> void:
 	target = new_target
 	_yaw = target.global_rotation.y + deg_to_rad(200.0)
+	_pitch = atan2(height, distance)
+	_pan = Vector3.ZERO
 	make_current()
 	_place()
 
@@ -73,16 +84,25 @@ func _unhandled_input(event: InputEvent) -> void:
 	if button != null:
 		if button.button_index == MOUSE_BUTTON_RIGHT:
 			_dragging = button.pressed
+		elif button.button_index == MOUSE_BUTTON_MIDDLE:
+			_panning = button.pressed
 		elif button.pressed and button.button_index == MOUSE_BUTTON_WHEEL_UP:
-			distance = maxf(distance - 1.5, min_distance)
+			# Steps shrink close up, so the last meters stay easy to set.
+			distance = maxf(distance - maxf(distance * 0.1, 0.3), min_distance)
 		elif button.pressed and button.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			distance = minf(distance + 1.5, max_distance)
+			distance = minf(distance + maxf(distance * 0.1, 0.3), max_distance)
 	var motion := event as InputEventMouseMotion
 	if motion != null and _dragging:
 		_yaw -= deg_to_rad(motion.relative.x * drag_deg_per_pixel)
+		var limit := deg_to_rad(max_pitch_deg)
+		_pitch = clampf(_pitch + deg_to_rad(motion.relative.y * drag_deg_per_pixel), -limit, limit)
+	elif motion != null and _panning:
+		var step := distance * pan_per_pixel
+		_pan += (-global_basis.x * motion.relative.x + global_basis.y * motion.relative.y) * step
 
 
 func _place() -> void:
-	var center := target.global_position + Vector3.UP * look_height
-	global_position = center + Vector3(sin(_yaw), 0.0, cos(_yaw)) * distance + Vector3.UP * height
+	var center := target.global_position + Vector3.UP * look_height + _pan
+	var flat := Vector3(sin(_yaw), 0.0, cos(_yaw)) * cos(_pitch)
+	global_position = center + (flat + Vector3.UP * sin(_pitch)) * distance
 	look_at(center)
