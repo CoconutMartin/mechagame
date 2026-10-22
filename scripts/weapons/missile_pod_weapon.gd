@@ -5,14 +5,15 @@ extends MechWeapon
 ## FCS max locks (and the missiles left). Release: one missile per lock. No lock: one missile fires
 ## straight at the aim point. Uses ammo: the pod reloads one missile at a time (reload_time /
 ## magazine each), so it can lock and fire with the missiles it has, even while it reloads.
-## A volley at locked targets entrenches the mech (it stops and braces). A free shot (no lock)
-## does not.
+## Every volley, locked or free, entrenches the mech on the ground (it stops and braces while the
+## missiles launch, user request 2026-10-22: stop to fire, when able). In the air and while boosting
+## the pod fires without the stop (ShoulderBrace.stop).
 
 const MISSILE := preload("res://scenes/weapons/missile.tscn")
 
 ## Seconds between missile launches in a volley.
 @export var launch_interval: float = 0.12
-## The mech stays entrenched this long after the last missile of a locked volley, in seconds.
+## The mech stays entrenched this long after the last missile of a volley, in seconds.
 @export var brace_after: float = 0.6
 ## Layers that block the lock line of sight (1 = world).
 @export_flags_3d_physics var sight_mask: int = 17
@@ -89,12 +90,10 @@ func _fire_volley() -> void:
 		locks.clear()
 		return
 	var targets: Array = locks.duplicate()
-	var locked := not targets.is_empty()
-	if not locked:
+	if targets.is_empty():
 		targets = [null]  # Straight at the aim point.
 	targets = targets.slice(0, ammo)
-	if locked:
-		controller.mech.brace(targets.size() * launch_interval + brace_after)
+	controller.shoulder_brace.stop(targets.size() * launch_interval + brace_after)
 	_volley_shot = MechStability.new_shot_id()
 	for target in targets:
 		_queue.append(target)

@@ -55,6 +55,9 @@ signal landed(fall_speed: float)
 @export var dodge_exit_time: float = 0.8
 ## Slowdown while the mech charges its jump jets (m/s per second). The mech stands still to charge.
 @export var jump_charge_brake: float = 9.0
+## Deceleration (m/s^2) while the mech braces to fire a shoulder weapon (the cannon brace, a missile volley:
+## ShoulderBrace). Stronger than the jump charge brake, so the mech stands still before the wind-up ends.
+@export var brace_deceleration: float = 14.0
 
 @export_group("Turning")
 ## The torso and the legs turn separately. The torso turns toward the camera aim (torso turn speed),
@@ -565,7 +568,7 @@ func _update_horizontal(delta: float) -> void:
 		# No control after a landing, but the mech keeps walking out its momentum.
 		rate = _get_stop_deceleration()
 	elif charging:
-		rate = jump_charge_brake
+		rate = brace_deceleration if is_bracing else jump_charge_brake
 	elif not has_input:
 		rate = _get_stop_deceleration() if on_floor else deceleration
 	elif is_boosting:

@@ -26,6 +26,11 @@ extends Node
 ## weapon on the ground is a node under a WeaponDrop and is disabled.
 ## MechAssembler (or SkeletalWeaponMount on a rigged mech) calls mount() before the other nodes start.
 
+## Stop to fire and the brace of the shoulder weapons (user request 2026-10-22). A preload and no class_name.
+const ShoulderBraceScript := preload("res://scripts/weapons/shoulder_brace.gd")
+## The brace stance of a rigged mech (a skeleton modifier made in _ready).
+const BracePoseScript := preload("res://scripts/animation/brace_pose.gd")
+
 ## A hand let go of a weapon (Tab drop, knock-down, death). is_right: the right hand slot (a two-hand weapon
 ## is the right slot). WeaponPartSync takes the HP part of the weapon off the mech.
 signal hand_weapon_released(is_right: bool, weapon: MechWeapon)
@@ -96,6 +101,8 @@ signal hand_weapon_equipped(is_right: bool, weapon: MechWeapon)
 
 ## True when a two-hand weapon is held in the right hand alone.
 var one_hand_hold: bool = false
+## Stop to fire for the back weapons and the brace amount of the shoulder cannons (made in _ready).
+var shoulder_brace: ShoulderBraceScript
 ## The two fists of the empty hands (made once, on first use; null = never made or the arm is gone).
 var right_fist: MeleeWeapon
 var left_fist: MeleeWeapon
@@ -143,6 +150,11 @@ var _melee: SkeletalMeleeAnimation
 func _ready() -> void:
 	# After MechInput (-10), before WeaponPose (5) and the weapons.
 	process_physics_priority = 1
+	shoulder_brace = ShoulderBraceScript.new()
+	shoulder_brace.name = "ShoulderBrace"
+	shoulder_brace.mech = mech
+	add_child(shoulder_brace)
+	_make_brace_pose.call_deferred()
 
 
 ## attach: adds a socket-group scene to the frame and returns the added nodes (MechAssembler.attach).
@@ -539,10 +551,15 @@ func _wire_shield(data: WeaponData) -> void:
 	shield_mount.cover = torso.find_child("ShieldCover", true, false)
 	shield_mount.shield_scale = data.shield_scale
 	mech_shield.area_m2 = data.shield_area_m2
-	# The arm holds the shield in one place (rest = raised).
+	# The hand holds the shield at its rest place; LMB raises it to the guard place (ShieldPose, user request
+	# 2026-10-22): ShieldPose puts the hand behind the guard and ShieldMount moves the shield there.
 	if shield_pose != null and shield_pose.rest != null and shield_pose.raised != null:
 		shield_pose.rest.position = data.shield_hand
 		shield_pose.raised.position = data.shield_hand
+		shield_pose.shield_rest = shield_mount.rest_mount
+		shield_pose.set_guard(data.shield_area_m2)
+		shield_mount.pose = shield_pose
+		shield_mount.move_to_cover = true
 	arm_ik_left.target = left_hand
 
 
@@ -1146,6 +1163,7 @@ func _physics_process(delta: float) -> void:
 		weapon_pose.wants_raise = false
 		if left_pose != null:
 			left_pose.wants_raise = false
+		shoulder_brace.step(delta, false)
 		return
 	var wants := {}
 	if right_weapon != null:
@@ -1170,6 +1188,8 @@ func _physics_process(delta: float) -> void:
 				break
 	for weapon in wants:
 		weapon.set_trigger(wants[weapon] and _may_fire(weapon))
+	# A shoulder cannon that waits for its shot: the mech stops and braces (ShoulderBrace).
+	shoulder_brace.step(delta, _shoulder_wants_brace())
 	input.stance_lock = false
 	if right_weapon != null and not right_weapon is MeleeWeapon:
 		var right_on := _may_fire(right_weapon)
@@ -1191,6 +1211,29 @@ func _physics_process(delta: float) -> void:
 		for pod in [back_left, back_right]:
 			if pod != null:
 				pod.start_reload()
+
+
+## A rigged mech takes the brace stance while a shoulder cannon waits and fires: a skeleton modifier before
+## the arm rig (BracePose).
+func _make_brace_pose() -> void:
+	if not animate_free_left_arm or left_arm_view or mech == null:
+		return
+	var skeleton := mech.find_child("Skeleton3D", true, false) as Skeleton3D
+	if skeleton == null:
+		return
+	var pose := BracePoseScript.new()
+	pose.name = "BracePose"
+	pose.brace = shoulder_brace
+	pose.mech = mech
+	skeleton.add_child(pose)
+
+
+## True when a shoulder cannon waits for the brace.
+func _shoulder_wants_brace() -> bool:
+	for weapon: MechWeapon in [back_left, back_right]:
+		if weapon is ShoulderGunWeapon and (weapon as ShoulderGunWeapon).wants_brace():
+			return true
+	return false
 
 
 ## The two arm guns (right and left hand) work together (dual guns, user rule 2026-10-15), like the

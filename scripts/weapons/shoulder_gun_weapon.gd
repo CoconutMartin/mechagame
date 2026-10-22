@@ -3,14 +3,40 @@ extends GunWeapon
 ## A gun on top of a shoulder (Shoulder Cannon, new mech; Q = left, E = right). It sits on the shoulder
 ## armor and turns with it (SkeletalArmRig moves the shoulder mount). Stop to fire: it fires only while
 ## the mech stands still on the ground; shots fly to the mech aim point.
+## Brace (user request 2026-10-22): a key press arms the cannon. The mech stops and takes the brace stance
+## (WeaponController.shoulder_brace, the lower stance of BracePose), and the shot goes out when the wind-up
+## is done. The wind-up and hold times are on ShoulderBrace. A short tap still fires (the cannon stays armed).
+## The two cannons share one brace, so both fire together when both keys are down.
 
 ## The mech must be slower than this (m/s) to fire.
 @export var max_fire_speed: float = 0.5
 
+## True while a shot waits for the brace.
+var armed: bool = false
+
+
+## True while the shot waits for the brace (WeaponController keeps this cannon as the active weapon).
+func is_busy() -> bool:
+	return armed
+
+
+## True when the cannon wants the mech to brace now.
+func wants_brace() -> bool:
+	return armed
+
 
 func _update(_delta: float) -> void:
-	if trigger_held and can_use() and is_stopped():
+	var brace := controller.shoulder_brace
+	if trigger_held and can_use():
+		armed = true
+	# The shot is off when the cannon cannot fire any more or the mech cannot stand still (it jumped,
+	# fell, boosted, was staggered).
+	if armed and (not can_use() or brace == null or not brace.can_stop()):
+		armed = false
+	if armed and brace.is_set() and is_stopped():
+		armed = false
 		_fire()
+		brace.shot()
 
 
 ## True while the mech stands still on the ground.
@@ -20,6 +46,8 @@ func is_stopped() -> bool:
 
 
 func get_status_text() -> String:
+	if reload_left <= 0.0 and armed:
+		return "%s  BRACING" % super()
 	if reload_left <= 0.0 and not is_stopped():
 		return "%s  STOP TO FIRE" % super()
 	return super()

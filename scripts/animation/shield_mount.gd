@@ -13,9 +13,12 @@ extends Node
 @export var cover: Node3D
 ## Size of the shield model.
 @export var shield_scale: float = 1.2
-## False: the shield stays on the forearm (rest_mount) when raised; the arm pose already covers
-## (Sanggigilid, user's arm drawing 2026-10-12).
+## False: the shield stays on the forearm (rest_mount) when raised.
+## True: it moves to the cover place (the guard; WeaponController turns it on for every shield, user request
+## 2026-10-22: LMB raises the shield in front of the body).
 @export var move_to_cover: bool = true
+## The pose that knows the guard place. With it, the cover marker takes the guard place every frame.
+var pose: ShieldPose
 
 
 func _ready() -> void:
@@ -24,6 +27,14 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	var t := smoothstep(0.0, 1.0, shield.amount) if move_to_cover else 0.0
-	var place := rest_mount.global_transform.interpolate_with(cover.global_transform, t)
+	var place := rest_mount.global_transform
+	if pose != null and pose.has_guard and move_to_cover:
+		# The guard path of ShieldPose (the shield moves out first, turns later). The first 10% of the raise
+		# blend from the live forearm place to it, so the arm's sway does not make a jump.
+		cover.transform = pose.guard
+		var torso := cover.get_parent_node_3d()
+		var path := torso.global_transform * pose.place_at(shield.amount)
+		place = place.interpolate_with(path, smoothstep(0.0, 0.1, shield.amount))
+	elif move_to_cover:
+		place = place.interpolate_with(cover.global_transform, smoothstep(0.0, 1.0, shield.amount))
 	shield_node.global_transform = Transform3D(place.basis.orthonormalized() * Basis.from_scale(Vector3.ONE * shield_scale), place.origin)
