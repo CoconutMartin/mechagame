@@ -360,7 +360,7 @@ if __name__ == "__main__":
         "rest_transform": xf_rows(rest_rows, stock_rest), "aim_anchor": v3(sniper_anchor),
         "right_pole_rest": v3((1.0, -0.6, 0.4)), "right_pole_aim": v3((1.0, -0.6, 0.3)),
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
-        "aim_twist_deg": 25.0, "aim_tilt_deg": 4.0, "zoom_fov": 52.6},
+        "aim_twist_deg": 25.0, "aim_tilt_deg": 4.0, "zoom_fov": 43.4},
         "res://scenes/weapons/beam_sniper.tscn")
     # Beam Rifle: two hands, right hand on the pistol grip, left hand under the lower rail. Aim = the
     # sniper hold.
@@ -382,7 +382,7 @@ if __name__ == "__main__":
         "rest_transform": xf_rows(br_rows, br_rest), "aim_anchor": v3(br_anchor),
         "right_pole_rest": v3((1.0, -0.6, 0.4)), "right_pole_aim": v3((1.0, -0.6, 0.3)),
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
-        "aim_twist_deg": 25.0, "aim_tilt_deg": 4.0, "zoom_fov": 52.6},
+        "aim_twist_deg": 25.0, "aim_tilt_deg": 4.0, "zoom_fov": 43.4},
         "res://scenes/weapons/beam_rifle.tscn")
     # Pile bunker: on the forearm like the auto cannon (user, 2026-10-12): the fist (weapon root) at the
     # drawing's hand places, elbow 45 deg at neutral, 90 deg when aiming.
@@ -409,5 +409,5 @@ if __name__ == "__main__":
     res("data/weapons/warden_shield.tres", {"display_name": '"Hex Shield"', "weight_t": 3.0, "hp": 1200.0,
         "kind": 4, "shield_area_m2": round(ONE_HAND["shield_area"], 3), "shield_scale": SHIELD_SCALE,
         # Large shield (user's arm drawing 2026-10-12): elbow 90 deg, forearm level.
-        "shield_hand": v3(arm_poses.hand(arm_poses.ELBOW_L, arm_poses.AIM_DEG))},
+        "shield_hand": v3(arm_poses.hand(arm_poses.ELBOW_L, arm_poses.AIM_DEG)), "blocks_dodge": "true"},
         "res://scenes/weapons/warden_shield.tscn")
