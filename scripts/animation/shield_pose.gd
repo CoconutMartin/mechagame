@@ -23,7 +23,7 @@ extends Node
 ## Place of a large shield (Hex Shield) when up: its center, weapon frame torso space (-Z forward, +X right).
 @export var guard_large: Vector3 = Vector3(-1.0, 0.3, -3.2)
 ## Place of a small shield when up.
-@export var guard_small: Vector3 = Vector3(-0.8, 0.6, -2.6)
+@export var guard_small: Vector3 = Vector3(-0.8, 2.2, -2.8)
 ## Turn of a large and a small shield about the plate's face normal when up (degrees).
 @export var guard_roll_large_deg: float = 0.0
 @export var guard_roll_small_deg: float = 0.0

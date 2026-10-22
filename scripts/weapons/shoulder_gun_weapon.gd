@@ -30,8 +30,8 @@ func _update(_delta: float) -> void:
 	if trigger_held and can_use():
 		armed = true
 	# The shot is off when the cannon cannot fire any more or the mech cannot stand still (it jumped,
-	# fell, boosted, was staggered).
-	if armed and (not can_use() or brace == null or not brace.can_stop()):
+	# fell, was staggered). A boost or a run on the ground ends for the shot (ShoulderBrace.can_cancel).
+	if armed and (not can_use() or brace == null or not (brace.can_stop() or brace.can_cancel())):
 		armed = false
 	if armed and brace.is_set() and is_stopped():
 		armed = false

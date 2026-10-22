@@ -486,7 +486,7 @@ func _update_boost(delta: float) -> void:
 	# Shift held after the walk steps: run until boost is ready.
 	is_running = is_on_floor() and not is_boosting and input.boost_held and has_input \
 			and _walk_steps >= boost_start_steps and not landing_recovery.is_recovering() \
-			and not jump_charge.is_charging and not kneel.is_kneeling
+			and not jump_charge.is_charging and not kneel.is_kneeling and not is_bracing
 	if not is_running and not is_boosting:
 		# The run steps start again from zero before the next boost.
 		_run_steps_done = 0

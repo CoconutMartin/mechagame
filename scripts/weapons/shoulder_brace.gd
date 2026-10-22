@@ -8,6 +8,8 @@ extends Node
 ## BracePose), and the shot goes out when the brace is set and the mech stands still. The brace holds
 ## while the cannon fires (hold_time after each shot) and the stance recovers after that.
 ## Missile pods: they call stop() for the time of a volley (the mech does not walk while it launches).
+## Boost cancel (user choice 2026-10-22): a cannon key while the mech boosts or runs on the ground ends the
+## boost. The mech stops (the boost stop or skid plays), then braces and fires.
 
 ## Seconds from the start of the brace to the first shot (the wind-up).
 @export var brace_time: float = 0.4
@@ -31,6 +33,9 @@ var _stagger: SkeletalStaggerAnimation
 func step(delta: float, want: bool) -> void:
 	_hold_left = maxf(_hold_left - delta, 0.0)
 	var holding := (want or _hold_left > 0.0) and can_stop() and not _kneeling()
+	if want and not holding and can_cancel():
+		# Hold the brace: the boost and the run end, and the mech slows down to a stop.
+		mech.brace(stop_hold)
 	if holding:
 		mech.brace(stop_hold)
 		amount = move_toward(amount, 1.0, delta / maxf(brace_time, 0.01))
@@ -55,6 +60,24 @@ func can_stop() -> bool:
 		return false
 	if mech.is_boosting or mech.is_running or mech.is_skidding or mech.is_exiting_boost or mech.is_lunging \
 			or mech.root_motion_active:
+		return false
+	if mech.dodge != null and mech.dodge.is_busy():
+		return false
+	if mech.jump_charge != null and mech.jump_charge.is_charging:
+		return false
+	if mech.landing_recovery != null and mech.landing_recovery.is_recovering():
+		return false
+	return not _is_staggered()
+
+
+## True when a cannon key can stop the mech from a boost or a run: on the ground, moving fast (boost, run, or
+## the stop after them), and not in a dodge, a jump charge, a landing, a lunge, a fall or a stagger.
+func can_cancel() -> bool:
+	if mech == null or mech.is_wrecked or mech.is_fallen or not mech.is_on_floor():
+		return false
+	if not (mech.is_boosting or mech.is_running or mech.is_skidding or mech.is_exiting_boost):
+		return false
+	if mech.is_lunging or mech.root_motion_active:
 		return false
 	if mech.dodge != null and mech.dodge.is_busy():
 		return false

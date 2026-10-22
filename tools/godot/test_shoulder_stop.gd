@@ -9,7 +9,8 @@ extends SceneTree
 ##     move it while the cannon waits and fires.
 ##  4. Both cannons (Q and E) fire in the same frame.
 ##  5. Missile pod on the ground: the mech stops for the volley; in the air the pod fires and nothing stops.
-##  6. Ground boost: the pod fires without the stop, the cannon waits (does not fire).
+##  6. Ground boost: the pod fires without the stop. The cannon key ends the boost (user choice 2026-10-22): the
+##     mech stops, then the cannon fires with the mech still.
 ##  7. Air: the cannon does not fire.
 ## Exits with code 1 on any failure. Headless:
 ##   godot --headless --path . --script res://tools/godot/test_shoulder_stop.gd
@@ -245,10 +246,6 @@ func _boost_and_air() -> void:
 		frames += 1
 	_check(_player.is_boosting, "the mech boosts on the ground")
 	await _frames(30)
-	Input.action_press("fire_back_left")
-	await _frames(90)
-	_check(_shots.is_empty() and _player.is_boosting, "boosting: the cannon waits and the boost goes on (%d shots)" % _shots.size())
-	Input.action_release("fire_back_left")
 	var speed := _player.get_horizontal_speed()
 	Input.action_press("fire_back_right")
 	await _frames(10)
@@ -256,6 +253,21 @@ func _boost_and_air() -> void:
 	await _frames(20)
 	_check(_player.is_boosting and not _player.is_bracing and _player.get_horizontal_speed() > speed * 0.8,
 			"boosting: the pod fires and nothing stops the mech (%.1f m/s)" % _player.get_horizontal_speed())
+	_shots.clear()
+	speed = _player.get_horizontal_speed()
+	Input.action_press("fire_back_left")
+	await _frames(3)
+	_check(not _player.is_boosting and not _player.is_running, "boosting: the cannon key ends the boost (boosting %s)" % _player.is_boosting)
+	var waited := 0
+	var still_at_shot := false
+	while _shots.is_empty() and waited < 600:
+		await _frames(1)
+		waited += 1
+		if not _shots.is_empty():
+			still_at_shot = _player.get_horizontal_speed() < 0.5
+	_check(not _shots.is_empty() and still_at_shot,
+			"boosting: the mech stops from %.1f m/s and the cannon fires still (%d shots after %d frames)" % [speed, _shots.size(), waited])
+	Input.action_release("fire_back_left")
 	Input.action_release("boost")
 	Input.action_release("move_forward")
 	await _frames(240)

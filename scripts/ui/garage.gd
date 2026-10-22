@@ -15,6 +15,10 @@ extends CanvasLayer
 @export var switcher: LoadoutSwitcher
 ## Most mods on one mech.
 @export var max_mods: int = 3
+## Physics frames a rebuilt mech runs while the game is paused, so its pose, hands and weapons settle (before
+## this the new mech stood in its unposed rest: hands below the wrists, user report 2026-10-22). Its input and
+## camera stay off during them.
+@export var settle_frames: int = 30
 
 var is_open: bool = false
 
@@ -29,6 +33,9 @@ var _pickers := {}
 var _items := {}
 ## Other screen layers (HUD, reticle) hidden while the garage is open.
 var _hidden_layers: Array[CanvasLayer] = []
+## Settle frames left for the rebuilt mech, and the nodes kept off during them.
+var _settle_left: int = 0
+var _settle_off: Array[Node] = []
 
 const PARTS := [
 	["head", "Head", "heads"], ["core", "Core", "cores"], ["arm_left", "Arm L", "arms_left"],
@@ -50,6 +57,14 @@ func _ready() -> void:
 	add_child(_camera)
 	_build_ui()
 	_root.visible = false
+
+
+func _physics_process(_delta: float) -> void:
+	if _settle_left <= 0:
+		return
+	_settle_left -= 1
+	if _settle_left == 0:
+		_end_settle()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -89,6 +104,7 @@ func close() -> void:
 	if not is_open:
 		return
 	is_open = false
+	_end_settle()
 	_root.visible = false
 	for layer_node in _hidden_layers:
 		if is_instance_valid(layer_node):
@@ -139,10 +155,31 @@ func _on_changed(_index: int = 0) -> void:
 
 
 func _rebuild() -> void:
+	_end_settle()
 	switcher.rebuild(_copy(_edit), switcher.mech.global_transform)
 	_camera.target = switcher.mech
 	_camera.make_current()
 	_refresh_stats()
+	_start_settle(switcher.mech)
+
+
+## The new mech runs for settle_frames although the game is paused (no input, no camera).
+func _start_settle(mech: Mech) -> void:
+	mech.process_mode = Node.PROCESS_MODE_ALWAYS
+	for node in mech.find_children("*", "MechInput", true, false) + mech.find_children("*", "MechCameraRig", true, false):
+		node.process_mode = Node.PROCESS_MODE_DISABLED
+		_settle_off.append(node)
+	_settle_left = settle_frames
+
+
+func _end_settle() -> void:
+	_settle_left = 0
+	for node in _settle_off:
+		if is_instance_valid(node):
+			node.process_mode = Node.PROCESS_MODE_INHERIT
+	_settle_off.clear()
+	if switcher != null and is_instance_valid(switcher.mech):
+		switcher.mech.process_mode = Node.PROCESS_MODE_INHERIT
 
 
 func _reset() -> void:

@@ -2,8 +2,9 @@ class_name PulseScanEffect
 extends MeshInstance3D
 ## The pulse scan look (user answer 2026-10-14): a full screen wire frame pass
 ## (shaders/pulse_scan_wire.gdshader). The ring spreads from the scan origin at the ring speed; each
-## place shows the green wire frame for the wire frame time after the ring passes it. Frees itself
-## when the last place has faded.
+## place shows the green wire frame for the wire frame time after the ring passes it. The end is a second,
+## dimmer ring at the same speed that wipes the wire frame out as it goes (user request 2026-10-22). Frees
+## itself when the end ring has reached the range.
 
 const WIRE_SHADER := preload("res://shaders/pulse_scan_wire.gdshader")
 
@@ -13,6 +14,10 @@ const WIRE_SHADER := preload("res://shaders/pulse_scan_wire.gdshader")
 @export var tint: float = 0.5
 ## World grid spacing in meters.
 @export var grid_m: float = 10.0
+## Width of the band (m) in which the wire frame goes out ahead of the end ring.
+@export var end_band_m: float = 40.0
+## Brightness of the end ring (the front ring is 0.7).
+@export var end_ring_strength: float = 0.45
 
 var data: PulseScanData
 var _elapsed: float = 0.0
@@ -44,6 +49,8 @@ func _ready() -> void:
 	_material.set_shader_parameter(&"color", color)
 	_material.set_shader_parameter(&"tint", tint)
 	_material.set_shader_parameter(&"grid_m", grid_m)
+	_material.set_shader_parameter(&"end_band", end_band_m)
+	_material.set_shader_parameter(&"end_ring_strength", end_ring_strength)
 	material_override = _material
 
 
