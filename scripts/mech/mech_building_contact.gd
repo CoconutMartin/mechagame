@@ -4,7 +4,8 @@ extends Node
 ## mech body does not collide with. While the mech moves through a building, each part whose hitbox is
 ## inside a chunk takes a little damage (it adds up: walking through many buildings can break parts),
 ## and every chunk it touches breaks at once (user request 2026-10-12: the mech smashes a path; what
-## loses its support above falls).
+## loses its support above falls). Each smashed chunk shakes the player's camera (phase 5d, user choice
+## 2026-10-22: a shake per broken wall piece).
 
 const BUILDING_LAYER := 16
 
@@ -23,7 +24,18 @@ const BUILDING_LAYER := 16
 ## Seconds between checks.
 @export var interval: float = 0.1
 
+@export_group("Smash shake (phase 5d)")
+## Camera trauma and kick for each smashed chunk (player mech only).
+@export var smash_trauma: float = 0.12
+@export var smash_kick: float = 0.1
+## Glass and door chunks shake this much of a normal chunk.
+@export var light_shake_factor: float = 0.4
+## Most trauma and kick from one check (many chunks at once, a boost through a wall).
+@export var max_smash_trauma: float = 0.5
+@export var max_smash_kick: float = 0.4
+
 var _wait: float = 0.0
+var _shake: CameraShake
 
 
 func _physics_process(delta: float) -> void:
@@ -55,9 +67,25 @@ func _physics_process(delta: float) -> void:
 					smashed += light_chunk_factor if light else 1.0
 		if inside:
 			health.damage(key, part_damage_per_second * pace * interval + part_damage_per_chunk * smashed, Vector3.INF, &"environment")
+	var shake := 0.0
 	for chunk: UrbanChunk in chunks:
 		if is_instance_valid(chunk) and chunk.damage_owner != null:
+			var light := chunk.kind == UrbanChunk.Kind.GLASS or chunk.kind == UrbanChunk.Kind.DOOR
+			shake += light_shake_factor if light else 1.0
 			chunk.damage_owner.break_chunk(chunk)
+	if shake > 0.0:
+		_shake_camera(shake)
+
+
+## Shakes the player's camera for the smashed chunks (count: light chunks count less).
+func _shake_camera(count: float) -> void:
+	if not mech.is_in_group(&"player"):
+		return
+	if _shake == null:
+		_shake = mech.find_child("Camera", true, false) as CameraShake
+		if _shake == null:
+			return
+	_shake.add_shake(minf(smash_trauma * count, max_smash_trauma), minf(smash_kick * count, max_smash_kick))
 
 
 ## Building chunks that overlap a hitbox's boxes.
