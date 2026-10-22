@@ -25,7 +25,7 @@ extends SkeletonModifier3D
 
 @export_group("Toe-off")
 ## Toe-down angle (degrees) the foot reaches while the ankle rises toe_off_height above standing.
-@export var toe_off_deg: float = 34.0
+@export var toe_off_deg: float = 26.0
 ## Ankle rise (m) that gives the full toe-off angle. The angle grows with the rise.
 @export var toe_off_height: float = 0.25
 ## Above this ankle rise (m) the clip pose alone is used again (the swing). Must be above toe_off_height.
@@ -33,7 +33,7 @@ extends SkeletonModifier3D
 
 @export_group("Heel strike")
 ## Toe-up angle (degrees) the foot reaches strike_height above the ground, while the ankle comes down.
-@export var strike_deg: float = 24.0
+@export var strike_deg: float = 14.0
 ## Ankle height (m above standing) of the full heel strike angle. The angle shrinks to flat at the ground.
 @export var strike_height: float = 0.2
 ## Above this ankle height (m) the clip pose alone is used again. Must be above strike_height.
@@ -46,6 +46,9 @@ extends SkeletonModifier3D
 @export var move_threshold: float = 0.3
 ## How fast the added turn follows its target (per second).
 @export var follow_speed: float = 60.0
+## Fastest change of the added turn (degrees per second). Without it the foot flicked from toes down to
+## toes up in 0.1 s just before each landing (user report 2026-10-22: the walk looks like a rooster).
+@export var max_turn_rate_deg: float = 100.0
 
 ## Added turn now (degrees, + = toes up) per foot (for tests).
 var added_deg: PackedFloat32Array = PackedFloat32Array([0.0, 0.0])
@@ -82,7 +85,7 @@ func _process_modification_with_delta(delta: float) -> void:
 		var clip_deg := rad_to_deg(asin(clampf(world.basis.y.y, -1.0, 1.0)))
 		var target_deg := _target_deg(clip_deg, height, _rising[side])
 		var wanted := (target_deg - clip_deg) * speed_weight
-		_amount[side] = lerpf(_amount[side], wanted, follow)
+		_amount[side] = move_toward(_amount[side], lerpf(_amount[side], wanted, follow), max_turn_rate_deg * delta)
 		added_deg[side] = _amount[side]
 		if absf(_amount[side]) > 0.01:
 			_apply(skeleton, bone, world, deg_to_rad(_amount[side]))
@@ -104,8 +107,12 @@ func _target_deg(clip_deg: float, height: float, rising: bool) -> float:
 ## Turns the foot toes-up by pitch (radians, - = toes down) about its side axis, and lifts the foot so
 ## the toes (toes down) or the heel (toes up) stay at the height they had.
 func _apply(skeleton: Skeleton3D, bone: int, world: Transform3D, pitch: float) -> void:
-	# Toward the toes (+Y) turning down (+Z, the bone's down) is a positive turn about its X axis.
-	var turned := Basis(Vector3.RIGHT, -pitch)
+	# A turn of the bone about its X axis by + moves the toes (+Y) toward the bone's +Z. The foot bone's +Z
+	# points up (the sole is at -Z), so + is toes up. (Before 2026-10-22 this was -pitch: the added pitch
+	# turned the toes the wrong way, so the toes dug 0.2 m into the ground before each landing and the
+	# foot lifted again: the foot "kicked the ground twice".) The sign follows the bone's Z in case a
+	# model export turns the bone roll.
+	var turned := Basis(Vector3.RIGHT, pitch if world.basis.z.y >= 0.0 else -pitch)
 	var new_basis := world.basis * turned
 	var corner := Vector3(0.0, toe_length, -sole_depth) if pitch < 0.0 else Vector3(0.0, -heel_length, -sole_depth)
 	var lift := maxf((world.basis * corner).y - (new_basis * corner).y, 0.0)
