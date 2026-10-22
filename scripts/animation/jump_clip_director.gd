@@ -38,9 +38,22 @@ var min_rise_speed: float = 0.25
 var max_rise_speed: float = 1.5
 ## Seconds the push (crouch to takeoff_time) takes in the air when the mech launches at the release.
 var air_push_time: float = 0.12
+## Weight of the jump_up clip while the jets charge on the ground (0 = the coded crouch only, user report
+## 2026-10-22: the clip's crouch looked like a squat on a toilet). From the push on the weight goes to 1.
+var charge_weight: float = 0.0
+## Seconds the jump_up clip takes to come in at the launch when it did not play in the charge.
+var launch_blend: float = 0.22
+## Seconds the fall clip takes to come in at the top of a jump (user report 2026-10-22: the change from the
+## top of the jump into the fall was rough). The fall clip starts at its hold pose then (its own start,
+## the step off an edge, is not played in the air after a jump).
+var apex_blend: float = 0.5
 
-## Per layer now.
+## Per layer now (eased: smoothstep of _linear, so a blend starts and ends gently).
 var weights: Array[float] = [0.0, 0.0, 0.0]
+## Per layer, the blend amount that moves at the clip's blend rate.
+var _linear: Array[float] = [0.0, 0.0, 0.0]
+## True while the fall clip comes in at the top of a jump (apex_blend).
+var _from_jump: bool = false
 var times: Array[float] = [0.0, 0.0, 0.0]
 ## 1 = the coded landing crouch plays, 0 = a landing clip plays instead.
 var coded_landing: float = 1.0
@@ -93,6 +106,7 @@ func update(delta: float) -> void:
 		else:
 			_landing_clip = false
 			_falling_clip = false
+			_from_jump = false
 	coded_landing = 0.0 if _landing_clip else 1.0
 	_slew(delta, targets, free)
 
@@ -105,7 +119,7 @@ func _update_charge(targets: Array[float]) -> void:
 		return
 	# A launch can follow in any frame of the charge.
 	_rising = true
-	targets[0] = 1.0
+	targets[0] = 1.0 if jump_charge.is_pushing else charge_weight
 	if jump_charge.is_pushing:
 		if _release_time < 0.0:
 			_release_time = times[0]
@@ -151,7 +165,8 @@ func _update_air(delta: float, targets: Array[float]) -> void:
 		if (_peak_y - mech.global_position.y) + remaining < min_fall_height:
 			return
 		_falling_clip = true
-		times[1] = 0.0
+		_from_jump = weights[0] > 0.01
+		times[1] = fall_start.get_hold_time() if _from_jump else 0.0
 		times[2] = 0.0
 	targets[1] = 1.0
 	times[1] = minf(times[1] + delta * fall_start.speed_scale, fall_start.get_hold_time())
@@ -187,16 +202,23 @@ func _slew(delta: float, targets: Array[float], free: bool) -> void:
 	var all := clips()
 	for i in LAYERS:
 		var clip := all[i]
-		var rate := 1.0 / maxf(clip.blend_in if targets[i] > weights[i] else clip.blend_out, 0.01)
+		var blend_in := clip.blend_in
+		if i == 0 and _rising and charge_weight < 1.0:
+			blend_in = launch_blend
+		elif i == 1 and _from_jump:
+			blend_in = apex_blend
+		var rate := 1.0 / maxf(blend_in if targets[i] > _linear[i] else clip.blend_out, 0.01)
 		if not free:
 			rate = 12.0
-		# Release (landing, last part): the weight follows its target at once.
-		var at_once := _landing_clip and i == 2 and targets[i] < weights[i]
-		weights[i] = targets[i] if at_once else move_toward(weights[i], targets[i], rate * delta)
+		# Release (landing, last part): the weight follows its target at once (the target is eased).
+		var at_once := _landing_clip and i == 2 and targets[i] < _linear[i]
+		_linear[i] = targets[i] if at_once else move_toward(_linear[i], targets[i], rate * delta)
+		weights[i] = _linear[i] if at_once else smoothstep(0.0, 1.0, _linear[i])
 	for i in range(LAYERS - 1, 0, -1):
 		if weights[i] >= 0.999:
 			for lower in i:
 				weights[lower] = 0.0
+				_linear[lower] = 0.0
 	for i in LAYERS:
 		if weights[i] <= 0.0 and targets[i] <= 0.0 and not _falling_clip and not _landing_clip and not _rising:
 			times[i] = 0.0

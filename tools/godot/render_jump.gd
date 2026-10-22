@@ -12,7 +12,11 @@ extends SceneTree
 ## JUMP_FALL (a start height in m: the mech is dropped from there), JUMP_VIEW (side, front, front_left, game: the game camera), JUMP_CAM_DIST (m, default 30), JUMP_FOV (degrees, default 32),
 ## JUMP_CLEAR=0 (no clearance check: faster),
 ## JUMP_CLEAR_EVERY (check every n frames), JUMP_STOP_AT (s), JUMP_GUARD_HEIGHT (m), JUMP_GUARD_FORWARD (m),
-## JUMP_TAIL (frames after the landing before the run ends, default 90).
+## JUMP_TAIL (frames after the landing before the run ends, default 90),
+## JUMP_SET (properties of the jump pose, "name=value,..."; a vector as x/y/z), JUMP_HUD=1 (keep the HUD in the pictures),
+## JUMP_SHOTS (pictures only at these times, a fast run: comma list, "1.5" = t seconds, "r+0.2" = seconds
+## after the release, "l+0.3" = seconds after the landing; the picture is jump_<entry>.png; the render loop
+## is off between the pictures).
 ## Clearance (phase 4, 2026-10-19): every frame the points of the weapon, shield, pod and hand meshes are
 ## tested against the leg, pelvis, torso and head armor boxes (each leg mesh's rest box on its main bone, CLEAR_MARGIN smaller);
 ## the log column "clear" counts the points inside, and the summary names the worst frame and the meshes.
@@ -70,6 +74,10 @@ func _run() -> void:
 	map.add_child(camera)
 	camera.current = not game_view
 	_hide_trees_near(map, player.global_position + side * 40.0, player.global_position)
+	# The HUD (lock bracket, bars) covers the mech in the pictures; JUMP_HUD=1 keeps it.
+	if OS.get_environment("JUMP_HUD") != "1":
+		for layer in root.find_children("*", "CanvasLayer", true, false):
+			(layer as CanvasLayer).visible = false
 	var probe := LegProbe.new()
 	probe.mech = player
 	(player.find_child("Skeleton3D", true, false) as Skeleton3D).add_child(probe)
@@ -78,6 +86,21 @@ func _run() -> void:
 		pose.guard_height = float(OS.get_environment("JUMP_GUARD_HEIGHT"))
 	if OS.get_environment("JUMP_GUARD_FORWARD") != "":
 		player.find_child("ArmRig", true, false).set("guard_forward", float(OS.get_environment("JUMP_GUARD_FORWARD")))
+	# JUMP_SET: "name=value,..." sets properties of the jump pose (or its director) for a test, e.g. the
+	# old look: guard_enabled=true,charge_clip_weight=1,charge_knee_deg=105,charge_lean_deg=22,
+	# charge_hips_back=0.35,charge_chest_deg=0.
+	for pair in OS.get_environment("JUMP_SET").split(",", false):
+		var key := pair.get_slice("=", 0).strip_edges()
+		var text := pair.get_slice("=", 1).strip_edges()
+		var value: Variant = (text == "true") if text in ["true", "false"] else float(text)
+		if text.contains("/"):
+			value = Vector3(float(text.get_slice("/", 0)), float(text.get_slice("/", 1)), float(text.get_slice("/", 2)))
+		if key in pose:
+			pose.set(key, value)
+		if pose.director != null and key in pose.director:
+			pose.director.set(key, value)
+		elif pose.director != null and key == "charge_clip_weight":
+			pose.director.set("charge_weight", value)
 	var recovery := player.landing_recovery
 	await _frames(5)
 	var origin := player.global_position
@@ -107,6 +130,15 @@ func _run() -> void:
 	var clear_worst_depth_t := 0.0
 	var clear_worst_depth_name := ""
 	var max_frames := 60 * 14
+	# JUMP_SHOTS: entries [kind ("t", "r" or "l"), seconds, label, done].
+	var shots: Array = []
+	for entry in OS.get_environment("JUMP_SHOTS").split(",", false):
+		var text := entry.strip_edges()
+		var kind := text.left(1) if text.length() > 1 and text.substr(1, 1) == "+" else "t"
+		shots.append([kind, float(text.substr(2) if kind != "t" else text), text.replace("+", "p"), false])
+	var fast := not shots.is_empty() and _render
+	if fast:
+		RenderingServer.render_loop_enabled = false
 	while frame < max_frames:
 		await _frames(1)
 		frame += 1
@@ -158,6 +190,24 @@ func _run() -> void:
 			_follow(camera, player, side, origin)
 		# During the charge only the last pictures are saved.
 		var wanted := frame % step == 0 and (released or t >= charge - 0.4 or drop > 0.0)
+		if fast:
+			wanted = false
+			var ahead := false
+			for item: Array in shots:
+				if item[3]:
+					continue
+				var base := 0.0 if item[0] == "t" else (charge if item[0] == "r" else (landed_frame / 60.0 if landed_frame >= 0 else INF))
+				var due := base + (item[1] as float)
+				if item[0] == "l" and landed_frame < 0:
+					ahead = ahead or phase == "air_down"
+					continue
+				if t >= due - 0.0001:
+					await RenderingServer.frame_post_draw
+					root.get_viewport().get_texture().get_image().save_png("%s/jump_%s.png" % [_out_dir, item[2]])
+					item[3] = true
+				elif t >= due - 2.0 / 60.0:
+					ahead = true
+			RenderingServer.render_loop_enabled = ahead
 		if _render and wanted and shot < 400:
 			await RenderingServer.frame_post_draw
 			var image := root.get_viewport().get_texture().get_image()
@@ -305,7 +355,10 @@ class LegProbe extends SkeletonModifier3D:
 			var bone := mesh.skin.get_bind_bone(index)
 			if bone < 0:
 				bone = skeleton.find_bone(mesh.skin.get_bind_name(index))
-			out.append([bone, (per_bone[index] as AABB).grow(-CLEAR_MARGIN)])
+			var box := (per_bone[index] as AABB).grow(-CLEAR_MARGIN)
+			# A bone with a thin vertex group has no box left (a negative size makes has_point print an error).
+			if box.size.x > 0.0 and box.size.y > 0.0 and box.size.z > 0.0:
+				out.append([bone, box])
 		_boxes[mesh] = out
 		if OS.get_environment("CLEAR_DEBUG") != "":
 			for item: Array in out:

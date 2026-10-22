@@ -18,6 +18,10 @@ extends SkeletonModifier3D
 ## crouch (B).
 ## The legs use a two-bone solve (the ankle on its target, the knee toward the front, the foot flat).
 ## The arms keep their weapon holds (SkeletalArmRig runs after this node and follows the torso).
+## User report 2026-10-22: the charge looked like squatting on a toilet (the Jumping_Up crouch: hips
+## dropped back, torso hunched) and the jump guard held the weapon out like an offering and twisted the
+## arms. Now the charge is the coded athletic crouch (hips over the feet, chest up, knees forward; the
+## Jumping_Up clip plays from the release on) and the guard is small (guard_max).
 ## A skeleton modifier must be a child of the Skeleton3D; this node moves itself there at start. Keep
 ## it after SkeletalAimStance and before SkeletalArmRig.
 
@@ -28,12 +32,19 @@ extends SkeletonModifier3D
 
 @export_group("A Charge")
 ## Inner knee angle (degrees), torso lean from the hips (degrees) and hips moved back (m), at full charge.
-@export var charge_knee_deg: float = 105.0
-@export var charge_lean_deg: float = 22.0
-@export var charge_hips_back: float = 0.35
+## Athletic crouch (user report 2026-10-22): the hips stay over the feet, the knees point forward.
+@export var charge_knee_deg: float = 110.0
+@export var charge_lean_deg: float = 28.0
+@export var charge_hips_back: float = 0.1
+## The chest comes back up from the hips' lean by this much at full charge (degrees): the waist
+## straightens, so the chest is up and a little forward, the head is up.
+@export var charge_chest_deg: float = 14.0
+## Part of the Jumping_Up clip that plays while the jets charge (0 = the coded crouch only; the clip plays
+## from the release, the push and the tuck). The clip's own crouch hunches the torso with the hips back.
+@export_range(0.0, 1.0) var charge_clip_weight: float = 0.0
 ## How fast the crouch follows the charge going up and lets go at the launch (per second).
 @export var charge_in_speed: float = 3.0
-@export var charge_out_speed: float = 8.0
+@export var charge_out_speed: float = 5.0
 
 @export_group("A2 Launch and B0 Air")
 ## Launch: how long the pushed-out legs last after the takeoff (s), and the toe drop (degrees).
@@ -71,17 +82,29 @@ extends SkeletonModifier3D
 ## The weapon frame (held weapons, shield, free hand places) moves this much (torso space: +Y up, -Z
 ## forward) at the deepest crouch, so the thighs coming up keep off the arms (SkeletalArmRig).
 @export var weapon_lift: Vector3 = Vector3(0.0, 0.8, -0.15)
-## Jump guard height (user choice 2026-10-19: "the arms lift the weapon up to the chest"): at full guard
-## the weapon frame (weapons, shield, free hand places) rises straight up until its origin is at least
-## this high above the feet (m; the torso frame stands about 5.6 m high), so the clip poses (Jumping_Up,
-## Landing: deep lean, thighs high) keep the knees off the weapons and hands. The arms reach up toward it.
-@export var guard_height: float = 6.5
+## While a jump clip plays (the tuck while rising, the fall, the landing) the weapon frame is at this
+## offset instead (torso space), so the knees coming up keep off the weapons and hands. It replaces the
+## jump guard (user report 2026-10-22: the guard held the weapon out like an offering).
+@export var air_lift: Vector3 = Vector3(0.0, 1.8, -0.3)
+## Jump guard height: at full guard the weapon frame rises straight up until its origin is at least this
+## high above the feet (m; the torso frame stands about 5.6 m high). 0 = no rise (user report 2026-10-22:
+## 6.5 held the weapon far above and out in front; air_lift and the small guard keep the knees off).
+@export var guard_height: float = 0.0
 
 @export_group("Guard")
-## Guard (user choice 2026-10-19: "the arms lift the weapon up to the chest"): during the charge, a
-## clip jump, the fall and the landing clip the weapon frame rises to guard_height and free or fist
-## hands go to a guard place in front of the chest (SkeletalArmRig), so the knees coming up keep off the
-## weapons and hands. How fast the guard comes on and goes off (per second).
+## Mild guard (user report 2026-10-22: the full guard held the weapon out like an offering and twisted the
+## arms; the user choice of 2026-10-19 was "the arms lift the weapon up to the chest"). While a jump clip
+## plays (the tuck while rising, the fall, the landing; not in the charge) the arm rig turns the weapon
+## frame level, moves it forward and brings free or fist hands toward the chest (SkeletalArmRig), each by
+## the guard amount, and guard_max keeps that amount small: the weapons stay close to the body in a ready
+## carry and the knees coming up keep off them. guard_enabled false turns it off.
+@export var guard_enabled: bool = true
+## The guard comes on at most this far (0 to 1): the arm rig scales the level turn, the forward move
+## (SkeletalArmRig.guard_forward) and the free hands' move to the chest by it.
+@export_range(0.0, 1.0) var guard_max: float = 0.5
+## True: the guard is also on in the charge (the look before 2026-10-22; the charge needs none).
+@export var guard_in_charge: bool = false
+## How fast the guard comes on and goes off (per second).
 @export var guard_in_speed: float = 4.0
 @export var guard_out_speed: float = 2.5
 ## The guard goes off this many seconds before the landing recovery ends, so the weapons are back in
@@ -105,6 +128,7 @@ extends SkeletonModifier3D
 
 @export_group("Bones")
 @export var pelvis_bone: StringName = &"pelvis"
+@export var torso_bone: StringName = &"torso"
 @export var leg_bones_left: PackedStringArray = ["thigh_L", "shin_L", "foot_L"]
 @export var leg_bones_right: PackedStringArray = ["thigh_R", "shin_R", "foot_R"]
 
@@ -132,9 +156,14 @@ func _ready() -> void:
 		reparent.call_deferred(model.find_child("Skeleton3D", true, false), false)
 
 
-## Weapon offset now (torso space): weapon_lift by the crouch or landing depth.
+## Weapon offset now (torso space): weapon_lift by the crouch or landing depth, and with a clip (the tuck
+## while rising, the fall, the landing) air_lift by the clip weight.
 func weapon_offset() -> Vector3:
-	return weapon_lift * clampf(maxf(crouch, landing), 0.0, 1.0)
+	var base := weapon_lift * clampf(maxf(crouch, landing), 0.0, 1.0)
+	if director == null:
+		return base
+	var clip := clampf(maxf(director.weights[0], maxf(director.weights[1], director.weights[2])), 0.0, 1.0)
+	return base.lerp(air_lift, smoothstep(0.0, 1.0, clip))
 
 
 ## Jump guard: how far (m) the weapon frame rises straight up when its origin is height m above the feet.
@@ -164,6 +193,13 @@ func _process_modification_with_delta(delta: float) -> void:
 		if mech.is_on_floor():
 			_pose_ground(skeleton, pelvis, parent, now, legs, upper, lower)
 		else:
+			# Just launched: the charge lean and the chest fade out in the air too (user report 2026-10-22:
+			# the pelvis snapped 28 degrees in the first frame in the air).
+			if crouch > 0.001:
+				now = Transform3D(Basis(Vector3.RIGHT, deg_to_rad(charge_lean_deg * crouch)) * now.basis, now.origin)
+				var local := parent.affine_inverse() * now
+				skeleton.set_bone_pose_rotation(pelvis, local.basis.get_rotation_quaternion())
+				_straighten_chest(skeleton, now)
 			_pose_air(skeleton, now, legs, upper, lower)
 	_pose_clips(skeleton, parent, now, legs)
 
@@ -180,6 +216,7 @@ func _setup_clips(skeleton: Skeleton3D) -> void:
 	director.landing = landing_clip
 	director.min_fall_height = min_fall_height
 	director.start_delay = fall_clip_delay
+	director.charge_weight = charge_clip_weight
 	director.ground_mask = ground_mask
 
 
@@ -211,8 +248,8 @@ func _update_weights(delta: float) -> void:
 	# A: the crouch follows the charge; the launch (charge back to 0) lets go fast.
 	var charging := jump_charge != null and jump_charge.is_charging and on_floor and free
 	var standing_up := on_floor and landing_recovery != null and landing_recovery.time_left < guard_release_lead
-	var guard_on := free and (charging or (director.is_active() and not standing_up))
-	guard = move_toward(guard, 1.0 if guard_on else 0.0, (guard_in_speed if guard_on else guard_out_speed) * delta)
+	var guard_on := guard_enabled and free and ((guard_in_charge and charging) or (director.is_active() and not standing_up))
+	guard = move_toward(guard, guard_max if guard_on else 0.0, (guard_in_speed if guard_on else guard_out_speed) * delta)
 	var crouch_target := smoothstep(0.0, 1.0, jump_charge.charge) if charging else 0.0
 	crouch = move_toward(crouch, crouch_target, (charge_in_speed if crouch_target > crouch else charge_out_speed) * delta)
 	# A2 and B0: the flight of a jump or a fall (not a dodge hop or the boost exit leap).
@@ -283,6 +320,17 @@ func _pose_ground(skeleton: Skeleton3D, pelvis: int, parent: Transform3D, now: T
 	for i in legs.size():
 		var side := 1.0 if i == 0 else -1.0
 		_solve(skeleton, pelvis_pose, legs[i], ankles[i], legs[i].foot_basis, Vector3(knee_out * side, 0.0, 1.0))
+	_straighten_chest(skeleton, pelvis_pose)
+
+
+## The waist straightens against the hips' lean by the crouch: the chest comes up.
+func _straighten_chest(skeleton: Skeleton3D, pelvis_pose: Transform3D) -> void:
+	var torso := skeleton.find_bone(torso_bone)
+	if torso >= 0 and crouch > 0.001 and charge_chest_deg != 0.0:
+		var torso_now := pelvis_pose * skeleton.get_bone_pose(torso)
+		var up := Transform3D(Basis(Vector3.RIGHT, -deg_to_rad(charge_chest_deg) * crouch) * torso_now.basis, torso_now.origin)
+		var torso_local := pelvis_pose.affine_inverse() * up
+		skeleton.set_bone_pose_rotation(torso, torso_local.basis.orthonormalized().get_rotation_quaternion())
 
 
 ## Air poses (A2 and B0): the pelvis stays; the ankles come up toward the hips, the toes point down.
