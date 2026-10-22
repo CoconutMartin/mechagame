@@ -36,6 +36,8 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 ## Meshes that light up one after another while charging (back to front), and the emitter lens.
 @export var coil_paths: Array[NodePath] = [^"Coil0", ^"Coil1", ^"Coil2"]
 @export var emitter_path: NodePath = ^"Emitter"
+## The 3 charge indicator lamps (lamp 1 first), lit by the charge level. Empty = no indicator.
+@export var lamp_paths: Array[NodePath] = []
 
 ## 0 to 1 while LMB is held.
 ## Aim kick of the shot, given when the beam ends.
@@ -46,6 +48,9 @@ var charge: float = 0.0
 ## Seconds left in the beam discharge. 0 = not firing.
 var discharge_left: float = 0.0
 
+## Charge of the shot that fires now. The indicator lamps keep this level until the beam ends.
+var _fired_charge: float = 0.0
+var _lamps: ChargeLights = null
 var _power: float = 0.0
 var _tick: float = 0.0
 var _beam: BeamShot = null
@@ -62,6 +67,14 @@ func _ready() -> void:
 	for path in coil_paths:
 		coils.append(get_node(path) as MeshInstance3D)
 	_glow.setup(coils, get_node(emitter_path) as MeshInstance3D, _muzzle)
+	# The indicator lamps on the stock show the charge level (1, 2 or 3 lamps).
+	if not lamp_paths.is_empty():
+		_lamps = ChargeLights.new()
+		add_child(_lamps)
+		var lamps: Array[MeshInstance3D] = []
+		for path in lamp_paths:
+			lamps.append(get_node(path) as MeshInstance3D)
+		_lamps.setup(lamps)
 
 
 ## True while charging or firing (WeaponController keeps it active and raised).
@@ -71,6 +84,9 @@ func is_busy() -> bool:
 
 func _update(delta: float) -> void:
 	_glow.level = 1.0 if discharge_left > 0.0 else charge
+	if _lamps != null:
+		# A tap fires with charge 0 or close to it and still lights lamp 1.
+		_lamps.level = maxf(_fired_charge, 0.001) if discharge_left > 0.0 else charge
 	# Knocked down (or wrecked): no beam and no charge (user rule 2026-10-16). A beam that fires stops,
 	# and a charge is lost, so releasing the trigger on the ground fires nothing.
 	if controller.mech.is_fallen or controller.mech.is_wrecked:
@@ -95,6 +111,7 @@ func _update(delta: float) -> void:
 
 func _start_discharge() -> void:
 	consume()
+	_fired_charge = charge
 	_power = lerpf(min_power, 1.0, charge)
 	discharge_left = maxf(discharge_time * charge, min_discharge)
 	_tick = 0.0

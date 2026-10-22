@@ -263,14 +263,16 @@ BR_HANDS = {
 
 def beam_rifle_scene(path):
     """Beam Rifle scene: the Blender model (.glb) under a BeamRifleWeapon root, plus the hand and
-    muzzle markers. The cyan ring lights up while charging, the muzzle bore is the emitter."""
+    muzzle markers. The cyan ring lights up while charging, the muzzle bore is the emitter, the 3 lamps on the
+    stock (Indicator1..3) show the charge level."""
     o = ['[gd_scene format=3]\n',
          '[ext_resource type="Script" path="res://scripts/weapons/beam_rifle_weapon.gd" id="script"]',
          '[ext_resource type="PackedScene" path="res://models/beam_rifle/beam_rifle.glb" id="model"]\n',
          '[node name="BeamRifle" type="Node3D"]',
          'script = ExtResource("script")',
          'coil_paths = Array[NodePath]([NodePath("Model/Coil0")])',
-         'emitter_path = NodePath("Model/MuzzleBore")\n',
+         'emitter_path = NodePath("Model/MuzzleBore")',
+         'lamp_paths = Array[NodePath]([NodePath("Model/Indicator1"), NodePath("Model/Indicator2"), NodePath("Model/Indicator3")])\n',
          '[node name="Model" parent="." instance=ExtResource("model")]\n']
     # Hand markers: the fist hollows on the grip sockets (see SNIPER_HANDS).
     for name, pos in (("GripRight", BR_HANDS["right_rest"]), ("GripRightRest", BR_HANDS["right_rest"]),
