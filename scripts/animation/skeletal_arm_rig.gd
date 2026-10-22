@@ -451,23 +451,30 @@ func _joints_from_bones(side: Dictionary) -> void:
 ## moves back to a limited left hand (if it falls short), and the right arm takes its grip again.
 func _solve_arms(active: Array[Dictionary]) -> void:
 	_solve_arms_once(active)
+	# The elbow of this frame is the start of the next frame's speed limit (a second solve of the same arm in
+	# one frame, the two-hand weapon, must start from the frame before too).
 	for side in active:
-		_limit_elbow_speed(side.ik as TwoBoneIK, side)
+		if side.has("next_elbow"):
+			side.last_elbow = side.next_elbow
 
 
 func _solve_arms_once(active: Array[Dictionary]) -> void:
 	var left_ik: TwoBoneIK = null
 	var right_ik: TwoBoneIK = null
+	var left_side := {}
+	var right_side := {}
 	for side in active:
 		if side.ik == ik_left:
 			left_ik = ik_left
+			left_side = side
 		else:
 			right_ik = ik_right
+			right_side = side
 	if right_ik != null:
 		_restore_weapon(weapons.right_weapon if weapons != null else null, 1)
 		right_ik.solve()
 		_tuck_elbow(right_ik)
-		_limit_swing(right_ik, swing_limit(true))
+		_limit_arm(right_ik, right_side, swing_limit(true))
 		_move_weapon_to_hand(weapons.right_weapon if weapons != null else null, right_ik, 1)
 	if left_ik == null:
 		return
@@ -476,7 +483,7 @@ func _solve_arms_once(active: Array[Dictionary]) -> void:
 	_restore_weapon(left_gun, 0)
 	left_ik.solve()
 	_tuck_elbow(left_ik)
-	_limit_swing(left_ik, swing_limit(false))
+	_limit_arm(left_ik, left_side, swing_limit(false))
 	_move_weapon_to_hand(left_gun, left_ik, 0)
 	var weapon := weapons.right_weapon if weapons != null else null
 	if right_ik == null or weapon == null or not weapon.is_ancestor_of(left_ik.target):
@@ -488,8 +495,18 @@ func _solve_arms_once(active: Array[Dictionary]) -> void:
 	_weapon_moved[1] = weapon.transform
 	right_ik.solve()
 	_tuck_elbow(right_ik)
-	_limit_swing(right_ik, swing_limit(true))
+	_limit_arm(right_ik, right_side, swing_limit(true))
 
+
+## The limits of one arm, in this order (user report 2026-10-22: the arms flickered in the fall with the Beam
+## Sniper): the elbow turns into the swing limit (the hand stays on its target), the elbow swing speed is
+## held, and only then the upper arm stops at the limit where the elbow could not clear it. The stop is
+## last, so it grows from zero with the overshoot. Before, the speed limit came after it and the arm
+## jumped when the elbow turn (up to 180 degrees) gave way to the stop.
+func _limit_arm(ik: TwoBoneIK, side: Dictionary, limit: float) -> void:
+	_swivel_swing(ik, limit)
+	_limit_elbow_speed(ik, side)
+	_stop_swing(ik, limit)
 
 
 ## Holds the elbow's swing around the shoulder-to-hand line to max_elbow_speed_deg from the last frame.
@@ -512,7 +529,7 @@ func _limit_elbow_speed(ik: TwoBoneIK, side: Dictionary) -> void:
 			if absf(turn) > 0.00001:
 				ik.root_joint.global_basis = (Basis(reach, turn) * ik.root_joint.global_basis).orthonormalized()
 				now = (ik.mid_joint.global_position - shoulder).normalized()
-	side.last_elbow = torso_basis.inverse() * now
+	side.next_elbow = torso_basis.inverse() * now
 
 ## Turns the elbow around the shoulder-to-hand line (the hand stays on its target) to the place
 ## nearest its neutral places: the elbow height of the flat block, and as little block turn as
@@ -610,16 +627,16 @@ func swing_limit(right: bool) -> float:
 
 
 ## Holds the upper arm within limit forward and back: its lean toward the torso's front or back
-## (sideways is free). The elbow turns first; if that is not enough, the upper arm stops at the limit
-## and the forearm points at the IK target from the elbow.
-func _limit_swing(ik: TwoBoneIK, limit: float) -> void:
+## (sideways is free). The elbow turns first (_swivel_swing); if that is not enough, the upper arm stops at
+## the limit (_stop_swing) and the forearm points at the IK target from the elbow.
+func _swivel_swing(ik: TwoBoneIK, limit: float) -> void:
 	var shoulder := ik.root_joint
 	var torso_basis := torso.global_basis.orthonormalized()
 	var arm := torso_basis.inverse() * (ik.mid_joint.global_position - shoulder.global_position).normalized()
 	var lean := asin(clampf(-arm.z, -1.0, 1.0))
 	if absf(lean) <= limit:
 		return
-	# First the elbow turns around the shoulder-to-hand line (the hand stays on its target): the
+	# The elbow turns around the shoulder-to-hand line (the hand stays on its target): the
 	# smallest turn that brings the upper arm inside the limit.
 	var reach := (ik.target.global_position - shoulder.global_position).normalized()
 	var elbow_out := ik.mid_joint.global_position - shoulder.global_position
@@ -630,7 +647,16 @@ func _limit_swing(ik: TwoBoneIK, limit: float) -> void:
 			if absf(asin(clampf(-turned.z, -1.0, 1.0))) <= limit and -turned.y >= cos(deg_to_rad(max_lift_deg)):
 				shoulder.global_basis = (swivel * shoulder.global_basis).orthonormalized()
 				return
-	# No elbow turn helps: the upper arm stops at the limit and the hand falls short.
+
+
+## No elbow turn helps: the upper arm stops at the limit and the hand falls short.
+func _stop_swing(ik: TwoBoneIK, limit: float) -> void:
+	var shoulder := ik.root_joint
+	var torso_basis := torso.global_basis.orthonormalized()
+	var arm := torso_basis.inverse() * (ik.mid_joint.global_position - shoulder.global_position).normalized()
+	var lean := asin(clampf(-arm.z, -1.0, 1.0))
+	if absf(lean) <= limit:
+		return
 	var flat := Vector2(arm.x, arm.y)
 	flat = flat.normalized() if flat.length_squared() > 0.000001 else Vector2(0.0, -1.0)
 	var held := Vector3(flat.x * cos(limit), flat.y * cos(limit), -signf(lean) * sin(limit))

@@ -123,6 +123,11 @@ extends SkeletonModifier3D
 @export var min_fall_height: float = 1.0
 ## Seconds in the air before the fall clip may start.
 @export var fall_clip_delay: float = 0.1
+## The landing clip's air frames come in this many seconds before its touchdown frame is due (a slow start,
+## user report 2026-10-22: the fall looked like two animations), and take land_blend seconds to come in.
+@export var landing_lead: float = 0.3
+## Seconds the landing clip takes to come in while the mech is still in the air.
+@export var landing_blend: float = 0.5
 ## Ground layer for the ray that predicts the touchdown (1 = world).
 @export_flags_3d_physics var ground_mask: int = 1
 
@@ -217,6 +222,8 @@ func _setup_clips(skeleton: Skeleton3D) -> void:
 	director.min_fall_height = min_fall_height
 	director.start_delay = fall_clip_delay
 	director.charge_weight = charge_clip_weight
+	director.land_lead = landing_lead
+	director.land_blend = landing_blend
 	director.ground_mask = ground_mask
 
 

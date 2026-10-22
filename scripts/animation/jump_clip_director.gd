@@ -47,6 +47,13 @@ var launch_blend: float = 0.22
 ## top of the jump into the fall was rough). The fall clip starts at its hold pose then (its own start,
 ## the step off an edge, is not played in the air after a jump).
 var apex_blend: float = 0.5
+## The landing clip's air frames (its start to the touchdown frame) start to come in this many seconds
+## before the touchdown frame is due (user report 2026-10-22: the fall looked like two animations, the fall
+## pose and then, 0.37 s before the landing, a very different pose in 0.15 s). The clip starts slowly and
+## reaches the real playback speed at the touchdown.
+var land_lead: float = 0.3
+## Seconds the landing clip takes to come in while the mech is still in the air.
+var land_blend: float = 0.5
 
 ## Per layer now (eased: smoothstep of _linear, so a blend starts and ends gently).
 var weights: Array[float] = [0.0, 0.0, 0.0]
@@ -169,11 +176,18 @@ func _update_air(delta: float, targets: Array[float]) -> void:
 		times[1] = fall_start.get_hold_time() if _from_jump else 0.0
 		times[2] = 0.0
 	targets[1] = 1.0
+	# The jump clip stays under the fall clip until it is full: the two cross-fade. With both fading, the
+	# layers over each other let the coded air pose show through in the middle (user report 2026-10-22).
+	if _from_jump and weights[1] < 0.999:
+		targets[0] = 1.0
 	times[1] = minf(times[1] + delta * fall_start.speed_scale, fall_start.get_hold_time())
 	time_to_impact = _impact_time(remaining)
-	if time_to_impact <= landing.contact_time:
+	var span := landing.contact_time + land_lead
+	if time_to_impact <= span:
 		targets[2] = 1.0
-		times[2] = maxf(times[2], landing.contact_time - time_to_impact)
+		# Eased: slow at the start of the clip, the real speed (about) at the touchdown frame.
+		var progress := clampf(1.0 - time_to_impact / span, 0.0, 1.0)
+		times[2] = maxf(times[2], landing.contact_time * progress * progress)
 
 
 ## A new landing: the landing clip after a fall of min_fall_height or more.
@@ -207,6 +221,8 @@ func _slew(delta: float, targets: Array[float], free: bool) -> void:
 			blend_in = launch_blend
 		elif i == 1 and _from_jump:
 			blend_in = apex_blend
+		elif i == 2 and not _landing_clip:
+			blend_in = land_blend
 		var rate := 1.0 / maxf(blend_in if targets[i] > _linear[i] else clip.blend_out, 0.01)
 		if not free:
 			rate = 12.0
