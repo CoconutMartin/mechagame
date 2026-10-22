@@ -124,6 +124,8 @@ if __name__ == "__main__":
         "fire_rate": round(1 / 1.1, 4), "damage": 9.0, "pellets": 8, "projectile_speed": 350.0, "spread_deg": 6.0,
         "recoil_up_deg": 3.0, "recoil_side_deg": 1.2, "model_kick_back": 0.6, "model_kick_up_deg": 8.0,
         "shake_trauma": 0.3, "shake_kick": 0.15, "magazine": 6, "reload_time": 3.0,
-        "rest_transform": gun_on_forearm_rest(GRIP, OUT_DEG), "aim_anchor": v3(gun_aim_anchor(GRIP, OUT_DEG)),
+        # Forearm line (2026-10-22): solved in game so the gun axis continues the forearm, the shoulder block flat.
+        "rest_transform": "Transform3D(0.96253914, 0.13264355, -0.23648286, 0, 0.8721707, 0.48920166, 0.27114287, -0.47087574, 0.8394984, 2.216935, 1.0603794, -0.81731224)",
+        "aim_anchor": "Vector3(1.9012, 1.5442, -1.0062)",
         "right_pole_rest": v3((0.4, -1.0, 0.5)), "right_pole_aim": v3((0.4, -1.0, 0.5))},
         "res://scenes/weapons/shotgun.tscn")

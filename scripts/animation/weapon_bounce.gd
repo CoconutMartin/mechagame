@@ -11,18 +11,20 @@ extends Node
 @export var weapons: WeaponController
 @export var weapon_pose: WeaponPose
 ## How much of the torso's acceleration pushes the weapon the other way (1 = a free weight).
-@export var inertia: float = 1.0
-## Spring back to the rest place (1 / s^2) and its damping (1 / s).
-@export var stiffness: float = 70.0
-@export var damping: float = 5.0
+@export var inertia: float = 0.6
+## Spring back to the rest place (1 / s^2) and its damping (1 / s). Heavy and damped (user report
+## 2026-10-22, "the left arm makes a pounding motion while walking"): damping 11 is about critical for
+## stiffness 30 (2 x sqrt(30)), so the weapon and the left hand on it settle without a bounce.
+@export var stiffness: float = 30.0
+@export var damping: float = 11.0
 ## How far the weapon may come toward the body (meters, the rest gap), and the speed kept on a bounce.
 @export var body_gap: float = 0.07
-@export_range(0.0, 1.0) var restitution: float = 0.5
+@export_range(0.0, 1.0) var restitution: float = 0.0
 ## Largest swing each way (meters, torso space: x along the body, y up and down, z away from the
 ## body). The weapon bounces at these limits too (the chest slopes and the legs are below it).
-@export var max_swing: Vector3 = Vector3(0.06, 0.08, 0.3)
+@export var max_swing: Vector3 = Vector3(0.04, 0.05, 0.2)
 ## Torso accelerations are smoothed over this time (seconds): the steps, not frame noise.
-@export var smoothing: float = 0.05
+@export var smoothing: float = 0.12
 
 ## Offset of the weapon now (torso space).
 var offset: Vector3 = Vector3.ZERO

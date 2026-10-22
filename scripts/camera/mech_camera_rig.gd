@@ -40,6 +40,11 @@ extends Node3D
 ## angle (about 21 degrees at FOV 65), so -3.1 gives a camera pitch of -24 degrees.
 @export var start_pitch_deg: float = -3.1
 @export var max_pitch_deg: float = 15.0
+## While a two-hand rifle is raised (the sniping stance), the aim may not go lower than this pitch, in degrees
+## (negative = down). Lower than about -16 the right arm reaches its swing limit, the rifle is dragged to the
+## hand and its butt goes into the right forearm (mesh check 2026-10-22); -14 keeps a margin. The limit
+## blends in with the raise (SkeletalAimStance.amount) and out with the lower. Not used by the free camera.
+@export var ads_min_pitch_deg: float = -14.0
 
 @export_group("Aim Spring")
 ## Oscillations per second. Lower = slower, heavier aim.
@@ -100,6 +105,8 @@ var _free_yaw: float = 0.0
 var _free_pitch: float = 0.0
 var _yaw_spring := AimSpring.new()
 var _pitch_spring := AimSpring.new()
+## The mech's sniping stance (found on first use); its amount raises the ADS look-down limit.
+var _stance: SkeletalAimStance
 
 @onready var _pitch_node: Node3D = $Pitch
 
@@ -160,7 +167,20 @@ func apply_mouse_motion(relative: Vector2) -> void:
 		# The mech aim moves first. The camera turns by the part past the box edge.
 		turn = free_aim.take_motion(turn * rad_to_deg(1.0)) * deg_to_rad(1.0)
 	_target_yaw += turn.x
-	_target_pitch = clampf(_target_pitch + turn.y, deg_to_rad(min_pitch_deg), deg_to_rad(max_pitch_deg))
+	_target_pitch = clampf(_target_pitch + turn.y, get_min_pitch(), deg_to_rad(max_pitch_deg))
+
+
+## Lowest aim pitch now (radians): min_pitch_deg, raised toward ads_min_pitch_deg by the sniping stance.
+func get_min_pitch() -> float:
+	var low := deg_to_rad(min_pitch_deg)
+	if _stance == null or not is_instance_valid(_stance):
+		_stance = null
+		for node in target.find_children("*", "SkeletalAimStance", true, false):
+			_stance = node as SkeletalAimStance
+			break
+	if _stance == null or _stance.amount <= 0.0:
+		return low
+	return lerpf(low, maxf(deg_to_rad(ads_min_pitch_deg), low), _stance.amount)
 
 
 func _process(delta: float) -> void:
@@ -172,12 +192,19 @@ func _process(delta: float) -> void:
 		var kick := free_aim.take_camera_kick() * deg_to_rad(1.0)
 		_target_yaw += kick.x
 		_target_pitch = clampf(_target_pitch + kick.y, deg_to_rad(min_pitch_deg), deg_to_rad(max_pitch_deg))
+	# A raise (ads_min_pitch_deg) lifts the limit under a pitch that was set before: the aim comes up with it.
+	_target_pitch = maxf(_target_pitch, get_min_pitch())
 	_limit_torso_lead()
 	var weight := 1.0 - exp(-follow_sharpness * delta)
 	global_position = global_position.lerp(_goal_position(), weight)
 	var max_lag := deg_to_rad(max_aim_lag_deg)
 	_yaw_spring.update(_target_yaw, aim_frequency, aim_damping, max_lag, delta)
 	_pitch_spring.update(_target_pitch, aim_frequency, aim_damping, max_lag, delta)
+	# The view itself keeps the ADS limit too (the spring would lag below it while the raise lifts the limit).
+	var floor_pitch := get_min_pitch()
+	if _pitch_spring.value < floor_pitch:
+		_pitch_spring.value = floor_pitch
+		_pitch_spring.velocity = maxf(_pitch_spring.velocity, 0.0)
 	yaw = _yaw_spring.value
 	pitch = _pitch_spring.value
 	# The camera stays behind the torso. While the mech is down (fallen or wrecked) it follows the

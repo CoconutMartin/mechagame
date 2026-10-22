@@ -281,7 +281,8 @@ def beam_rifle_scene(path):
                       ("GripLeftAimLow", BR_HANDS["left_aim_low"]), ("Muzzle", BR_MUZZLE)):
         o.append(f'[node name="{name}" type="Marker3D" parent="."]\ntransform = {xf(pos)}\n')
     # Grip sockets: the pistol grip (tilted 24 deg, 0.24 x 0.45 m) and the lower rail (along the gun).
-    o.append(grip_socket("GripSocketRight", BR_GRIP_RIGHT, 24.0, 0.16, hand_reach=True))
+    # Radius 0.26 (was 0.16): the grip mesh is 0.24 x 0.45 m, the fingers sank 0.08 m into it (2026-10-22).
+    o.append(grip_socket("GripSocketRight", BR_GRIP_RIGHT, 24.0, 0.26, hand_reach=True))
     o.append(grip_socket("GripSocketLeft", BR_LEFT_REST, 90.0, 0.15, hand_reach=True))
     o.append(grip_socket("GripSocketLeftAim", BR_LEFT_AIM, 90.0, 0.15, hand_reach=True))
     o.append(grip_socket("GripSocketLeftAimLow", BR_LEFT_AIM_LOW, 90.0, 0.15, hand_reach=True))
@@ -324,7 +325,10 @@ if __name__ == "__main__":
         "range_m": 310.0, "effective_range_m": 155.0,
         "recoil_up_deg": 2.0, "recoil_side_deg": 0.8, "model_kick_back": 0.7, "model_kick_up_deg": 10.0,
         "shake_trauma": 0.25, "shake_kick": 0.12, "magazine": 12, "reload_time": 3.5,
-        "rest_transform": RIFLE_REST, "aim_anchor": v3(RIFLE_HIP),
+        # Forearm line (2026-10-22): the gun axis continues the forearm at rest and aim, the elbow stays under the
+        # flat shoulder block. Found by the in-game solver (scratch); the same for the SMG and the Shotgun.
+        "rest_transform": "Transform3D(0.96349466, 0.13122132, -0.23336469, 0, 0.8716495, 0.49012986, 0.26772767, -0.4722375, 0.83982956, 2.364206, 0.7168803, -1.3313878)",
+        "aim_anchor": "Vector3(1.9137, 1.5120, -1.6479)",
         "right_pole_rest": v3(ONE_HAND["right_pole_rest"]), "right_pole_aim": v3(ONE_HAND["right_pole_aim"])},
         "res://scenes/weapons/heavy_rifle.tscn")
     # Two-hand rest (beam sniper and Beam Rifle; user drawing 2026-10-12): across the front of the body,

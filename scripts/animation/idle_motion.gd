@@ -13,6 +13,9 @@ extends Node
 @export var start_delay: float = 1.2
 ## How fast the idle motion fades in and out (1 / seconds).
 @export var fade_speed: float = 1.2
+## How fast it fades out when a weapon is raised to aim (1 / seconds). Quicker than fade_speed: no breath,
+## scan or weight shift while aiming down sights (user report 2026-10-22: the idle motion went on in ADS).
+@export var aim_fade_speed: float = 6.0
 
 @export_group("Breath")
 ## Seconds for one breath (knee dip and torso lean).
@@ -60,12 +63,13 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var aiming := weapon_pose != null and weapon_pose.aim_amount > 0.05
 	var busy := not mech.is_on_floor() or mech.get_horizontal_speed() > 0.5 or mech.is_fallen \
 			or mech.is_wrecked or mech.is_boosting or absf(mech.leg_turn_rate) > 0.05 \
-			or (weapon_pose != null and weapon_pose.aim_amount > 0.05) or (kneel != null and kneel.amount > 0.05)
+			or aiming or (kneel != null and kneel.amount > 0.05)
 	_still_time = 0.0 if busy else _still_time + delta
 	var target := 1.0 if _still_time >= start_delay else 0.0
-	_amount = move_toward(_amount, target, fade_speed * delta)
+	_amount = move_toward(_amount, target, (aim_fade_speed if aiming else fade_speed) * delta)
 	_time += delta
 
 	_scan_left -= delta

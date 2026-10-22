@@ -56,6 +56,10 @@ extends SkeletonModifier3D
 ## Jump guard: the weapon frame moves this far forward (m, level) at full guard.
 @export var guard_forward: float = 2.0
 @export var head_bone: StringName = &"head"
+## In the sniping stance the head looks along the rifle: its pitch against the horizon stays inside this (degrees),
+## and it follows the aim at this speed (1 / seconds; a heavy head, not a snap).
+@export var head_pitch_limit_deg: float = 30.0
+@export var head_follow_speed: float = 12.0
 ## In the sniping stance the right elbow tucks toward this direction (torso space: out to the side and
 ## a little down, inside max_lift_deg), like the reference's raised right elbow.
 @export var stance_right_elbow: Vector3 = Vector3(1.0, -0.6, 0.15)
@@ -134,12 +138,13 @@ extends SkeletonModifier3D
 @export var weapon_butt_share: float = 0.35
 @export var leg_bones: PackedStringArray = ["thigh_L", "shin_L", "foot_L", "thigh_R", "shin_R", "foot_R"]
 @export_group("Clip arm swing")
-## The clip forearm turns out about the torso's up axis at the elbow this much (degrees, at the full clip
-## amount), so it points forward and the fist passes outside the thighs and the chest.
-@export var clip_forearm_out_deg: float = 30.0
-## The clip upper arm turns out to the side this much (degrees, about the torso's forward axis, at the full
-## clip amount).
-@export var clip_out_deg: float = 8.0
+## The forearm turns out about the torso's up axis at the elbow this much (degrees, at the full clip amount),
+## so it points forward and the fist passes outside the thighs and the chest. 0 since the heavy arm
+## (FreeArmSwing, 2026-10-22): the arm swings about its hang pose, which is outside the thighs already.
+@export var clip_forearm_out_deg: float = 0.0
+## The upper arm turns out to the side this much (degrees, about the torso's forward axis, at the full clip
+## amount). 0 for the same reason.
+@export var clip_out_deg: float = 0.0
 ## A relaxed arm in the clip swing keeps its palm and wrist this far (m) from the leg bone lines, or as far
 ## as in its hang pose where that is nearer (0.8 m: the nearest of the approved whole-arm swing, renders
 ## 2026-10-18). Nearer, the upper arm turns further out.
@@ -174,6 +179,9 @@ var _free_swing: FreeArmSwing
 var _raise_amount: float = 0.0
 ## Armor boxes the clip arms keep off: [bone, AABB in that bone's rest space].
 var _body_boxes: Array = []
+## The head turn that looks along the aim (local rotation), and how much of it the stance holds now.
+var _head_aim: Quaternion = Quaternion.IDENTITY
+var _head_blend: float = 0.0
 
 
 func _ready() -> void:
@@ -347,22 +355,46 @@ func _aim_twist() -> void:
 	_skeleton.set_bone_pose_rotation(bone, local.get_rotation_quaternion())
 
 
-## In the sniping stance the head turns back by the hip turn and the torso twist, so it looks along the
-## aim (the user's reference: the head over the rifle).
-func _head_to_aim() -> void:
-	if stance == null or stance.amount <= 0.0:
+## In the sniping stance the head looks along the rifle (user report 2026-10-22: the head kept its idle scan
+## and looked off to the side). The head bone gets its turn from scratch, so the idle head animation (Head_Scan)
+## does not count: forward along the aim line (the rifle's bore line, toward the aim point), up as near the
+## world up as it can be (no roll), blended in by the stance amount and followed at head_follow_speed.
+func _head_to_aim(delta: float) -> void:
+	if stance == null or stance.amount <= 0.0 or weapon_pose == null or weapon_pose.weapon == null \
+			or weapon_pose.mech_aim == null:
+		_head_blend = 0.0
 		return
-	var total := stance.applied_turn
-	if weapon_pose != null and torso_pose != null and weapon_pose.weapon != null:
-		total -= deg_to_rad(torso_pose.aim_twist_deg) * smoothstep(0.0, 1.0, weapon_pose.aim_amount)
 	var head := _skeleton.find_bone(head_bone)
 	if head < 0:
 		return
-	var up := (_skeleton.global_basis.inverse() * Vector3.UP).normalized()
-	var pose := _skeleton.get_bone_global_pose(head).orthonormalized()
-	var parent := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(head)).orthonormalized()
-	var turned := Basis(up, -total) * pose.basis
-	_skeleton.set_bone_pose_rotation(head, (parent.basis.inverse() * turned).get_rotation_quaternion())
+	var to_skeleton := _skeleton.global_basis.orthonormalized().inverse()
+	var aim_dir := to_skeleton * (weapon_pose.mech_aim.aim_point - weapon_pose.weapon.global_position)
+	if aim_dir.length_squared() < 0.0001:
+		return
+	var up := (to_skeleton * Vector3.UP).normalized()
+	aim_dir = aim_dir.normalized()
+	# Head pitch against the horizon stays inside head_pitch_limit_deg.
+	var limit := deg_to_rad(head_pitch_limit_deg)
+	var flat := aim_dir - up * aim_dir.dot(up)
+	if flat.length_squared() > 0.0001:
+		var pitch := clampf(atan2(aim_dir.dot(up), flat.length()), -limit, limit)
+		aim_dir = (flat.normalized() * cos(pitch) + up * sin(pitch)).normalized()
+	var rest := _skeleton.get_bone_global_rest(head).basis.orthonormalized()
+	# The head's own forward (model +Z at rest) and up in the bone frame.
+	var forward_local := rest.inverse() * Vector3.BACK
+	var up_local := rest.inverse() * Vector3.UP
+	var local_frame := Basis(up_local.cross(forward_local), up_local, forward_local)
+	var head_up := (up - aim_dir * up.dot(aim_dir)).normalized()
+	var target_frame := Basis(head_up.cross(aim_dir), head_up, aim_dir)
+	var parent := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(head)).basis.orthonormalized()
+	var wanted := (parent.inverse() * target_frame * local_frame.inverse()).get_rotation_quaternion()
+	# Follow the aim a little softly; start from where the animation has the head.
+	var from := _skeleton.get_bone_pose_rotation(head)
+	if _head_blend <= 0.0:
+		_head_aim = from
+	_head_blend = stance.amount
+	_head_aim = _head_aim.slerp(wanted, 1.0 - exp(-head_follow_speed * delta))
+	_skeleton.set_bone_pose_rotation(head, from.slerp(_head_aim, smoothstep(0.0, 1.0, _head_blend)))
 
 
 ## Turns the arm bones to the IK result with no extra twist: each bone swings (shortest turn) from
@@ -1002,7 +1034,7 @@ func _process_modification_with_delta(delta: float) -> void:
 		_setup()
 	var skin := _skeleton.global_transform
 	_aim_twist()
-	_head_to_aim()
+	_head_to_aim(delta)
 	torso.global_transform = (skin * _skeleton.get_bone_global_pose(_skeleton.find_bone(torso_bone)).orthonormalized() \
 			* _torso_offset).orthonormalized()
 	# Jump and landing crouch: the weapon frame (weapons, shield, free hand places) lifts, so the thighs
