@@ -15,6 +15,9 @@ extends Resource
 @export var back_left: WeaponData
 @export var back_right: WeaponData
 @export var booster: BoosterPart
+## Back pack with auxiliary equipment slots (pulse scan phase). aux[0] goes in slot 1 (key X).
+@export var back_pack: BackPackPart
+@export var aux: Array[EquipmentData] = []
 @export var generator: GeneratorPart
 @export var fcs: FcsPart
 @export var weapon_left: WeaponData
@@ -28,7 +31,22 @@ func get_parts() -> Array[PartData]:
 	for part: PartData in [head, core, arm_left, arm_right, legs, back_left, back_right, booster, generator, fcs, weapon_left, weapon_right]:
 		if part != null:
 			parts.append(part)
+	if back_pack != null:
+		parts.append(back_pack)
+		for item in get_aux():
+			parts.append(item)
 	return parts
+
+
+## The equipment the back pack can hold: aux, cut to its slot count (none without a back pack).
+func get_aux() -> Array[EquipmentData]:
+	var items: Array[EquipmentData] = []
+	if back_pack == null:
+		return items
+	for i in mini(aux.size(), back_pack.aux_slots):
+		if aux[i] != null:
+			items.append(aux[i])
+	return items
 
 
 

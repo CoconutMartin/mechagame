@@ -17,6 +17,7 @@ const NAMES: MechNameCatalog = preload("res://data/names/mech_names.tres")
 @onready var _weapons_label: Label = $Weapons
 
 var _pickup_prompt: WeaponPickupPrompt
+var _scan_status: PulseScanStatus
 
 
 func _ready() -> void:
@@ -47,6 +48,10 @@ func set_mech(new_mech: Mech) -> void:
 		_pickup_prompt = WeaponPickupPrompt.new()
 		add_child(_pickup_prompt)
 	_pickup_prompt.mech = mech
+	if _scan_status == null:
+		_scan_status = PulseScanStatus.new()
+		add_child(_scan_status)
+	_scan_status.mech = mech
 
 
 func _process(_delta: float) -> void:

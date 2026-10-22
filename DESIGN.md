@@ -44,6 +44,7 @@ Since 2026-10-11 (user request) the game has one mech: **Sanggigilid** (the rigg
 | Esc | Free the mouse (click to capture again) | `ui_cancel` |
 | [ and ] | The same as LMB and RMB (user request 2026-10-13, for a mouse that fails): [ = `use_left_arm`, ] = `use_right_arm` and `aim`; ] also turns the free camera | `use_left_arm`, `use_right_arm`, `aim` |
 | G or P | Garage: open and close (P added 2026-10-13, user request; B also jumps and dodges since then) | `garage` |
+| X | Pulse scan (back pack slot 1, since 2026-10-22, user choice). Line at the bottom right: "X SCAN 4/4", the cool down seconds | `aux_1` |
 
 ## Scale and maps
 
@@ -836,6 +837,18 @@ One active skill slot (example: Overdrive, +30% speed for 8 seconds).
 - Mech: `start_lunge()` (blade), boosters fire during the lunge. MechStats has the FCS lock range and max locks and the head lock-on speed.
 - Granpa Gundam still uses the older hard-wired rifle nodes (WeaponFire).
 
+## Pulse scan (back pack equipment; built 2026-10-22, awaiting the user's play test)
+
+User answers 2026-10-14 (see the reminder) and 2026-10-22: a back pack part with slots now; key X; the player carries grade 2.
+- Data: `BackPackPart` (`scripts/data/back_pack_part.gd`, `aux_slots` 1 to 4) and `EquipmentData` (base for back pack equipment, `grade`, `create_device`). `Loadout.back_pack` and `Loadout.aux` (aux[0] = slot 1); `Loadout.get_parts` adds them, so their weight counts. `data/parts/back_pack_aux2.tres` (Aux Pack, 2 slots, 0.6 t, 150 HP). `PulseScanData` (`data/equipment/pulse_scan_g1..g3.tres`): grade 1 / 2 / 3 = range 300 / 500 / 700 m, wire frame 3 / 4 / 5 s, highlight 3 / 4 / 5 s, cool down 30 / 25 / 20 s, uses 3 / 4 / 5, weight 0.4 / 0.5 / 0.6 t, ring speed 350 m/s. The test loadout carries the Aux Pack and grade 2 (walk speed 9.17 to 9.12 m/s, boost acceleration about 2% less from the 1.1 t).
+- `AuxMount` (`scripts/mech/aux_mount.gd`): `SkeletalWeaponMount` calls it after the weapons; one device per filled slot under the mech's `AuxMount` node. The back pack has no model or hitbox yet.
+- `PulseScanner` (device): the player's key `aux_<slot>`; a use starts the ring from the mech, spends a use and starts the cool down. Targets: group "lockable" (enemy mechs, dummies) within the range, the mech itself left out; each is found when the ring reaches its distance (from the start place). Signal `scanned(found)` when the ring has passed all of them. AI mechs carry it too, but do not use it yet.
+- Look (`PulseScanEffect`, `shaders/pulse_scan_wire.gdshader`): a full screen pass. It rebuilds the world place of each pixel from the depth buffer: dark green over the scanned places (`tint` 0.5), bright green lines on depth edges (silhouettes and creases; the laplacian of 1/z) and a 10 m world grid, a bright ring at the pulse front. Each place keeps the wire frame for the wire frame time after the ring passes it, so it fades from the mech out to the ring's edge. Works in Forward+, Mobile and Compatibility (depth range switch).
+- Found mech (`PulseScanHighlight`): a green wire sphere shrinks from 40 m onto it in 0.5 s, then the mech glows red-orange (`material_overlay`, no depth test: seen through walls and buildings) for the highlight time and fades in the last 1 s. `ScanAlert` on the found mech: signal `scanned(by)` and `last_scan_time` (its sound and screen warning come later).
+- HUD: `PulseScanStatus` (bottom right, always on): "X SCAN 3/4  18 s", green when ready.
+- Tests: `tools/godot/test_pulse_scan.gd` (headless: device, data, uses, cool down, a box at 200 m found and lit, one at 600 m not, highlight and effect cleaned up). Pictures: `tools/godot/render_pulse_scan.gd` (xvfb; SCAN_TIMES, SCAN_DISTANCE, SCAN_OUT).
+- Later: the back pack model and HP, the garage list for back packs and equipment, grades in the shop, the warning sound and screen, AI use, a scan memory on the radar.
+
 ## Hand grip system (approved 2026-10-08, not built yet)
 
 - Hands are rigged: each finger segment is a separate rigid mesh parented to its own bone (3 segments per finger, 2 per thumb).
@@ -1032,7 +1045,8 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Closed (2026-10-13): the two-hand rifles' hand markers now sit on the grip sockets, with a new rest and aim stance (see "Grip sockets").
 - Done (2026-10-15): HP indicators per part (design "9 Minimal Dot", square windows).
 - Closed (2026-10-17): the left torso HP indicator (Torso L) can be seen on a PC (user check); it was hidden only on the tablet.
-- Open (2026-10-14): pulse scan equipment, a substitute for a persistent radar (user idea; reference pictures `models/guides/pulse_scan/`, MechWarrior 5 "enhanced imaging"). User answers (2026-10-14):
+- Open (2026-10-22): play test the pulse scan (key X; see "Pulse scan"): the wire frame look, the ring, the fade, the red glow through buildings (needs an enemy: the garage test buttons), the cool down line. Tune the values in `data/equipment/pulse_scan_g2.tres`.
+- Built 2026-10-22 (was open 2026-10-14): pulse scan equipment, a substitute for a persistent radar (user idea; reference pictures `models/guides/pulse_scan/`, MechWarrior 5 "enhanced imaging"). User answers (2026-10-14):
   - Slot: a back unit. Back packs will have a range of slots for auxiliary equipment (the back pack and its slots are new).
   - Effect: the pulse spreads out from the mech as a ring and turns the environment into a green wire frame. The wire frame then fades out gradually from the start point (near the mech) to the end point (the ring's edge). If the pulse finds a mech, the wire frame converges on it and highlights it.
   - Highlight: seen through walls and buildings. The times depend on the equipment grade (grades are not in the game yet).

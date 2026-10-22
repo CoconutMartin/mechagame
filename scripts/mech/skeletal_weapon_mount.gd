@@ -22,6 +22,8 @@ func _ready() -> void:
 	if loadout != null and weapon_controller != null:
 		weapon_controller.mount(loadout, attach)
 		_to_shoulders()
+	if mech != null:
+		AuxMount.mount.call_deferred(mech, loadout)
 
 
 func _to_shoulders() -> void:

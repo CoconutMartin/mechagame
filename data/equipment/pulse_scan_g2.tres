@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PulseScanData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/pulse_scan_data.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Pulse Scan G2"
+weight_t = 0.5
+hp = 100.0
+grade = 2
+range_m = 500.0
+wireframe_time = 4.0
+highlight_time = 4.0
+cooldown = 25.0
+uses = 4
