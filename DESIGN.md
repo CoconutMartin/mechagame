@@ -1051,6 +1051,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
     - Open: a single-frame 9 to 11 deg roll of the right upper arm (frames 42 and 99 of the test; the elbow does not move). Not from the swing limit search. Cause not found.
 
 ## Reminders for the user
+- Open (2026-10-22): play test the fixes of 2026-10-22 (see docs/HANDOFF_pulse_scan_and_fixes.md): dodge to walk, melee combos and bare hands, walk feet, stagger rules and recoil, ADS look-down and head, left arm, SMG pose, shield guard (LMB), shoulder cannon brace, jump charge and fall, garage camera, mouse speed, rifle lamps. Decide the open points listed there (walk clip or foot IK, SMG elbow, cannon while boosting, pixel-art option).
 - Open (2026-10-21, built 2026-10-21): small rubble pieces disappear the moment they hit the ground (see "Rubble on the ground" in Phase 5). Check in play that the breaks and the collapse still look full enough; pieces on rooftops still lie 14 s.
 - Open (2026-10-21): test phase 5 in play: the crack, scorch, rebar and rubble look (5b), a building collapse that leans and stops, shooting the leaning part, and the camera shake at the collapse (5c). Also 5d: the camera shake when a mech walks or boosts through a building wall (one shake per broken piece).
 - Open (2026-10-19): test phase 5a in play on the PC and the tablet: FPS while a building collapses (missiles at the base of an office), while shooting walls and while walking through a building. Report drops and the device.
