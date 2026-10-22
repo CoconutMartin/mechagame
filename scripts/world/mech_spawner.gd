@@ -17,6 +17,8 @@ enum Pilot { NONE, AI }
 @export var respawn_time: float = 6.0
 ## Height of the label bottom above the ground, in meters.
 @export var label_height: float = 12.5
+## Show the part HP label above the mech (off since 2026-10-22, user request: no enemy HP text on screen).
+@export var show_label: bool = false
 
 var mech: Mech
 ## False: no mech (the garage test buttons switch it). A reset or respawn does nothing then.
@@ -34,6 +36,7 @@ func _ready() -> void:
 	_label.font_size = 48
 	_label.outline_size = 10
 	_label.no_depth_test = true
+	_label.visible = show_label
 	add_child(_label)
 	add_to_group(&"mech_spawner")
 	if player_respawner != null:
