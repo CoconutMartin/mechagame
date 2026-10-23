@@ -34,6 +34,8 @@ const PALM_FACE_Z := 0.07
 ## Grip cylinder radius (meters) without a socket: gun pistol grips, and the forestock.
 @export var grip_radius: float = 0.12
 @export var forestock_radius: float = 0.15
+## Handle radius (meters) of a forearm gun (Auto Cannon): its model's Grip marker is the grip socket.
+@export var handle_radius: float = 0.11
 ## Moving faster than this (m/s), a free hand makes a fist.
 @export var fist_speed: float = 1.0
 @export var grip_bones: PackedStringArray = ["grip_L", "grip_R"]
@@ -46,8 +48,11 @@ const PALM_FACE_Z := 0.07
 ## Turn pivot from the wrist (0) to the fist hollow (1): the wrist and the fist each move part of the way.
 @export_range(0.0, 1.0) var pivot_on_fist: float = 1.0
 ## Part of the wrist gap the arm target closes each frame, and the largest target move (meters).
-@export var reach_gain: float = 0.5
+@export var reach_gain: float = 0.7
 @export var max_reach_offset: float = 0.5
+## A gun held without arm reach: the wrist turns for the other direction of the grip axis when that puts the
+## fist hollow nearer the grip by more than this (meters).
+@export var flip_margin: float = 0.05
 ## Old hand meshes: meshes skinned to bones with these name starts are hidden.
 @export var old_hand_bones: PackedStringArray = ["hand_", "index_", "middle_", "ring_", "pinky_", "thumb_", "grip_"]
 
@@ -79,6 +84,8 @@ func _process(delta: float) -> void:
 			and not fist_right else null
 	var two_hand := gun != null and weapons.two_handed_left_grip()
 	var socket_r := _socket(gun, ^"GripSocketRight")
+	if socket_r == null and gun != null and not gun is PileBunkerWeapon:
+		socket_r = _handle_socket(gun)
 	# A one-hand gun in the left hand (user rule 2026-10-15): its GripSocketRight fits the left fist too.
 	var left_gun := weapons.left_weapon if weapons.left_weapon != null and is_instance_valid(weapons.left_weapon) \
 			and not weapons.left_weapon is MeleeWeapon else null
@@ -115,6 +122,21 @@ func _socket(weapon: Node3D, path: NodePath) -> Node3D:
 	if weapon == null or not is_instance_valid(weapon):
 		return null
 	return weapon.get_node_or_null(path) as Node3D
+
+
+## A forearm gun (Auto Cannon) has no socket marker on its root (its model moves to the forearm): the
+## Grip marker of its model is the right socket (+Y along the handle). The arm keeps its pose and the
+## hand turns at the wrist, so the fist lines up with the handle and the thumb can wrap it (user
+## request 2026-10-22).
+func _handle_socket(weapon: Node3D) -> Node3D:
+	if not weapon.has_method(&"get_model"):
+		return null
+	var model: Node3D = weapon.call(&"get_model")
+	var grip := model.get_node_or_null(^"Model/Grip") as Node3D if model != null else null
+	if grip != null and not grip.has_meta(&"grip_radius"):
+		grip.set_meta(&"grip_radius", handle_radius)
+		grip.set_meta(&"hand_reach", false)
+	return grip
 
 
 func _radius(socket: Node3D, fallback: float) -> float:
@@ -206,11 +228,29 @@ func _after_skeleton() -> void:
 			continue
 		var attached := (bone_pose * base).orthonormalized()
 		var place := _socket_place(side, socket)
-		var rotation := Basis(_wrist_turn(attached, side, place.basis.y.normalized()).slerp(Quaternion.IDENTITY, 1.0 - smoothstep(0.0, 1.0, weight)))
 		var hollow := RIGHT_HOLLOW if side == "R" else LEFT_HOLLOW
 		hollow.z = PALM_FACE_Z - _radius(socket, grip_radius)
-		# hand_reach false: the arm keeps its pose; the hand only turns at the wrist.
+		# Socket metadata hold_drop (meters): the hand sits this much lower on the grip, so the thumb mount and
+		# the thumb clear the gun body (the hollow point is higher on the hand: index side for the right hand).
+		hollow.x += float(socket.get_meta(&"hold_drop", 0.0)) * (-1.0 if side == "R" else 1.0)
 		var reach := bool(socket.get_meta(&"hand_reach", true))
+		var axis := place.basis.y.normalized()
+		var turn := _wrist_turn(attached, side, axis)
+		if not reach:
+			# The arm keeps its pose, so the turn decides where the grip lies in the hand: a grip axis has two
+			# directions, and the turn for the one that brings the fist hollow nearer the grip wins.
+			var other := _wrist_turn(attached, side, -axis)
+			var gap := _hollow_gap(attached, turn, hollow, place.origin)
+			var gap_other := _hollow_gap(attached, other, hollow, place.origin)
+			var flipped := bool(state.get("flip", false))
+			if gap_other + (0.0 if flipped else flip_margin) < gap or (flipped and gap_other < gap + flip_margin):
+				turn = other
+				flipped = true
+			else:
+				flipped = false
+			state["flip"] = flipped
+		var rotation := Basis(turn.slerp(Quaternion.IDENTITY, 1.0 - smoothstep(0.0, 1.0, weight)))
+		# hand_reach false: the arm keeps its pose; the hand only turns at the wrist.
 		var pivot := attached * (hollow * (pivot_on_fist if reach else 0.0))
 		var now := Transform3D(rotation * attached.basis, pivot + rotation * (attached.origin - pivot))
 		# Then the fist hollow onto the socket (blended in), so the fingers close on the real grip.
@@ -222,6 +262,11 @@ func _after_skeleton() -> void:
 		if reach and weapon != null:
 			var local := weapon.global_basis.orthonormalized().inverse() * (now.origin - attached.origin)
 			state.offset = ((state.offset as Vector3) + local * reach_gain).limit_length(max_reach_offset)
+
+
+## Distance from the fist hollow to a grip center when the hand turns by this wrist turn about its wrist.
+func _hollow_gap(attached: Transform3D, turn: Quaternion, hollow: Vector3, center: Vector3) -> float:
+	return (attached.origin + Basis(turn) * (attached.basis * hollow)).distance_to(center)
 
 
 ## The wrist turn (world) that lines the fist up with a grip axis: first a roll about the forearm line

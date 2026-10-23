@@ -88,7 +88,7 @@ def scene_text():
     o += b.nodes
     o.append(f'[node name="GripRight" type="Marker3D" parent="."]\ntransform = {xf(GRIP)}\n')
     o.append(f'[node name="Muzzle" type="Marker3D" parent="."]\ntransform = {xf(MUZZLE)}\n')
-    o.append(grip_socket("GripSocketRight", GRIP_HOLD_POINT, GRIP_RAKE, GRIP_RADIUS))
+    o.append(grip_socket("GripSocketRight", GRIP_HOLD_POINT, GRIP_RAKE, GRIP_RADIUS, hold_drop=0.2))
     o.append(f'''[node name="MuzzleFlash" type="Node3D" parent="Muzzle" node_paths=PackedStringArray("light")]
 script = ExtResource("flash_script")
 light = NodePath("Light")

@@ -26,7 +26,7 @@ GRIP = (0.0, (138 - _HOLD[1]) * PX, -(870 - _HOLD[0]) * PX)
 ## Grip socket: the hold point on the pistol grip axis, its rake and half thickness (MechHandControl).
 GRIP_HOLD_POINT = GRIP
 GRIP_RAKE = math.degrees(math.atan2(_GX, _GY))
-GRIP_RADIUS = 0.12
+GRIP_RADIUS = 0.15
 GRIP = arm_poses.palm_socket(GRIP)
 MUZZLE = (0.0, 0.0, -3.6)
 # Poses from the user's arm drawing (weapons.py): on top of the forearm, elbow 45 deg at neutral and
@@ -87,7 +87,7 @@ omni_range = 9.0
 if __name__ == "__main__":
     path = "scenes/weapons/smg.tscn"
     open(path, "w").write(SCENE.format(grip=xf(GRIP), muzzle=xf(MUZZLE),
-                                       socket=grip_socket("GripSocketRight", GRIP_HOLD_POINT, GRIP_RAKE, GRIP_RADIUS)))
+                                       socket=grip_socket("GripSocketRight", GRIP_HOLD_POINT, GRIP_RAKE, GRIP_RADIUS, hold_drop=0.15)))
     print("wrote", path)
     # Fast, light shots: 10 per second, small kick.
     res("data/weapons/smg.tres", {

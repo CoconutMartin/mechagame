@@ -48,14 +48,16 @@ RIGHT_HAND_NEUTRAL = (RIGHT_HAND_NEUTRAL_TORSO[0], RIGHT_HAND_NEUTRAL_TORSO[1] +
 RIGHT_HAND_AIM = arm_poses.hand(arm_poses.ELBOW_R, arm_poses.AIM_DEG)
 
 
-def grip_socket(name, origin, rake_deg, radius, hand_reach=True):
+def grip_socket(name, origin, rake_deg, radius, hand_reach=True, hold_drop=0.0):
     """Grip socket node text (user request 2026-10-13; MechHandControl): a Marker3D at the grip center
     (where the fist hollow goes), +Y along the grip toward the gun body (a pistol grip leans back:
     rake_deg, top forward), +Z toward the butt (the palm side), +X to the gun's right; metadata
     grip_radius = the grip's half thickness (meters, the fingers close on it); hand_reach = false keeps
-    the arm's pose and only turns the hand at the wrist."""
+    the arm's pose and only turns the hand at the wrist; hold_drop (meters, 0 = none) sits the hand that
+    much lower on the grip, so the thumb mount and the thumb clear the gun body (user request 2026-10-22)."""
+    drop = f'metadata/hold_drop = {hold_drop}\n' if hold_drop else ''
     return (f'[node name="{name}" type="Marker3D" parent="."]\ntransform = {xf(origin, (-rake_deg, 0, 0))}\n'
-            f'metadata/grip_radius = {radius}\nmetadata/hand_reach = {"true" if hand_reach else "false"}\n')
+            f'metadata/grip_radius = {radius}\nmetadata/hand_reach = {"true" if hand_reach else "false"}\n{drop}')
 
 
 def gun_on_forearm_rest(grip, out_deg=0.0):

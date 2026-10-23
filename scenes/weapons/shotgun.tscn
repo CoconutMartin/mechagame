@@ -195,6 +195,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4.65)
 transform = Transform3D(1, 0, 0, 0, 0.93969, 0.34202, 0, -0.34202, 0.93969, 0, -0.62287, -1.5461)
 metadata/grip_radius = 0.11
 metadata/hand_reach = true
+metadata/hold_drop = 0.2
 
 [node name="MuzzleFlash" type="Node3D" parent="Muzzle" node_paths=PackedStringArray("light")]
 script = ExtResource("flash_script")

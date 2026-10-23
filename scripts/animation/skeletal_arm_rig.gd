@@ -451,9 +451,8 @@ func _joints_from_bones(side: Dictionary) -> void:
 ## moves back to a limited left hand (if it falls short), and the right arm takes its grip again.
 func _solve_arms(active: Array[Dictionary]) -> void:
 	_solve_arms_once(active)
-	# The elbow of this frame is the start of the next frame's speed limit (a second solve of the same arm in
-	# one frame, the two-hand weapon, must start from the frame before too).
 	for side in active:
+		_limit_elbow_speed(side.ik as TwoBoneIK, side)
 		if side.has("next_elbow"):
 			side.last_elbow = side.next_elbow
 
@@ -498,14 +497,12 @@ func _solve_arms_once(active: Array[Dictionary]) -> void:
 	_limit_arm(right_ik, right_side, swing_limit(true))
 
 
-## The limits of one arm, in this order (user report 2026-10-22: the arms flickered in the fall with the Beam
-## Sniper): the elbow turns into the swing limit (the hand stays on its target), the elbow swing speed is
-## held, and only then the upper arm stops at the limit where the elbow could not clear it. The stop is
-## last, so it grows from zero with the overshoot. Before, the speed limit came after it and the arm
-## jumped when the elbow turn (up to 180 degrees) gave way to the stop.
-func _limit_arm(ik: TwoBoneIK, side: Dictionary, limit: float) -> void:
+## The limits of one arm: the elbow turns into the swing limit (the hand stays on its target), and the upper
+## arm stops at the limit where no elbow turn clears it. The elbow speed limit runs after both arms
+## (_solve_arms). A 2026-10-22 try ran the speed limit between the two and pulled the hands off the grips
+## (0.35 m, Beam Rifle in a boost); the arm flicker of that report is fixed in _swivel_swing.
+func _limit_arm(ik: TwoBoneIK, _side: Dictionary, limit: float) -> void:
 	_swivel_swing(ik, limit)
-	_limit_elbow_speed(ik, side)
 	_stop_swing(ik, limit)
 
 
@@ -637,16 +634,27 @@ func _swivel_swing(ik: TwoBoneIK, limit: float) -> void:
 	if absf(lean) <= limit:
 		return
 	# The elbow turns around the shoulder-to-hand line (the hand stays on its target): the
-	# smallest turn that brings the upper arm inside the limit.
+	# smallest turn that brings the upper arm inside the limit. If no turn does, the turn that leans it
+	# least (user report 2026-10-22: the arms flickered in the fall with the Beam Sniper; the elbow turn
+	# gave way to the stop in one frame, up to 120 degrees). The stop then takes only what is left.
 	var reach := (ik.target.global_position - shoulder.global_position).normalized()
 	var elbow_out := ik.mid_joint.global_position - shoulder.global_position
+	var best := Basis.IDENTITY
+	var best_lean := absf(lean)
 	for step in range(1, 37):
 		for sign in [1.0, -1.0]:
 			var swivel := Basis(reach, deg_to_rad(5.0 * step) * sign)
 			var turned := torso_basis.inverse() * (swivel * elbow_out).normalized()
-			if absf(asin(clampf(-turned.z, -1.0, 1.0))) <= limit and -turned.y >= cos(deg_to_rad(max_lift_deg)):
+			if -turned.y < cos(deg_to_rad(max_lift_deg)):
+				continue
+			var turned_lean := absf(asin(clampf(-turned.z, -1.0, 1.0)))
+			if turned_lean <= limit:
 				shoulder.global_basis = (swivel * shoulder.global_basis).orthonormalized()
 				return
+			if turned_lean < best_lean - 0.0001:
+				best = swivel
+				best_lean = turned_lean
+	shoulder.global_basis = (best * shoulder.global_basis).orthonormalized()
 
 
 ## No elbow turn helps: the upper arm stops at the limit and the hand falls short.

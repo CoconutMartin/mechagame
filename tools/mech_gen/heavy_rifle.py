@@ -58,7 +58,7 @@ def marker(n, pos): o.append(f'[node name="{n}" type="Marker3D" parent="."]\ntra
 # The marker is the palm socket place: the fist hollow on the hold point (arm_poses.palm_socket).
 o.append(f'[node name="GripRight" type="Marker3D" parent="."]\ntransform = {xf(arm_poses.palm_socket(tuple(v * SCALE for v in grip_hold)))}\n')
 # Grip socket: the hold point on the pistol grip axis (MechHandControl).
-o.append(grip_socket("GripSocketRight", RIFLE_GRIP_HOLD_POINT, RIFLE_GRIP_RAKE, RIFLE_GRIP_RADIUS))
+o.append(grip_socket("GripSocketRight", RIFLE_GRIP_HOLD_POINT, RIFLE_GRIP_RAKE, RIFLE_GRIP_RADIUS, hold_drop=0.3))
 marker("GripLeft", (0, -0.45, -5.0))
 marker("GripLeftRest", (0, -0.45, -4.6))
 marker("GripLeftAim", (0, -0.45, -4.2))
