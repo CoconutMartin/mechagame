@@ -23,6 +23,10 @@ extends Node
 @export var screen_offset_up: float = 0.3
 ## Layers the aim ray hits: 1 world, 3 props, 4 hitboxes (mech parts and dummies). The own mech is skipped.
 @export_flags_3d_physics var collision_mask: int = 29
+## The aim ray starts this far (m) in front of the mech's own depth along the ray, so walls and objects
+## between the camera and the mech are never the target (user report 2026-10-24: a wall behind the mech
+## took the crosshair and the arms turned back to it). Negative = start behind the mech's center.
+@export var start_ahead_of_mech: float = 0.0
 ## How fast the ring moves to and from its neutral place (1 / seconds).
 @export var neutral_blend_speed: float = 4.0
 ## After an Akira slide the ring follows the torso again when the body turn is below this, in degrees.
@@ -92,13 +96,13 @@ func _physics_process(delta: float) -> void:
 		aim_point = _cast(origin, aim_direction)
 		return
 	var screen_point := get_crosshair_screen_point()
-	camera_target = _cast(camera.project_ray_origin(screen_point), camera.project_ray_normal(screen_point))
+	camera_target = _cast(camera.project_ray_origin(screen_point), camera.project_ray_normal(screen_point), true)
 	shot_offset = camera_rig.free_aim.aim_offset if camera_rig != null and camera_rig.free_aim != null else Vector2.ZERO
 
 	# The mech aims at what the camera sees under the blue ring (a camera ray through the ring), so
 	# the shots land on the ring at any distance and on the edge of a target too.
 	var ring := get_ring_screen_point()
-	var ring_target := _cast(camera.project_ray_origin(ring), camera.project_ray_normal(ring))
+	var ring_target := _cast(camera.project_ray_origin(ring), camera.project_ray_normal(ring), true)
 	target = _last_collider
 	target_point = ring_target
 	var direction := (ring_target - origin).normalized()
@@ -164,8 +168,13 @@ func _get_base_jitter_deg() -> float:
 	return maxf(walk_jitter_deg * walk_ratio, idle_jitter_deg)
 
 
-func _cast(from: Vector3, direction: Vector3) -> Vector3:
+## from_camera: a camera ray; it starts at the mech's depth (start_ahead_of_mech).
+func _cast(from: Vector3, direction: Vector3, from_camera: bool = false) -> Vector3:
 	var to := from + direction * max_range
+	if from_camera:
+		var depth := (mech.global_position - from).dot(direction) + start_ahead_of_mech
+		if depth > 0.0:
+			from += direction * depth
 	var query := PhysicsRayQueryParameters3D.create(from, to, collision_mask, mech.get_hit_exclude())
 	var hit := mech.get_world_3d().direct_space_state.intersect_ray(query)
 	_last_collider = hit.collider if hit else null
