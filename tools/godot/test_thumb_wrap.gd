@@ -35,6 +35,9 @@ var _switcher: LoadoutSwitcher
 
 
 func _initialize() -> void:
+	# The arm reach is scaled to the frame time (MechHandControl.reach_gain_fps): an unthrottled headless run
+	# (hundreds of frames per second) would reach less per counted frame than the game does.
+	Engine.max_fps = 60
 	_run.call_deferred()
 
 
