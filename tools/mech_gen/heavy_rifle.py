@@ -59,7 +59,10 @@ def marker(n, pos): o.append(f'[node name="{n}" type="Marker3D" parent="."]\ntra
 o.append(f'[node name="GripRight" type="Marker3D" parent="."]\ntransform = {xf(arm_poses.palm_socket(tuple(v * SCALE for v in grip_hold)))}\n')
 # Grip socket: the hold point on the pistol grip axis (MechHandControl).
 o.append(grip_socket("GripSocketRight", RIFLE_GRIP_HOLD_POINT, RIFLE_GRIP_RAKE, RIFLE_GRIP_RADIUS, hold_drop=0.3))
-marker("GripLeft", (0, -0.45, -5.0))
+# One-hand gun in the LEFT hand (user request 2026-10-24): the left hand takes the pistol grip, the mirror of
+# GripRight (the old place at the forestock put the left Heavy Rifle far off its arm).
+_palm = arm_poses.palm_socket(tuple(v * SCALE for v in grip_hold))
+o.append(f'[node name="GripLeft" type="Marker3D" parent="."]\ntransform = {xf((-_palm[0], _palm[1], _palm[2]))}\n')
 marker("GripLeftRest", (0, -0.45, -4.6))
 marker("GripLeftAim", (0, -0.45, -4.2))
 marker("Muzzle", (0, BORE_Y, -8.9))

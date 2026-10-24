@@ -124,8 +124,9 @@ if __name__ == "__main__":
         "fire_rate": round(1 / 1.1, 4), "damage": 9.0, "pellets": 8, "projectile_speed": 350.0, "spread_deg": 6.0,
         "recoil_up_deg": 3.0, "recoil_side_deg": 1.2, "model_kick_back": 0.6, "model_kick_up_deg": 8.0,
         "shake_trauma": 0.3, "shake_kick": 0.15, "magazine": 6, "reload_time": 3.0,
-        # Forearm line (2026-10-22): solved in game so the gun axis continues the forearm, the shoulder block flat.
-        "rest_transform": "Transform3D(0.96253914, 0.13264355, -0.23648286, 0, 0.8721707, 0.48920166, 0.27114287, -0.47087574, 0.8394984, 2.216935, 1.0603794, -0.81731224)",
-        "aim_anchor": "Vector3(1.9012, 1.5442, -1.0062)",
+        # Forearm line (2026-10-24): solved in game (tools/godot/measure_arms_solve.gd) so the gun axis lies along the forearm and
+        # the arm is the empty arm's hang pose moved 0.4 m out and 0.2 m up, the gun rolled 16 deg (keeps off the thigh and forearm).
+        "rest_transform": "Transform3D(0.9444027, -0.0352315, -0.3268981, 0.2265841, 0.7901926, 0.5694342, 0.2382504, -0.611845, 0.754243, 1.9732782, 0.9281362, -1.1898853)",
+        "aim_anchor": "Vector3(1.5688, 1.6871, -0.9863)",
         "right_pole_rest": v3((0.4, -1.0, 0.5)), "right_pole_aim": v3((0.4, -1.0, 0.5))},
         "res://scenes/weapons/shotgun.tscn")

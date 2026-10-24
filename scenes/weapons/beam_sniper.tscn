@@ -56,6 +56,8 @@ rings = 1
 
 [node name="BeamSniper" type="Node3D"]
 script = ExtResource("script")
+metadata/elbow_rest = Vector3(0.67, -0.74, 0.0)
+metadata/elbow_aim = Vector3(0.55, -0.84, -0.05)
 
 [node name="Stock" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, -0.6)

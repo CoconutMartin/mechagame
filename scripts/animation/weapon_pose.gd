@@ -35,6 +35,10 @@ extends Node
 ## shoulder until its grip is at most this part of the arm length (upper arm + forearm) from it, so the
 ## arm reaches the grip and the hand stays on the wrist. The aim direction does not change.
 @export_range(0.5, 1.0) var max_reach_share: float = 0.92
+## A one-hand gun at rest sways with the stride (user request 2026-10-24): the gun and the arm turn about the
+## shoulder by this part of the empty arm's swing (FreeArmSwing.swing), so the gun arm is not dead while the
+## other arm swings. 0 = off. It fades out while the gun is raised.
+@export_range(0.0, 1.0) var gun_sway_share: float = 0.35
 
 @export_group("Hands")
 ## Optional (two-hand rifles): the right hand IK target slides between a rest and an aim place on the
@@ -82,6 +86,7 @@ var use_weapon_data: bool = false
 var rest_transform: Transform3D = Transform3D.IDENTITY
 var aim_origin: Vector3 = Vector3.ZERO
 var wants_raise: bool = false
+var _swing: FreeArmSwing
 
 
 func _ready() -> void:
@@ -111,6 +116,8 @@ func _physics_process(delta: float) -> void:
 		weapon.transform = (weapon as MechWeapon).get_pose(rest, aim_pose, t)
 	else:
 		weapon.transform = rest.interpolate_with(aim_pose, t)
+	if left_grip_target == null and not weapon is ForearmGunWeapon and not weapon is MeleeWeapon:
+		_sway_gun(parent, left_arm, 1.0 - t)
 	if recoil != null:
 		weapon.transform = weapon.transform * recoil.get_offset()
 	if bounce != null:
@@ -126,6 +133,31 @@ func _physics_process(delta: float) -> void:
 		return  # One-hand weapon: the left arm is free.
 	left_grip_target.position = left_grip_rest.position.lerp(left_aim_position(), t)
 	arm_ik_left.pole_direction = left_pole_rest.lerp(left_pole_aim, t)
+
+
+## The gun at rest turns about the shoulder (torso space, forward is positive about the torso's right axis) by
+## gun_sway_share of the stride swing of that arm; weight is 1 at rest and 0 when raised.
+func _sway_gun(parent: Node3D, left: bool, weight: float) -> void:
+	var swing_node := _arm_swing()
+	var ik := arm_ik_left if left else arm_ik_right
+	if swing_node == null or ik == null or ik.root_joint == null or gun_sway_share <= 0.0 or weight <= 0.0:
+		return
+	var angle := swing_node.swing(not left).x * gun_sway_share * weight
+	if absf(angle) < 0.00001:
+		return
+	var pivot := parent.global_transform.affine_inverse() * ik.root_joint.global_position
+	var turn := Transform3D(Basis(Vector3.RIGHT, angle), Vector3.ZERO)
+	weapon.transform = Transform3D(Basis(), pivot) * turn * Transform3D(Basis(), -pivot) * weapon.transform
+
+
+## The mech's FreeArmSwing (found on first use; Mech adds it at runtime), or null.
+func _arm_swing() -> FreeArmSwing:
+	if _swing == null or not is_instance_valid(_swing):
+		var node: Node = get_parent()
+		while node != null and not node is Mech:
+			node = node.get_parent()
+		_swing = node.get_node_or_null(^"FreeArmSwing") as FreeArmSwing if node != null else null
+	return _swing
 
 
 ## The left hand place in the aim pose (weapon space): GripLeftAim, slid toward GripLeftAimLow by

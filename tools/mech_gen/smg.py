@@ -95,8 +95,9 @@ if __name__ == "__main__":
         "fire_rate": 10.0, "damage": 26.25, "projectile_speed": 380.0, "spread_deg": 3.5,
         "recoil_up_deg": 0.5, "recoil_side_deg": 0.2, "model_kick_back": 0.25, "model_kick_up_deg": 2.0,
         "shake_trauma": 0.08, "shake_kick": 0.04, "magazine": 45, "reload_time": 2.5,
-        # Forearm line (2026-10-22): solved in game so the gun axis continues the forearm, the shoulder block flat.
-        "rest_transform": "Transform3D(0.9622926, 0.13475062, -0.23629476, 0, 0.8686782, 0.49537674, 0.27201644, -0.4766974, 0.83592266, 2.2957258, 1.001391, -1.0999992)",
-        "aim_anchor": "Vector3(1.8899, 1.6503, -1.3013)",
+        # Forearm line (2026-10-24): solved in game (tools/godot/measure_arms_solve.gd) so the gun axis lies along the forearm and
+        # the arm is the empty arm's hang pose moved 0.4 m out and 0.2 m up, the gun rolled 16 deg (keeps off the thigh and forearm).
+        "rest_transform": "Transform3D(0.9443972, -0.0352323, -0.3269138, 0.2265883, 0.7902074, 0.5694119, 0.238268, -0.6118259, 0.754253, 2.018764, 0.813291, -1.4226328)",
+        "aim_anchor": "Vector3(1.5293, 1.7368, -1.2396)",
         "right_pole_rest": v3((0.4, -1.0, 0.5)), "right_pole_aim": v3((0.4, -1.0, 0.5))},
         "res://scenes/weapons/smg.tscn")

@@ -118,7 +118,7 @@ MATS = {
 }
 
 
-def write_model(path, root, script, build, root_transform=None, extra_ext=()):
+def write_model(path, root, script, build, root_transform=None, extra_ext=(), root_meta=None):
     b = Builder()
     nodes = []
     def part(name, mat, kind, params, pos=(0, 0, 0), rot=(0, 0, 0), parent="."):
@@ -141,10 +141,17 @@ def write_model(path, root, script, build, root_transform=None, extra_ext=()):
     if root_transform:
         head += f'transform = {root_transform}\n'
     head += 'script = ExtResource("script")\n'
+    for key, value in (root_meta or {}).items():
+        head += f'metadata/{key} = {value}\n'
     o.append(head)
     o += nodes
     open(path, "w").write("\n".join(o))
     print("wrote", path)
+
+
+# Right elbow hints of the Beam Sniper (user request 2026-10-24; read by SkeletalArmRig._right_elbow_hint):
+# torso-space directions from the shoulder to the elbow, blended by the aim amount.
+SNIPER_ELBOW = {"elbow_rest": "Vector3(0.67, -0.74, 0.0)", "elbow_aim": "Vector3(0.55, -0.84, -0.05)"}
 
 
 def sniper(part, marker):
@@ -311,7 +318,7 @@ def v3(p):
 
 if __name__ == "__main__":
     os.makedirs("scenes/weapons", exist_ok=True)
-    write_model("scenes/weapons/beam_sniper.tscn", "BeamSniper", "beam_rifle_weapon", sniper)
+    write_model("scenes/weapons/beam_sniper.tscn", "BeamSniper", "beam_rifle_weapon", sniper, root_meta=SNIPER_ELBOW)
     write_model("scenes/weapons/pile_bunker.tscn", "PileBunker", "pile_bunker_weapon", pile_bunker)
     # Pods sit above the shoulders, behind the head (torso space), tilted 10 degrees up.
     for side, sign in (("l", -1), ("r", 1)):
@@ -327,10 +334,12 @@ if __name__ == "__main__":
         "range_m": 310.0, "effective_range_m": 155.0,
         "recoil_up_deg": 2.0, "recoil_side_deg": 0.8, "model_kick_back": 0.7, "model_kick_up_deg": 10.0,
         "shake_trauma": 0.25, "shake_kick": 0.12, "magazine": 12, "reload_time": 3.5,
-        # Forearm line (2026-10-22): the gun axis continues the forearm at rest and aim, the elbow stays under the
-        # flat shoulder block. Found by the in-game solver (scratch); the same for the SMG and the Shotgun.
-        "rest_transform": "Transform3D(0.96349466, 0.13122132, -0.23336469, 0, 0.8716495, 0.49012986, 0.26772767, -0.4722375, 0.83982956, 2.364206, 0.7168803, -1.3313878)",
-        "aim_anchor": "Vector3(1.9137, 1.5120, -1.6479)",
+        # Forearm line (2026-10-24): found by the in-game solver tools/godot/measure_arms_solve.gd: the gun axis lies
+        # along the forearm at rest and aim (the aim wrist is the same place for all three guns); at rest the arm is the empty arm's hang pose moved 0.4 m out and 0.2 m up
+        # (so the shoulder blocks match the empty side) and the gun is rolled 16 deg (keeps off the thigh and the
+        # forearm armor). The same for the SMG and the Shotgun.
+        "rest_transform": "Transform3D(0.944414, -0.0353381, -0.326854, 0.2266064, 0.7902704, 0.5693173, 0.2381845, -0.6117384, 0.7543503, 2.1944599, 0.5915485, -1.7262977)",
+        "aim_anchor": "Vector3(1.5708, 1.7383, -1.6552)",
         "right_pole_rest": v3(ONE_HAND["right_pole_rest"]), "right_pole_aim": v3(ONE_HAND["right_pole_aim"])},
         "res://scenes/weapons/heavy_rifle.tscn")
     # Two-hand rest (beam sniper and Beam Rifle; user drawing 2026-10-12): across the front of the body,
@@ -359,7 +368,9 @@ if __name__ == "__main__":
     # SkeletalAimStance, plus aim_twist_deg 25). Grip sockets (2026-10-13): the butt 0.8 m lower (at the
     # front of the chest, was the front of the right shoulder) and 0.5 m further out, so the right fist
     # lines up with the pistol grip and the stock keeps off the right forearm (found by search).
-    sniper_anchor = (1.9, 1.2, -1.5)
+    # Aim hold (user request 2026-10-24): 0.4 m out and 0.3 m up from the old (1.9, 1.2, -1.5), so the right
+    # elbow sits out under a level shoulder block and the stock keeps off the forearm armor (measure_arms_search.gd).
+    sniper_anchor = (2.3, 1.5, -1.5)
     res("data/weapons/beam_sniper.tres", {"display_name": '"Beam Sniper"', "weight_t": 4.0, "hp": 300.0,
         "kind": 1, "two_handed": "true", "fire_rate": 0.16667, "damage": 225.0, "stagger_points": 32.0, "spread_deg": 0.05, "range_m": 337.5,
         "effective_range_m": 168.75,
