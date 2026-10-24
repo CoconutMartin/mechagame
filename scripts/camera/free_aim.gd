@@ -6,8 +6,10 @@ extends Node
 ## slowly, more while the mech moves. With a box (size above 0) it is a dead zone: the ring moves
 ## inside the box and only the mouse movement past the edge turns the camera (like ARMA).
 ## Each shot kicks the aim up and a little to the side (muzzle climb) and makes it shake a
-## little (jitter). The kick rises over a short time, so nothing snaps. With no box the kick turns
-## the camera; with a box it moves the ring. The player pulls the aim back. No automatic return.
+## little (jitter). The kick rises over a short time, so nothing snaps. With no box the kick moves
+## the crosshair (ring and brackets) off the screen center; a mouse move against the kick first
+## brings the crosshair back, and only the rest turns the camera. With a box the kick moves the ring.
+## The player pulls the aim back. No automatic return (user request 2026-10-24).
 ## The aim also shakes while the boosters fire.
 ## Unsteady (a two-hand weapon held in one hand, set by WeaponController): the ring follows on a
 ## soft spring (it swings past and comes back), sways slowly, and the recoil is bigger.
@@ -41,11 +43,16 @@ extends Node
 @export var recoil_side_deg: float = 1.0
 ## How fast a kick rises (1 / seconds). 25 = most of the kick in about 0.1 s.
 @export var recoil_rise_speed: float = 25.0
-## With no box: the kick first moves the crosshair (ring and brackets) up and to the side with the gun, then the
-## camera follows it back to the screen center at this speed (1 / seconds; the aim stays where the kick put it).
-## User request 2026-10-24: "displace the crosshair in-line with the weapon recoils". 0 = the old way (the kick
-## turns the camera at once, the crosshair stays in the center).
-@export var crosshair_return_speed: float = 5.0
+## With no box: the kick moves the crosshair (ring and brackets) up and to the side with the gun (user request
+## 2026-10-24: "displace the crosshair in-line with the weapon recoils"). Off = the old way (the kick turns the
+## camera at once, the crosshair stays in the center).
+@export var kick_moves_crosshair: bool = true
+## With no box: the camera follows the kicked crosshair back to the screen center at this speed (1 / seconds;
+## the aim stays where the kick put it). 0 = no automatic return: the player's mouse brings it back.
+@export var crosshair_return_speed: float = 0.0
+## With no box: largest crosshair kick from the screen center, in degrees. A kick past it turns the camera,
+## so a long burst cannot push the crosshair off the screen.
+@export var max_kick_offset_deg: float = 8.0
 ## Jitter added by each shot, in degrees. It fades out.
 @export var jitter_per_shot_deg: float = 0.0
 ## Largest jitter, in degrees.
@@ -118,7 +125,7 @@ var _drag_y := AimSpring.new(0.0)
 var _drag_time: float = 0.0
 ## Recoil that turns the camera (no box), degrees. The camera rig takes it each frame.
 var _camera_kick: Vector2 = Vector2.ZERO
-## Recoil shown on the crosshair (no box), degrees; it goes to the camera at crosshair_return_speed.
+## Recoil shown on the crosshair (no box), degrees. The mouse (take_motion) and crosshair_return_speed take it back.
 var _kick_offset: Vector2 = Vector2.ZERO
 
 
@@ -135,11 +142,12 @@ func _physics_process(delta: float) -> void:
 	_pending_kick -= take
 	if _has_box():
 		offset = _clamp_to_box(offset + take)
-	elif crosshair_return_speed > 0.0:
+	elif kick_moves_crosshair:
 		_kick_offset += take
 		var back := _kick_offset * (1.0 - exp(-crosshair_return_speed * delta))
-		_kick_offset -= back
-		_camera_kick += back
+		var over := _kick_offset - back
+		_kick_offset = over.limit_length(max_kick_offset_deg)
+		_camera_kick += back + over - _kick_offset
 	else:
 		_camera_kick += take
 	_jitter = maxf(_jitter - jitter_fade * delta, 0.0)
@@ -171,6 +179,8 @@ func _physics_process(delta: float) -> void:
 ## Moves the mech aim by a mouse movement (degrees, same signs as offset).
 ## Returns the part that went past the box edge. The camera turns by that part.
 func take_motion(motion: Vector2) -> Vector2:
+	if not _has_box():
+		motion = _pull_kick_back(motion)
 	var wanted := offset + motion
 	offset = _clamp_to_box(wanted)
 	var turn := wanted - offset
@@ -179,6 +189,20 @@ func take_motion(motion: Vector2) -> Vector2:
 	_drag_x.value = clampf(_drag_x.value - turn.x * momentum, -limit, limit)
 	_drag_y.value = clampf(_drag_y.value - turn.y * momentum, -limit, limit)
 	return turn
+
+
+## The part of a mouse move against the crosshair kick brings the crosshair back to the center.
+## Returns the rest of the move (it turns the camera).
+func _pull_kick_back(motion: Vector2) -> Vector2:
+	var rest := motion
+	for axis in 2:
+		var kick_now: float = _kick_offset[axis]
+		if kick_now * motion[axis] >= 0.0:
+			continue
+		var used := minf(absf(motion[axis]), absf(kick_now))
+		_kick_offset[axis] = kick_now - signf(kick_now) * used
+		rest[axis] = motion[axis] + signf(kick_now) * used
+	return rest
 
 
 ## Recoil that turns the camera since the last call (degrees, same signs as offset). The camera rig

@@ -68,6 +68,10 @@ extends SkeletonModifier3D
 @export var max_chain_swings: int = 3
 ## Seconds to blend from the pose of one swing into the next.
 @export var combo_blend: float = 0.25
+## The arms lower from the last swing pose over the attack's blend_out x this value (user request 2026-10-24:
+## "hands lower 50% slower" = half the speed, 2 = twice the time). They start to lower when the clip ends,
+## also while the combo window holds the swing open, so there is no snap at the window end.
+@export var lower_time_scale: float = 2.0
 @export_group("Targeting")
 ## Farthest target the attack turns toward and glides to (m, center to center).
 @export var target_range: float = 20.0
@@ -172,8 +176,12 @@ var _prev_time: float = 0.0
 var _blend_left: float = 0.0
 ## Strike index -> {target: true}: each strike hits a target once.
 var _hit := {}
-## Blend out after the attack: the pose is held at _time and fades over the attack's blend_out.
+## Blend out after the attack: the pose is held at _time and fades over _lower_time().
 var _fade_left: float = 0.0
+## Clip weight while the swing is held open for the combo window after its clip ended (1 = full pose).
+var _hold_weight: float = 1.0
+## Shown weight (smoothed) of the swing before at the chain start (it was lowering in its combo hold).
+var _prev_weight: float = 1.0
 ## The target the mech turns to and glides toward (null = none), the glide speed and direction.
 var _target: Node3D
 var _lunge_velocity: float = 0.0
@@ -357,6 +365,7 @@ func _input_direction() -> StringName:
 ## Starts one swing. chained = the next swing of a chain: it blends in from the pose of the swing before.
 func _begin_swing(attack: MeleeAttack, weapon: MeleeWeapon, chained: bool) -> void:
 	if chained:
+		_prev_weight = smoothstep(0.0, 1.0, _weight())
 		_prev_attack = _attack
 		_prev_time = _time
 		_blend_left = combo_blend
@@ -375,6 +384,7 @@ func _begin_swing(attack: MeleeAttack, weapon: MeleeWeapon, chained: bool) -> vo
 	if not chained:
 		_queue.clear()
 	_fade_left = 0.0
+	_hold_weight = 1.0
 	_end_time = attack.animation.length
 	_lunge_done = false
 	_hold_time = 0.0
@@ -428,6 +438,8 @@ func _physics_process(delta: float) -> void:
 	_strike()
 	if _time >= _end_time and not (hold_for_combo and _can_chain()):
 		_finish(true)
+	elif _time >= _end_time:
+		_hold_weight = maxf(_hold_weight - delta / _lower_time(), 0.0)
 
 
 ## Removes the part of the motion toward any mech closer than the attack's keep_away_distance.
@@ -618,7 +630,8 @@ func _strike() -> void:
 func _finish(fade: bool) -> void:
 	is_playing = false
 	_queue.clear()
-	_fade_left = _attack.blend_out if fade else 0.0
+	# The fade goes on from where the combo hold lowered the pose.
+	_fade_left = _lower_time() * _hold_weight if fade else 0.0
 	_cooldown_left = cooldown
 	_blend_left = 0.0
 	_lunge_velocity = 0.0
@@ -632,10 +645,17 @@ func _weight() -> float:
 	if _attack == null:
 		return 0.0
 	if not is_playing:
-		return _fade_left / maxf(_attack.blend_out, 0.01)
+		return _fade_left / _lower_time()
+	if _time >= _end_time:
+		return _hold_weight
 	if _chained:
 		return 1.0
 	return clampf(_time / _attack.speed_scale / maxf(_attack.blend_in, 0.01), 0.0, 1.0)
+
+
+## Seconds for the arms to lower from the full swing pose after the clip.
+func _lower_time() -> float:
+	return maxf(_attack.blend_out * lower_time_scale, 0.01)
 
 
 ## Bone name -> [rotation track, position track] of an attack's clip (-1 = none).
@@ -696,7 +716,8 @@ func _process_modification_with_delta(_delta: float) -> void:
 			var rest := skeleton.get_bone_rest(bone).basis.get_rotation_quaternion()
 			var value := _clip_rotation(_attack, now[0], _time, bone_name, rest, under)
 			if mix < 1.0:
-				value = _clip_rotation(_prev_attack, then[0], _prev_time, bone_name, rest, under).slerp(value, mix)
+				var from := under.slerp(_clip_rotation(_prev_attack, then[0], _prev_time, bone_name, rest, under), _prev_weight)
+				value = from.slerp(value, mix)
 			skeleton.set_bone_pose_rotation(bone, under.slerp(value, weight))
 		if now[1] >= 0 or then[1] >= 0:
 			var under_position := skeleton.get_bone_pose_position(bone)
@@ -706,7 +727,7 @@ func _process_modification_with_delta(_delta: float) -> void:
 			if mix < 1.0:
 				var from := under_position
 				if then[1] >= 0:
-					from = _prev_attack.animation.position_track_interpolate(then[1], _prev_time)
+					from = under_position.lerp(_prev_attack.animation.position_track_interpolate(then[1], _prev_time), _prev_weight)
 				position = from.lerp(position, mix)
 			skeleton.set_bone_pose_position(bone, under_position.lerp(position, weight))
 	_clamp_feet(skeleton)

@@ -2,8 +2,8 @@ shader_type spatial;
 // Pulse scan wire frame (PulseScanEffect): a full screen pass. It rebuilds each pixel's world place from
 // the depth buffer, draws green lines on depth edges (silhouettes and creases) and a world grid, and a
 // bright ring at the pulse front. A place shows the wire frame for wire_time after the ring passes it.
-// The end is a second wave (user request 2026-10-22): a dimmer ring follows the first one at the same
-// speed, wire_time behind it, and the wire frame goes out in a narrow band (end_band) just ahead of it.
+// Then it fades out slowly over end_band / ring_speed seconds, starting at the origin and moving out at the
+// ring speed (user request 2026-10-24: no second ring).
 // The front ring fades over the last part of the range (range_fade) before it stops.
 render_mode unshaded, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled;
 
@@ -22,8 +22,7 @@ uniform float grid_m = 10.0;
 uniform float grid_strength = 0.6;
 uniform float ring_width = 3.0;
 uniform float ring_strength = 0.7;
-uniform float end_band = 40.0;
-uniform float end_ring_strength = 0.45;
+uniform float end_band = 150.0;
 uniform float range_fade = 0.15;
 
 vec3 view_pos(vec2 uv, mat4 inv_proj) {
@@ -53,8 +52,9 @@ void fragment() {
 	if (dist > range_m || age < -ring_width / ring_speed) {
 		discard;
 	}
-	// The wire frame goes out as the end wave reaches the place (a band end_band meters wide).
-	float show = step(0.0, age) * (1.0 - smoothstep(wire_time - end_band / ring_speed, wire_time, age));
+	// After wire_time each place fades out slowly (over end_band / ring_speed seconds). Places near the
+	// origin start first, so the fade moves out from the mech at the ring speed.
+	float show = step(0.0, age) * (1.0 - smoothstep(wire_time, wire_time + end_band / ring_speed, age));
 	// Edges: the screen space laplacian of 1/z is 0 on any flat surface, so only silhouettes and creases show.
 	vec2 px = 1.0 / VIEWPORT_SIZE;
 	float c = 1.0 / z;
@@ -72,11 +72,6 @@ void fragment() {
 	float front = elapsed * ring_speed;
 	float front_fade = 1.0 - smoothstep(range_m * (1.0 - range_fade), range_m, front);
 	float ring = front <= range_m ? exp(-pow((dist - front) / ring_width, 2.0)) * ring_strength * front_fade : 0.0;
-	float tail = (elapsed - wire_time) * ring_speed;
-	float tail_fade = 1.0 - smoothstep(range_m * (1.0 - range_fade), range_m, tail);
-	if (tail >= 0.0 && tail <= range_m) {
-		ring += exp(-pow((dist - tail) / ring_width, 2.0)) * end_ring_strength * tail_fade;
-	}
 	// Dark green over the scanned places, bright lines on top (the reference pictures).
 	float line = clamp(max(edge * edge_strength, grid) * show + ring, 0.0, 1.0);
 	ALBEDO = mix(dark.rgb, color.rgb, line);

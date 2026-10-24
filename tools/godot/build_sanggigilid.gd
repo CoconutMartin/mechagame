@@ -162,6 +162,15 @@ func _initialize() -> void:
 	_set_camera(root)
 	shake.animation_steps = locomotion
 
+	# Thin dust where a foot lands (user request 2026-10-24).
+	var foot_dust := FootDust.new()
+	foot_dust.name = "FootDust"
+	root.add_child(foot_dust)
+	foot_dust.owner = root
+	foot_dust.mech = root
+	foot_dust.locomotion = locomotion
+	foot_dust.model = model
+
 	_add_weapon_rig(root, visual, model, weapon_animation, markers)
 
 	var health := root.get_node("MechHealth") as MechHealth

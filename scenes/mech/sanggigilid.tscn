@@ -1,80 +1,81 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/mech/mech.gd" id="1_3rnty"]
-[ext_resource type="Script" path="res://scripts/mech/skeletal_weapon_mount.gd" id="2_tcrga"]
-[ext_resource type="Resource" path="res://data/loadouts/sanggigilid_beam_rifle.tres" id="3_ycevx"]
-[ext_resource type="PackedScene" path="res://models/new_mech/new_mech_exploded.glb" id="4_j7rl0"]
-[ext_resource type="Script" path="res://scripts/animation/skeletal_hip_turn.gd" id="5_dh8mt"]
-[ext_resource type="Script" path="res://scripts/animation/skeletal_aim_stance.gd" id="6_p7mm4"]
-[ext_resource type="Script" path="res://scripts/animation/skeletal_jump_pose.gd" id="7_esdyr"]
-[ext_resource type="Script" path="res://scripts/animation/skeletal_arm_rig.gd" id="8_f6e46"]
-[ext_resource type="Script" path="res://scripts/animation/skeletal_dodge_animation.gd" id="9_ftejy"]
-[ext_resource type="Script" path="res://scripts/animation/skeletal_melee_animation.gd" id="10_xwnp2"]
-[ext_resource type="Script" path="res://scripts/animation/skeletal_hit_animation.gd" id="11_p07l5"]
-[ext_resource type="Script" path="res://scripts/animation/skeletal_stagger_animation.gd" id="12_lap5g"]
-[ext_resource type="Script" path="res://scripts/animation/skeletal_death_animation.gd" id="13_p85ka"]
-[ext_resource type="PackedScene" path="res://scenes/mech/mech_hand_r.tscn" id="14_rde4d"]
-[ext_resource type="Script" path="res://scripts/mech/mech_hand.gd" id="15_6sdlb"]
-[ext_resource type="PackedScene" path="res://scenes/mech/mech_hand_l.tscn" id="16_ujwe2"]
-[ext_resource type="Script" path="res://scripts/mech/mech_input.gd" id="17_l1wyl"]
-[ext_resource type="Script" path="res://scripts/mech/mech_energy.gd" id="18_qmwtc"]
-[ext_resource type="Script" path="res://scripts/mech/mech_footsteps.gd" id="19_veiw7"]
-[ext_resource type="Script" path="res://scripts/mech/mech_landing_recovery.gd" id="20_24fdn"]
-[ext_resource type="Script" path="res://scripts/mech/mech_jump_charge.gd" id="21_me5m8"]
-[ext_resource type="Script" path="res://scripts/mech/mech_air_steer.gd" id="22_tn8qr"]
-[ext_resource type="Script" path="res://scripts/mech/mech_kneel.gd" id="23_jrx5d"]
-[ext_resource type="Script" path="res://scripts/mech/mech_dodge.gd" id="24_jc2vq"]
-[ext_resource type="Script" path="res://scripts/mech/mech_aim.gd" id="25_tjmys"]
-[ext_resource type="Script" path="res://scripts/camera/aim_class_tuning.gd" id="26_bnhrj"]
-[ext_resource type="Script" path="res://scripts/camera/mech_camera_rig.gd" id="27_cjnl1"]
-[ext_resource type="Script" path="res://scripts/camera/free_aim.gd" id="28_lk213"]
-[ext_resource type="Script" path="res://scripts/camera/camera_shake.gd" id="29_smi74"]
-[ext_resource type="Script" path="res://scripts/camera/camera_ads.gd" id="30_oexbt"]
-[ext_resource type="Script" path="res://scripts/mech/mech_shield.gd" id="31_v8305"]
-[ext_resource type="Script" path="res://scripts/weapons/weapon_controller.gd" id="32_ghe4c"]
-[ext_resource type="Script" path="res://scripts/combat/mech_health.gd" id="33_iwtk8"]
-[ext_resource type="Script" path="res://scripts/animation/weapon_pose.gd" id="34_4n6nv"]
-[ext_resource type="Script" path="res://scripts/weapons/weapon_recoil.gd" id="35_x0loa"]
-[ext_resource type="Script" path="res://scripts/animation/two_bone_ik.gd" id="36_l5mie"]
-[ext_resource type="Script" path="res://scripts/animation/shield_pose.gd" id="37_k7icv"]
-[ext_resource type="Script" path="res://scripts/animation/shield_mount.gd" id="38_25q2y"]
-[ext_resource type="Script" path="res://scripts/animation/torso_pose.gd" id="39_jsu4o"]
-[ext_resource type="Script" path="res://scripts/animation/weapon_bounce.gd" id="40_7es07"]
-[ext_resource type="Script" path="res://scripts/animation/skeletal_locomotion.gd" id="41_lrt57"]
-[ext_resource type="Script" path="res://scripts/animation/skid_body_turn.gd" id="42_0hk3n"]
-[ext_resource type="Script" path="res://scripts/mech/mech_building_contact.gd" id="43_sj14r"]
-[ext_resource type="Script" path="res://scripts/combat/skeletal_hitboxes.gd" id="44_qr26t"]
-[ext_resource type="Resource" path="res://data/mechs/sanggigilid_hit_parts.tres" id="45_tbs86"]
-[ext_resource type="Script" path="res://scripts/combat/skeletal_death.gd" id="46_c8xsb"]
-[ext_resource type="Script" path="res://scripts/combat/skeletal_part_breaker.gd" id="47_fgg7p"]
-[ext_resource type="Script" path="res://scripts/effects/char_damage_look.gd" id="48_tvy75"]
-[ext_resource type="Script" path="res://scripts/mech/mech_hand_control.gd" id="49_enktt"]
-[ext_resource type="Script" path="res://scripts/effects/mesh_color_override.gd" id="50_3cswv"]
-[ext_resource type="Texture2D" path="res://assets/textures/ps1/joint_metal.png" id="51_5kenn"]
-[ext_resource type="Script" path="res://scripts/effects/ps1_skin_look.gd" id="52_ekoxi"]
-[ext_resource type="Script" path="res://scripts/effects/mech_hp_indicators.gd" id="53_537d7"]
-[ext_resource type="Resource" path="res://data/mechs/sanggigilid_hp_indicators.tres" id="54_t0auu"]
+[ext_resource type="Script" path="res://scripts/mech/mech.gd" id="1_tcrga"]
+[ext_resource type="Script" path="res://scripts/mech/skeletal_weapon_mount.gd" id="2_ycevx"]
+[ext_resource type="Resource" path="res://data/loadouts/sanggigilid_beam_rifle.tres" id="3_j7rl0"]
+[ext_resource type="PackedScene" path="res://models/new_mech/new_mech_exploded.glb" id="4_dh8mt"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_hip_turn.gd" id="5_p7mm4"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_aim_stance.gd" id="6_esdyr"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_jump_pose.gd" id="7_f6e46"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_arm_rig.gd" id="8_ftejy"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_dodge_animation.gd" id="9_xwnp2"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_melee_animation.gd" id="10_p07l5"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_hit_animation.gd" id="11_lap5g"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_stagger_animation.gd" id="12_p85ka"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_death_animation.gd" id="13_rde4d"]
+[ext_resource type="PackedScene" path="res://scenes/mech/mech_hand_r.tscn" id="14_6sdlb"]
+[ext_resource type="Script" path="res://scripts/mech/mech_hand.gd" id="15_ujwe2"]
+[ext_resource type="PackedScene" path="res://scenes/mech/mech_hand_l.tscn" id="16_l1wyl"]
+[ext_resource type="Script" path="res://scripts/mech/mech_input.gd" id="17_qmwtc"]
+[ext_resource type="Script" path="res://scripts/mech/mech_energy.gd" id="18_veiw7"]
+[ext_resource type="Script" path="res://scripts/mech/mech_footsteps.gd" id="19_24fdn"]
+[ext_resource type="Script" path="res://scripts/mech/mech_landing_recovery.gd" id="20_me5m8"]
+[ext_resource type="Script" path="res://scripts/mech/mech_jump_charge.gd" id="21_tn8qr"]
+[ext_resource type="Script" path="res://scripts/mech/mech_air_steer.gd" id="22_jrx5d"]
+[ext_resource type="Script" path="res://scripts/mech/mech_kneel.gd" id="23_jc2vq"]
+[ext_resource type="Script" path="res://scripts/mech/mech_dodge.gd" id="24_tjmys"]
+[ext_resource type="Script" path="res://scripts/mech/mech_aim.gd" id="25_bnhrj"]
+[ext_resource type="Script" path="res://scripts/camera/aim_class_tuning.gd" id="26_cjnl1"]
+[ext_resource type="Script" path="res://scripts/camera/mech_camera_rig.gd" id="27_lk213"]
+[ext_resource type="Script" path="res://scripts/camera/free_aim.gd" id="28_smi74"]
+[ext_resource type="Script" path="res://scripts/camera/camera_shake.gd" id="29_oexbt"]
+[ext_resource type="Script" path="res://scripts/camera/camera_ads.gd" id="30_v8305"]
+[ext_resource type="Script" path="res://scripts/mech/mech_shield.gd" id="31_ghe4c"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_controller.gd" id="32_iwtk8"]
+[ext_resource type="Script" path="res://scripts/combat/mech_health.gd" id="33_4n6nv"]
+[ext_resource type="Script" path="res://scripts/animation/weapon_pose.gd" id="34_x0loa"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_recoil.gd" id="35_l5mie"]
+[ext_resource type="Script" path="res://scripts/animation/two_bone_ik.gd" id="36_k7icv"]
+[ext_resource type="Script" path="res://scripts/animation/shield_pose.gd" id="37_25q2y"]
+[ext_resource type="Script" path="res://scripts/animation/shield_mount.gd" id="38_jsu4o"]
+[ext_resource type="Script" path="res://scripts/animation/torso_pose.gd" id="39_7es07"]
+[ext_resource type="Script" path="res://scripts/animation/weapon_bounce.gd" id="40_lrt57"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_locomotion.gd" id="41_0hk3n"]
+[ext_resource type="Script" path="res://scripts/animation/skid_body_turn.gd" id="42_sj14r"]
+[ext_resource type="Script" path="res://scripts/mech/mech_building_contact.gd" id="43_qr26t"]
+[ext_resource type="Script" path="res://scripts/effects/foot_dust.gd" id="44_tbs86"]
+[ext_resource type="Script" path="res://scripts/combat/skeletal_hitboxes.gd" id="45_c8xsb"]
+[ext_resource type="Resource" path="res://data/mechs/sanggigilid_hit_parts.tres" id="46_fgg7p"]
+[ext_resource type="Script" path="res://scripts/combat/skeletal_death.gd" id="47_tvy75"]
+[ext_resource type="Script" path="res://scripts/combat/skeletal_part_breaker.gd" id="48_enktt"]
+[ext_resource type="Script" path="res://scripts/effects/char_damage_look.gd" id="49_3cswv"]
+[ext_resource type="Script" path="res://scripts/mech/mech_hand_control.gd" id="50_5kenn"]
+[ext_resource type="Script" path="res://scripts/effects/mesh_color_override.gd" id="51_ekoxi"]
+[ext_resource type="Texture2D" path="res://assets/textures/ps1/joint_metal.png" id="52_537d7"]
+[ext_resource type="Script" path="res://scripts/effects/ps1_skin_look.gd" id="53_t0auu"]
+[ext_resource type="Script" path="res://scripts/effects/mech_hp_indicators.gd" id="54_a2dp7"]
+[ext_resource type="Resource" path="res://data/mechs/sanggigilid_hp_indicators.tres" id="55_6ursg"]
 
 [sub_resource type="CapsuleShape3D" id="body_shape"]
 radius = 2.6
 height = 10.0
 
-[sub_resource type="Resource" id="Resource_a2dp7"]
-script = ExtResource("26_bnhrj")
-
-[sub_resource type="Resource" id="Resource_6ursg"]
-script = ExtResource("26_bnhrj")
-
 [sub_resource type="Resource" id="Resource_ofgey"]
-script = ExtResource("26_bnhrj")
+script = ExtResource("26_cjnl1")
+
+[sub_resource type="Resource" id="Resource_bxcxh"]
+script = ExtResource("26_cjnl1")
+
+[sub_resource type="Resource" id="Resource_8wo40"]
+script = ExtResource("26_cjnl1")
 
 [sub_resource type="SphereShape3D" id="arm_shape"]
 radius = 0.6
 
-[node name="Sanggigilid" type="CharacterBody3D" unique_id=1189493188 node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery", "jump_charge", "air_steer", "kneel", "dodge", "shield")]
+[node name="Sanggigilid" type="CharacterBody3D" unique_id=1283293140 node_paths=PackedStringArray("input", "energy", "footsteps", "landing_recovery", "jump_charge", "air_steer", "kneel", "dodge", "shield")]
 collision_layer = 2
 floor_snap_length = 1.0
-script = ExtResource("1_3rnty")
+script = ExtResource("1_tcrga")
 input = NodePath("MechInput")
 energy = NodePath("MechEnergy")
 footsteps = NodePath("MechFootsteps")
@@ -91,32 +92,32 @@ boost_exit_style = 2
 skid_stop_strides = PackedFloat32Array(0.45, 0.35)
 boost_exit_strides = PackedFloat32Array(4.8, 4.8, 3.4, 3.4)
 
-[node name="Collision" type="CollisionShape3D" parent="." unique_id=622939703]
+[node name="Collision" type="CollisionShape3D" parent="." unique_id=340359001]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
 shape = SubResource("body_shape")
 
-[node name="WeaponMount" type="Node" parent="." unique_id=8997014 node_paths=PackedStringArray("frame", "weapon_controller", "shoulder_mounts")]
-script = ExtResource("2_tcrga")
-loadout = ExtResource("3_ycevx")
+[node name="WeaponMount" type="Node" parent="." unique_id=1843424981 node_paths=PackedStringArray("frame", "weapon_controller", "shoulder_mounts")]
+script = ExtResource("2_ycevx")
+loadout = ExtResource("3_j7rl0")
 frame = NodePath("../Visual/Torso")
 weapon_controller = NodePath("../WeaponController")
 shoulder_mounts = [NodePath("../Visual/Torso/ShoulderTopL"), NodePath("../Visual/Torso/ShoulderTopR")]
 
-[node name="Visual" type="Node3D" parent="." unique_id=1407375323]
+[node name="Visual" type="Node3D" parent="." unique_id=1630155234]
 
-[node name="Model" type="Node3D" parent="Visual" unique_id=1402146855 instance=ExtResource("4_j7rl0")]
+[node name="Model" type="Node3D" parent="Visual" unique_id=724789540 instance=ExtResource("4_dh8mt")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
 
-[node name="AnimationTree" type="AnimationTree" parent="Visual/Model" unique_id=910584346]
+[node name="AnimationTree" type="AnimationTree" parent="Visual/Model" unique_id=272921524]
 anim_player = NodePath("../AnimationPlayer")
 
-[node name="ShoulderL" type="Marker3D" parent="Visual" unique_id=1525508864]
+[node name="ShoulderL" type="Marker3D" parent="Visual" unique_id=574162946]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3447794, 8.238236, -0.0026208104)
 
-[node name="AimOrigin" type="Marker3D" parent="Visual" unique_id=1856556559]
+[node name="AimOrigin" type="Marker3D" parent="Visual" unique_id=2015429771]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8, -1)
 
-[node name="HipTurn" type="SkeletonModifier3D" parent="Visual" unique_id=1394038019 node_paths=PackedStringArray("mech", "model", "skid_turn")]
+[node name="HipTurn" type="SkeletonModifier3D" parent="Visual" unique_id=1752808394 node_paths=PackedStringArray("mech", "model", "skid_turn")]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -133,41 +134,41 @@ visible = true
 visibility_parent = NodePath("")
 active = true
 influence = 1.0
-script = ExtResource("5_dh8mt")
+script = ExtResource("5_p7mm4")
 mech = NodePath("../..")
 model = NodePath("../Model")
 skid_turn = NodePath("../../SkidBodyTurn")
 
-[node name="Torso" type="Node3D" parent="Visual" unique_id=772973544]
+[node name="Torso" type="Node3D" parent="Visual" unique_id=705669753]
 
-[node name="ShoulderL" type="Node3D" parent="Visual/Torso" unique_id=838112353]
+[node name="ShoulderL" type="Node3D" parent="Visual/Torso" unique_id=296073503]
 
-[node name="ElbowL" type="Node3D" parent="Visual/Torso/ShoulderL" unique_id=1104450168]
+[node name="ElbowL" type="Node3D" parent="Visual/Torso/ShoulderL" unique_id=396862488]
 
-[node name="ShoulderR" type="Node3D" parent="Visual/Torso" unique_id=1323254748]
+[node name="ShoulderR" type="Node3D" parent="Visual/Torso" unique_id=1176683198]
 
-[node name="ElbowR" type="Node3D" parent="Visual/Torso/ShoulderR" unique_id=956106965]
+[node name="ElbowR" type="Node3D" parent="Visual/Torso/ShoulderR" unique_id=2008518237]
 
-[node name="ShoulderTopL" type="Marker3D" parent="Visual/Torso" unique_id=2035620299]
+[node name="ShoulderTopL" type="Marker3D" parent="Visual/Torso" unique_id=1825137793]
 
-[node name="ShoulderTopR" type="Marker3D" parent="Visual/Torso" unique_id=1235607281]
+[node name="ShoulderTopR" type="Marker3D" parent="Visual/Torso" unique_id=1554691476]
 
-[node name="LeftHand" type="Marker3D" parent="Visual/Torso" unique_id=1155347384]
+[node name="LeftHand" type="Marker3D" parent="Visual/Torso" unique_id=1437923512]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1, -0.82, -1.95)
 
-[node name="LeftHandRest" type="Marker3D" parent="Visual/Torso" unique_id=1259575033]
+[node name="LeftHandRest" type="Marker3D" parent="Visual/Torso" unique_id=2102182505]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1, -0.82, -1.95)
 
-[node name="LeftHandRaised" type="Marker3D" parent="Visual/Torso" unique_id=1507350181]
+[node name="LeftHandRaised" type="Marker3D" parent="Visual/Torso" unique_id=1737502663]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17, 1.53, -1.275)
 
-[node name="AimAnchor" type="Marker3D" parent="Visual/Torso" unique_id=481375436]
+[node name="AimAnchor" type="Marker3D" parent="Visual/Torso" unique_id=78671202]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.38, 0.935, -0.85)
 
-[node name="LeftHandRelaxed" type="Marker3D" parent="Visual/Torso" unique_id=501522244]
+[node name="LeftHandRelaxed" type="Marker3D" parent="Visual/Torso" unique_id=424104008]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1, -0.82, -1.95)
 
-[node name="AimStance" type="SkeletonModifier3D" parent="Visual" unique_id=1479809095 node_paths=PackedStringArray("model", "mech", "weapon_pose", "weapons")]
+[node name="AimStance" type="SkeletonModifier3D" parent="Visual" unique_id=1835797523 node_paths=PackedStringArray("model", "mech", "weapon_pose", "weapons")]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -184,7 +185,7 @@ visible = true
 visibility_parent = NodePath("")
 active = true
 influence = 1.0
-script = ExtResource("6_p7mm4")
+script = ExtResource("6_esdyr")
 model = NodePath("../Model")
 mech = NodePath("../..")
 weapon_pose = NodePath("../../WeaponAnimation/WeaponPose")
@@ -192,7 +193,7 @@ weapons = NodePath("../../WeaponController")
 leg_bones_left = PackedStringArray("thigh_L", "shin_L", "foot_L")
 leg_bones_right = PackedStringArray("thigh_R", "shin_R", "foot_R")
 
-[node name="JumpPose" type="SkeletonModifier3D" parent="Visual" unique_id=2053615990 node_paths=PackedStringArray("model", "mech", "jump_charge", "landing_recovery")]
+[node name="JumpPose" type="SkeletonModifier3D" parent="Visual" unique_id=1649488345 node_paths=PackedStringArray("model", "mech", "jump_charge", "landing_recovery")]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -209,7 +210,7 @@ visible = true
 visibility_parent = NodePath("")
 active = true
 influence = 1.0
-script = ExtResource("7_esdyr")
+script = ExtResource("7_f6e46")
 model = NodePath("../Model")
 mech = NodePath("../..")
 jump_charge = NodePath("../../MechJumpCharge")
@@ -217,7 +218,7 @@ landing_recovery = NodePath("../../MechLandingRecovery")
 leg_bones_left = PackedStringArray("thigh_L", "shin_L", "foot_L")
 leg_bones_right = PackedStringArray("thigh_R", "shin_R", "foot_R")
 
-[node name="ArmRig" type="SkeletonModifier3D" parent="Visual" unique_id=157932930 node_paths=PackedStringArray("model", "torso", "shoulder_left", "shoulder_right", "ik_left", "ik_right", "weapon_pose", "torso_pose", "weapons", "stance", "jump_pose", "shoulder_mounts")]
+[node name="ArmRig" type="SkeletonModifier3D" parent="Visual" unique_id=2139190566 node_paths=PackedStringArray("model", "torso", "shoulder_left", "shoulder_right", "ik_left", "ik_right", "weapon_pose", "torso_pose", "weapons", "stance", "jump_pose", "shoulder_mounts")]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -234,7 +235,7 @@ visible = true
 visibility_parent = NodePath("")
 active = true
 influence = 1.0
-script = ExtResource("8_f6e46")
+script = ExtResource("8_ftejy")
 model = NodePath("../Model")
 torso = NodePath("../Torso")
 shoulder_left = NodePath("../Torso/ShoulderL")
@@ -257,7 +258,7 @@ leg_bones = PackedStringArray("thigh_L", "shin_L", "foot_L", "thigh_R", "shin_R"
 body_meshes = PackedStringArray("Torso", "Pelvis")
 body_mesh_bones = PackedStringArray("torso", "pelvis")
 
-[node name="DodgeAnimation" type="SkeletonModifier3D" parent="Visual" unique_id=899400432 node_paths=PackedStringArray("model", "mech", "arm_rig")]
+[node name="DodgeAnimation" type="SkeletonModifier3D" parent="Visual" unique_id=822100707 node_paths=PackedStringArray("model", "mech", "arm_rig")]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -274,12 +275,12 @@ visible = true
 visibility_parent = NodePath("")
 active = true
 influence = 1.0
-script = ExtResource("9_ftejy")
+script = ExtResource("9_xwnp2")
 model = NodePath("../Model")
 mech = NodePath("../..")
 arm_rig = NodePath("../ArmRig")
 
-[node name="MeleeAnimation" type="SkeletonModifier3D" parent="Visual" unique_id=78824174 node_paths=PackedStringArray("model", "mech", "health", "weapons", "arm_rig")]
+[node name="MeleeAnimation" type="SkeletonModifier3D" parent="Visual" unique_id=628226900 node_paths=PackedStringArray("model", "mech", "health", "weapons", "arm_rig")]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -296,14 +297,14 @@ visible = true
 visibility_parent = NodePath("")
 active = true
 influence = 1.0
-script = ExtResource("10_xwnp2")
+script = ExtResource("10_p07l5")
 model = NodePath("../Model")
 mech = NodePath("../..")
 health = NodePath("../../MechHealth")
 weapons = NodePath("../../WeaponController")
 arm_rig = NodePath("../ArmRig")
 
-[node name="HitAnimation" type="SkeletonModifier3D" parent="Visual" unique_id=1580931656 node_paths=PackedStringArray("model", "mech", "health", "arm_rig", "melee")]
+[node name="HitAnimation" type="SkeletonModifier3D" parent="Visual" unique_id=1456459948 node_paths=PackedStringArray("model", "mech", "health", "arm_rig", "melee")]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -320,14 +321,14 @@ visible = true
 visibility_parent = NodePath("")
 active = true
 influence = 1.0
-script = ExtResource("11_p07l5")
+script = ExtResource("11_lap5g")
 model = NodePath("../Model")
 mech = NodePath("../..")
 health = NodePath("../../MechHealth")
 arm_rig = NodePath("../ArmRig")
 melee = NodePath("../MeleeAnimation")
 
-[node name="StaggerAnimation" type="SkeletonModifier3D" parent="Visual" unique_id=1620753044 node_paths=PackedStringArray("model", "mech", "health", "arm_rig")]
+[node name="StaggerAnimation" type="SkeletonModifier3D" parent="Visual" unique_id=953877684 node_paths=PackedStringArray("model", "mech", "health", "arm_rig")]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -344,13 +345,13 @@ visible = true
 visibility_parent = NodePath("")
 active = true
 influence = 1.0
-script = ExtResource("12_lap5g")
+script = ExtResource("12_p85ka")
 model = NodePath("../Model")
 mech = NodePath("../..")
 health = NodePath("../../MechHealth")
 arm_rig = NodePath("../ArmRig")
 
-[node name="DeathAnimation" type="SkeletonModifier3D" parent="Visual" unique_id=967984115 node_paths=PackedStringArray("model", "mech", "health", "arm_rig")]
+[node name="DeathAnimation" type="SkeletonModifier3D" parent="Visual" unique_id=1975448112 node_paths=PackedStringArray("model", "mech", "health", "arm_rig")]
 unique_name_in_owner = false
 process_mode = 0
 process_priority = 0
@@ -367,56 +368,56 @@ visible = true
 visibility_parent = NodePath("")
 active = true
 influence = 1.0
-script = ExtResource("13_p85ka")
+script = ExtResource("13_rde4d")
 model = NodePath("../Model")
 mech = NodePath("../..")
 health = NodePath("../../MechHealth")
 arm_rig = NodePath("../ArmRig")
 
-[node name="HandAttachR" type="BoneAttachment3D" parent="Visual" unique_id=278620205]
+[node name="HandAttachR" type="BoneAttachment3D" parent="Visual" unique_id=1279827623]
 bone_name = "hand_R"
 bone_idx = 39
 use_external_skeleton = true
 external_skeleton = NodePath("../Model/MechRig/Skeleton3D")
 
-[node name="MechHandR" type="Node3D" parent="Visual/HandAttachR" unique_id=2079644085 instance=ExtResource("14_rde4d")]
+[node name="MechHandR" type="Node3D" parent="Visual/HandAttachR" unique_id=678435260 instance=ExtResource("14_6sdlb")]
 transform = Transform3D(-0.02708329, -0.0039067385, 0.99962556, 0.0021300614, 0.9999899, 0.003966134, -0.99963105, 0.0022367015, -0.027074665, -0.39304653, -0.05262259, -0.086994454)
-script = ExtResource("15_6sdlb")
+script = ExtResource("15_ujwe2")
 thumb_azimuths = PackedFloat32Array(0, 30, 60, 90, 120)
 thumb_elevations = PackedFloat32Array(-30, -60, -80)
 thumb_rolls = PackedFloat32Array(30, 90, 150, 210)
 
-[node name="HandAttachL" type="BoneAttachment3D" parent="Visual" unique_id=3144242]
+[node name="HandAttachL" type="BoneAttachment3D" parent="Visual" unique_id=1127297742]
 bone_name = "hand_L"
 bone_idx = 20
 use_external_skeleton = true
 external_skeleton = NodePath("../Model/MechRig/Skeleton3D")
 
-[node name="MechHandL" type="Node3D" parent="Visual/HandAttachL" unique_id=1078379870 instance=ExtResource("16_ujwe2")]
+[node name="MechHandL" type="Node3D" parent="Visual/HandAttachL" unique_id=1606079468 instance=ExtResource("16_l1wyl")]
 transform = Transform3D(-0.04733374, -0.0011857501, -0.99887836, 0.034174755, 0.9994121, -0.0028057494, 0.9982944, -0.034269243, -0.047265403, 0.3343484, -0.08940751, 0.014766889)
-script = ExtResource("15_6sdlb")
+script = ExtResource("15_ujwe2")
 thumb_azimuths = PackedFloat32Array(0, 30, 60, 90, 120)
 thumb_elevations = PackedFloat32Array(-30, -60, -80)
 thumb_rolls = PackedFloat32Array(30, 90, 150, 210)
 
-[node name="MechInput" type="Node" parent="." unique_id=694526928 node_paths=PackedStringArray("camera_rig", "mech")]
-script = ExtResource("17_l1wyl")
+[node name="MechInput" type="Node" parent="." unique_id=1078329869 node_paths=PackedStringArray("camera_rig", "mech")]
+script = ExtResource("17_qmwtc")
 camera_rig = NodePath("../CameraRig")
 mech = NodePath("..")
 
-[node name="MechEnergy" type="Node" parent="." unique_id=178331611]
-script = ExtResource("18_qmwtc")
+[node name="MechEnergy" type="Node" parent="." unique_id=129335590]
+script = ExtResource("18_veiw7")
 
-[node name="MechFootsteps" type="Node" parent="." unique_id=1378004695 node_paths=PackedStringArray("mech")]
-script = ExtResource("19_veiw7")
+[node name="MechFootsteps" type="Node" parent="." unique_id=600341434 node_paths=PackedStringArray("mech")]
+script = ExtResource("19_24fdn")
 mech = NodePath("..")
 
-[node name="MechLandingRecovery" type="Node" parent="." unique_id=1533938412 node_paths=PackedStringArray("mech")]
-script = ExtResource("20_24fdn")
+[node name="MechLandingRecovery" type="Node" parent="." unique_id=1362433131 node_paths=PackedStringArray("mech")]
+script = ExtResource("20_me5m8")
 mech = NodePath("..")
 
-[node name="MechJumpCharge" type="Node" parent="." unique_id=696226554 node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery", "kneel", "dodge")]
-script = ExtResource("21_me5m8")
+[node name="MechJumpCharge" type="Node" parent="." unique_id=386832516 node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery", "kneel", "dodge")]
+script = ExtResource("21_tn8qr")
 mech = NodePath("..")
 input = NodePath("../MechInput")
 energy = NodePath("../MechEnergy")
@@ -425,18 +426,18 @@ kneel = NodePath("../MechKneel")
 dodge = NodePath("../MechDodge")
 height_at_second = PackedFloat32Array(0.33, 0.63, 1)
 
-[node name="MechAirSteer" type="Node" parent="." unique_id=1814012826 node_paths=PackedStringArray("mech")]
-script = ExtResource("22_tn8qr")
+[node name="MechAirSteer" type="Node" parent="." unique_id=196314829 node_paths=PackedStringArray("mech")]
+script = ExtResource("22_jrx5d")
 mech = NodePath("..")
 
-[node name="MechKneel" type="Node" parent="." unique_id=1770556920 node_paths=PackedStringArray("mech", "input", "landing_recovery")]
-script = ExtResource("23_jrx5d")
+[node name="MechKneel" type="Node" parent="." unique_id=1628114009 node_paths=PackedStringArray("mech", "input", "landing_recovery")]
+script = ExtResource("23_jc2vq")
 mech = NodePath("..")
 input = NodePath("../MechInput")
 landing_recovery = NodePath("../MechLandingRecovery")
 
-[node name="MechDodge" type="Node" parent="." unique_id=736057949 node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery", "kneel", "animation")]
-script = ExtResource("24_jc2vq")
+[node name="MechDodge" type="Node" parent="." unique_id=1870961823 node_paths=PackedStringArray("mech", "input", "energy", "landing_recovery", "kneel", "animation")]
+script = ExtResource("24_tjmys")
 mech = NodePath("..")
 input = NodePath("../MechInput")
 energy = NodePath("../MechEnergy")
@@ -445,52 +446,52 @@ kneel = NodePath("../MechKneel")
 animation = NodePath("../Visual/DodgeAnimation")
 stop_strides = PackedFloat32Array(1.5, 1.5)
 
-[node name="MechAim" type="Node" parent="." unique_id=1425786565 node_paths=PackedStringArray("mech", "camera", "camera_rig", "aim_origin", "body_visual")]
-script = ExtResource("25_tjmys")
+[node name="MechAim" type="Node" parent="." unique_id=1409192555 node_paths=PackedStringArray("mech", "camera", "camera_rig", "aim_origin", "body_visual")]
+script = ExtResource("25_bnhrj")
 mech = NodePath("..")
 camera = NodePath("../CameraRig/Pitch/SpringArm/Camera")
 camera_rig = NodePath("../CameraRig")
 aim_origin = NodePath("../Visual/AimOrigin")
 body_visual = NodePath("../Visual")
 screen_offset_up = 0.09
-class_tuning = SubResource("Resource_a2dp7")
+class_tuning = SubResource("Resource_ofgey")
 
-[node name="CameraRig" type="Node3D" parent="." unique_id=994703321 node_paths=PackedStringArray("target", "free_aim")]
+[node name="CameraRig" type="Node3D" parent="." unique_id=1099080335 node_paths=PackedStringArray("target", "free_aim")]
 top_level = true
-script = ExtResource("27_cjnl1")
+script = ExtResource("27_lk213")
 target = NodePath("..")
 free_aim = NodePath("FreeAim")
 pivot_height = 7.3
-class_tuning = SubResource("Resource_6ursg")
+class_tuning = SubResource("Resource_bxcxh")
 start_pitch_deg = 0.1
 
-[node name="FreeAim" type="Node" parent="CameraRig" unique_id=1699327566 node_paths=PackedStringArray("mech", "kneel", "shield")]
-script = ExtResource("28_lk213")
+[node name="FreeAim" type="Node" parent="CameraRig" unique_id=1841228501 node_paths=PackedStringArray("mech", "kneel", "shield")]
+script = ExtResource("28_smi74")
 mech = NodePath("../..")
-class_tuning = SubResource("Resource_ofgey")
+class_tuning = SubResource("Resource_8wo40")
 kneel = NodePath("../../MechKneel")
 shield = NodePath("../../MechShield")
 
-[node name="Pitch" type="Node3D" parent="CameraRig" unique_id=742654547]
+[node name="Pitch" type="Node3D" parent="CameraRig" unique_id=216976053]
 
-[node name="SpringArm" type="SpringArm3D" parent="CameraRig/Pitch" unique_id=1888777375]
+[node name="SpringArm" type="SpringArm3D" parent="CameraRig/Pitch" unique_id=679579246]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.75, 0, 0)
 shape = SubResource("arm_shape")
 spring_length = 12.3
 margin = 0.4
 
-[node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm" unique_id=881799739 node_paths=PackedStringArray("mech", "footsteps", "animation_steps", "dodge")]
+[node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm" unique_id=1675209638 node_paths=PackedStringArray("mech", "footsteps", "animation_steps", "dodge")]
 current = true
 fov = 53.0
 far = 2000.0
-script = ExtResource("29_smi74")
+script = ExtResource("29_oexbt")
 mech = NodePath("../../../..")
 footsteps = NodePath("../../../../MechFootsteps")
 animation_steps = NodePath("../../../../Locomotion")
 dodge = NodePath("../../../../MechDodge")
 
-[node name="CameraAds" type="Node" parent="CameraRig" unique_id=1918690576 node_paths=PackedStringArray("input", "camera", "spring_arm", "rig", "mech_aim")]
-script = ExtResource("30_oexbt")
+[node name="CameraAds" type="Node" parent="CameraRig" unique_id=456835403 node_paths=PackedStringArray("input", "camera", "spring_arm", "rig", "mech_aim")]
+script = ExtResource("30_v8305")
 input = NodePath("../../MechInput")
 camera = NodePath("../Pitch/SpringArm/Camera")
 spring_arm = NodePath("../Pitch/SpringArm")
@@ -498,13 +499,13 @@ rig = NodePath("..")
 mech_aim = NodePath("../../MechAim")
 enabled = false
 
-[node name="MechShield" type="Node" parent="." unique_id=1283132047 node_paths=PackedStringArray("input")]
-script = ExtResource("31_v8305")
+[node name="MechShield" type="Node" parent="." unique_id=148660718 node_paths=PackedStringArray("input")]
+script = ExtResource("31_ghe4c")
 input = NodePath("../MechInput")
 area_m2 = 10.886
 
-[node name="WeaponController" type="Node" parent="." unique_id=1779811058 node_paths=PackedStringArray("mech", "input", "mech_aim", "weapon_pose", "weapon_recoil", "arm_ik_left", "arm_ik_right", "camera_ads", "torso_pose", "camera_shake", "mech_shield", "shield_pose", "shield_mount", "torso", "left_hand", "free_aim", "free_left_hand")]
-script = ExtResource("32_ghe4c")
+[node name="WeaponController" type="Node" parent="." unique_id=1232162503 node_paths=PackedStringArray("mech", "input", "mech_aim", "weapon_pose", "weapon_recoil", "arm_ik_left", "arm_ik_right", "camera_ads", "torso_pose", "camera_shake", "mech_shield", "shield_pose", "shield_mount", "torso", "left_hand", "free_aim", "free_left_hand")]
+script = ExtResource("32_iwtk8")
 mech = NodePath("..")
 input = NodePath("../MechInput")
 mech_aim = NodePath("../MechAim")
@@ -524,15 +525,15 @@ free_aim = NodePath("../CameraRig/FreeAim")
 animate_free_left_arm = true
 free_left_hand = NodePath("../Visual/Torso/LeftHandRelaxed")
 
-[node name="MechHealth" type="Node" parent="." unique_id=1939905073 node_paths=PackedStringArray("mech", "weapons")]
-script = ExtResource("33_iwtk8")
+[node name="MechHealth" type="Node" parent="." unique_id=684598583 node_paths=PackedStringArray("mech", "weapons")]
+script = ExtResource("33_4n6nv")
 mech = NodePath("..")
 weapons = NodePath("../WeaponController")
 
-[node name="WeaponAnimation" type="Node" parent="." unique_id=1240768823]
+[node name="WeaponAnimation" type="Node" parent="." unique_id=29047385]
 
-[node name="WeaponPose" type="Node" parent="WeaponAnimation" unique_id=885488703 node_paths=PackedStringArray("aim_anchor", "mech_aim", "input", "recoil", "bounce", "arm_ik_left", "arm_ik_right")]
-script = ExtResource("34_4n6nv")
+[node name="WeaponPose" type="Node" parent="WeaponAnimation" unique_id=1672040408 node_paths=PackedStringArray("aim_anchor", "mech_aim", "input", "recoil", "bounce", "arm_ik_left", "arm_ik_right")]
+script = ExtResource("34_x0loa")
 aim_anchor = NodePath("../../Visual/Torso/AimAnchor")
 mech_aim = NodePath("../../MechAim")
 input = NodePath("../../MechInput")
@@ -543,27 +544,27 @@ arm_ik_right = NodePath("../ArmIKRight")
 right_pole_rest = Vector3(0.4, -1, 0.5)
 right_pole_aim = Vector3(0.4, -1, 0.5)
 
-[node name="WeaponRecoil" type="Node" parent="WeaponAnimation" unique_id=225577981]
-script = ExtResource("35_x0loa")
+[node name="WeaponRecoil" type="Node" parent="WeaponAnimation" unique_id=769649395]
+script = ExtResource("35_l5mie")
 
-[node name="ArmIKRight" type="Node" parent="WeaponAnimation" unique_id=235193747 node_paths=PackedStringArray("root_joint", "mid_joint")]
-script = ExtResource("36_l5mie")
+[node name="ArmIKRight" type="Node" parent="WeaponAnimation" unique_id=1336095267 node_paths=PackedStringArray("root_joint", "mid_joint")]
+script = ExtResource("36_k7icv")
 root_joint = NodePath("../../Visual/Torso/ShoulderR")
 mid_joint = NodePath("../../Visual/Torso/ShoulderR/ElbowR")
 upper_length = 2.295
 lower_length = 2.55
 pole_direction = Vector3(1, -1, 0.6)
 
-[node name="ArmIKLeft" type="Node" parent="WeaponAnimation" unique_id=1682641333 node_paths=PackedStringArray("root_joint", "mid_joint")]
-script = ExtResource("36_l5mie")
+[node name="ArmIKLeft" type="Node" parent="WeaponAnimation" unique_id=1858150410 node_paths=PackedStringArray("root_joint", "mid_joint")]
+script = ExtResource("36_k7icv")
 root_joint = NodePath("../../Visual/Torso/ShoulderL")
 mid_joint = NodePath("../../Visual/Torso/ShoulderL/ElbowL")
 upper_length = 2.295
 lower_length = 2.55
 pole_direction = Vector3(-1, -1, 0.3)
 
-[node name="ShieldPose" type="Node" parent="WeaponAnimation" unique_id=844379955 node_paths=PackedStringArray("shield", "arm_ik", "hand_target", "rest", "raised")]
-script = ExtResource("37_k7icv")
+[node name="ShieldPose" type="Node" parent="WeaponAnimation" unique_id=1685369774 node_paths=PackedStringArray("shield", "arm_ik", "hand_target", "rest", "raised")]
+script = ExtResource("37_25q2y")
 shield = NodePath("../../MechShield")
 arm_ik = NodePath("../ArmIKLeft")
 hand_target = NodePath("../../Visual/Torso/LeftHand")
@@ -572,14 +573,14 @@ raised = NodePath("../../Visual/Torso/LeftHandRaised")
 pole_rest = Vector3(-1, -0.6, 0)
 pole_raised = Vector3(-1, -0.6, 0)
 
-[node name="ShieldMount" type="Node" parent="WeaponAnimation" unique_id=1963026552 node_paths=PackedStringArray("shield")]
-script = ExtResource("38_25q2y")
+[node name="ShieldMount" type="Node" parent="WeaponAnimation" unique_id=928256475 node_paths=PackedStringArray("shield")]
+script = ExtResource("38_jsu4o")
 shield = NodePath("../../MechShield")
 move_to_cover = false
 
-[node name="TorsoPose" type="Node" parent="WeaponAnimation" unique_id=1206783442 node_paths=PackedStringArray("mech", "weapon_pose", "kneel", "dodge")]
+[node name="TorsoPose" type="Node" parent="WeaponAnimation" unique_id=1740936832 node_paths=PackedStringArray("mech", "weapon_pose", "kneel", "dodge")]
 process_mode = 4
-script = ExtResource("39_jsu4o")
+script = ExtResource("39_7es07")
 mech = NodePath("../..")
 weapon_pose = NodePath("../WeaponPose")
 kneel = NodePath("../../MechKneel")
@@ -587,14 +588,14 @@ dodge = NodePath("../../MechDodge")
 aim_twist_deg = 0.0
 aim_tilt_deg = 0.0
 
-[node name="WeaponBounce" type="Node" parent="WeaponAnimation" unique_id=589673385 node_paths=PackedStringArray("torso", "weapons", "weapon_pose")]
-script = ExtResource("40_7es07")
+[node name="WeaponBounce" type="Node" parent="WeaponAnimation" unique_id=1893532605 node_paths=PackedStringArray("torso", "weapons", "weapon_pose")]
+script = ExtResource("40_lrt57")
 torso = NodePath("../../Visual/Torso")
 weapons = NodePath("../../WeaponController")
 weapon_pose = NodePath("../WeaponPose")
 
-[node name="Locomotion" type="Node" parent="." unique_id=681654794 node_paths=PackedStringArray("mech", "tree", "hip_turn")]
-script = ExtResource("41_lrt57")
+[node name="Locomotion" type="Node" parent="." unique_id=1473952487 node_paths=PackedStringArray("mech", "tree", "hip_turn")]
+script = ExtResource("41_0hk3n")
 mech = NodePath("..")
 tree = NodePath("../Visual/Model/AnimationTree")
 hip_turn = NodePath("../Visual/HipTurn")
@@ -602,25 +603,32 @@ cycle_speeds = PackedFloat32Array(2.71, 4.6, 9.1, 14.16)
 play_speeds = PackedFloat32Array(2.71, 4.6, 7.735, 11.6025)
 head_track = NodePath("MechRig/Skeleton3D:head")
 
-[node name="SkidBodyTurn" type="Node" parent="." unique_id=1106190194 node_paths=PackedStringArray("mech", "input", "body")]
-script = ExtResource("42_0hk3n")
+[node name="SkidBodyTurn" type="Node" parent="." unique_id=1235134499 node_paths=PackedStringArray("mech", "input", "body")]
+script = ExtResource("42_sj14r")
 mech = NodePath("..")
 input = NodePath("../MechInput")
 body = NodePath("../Visual")
 
-[node name="MechBuildingContact" type="Node" parent="." unique_id=1886816124 node_paths=PackedStringArray("mech", "health")]
-script = ExtResource("43_sj14r")
+[node name="MechBuildingContact" type="Node" parent="." unique_id=2053257182 node_paths=PackedStringArray("mech", "health")]
+script = ExtResource("43_qr26t")
 mech = NodePath("..")
 health = NodePath("../MechHealth")
 
-[node name="SkeletalHitboxes" type="Node" parent="." unique_id=1523882876 node_paths=PackedStringArray("health", "model")]
-script = ExtResource("44_qr26t")
+[node name="FootDust" type="Node" parent="." unique_id=1518699381 node_paths=PackedStringArray("mech", "locomotion", "model")]
+script = ExtResource("44_tbs86")
+mech = NodePath("..")
+locomotion = NodePath("../Locomotion")
+model = NodePath("../Visual/Model")
+foot_bones = PackedStringArray("foot_L", "foot_R")
+
+[node name="SkeletalHitboxes" type="Node" parent="." unique_id=97577082 node_paths=PackedStringArray("health", "model")]
+script = ExtResource("45_c8xsb")
 health = NodePath("../MechHealth")
 model = NodePath("../Visual/Model")
-parts = ExtResource("45_tbs86")
+parts = ExtResource("46_fgg7p")
 
-[node name="SkeletalDeath" type="Node" parent="." unique_id=1298840499 node_paths=PackedStringArray("mech", "health", "tree", "camera_shake", "weapons", "animation", "stagger", "visual")]
-script = ExtResource("46_c8xsb")
+[node name="SkeletalDeath" type="Node" parent="." unique_id=2051522549 node_paths=PackedStringArray("mech", "health", "tree", "camera_shake", "weapons", "animation", "stagger", "visual")]
+script = ExtResource("47_tvy75")
 mech = NodePath("..")
 health = NodePath("../MechHealth")
 tree = NodePath("../Visual/Model/AnimationTree")
@@ -630,22 +638,22 @@ animation = NodePath("../Visual/DeathAnimation")
 stagger = NodePath("../Visual/StaggerAnimation")
 visual = NodePath("../Visual")
 
-[node name="SkeletalPartBreaker" type="Node" parent="." unique_id=1619882324 node_paths=PackedStringArray("mech", "health", "hitboxes", "weapons", "camera_shake")]
-script = ExtResource("47_fgg7p")
+[node name="SkeletalPartBreaker" type="Node" parent="." unique_id=903312673 node_paths=PackedStringArray("mech", "health", "hitboxes", "weapons", "camera_shake")]
+script = ExtResource("48_enktt")
 mech = NodePath("..")
 health = NodePath("../MechHealth")
 hitboxes = NodePath("../SkeletalHitboxes")
 weapons = NodePath("../WeaponController")
 camera_shake = NodePath("../CameraRig/Pitch/SpringArm/Camera")
 
-[node name="CharDamageLook" type="Node" parent="." unique_id=1163344807 node_paths=PackedStringArray("health", "hitboxes", "weapons")]
-script = ExtResource("48_tvy75")
+[node name="CharDamageLook" type="Node" parent="." unique_id=429345011 node_paths=PackedStringArray("health", "hitboxes", "weapons")]
+script = ExtResource("49_3cswv")
 health = NodePath("../MechHealth")
 hitboxes = NodePath("../SkeletalHitboxes")
 weapons = NodePath("../WeaponController")
 
-[node name="MechHandControl" type="Node" parent="." unique_id=456472488 node_paths=PackedStringArray("mech", "skeleton", "weapons", "health", "hitboxes", "hand_right", "hand_left")]
-script = ExtResource("49_enktt")
+[node name="MechHandControl" type="Node" parent="." unique_id=1472309067 node_paths=PackedStringArray("mech", "skeleton", "weapons", "health", "hitboxes", "hand_right", "hand_left")]
+script = ExtResource("50_5kenn")
 mech = NodePath("..")
 skeleton = NodePath("../Visual/Model/MechRig/Skeleton3D")
 weapons = NodePath("../WeaponController")
@@ -660,22 +668,22 @@ hand_shift_right = Vector3(-0.39304653, -0.05262259, -0.086994454)
 hand_shift_left = Vector3(0.3343484, -0.08940751, 0.014766889)
 old_hand_bones = PackedStringArray("hand_", "index_", "middle_", "ring_", "pinky_", "thumb_", "grip_")
 
-[node name="JointColor" type="Node" parent="." unique_id=1090332667 node_paths=PackedStringArray("model")]
-script = ExtResource("50_3cswv")
+[node name="JointColor" type="Node" parent="." unique_id=640495410 node_paths=PackedStringArray("model")]
+script = ExtResource("51_ekoxi")
 model = NodePath("../Visual/Model")
 mesh_names = PackedStringArray("Arm_L_Shoulder_Joint", "Arm_R_Shoulder_Joint", "Leg_L_Hip_Joint", "Leg_R_Hip_Joint", "Waist_Joint")
 color = Color(0.36, 0.365, 0.35, 1)
-texture = ExtResource("51_5kenn")
+texture = ExtResource("52_537d7")
 metallic = 1.0
 roughness = 0.5
 
-[node name="PS1SkinLook" type="Node" parent="." unique_id=967710055 node_paths=PackedStringArray("hitboxes", "mech")]
-script = ExtResource("52_ekoxi")
+[node name="PS1SkinLook" type="Node" parent="." unique_id=1833660441 node_paths=PackedStringArray("hitboxes", "mech")]
+script = ExtResource("53_t0auu")
 hitboxes = NodePath("../SkeletalHitboxes")
 mech = NodePath("..")
 
-[node name="MechHpIndicators" type="Node" parent="." unique_id=602467939 node_paths=PackedStringArray("hitboxes", "health")]
-script = ExtResource("53_537d7")
+[node name="MechHpIndicators" type="Node" parent="." unique_id=1422090883 node_paths=PackedStringArray("hitboxes", "health")]
+script = ExtResource("54_a2dp7")
 hitboxes = NodePath("../SkeletalHitboxes")
 health = NodePath("../MechHealth")
-layout = ExtResource("54_t0auu")
+layout = ExtResource("55_6ursg")

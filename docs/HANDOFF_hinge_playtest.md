@@ -22,7 +22,11 @@ Written 2026-10-24. Branch: `claude/compassionate-babbage-5blt9e` (all work comm
   test_pulse_scan, test_aim_behind.
 - New tool: `tools/godot/measure_arm_twitch.gd` (hinge angle steps, finger fit and curl, reach offsets per frame).
 
-## User play test results 2026-10-24 (not built; build these next, one at a time, and test each)
+## User play test results 2026-10-24
+
+Status: items 1, 3, 5, 7, 8 and 9 were built on 2026-10-24 (branch `claude/cool-maxwell-v2wd3v`), see DESIGN.md
+"Play test fixes 2026-10-24, round 2". Item 3: the user said "50% slower" means half the speed. The notes below are
+the plans as written before the build.
 
 ### 1. Right forearm twitches very fast in ADS and in charged firing (or both)
 The finger twitch is fixed. Likely causes, check in this order with `measure_arm_twitch.gd` (STEPS as in its

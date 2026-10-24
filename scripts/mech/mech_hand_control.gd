@@ -64,6 +64,13 @@ const PALM_FACE_Z := 0.07
 ## overshot and swung back every frame (the hinge forearm turns a lot for a small target move).
 @export var reach_gain: float = 0.3
 @export var max_reach_offset: float = 1.0
+## reach_gain is the part closed per frame at this frame rate; at other rates the part per frame is scaled so the
+## reach takes the same time (user report 2026-10-24, round 2: the right forearm twitched fast in ADS and charged
+## firing; at 144 fps the plain 0.3 per frame overshot and the elbow turn swung 0.5 deg every frame).
+@export var reach_gain_fps: float = 60.0
+## Soft dead band (meters): a fist miss shorter than this closes slower (smoothstep), so the reach comes to rest
+## instead of swinging about the grip by tiny steps. 0 = off.
+@export var reach_dead_band: float = 0.01
 ## A gun held without arm reach: the wrist turns for the other direction of the grip axis when that puts the
 ## fist hollow nearer the grip by more than this (meters).
 @export var flip_margin: float = 0.05
@@ -326,7 +333,10 @@ func _after_skeleton() -> void:
 			_reach_frame[side] = Engine.get_process_frames()
 			var miss := (place.origin - now * hollow) * smoothstep(0.0, 1.0, weight)
 			var local := weapon.global_basis.orthonormalized().inverse() * miss
-			state.offset = ((state.offset as Vector3) + local * reach_gain).limit_length(max_reach_offset)
+			var gain := 1.0 - pow(1.0 - clampf(reach_gain, 0.0, 1.0), get_process_delta_time() * reach_gain_fps)
+			# Soft dead band: a small miss closes slower, so the reach settles without steps.
+			gain *= smoothstep(0.0, reach_dead_band, miss.length()) if reach_dead_band > 0.0 else 1.0
+			state.offset = ((state.offset as Vector3) + local * gain).limit_length(max_reach_offset)
 
 
 ## World center of the forearm's wrist pin this frame (call it when the skeleton has its final pose).

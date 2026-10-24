@@ -2,7 +2,7 @@ extends SceneTree
 ## Arm twitch probe (user reports 2026-10-24: the Beam Rifle and the left fingers twitched in ADS; after the fix the
 ## right forearm twitches fast in ADS and in charged firing). Builds the Beam Rifle loadout and runs STEPS
 ## (action+action:frames, ";" between steps; actions are held for the step). Inside skeleton_updated it prints:
-##   - every hinge angle step over 1 deg of SkeletalArmRig side.hinge (pitch, elbow turn, bend) ("jump" lines),
+##   - every hinge angle step over 1 deg (THRESH=<deg> to change) of SkeletalArmRig side.hinge (pitch, elbow turn, bend) ("jump" lines),
 ##   - FINGERS=1: per gripping MechHand the finger fit target / curl, the hinge angles and the hand place (torso frame),
 ##   - OFFS=1: the MechHandControl reach offsets and the rifle place (torso frame).
 ## Example (aim, then 4 charged shots):
@@ -48,7 +48,8 @@ func _sample() -> void:
 		var key := "L" if i == 0 else "R"
 		if _last.has(key):
 			var d: Vector3 = (h - (_last[key] as Vector3))
-			if absf(d.x) > 0.017 or absf(d.y) > 0.017 or absf(d.z) > 0.017:
+			var limit := deg_to_rad(float(OS.get_environment("THRESH"))) if OS.has_environment("THRESH") else 0.017
+			if absf(d.x) > limit or absf(d.y) > limit or absf(d.z) > limit:
 				print("f%d %s jump pitch %.1f turn %.1f bend %.1f -> now (%.1f %.1f %.1f)" % [_frame, key, rad_to_deg(d.x), rad_to_deg(d.y), rad_to_deg(d.z), rad_to_deg(h.x), rad_to_deg(h.y), rad_to_deg(h.z)])
 		_last[key] = h
 func _run() -> void:

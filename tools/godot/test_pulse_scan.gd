@@ -106,7 +106,8 @@ func _run() -> void:
 			left += 1
 	_check(left == 0, "highlights end after the highlight time")
 	_check(box.material_overlay == null, "the glow overlay is removed")
-	await _frames(int(data.wireframe_time * 60.0))
+	var fade_s := effect.end_band_m / data.ring_speed if is_instance_valid(effect) else 0.0
+	await _frames(int((data.wireframe_time + fade_s) * 60.0))
 	_check(current_scene.get_node_or_null(^"PulseScanEffect") == null, "wire frame effect freed")
 	scanner.cooldown_left = 0.0
 	for i in data.uses:
