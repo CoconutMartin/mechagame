@@ -8,4 +8,4 @@ display_name = "SGG-101 Torso"
 weight_t = 18.0
 hp = 1600.0
 energy_capacity = 100.0
-torso_turn_speed_deg = 85.35
+torso_turn_speed_deg = 145.1

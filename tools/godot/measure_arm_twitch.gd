@@ -5,8 +5,8 @@ extends SceneTree
 ##   - every hinge angle step over 1 deg (THRESH=<deg> to change) of SkeletalArmRig side.hinge (pitch, elbow turn, bend) ("jump" lines),
 ##   - FINGERS=1: per gripping MechHand the finger fit target / curl, the hinge angles and the hand place (torso frame),
 ##   - OFFS=1: the MechHandControl reach offsets and the rifle place (torso frame).
-## Example (aim, then 4 charged shots):
-##   STEPS="aim:150;aim+use_right_arm:70;aim:50;aim+use_right_arm:70;aim:50" FINGERS=1 \
+## Example (aim, then 2 charged shots; the beam charges on use_left_arm and fires on its release):
+##   STEPS="aim:150;aim+use_left_arm:150;aim:120;aim+use_left_arm:150;aim:120" FINGERS=1 \
 ##     godot --headless --path . --script res://tools/godot/measure_arm_twitch.gd
 func _initialize() -> void:
 	_run.call_deferred()

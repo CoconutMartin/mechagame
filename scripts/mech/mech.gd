@@ -81,8 +81,9 @@ signal landed(fall_speed: float)
 @export var legs_follow_standing_deg: float = 25.0
 ## Top torso turn speed toward the camera direction (degrees per second).
 @export var turn_speed_deg: float = 44.1
-## How fast the body gains turn speed (degrees per second per second).
-@export var turn_acceleration_deg: float = 189.0
+## How fast the body gains turn speed (degrees per second per second). 321.3 since 2026-10-24 (+70% with the
+## torso turn speed, user request; was 189), so the faster top speed is reached in the same time.
+@export var turn_acceleration_deg: float = 321.3
 ## Near the end of a turn the body slows down. The slow zone starts when the gap to the aim
 ## is this fraction of the gap at the start of the turn.
 @export_range(0.0, 1.0) var turn_slow_zone: float = 0.25

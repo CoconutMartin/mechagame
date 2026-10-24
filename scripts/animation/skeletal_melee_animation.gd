@@ -653,6 +653,11 @@ func _weight() -> float:
 	return clampf(_time / _attack.speed_scale / maxf(_attack.blend_in, 0.01), 0.0, 1.0)
 
 
+## True while the last swing's pose fades out after the attack ended.
+func is_fading() -> bool:
+	return not is_playing and _fade_left > 0.0
+
+
 ## Seconds for the arms to lower from the full swing pose after the clip.
 func _lower_time() -> float:
 	return maxf(_attack.blend_out * lower_time_scale, 0.01)

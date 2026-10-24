@@ -19,9 +19,15 @@ extends Node
 @export var frequency: float = 5.0
 ## Spring damping. Lower = more bounce.
 @export_range(0.1, 1.0) var damping: float = 0.55
+## The kick's push is spread over this many seconds (0 = all in one frame). In one frame the Beam Rifle jumped
+## 0.45 m back, and the hinge arm holding it flipped its elbow 32 deg in one frame (user report 2026-10-24: the
+## right forearm twitched in charged firing).
+@export var kick_rise_time: float = 0.12
 
 var _amount := AimSpring.new(0.0)
 var _side: float = 0.0
+## Spring speed still to add from the last kicks (spread over kick_rise_time).
+var _push_left: float = 0.0
 
 
 func _ready() -> void:
@@ -46,12 +52,20 @@ func unbind(emitter: Object) -> void:
 
 func _on_fired() -> void:
 	# A velocity kick gives a fast snap back and a spring return.
-	_amount.velocity += kick_speed * TAU * frequency
+	var push := kick_speed * TAU * frequency
+	if kick_rise_time > 0.0:
+		_push_left += push
+	else:
+		_amount.velocity += push
 	_amount.value = minf(_amount.value, max_amount)
 	_side = randf_range(-1.0, 1.0)
 
 
 func _physics_process(delta: float) -> void:
+	if _push_left > 0.0:
+		var push := minf(_push_left, kick_speed * TAU * frequency * delta / kick_rise_time)
+		_push_left -= push
+		_amount.velocity += push
 	_amount.update(0.0, frequency, damping, max_amount, delta)
 
 

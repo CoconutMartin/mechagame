@@ -29,8 +29,8 @@ extends Node3D
 @export var max_torso_lead_deg: float = 15.0
 ## Vertical mouse aim speed = mouse sensitivity x this value. 0.3 = 70% slower than horizontal.
 @export var pitch_sensitivity_scale: float = 0.3
-## Horizontal mouse aim speed = mouse sensitivity x this value (3.0 since 2026-10-24, user request: x2 of 1.5).
-@export var yaw_sensitivity_scale: float = 3.0
+## Horizontal mouse aim speed = mouse sensitivity x this value (2.0 since 2026-10-24, user request; was 3.0, 1.5).
+@export var yaw_sensitivity_scale: float = 2.0
 ## Arrow keys (aim_left / aim_right / aim_up / aim_down) aim like a mouse moving this many pixels per
 ## second (user request 2026-10-13: an alternative to the mouse). 600 = about 86 deg/s sideways.
 @export var key_aim_pixels_per_second: float = 600.0

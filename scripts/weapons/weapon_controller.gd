@@ -409,7 +409,9 @@ func _update_fist_arms(delta: float) -> void:
 		return
 	if _melee == null or not is_instance_valid(_melee):
 		_melee = mech.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
-	if _melee != null and _melee.is_playing:
+	# Also while the punch pose fades out: an arm with an IK target leaves the clip at once, so the hang target
+	# before the fade ends snapped the fist to the hang (user report 2026-10-24 after the slower lowering).
+	if _melee != null and (_melee.is_playing or _melee.is_fading()):
 		_swing_hold = fist_hang_delay
 	else:
 		_swing_hold = maxf(_swing_hold - delta, 0.0)

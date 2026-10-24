@@ -99,6 +99,10 @@ func _update(delta: float) -> void:
 			_end_discharge()
 		charge = 0.0
 		return
+	# Dropped or lost with its arm: no beam and no charge.
+	if not controller.holds(self):
+		_stop_beam()
+		return
 	if discharge_left > 0.0:
 		_update_discharge(delta)
 		return
@@ -178,6 +182,27 @@ func _update_discharge(delta: float) -> void:
 ## ticks do not add up to a knock-down).
 func _even_stagger() -> bool:
 	return data.stagger_points > 0.0 and data.stagger_cap_per_shot > 0.0
+
+
+## The weapon is no longer used (its arm or the weapon broke, it was dropped, or it left the scene): a beam that
+## fires stops at once, with no aim kick, and the charge is lost (user report 2026-10-24: a released charged beam
+## went on firing after the arm holding it broke). The beam node lives in the world, so it must be released here.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DISABLED or what == NOTIFICATION_EXIT_TREE:
+		_stop_beam()
+
+
+func _stop_beam() -> void:
+	charge = 0.0
+	if discharge_left <= 0.0 and _beam == null:
+		return
+	discharge_left = 0.0
+	_end_kick = 0.0
+	if is_instance_valid(controller) and controller.torso_pose != null:
+		controller.torso_pose.action_shake = 0.0
+	if is_instance_valid(_beam):
+		_beam.release()
+	_beam = null
 
 
 ## The beam ends: the aim kick comes now and the beam fades.

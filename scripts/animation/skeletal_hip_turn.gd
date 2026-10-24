@@ -30,6 +30,13 @@ extends SkeletonModifier3D
 ## Fastest waist twist (degrees per second). The twist never jumps (user report 2026-10-12: with the aim
 ## opposite the move keys the upper body switched sides instantly).
 @export var twist_speed_deg: float = 300.0
+## Right after a melee attack (also while its pose fades out) the hips turn this fast (degrees per second), then
+## speed up to turn_speed_deg over after_melee_time. A melee clip keeps the hips forward; with A or D held the
+## hips then turned 90 deg at full speed and swung the arms (they hang in the hip frame) across the body while
+## the punch pose faded (user report 2026-10-24: "punch snaps to neutral position" after A / D punches).
+@export var after_melee_turn_speed_deg: float = 90.0
+## Seconds after a melee attack (and its fade) for the hip turn to get back to full speed.
+@export var after_melee_time: float = 1.0
 
 ## True while the mech steps backward.
 var is_backward: bool = false
@@ -39,6 +46,9 @@ var hip_yaw: float = 0.0
 
 var _twist: float = 0.0
 var _back_hold: float = 0.0
+var _melee: SkeletalMeleeAnimation
+## 1 during a melee attack and its fade, down to 0 over after_melee_time after it.
+var _melee_calm: float = 0.0
 
 
 func _ready() -> void:
@@ -66,7 +76,7 @@ func _process_modification_with_delta(delta: float) -> void:
 		is_backward = false
 	if is_backward != was_backward:
 		_back_hold = back_step_hold_time
-	hip_yaw = wrapf(rotate_toward(hip_yaw, target, deg_to_rad(turn_speed_deg) * delta), -PI, PI)
+	hip_yaw = wrapf(rotate_toward(hip_yaw, target, deg_to_rad(_turn_speed(delta)) * delta), -PI, PI)
 	var lean := skid_turn.lean_basis if skid_turn != null else Basis.IDENTITY
 	model.basis = lean * Basis(Vector3.UP, model_base_yaw + hip_yaw)
 	var limit := deg_to_rad(max_twist_deg)
@@ -86,3 +96,14 @@ func _process_modification_with_delta(delta: float) -> void:
 	var parent := skeleton.get_bone_parent(bone)
 	var local_pose := turned if parent < 0 else skeleton.get_bone_global_pose(parent).affine_inverse() * turned
 	skeleton.set_bone_pose_rotation(bone, local_pose.basis.get_rotation_quaternion())
+
+
+## Hip turn speed now (degrees per second): slower right after a melee attack.
+func _turn_speed(delta: float) -> float:
+	if _melee == null:
+		_melee = mech.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
+	if _melee != null and (_melee.is_playing or _melee.is_fading()):
+		_melee_calm = 1.0
+	else:
+		_melee_calm = maxf(_melee_calm - delta / maxf(after_melee_time, 0.01), 0.0)
+	return lerpf(turn_speed_deg, after_melee_turn_speed_deg, smoothstep(0.0, 1.0, _melee_calm))

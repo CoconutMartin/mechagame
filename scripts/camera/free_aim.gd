@@ -41,8 +41,9 @@ extends Node
 @export var recoil_up_deg: float = 2.0
 ## Largest random side kick per shot (left or right), in degrees.
 @export var recoil_side_deg: float = 1.0
-## How fast a kick rises (1 / seconds). 25 = most of the kick in about 0.1 s.
-@export var recoil_rise_speed: float = 25.0
+## How fast a kick rises (1 / seconds). 12 = most of the kick in about 0.2 s (user request 2026-10-24: a smoother
+## crosshair kick; was 25, about 0.1 s).
+@export var recoil_rise_speed: float = 12.0
 ## With no box: the kick moves the crosshair (ring and brackets) up and to the side with the gun (user request
 ## 2026-10-24: "displace the crosshair in-line with the weapon recoils"). Off = the old way (the kick turns the
 ## camera at once, the crosshair stays in the center).
