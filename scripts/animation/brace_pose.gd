@@ -67,9 +67,10 @@ func _process_modification_with_delta(_delta: float) -> void:
 		var depth := smoothstep(0.0, 1.0, _charge_at(charge_seconds))
 		CrouchPose.apply(get_skeleton(), amount, _jump_pose.charge_lean_deg * depth,
 				-_jump_pose.charge_chest_deg * depth, _jump_pose.charge_hips_back * depth,
-				lerpf(180.0, _jump_pose.charge_knee_deg, depth), knee_out)
+				lerpf(180.0, _jump_pose.charge_knee_deg, depth), knee_out, 0.0, float(brace.get(&"feet_out")))
 		return
-	CrouchPose.apply(get_skeleton(), amount, lean_deg, torso_lean_deg, hips_back, knee_deg, knee_out)
+	CrouchPose.apply(get_skeleton(), amount, lean_deg, torso_lean_deg, hips_back, knee_deg, knee_out, 0.0,
+			float(brace.get(&"feet_out")))
 
 
 ## Jump charge (part of full height) after this many seconds (MechJumpCharge.height_at_second, blended).

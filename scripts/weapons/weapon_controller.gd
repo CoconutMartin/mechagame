@@ -1189,6 +1189,7 @@ func _physics_process(delta: float) -> void:
 	for weapon in wants:
 		weapon.set_trigger(wants[weapon] and _may_fire(weapon))
 	# A shoulder cannon that waits for its shot: the mech stops and braces (ShoulderBrace).
+	shoulder_brace.armed_cannons = _shoulder_armed_count()
 	shoulder_brace.step(delta, _shoulder_wants_brace())
 	input.stance_lock = false
 	if right_weapon != null and not right_weapon is MeleeWeapon:
@@ -1226,6 +1227,15 @@ func _make_brace_pose() -> void:
 	pose.brace = shoulder_brace
 	pose.mech = mech
 	skeleton.add_child(pose)
+
+
+## How many shoulder cannons wait for the brace now.
+func _shoulder_armed_count() -> int:
+	var count := 0
+	for weapon: MechWeapon in [back_left, back_right]:
+		if weapon is ShoulderGunWeapon and (weapon as ShoulderGunWeapon).wants_brace():
+			count += 1
+	return count
 
 
 ## True when a shoulder cannon waits for the brace.

@@ -30,6 +30,8 @@ var _player: Mech
 var _weapons: WeaponController
 var _level: Node
 var _shots: Array[int] = []
+## Mech speed at the last shot (read in the fired signal, before any push back).
+var _shot_speed: float = 0.0
 var _frame: int = 0
 
 
@@ -75,7 +77,9 @@ func _build(left: String, right: String, back_left: String, back_right: String) 
 	_shots.clear()
 	for weapon: MechWeapon in [_weapons.back_left, _weapons.back_right]:
 		if weapon != null:
-			weapon.fired.connect(func() -> void: _shots.append(_frame))
+			weapon.fired.connect(func() -> void:
+				_shots.append(_frame)
+				_shot_speed = _player.get_horizontal_speed())
 
 
 func _data(path: String) -> WeaponData:
@@ -142,6 +146,7 @@ func _cannon_standing() -> void:
 	_check(brace != null and brace.brace_time >= 0.3 and brace.brace_time <= 0.5, "brace_time in 0.3 to 0.5 s (%.2f)" % brace.brace_time)
 	await _frames(20)
 	var press := _frame
+	var place := _player.global_position
 	Input.action_press("fire_back_left")
 	var amount_at_shot := -1.0
 	var speed_at_shot := -1.0
@@ -151,14 +156,18 @@ func _cannon_standing() -> void:
 		frames += 1
 		if not _shots.is_empty():
 			amount_at_shot = brace.amount
-			speed_at_shot = _player.get_horizontal_speed()
+			speed_at_shot = _shot_speed
 	_check(not _shots.is_empty(), "standing: the cannon fires")
 	var delay := (_shots[0] - press) / 60.0 if not _shots.is_empty() else -1.0
 	_check(delay >= brace.brace_time - 0.03 and delay <= brace.brace_time + 0.12,
 			"standing: first shot %.2f s after the key (wind-up %.2f s)" % [delay, brace.brace_time])
 	_check(amount_at_shot >= 0.99 and speed_at_shot < 0.5, "standing: brace set (%.2f) and the mech still (%.2f m/s) at the shot" % [amount_at_shot, speed_at_shot])
+	_check(absf(brace.feet_out - brace.feet_out_per_cannon) < 0.01, "one cannon: the feet stand %.2f m wider (0.5)" % brace.feet_out)
+	await _frames(20)
+	var back := Basis(Vector3.UP, _player.get_aim_yaw()) * Vector3.BACK
+	var pushed := (_player.global_position - place).dot(back)
+	_check(absf(pushed - 0.5) < 0.12, "one cannon: the shot pushes the mech back %.2f m (0.5)" % pushed)
 	Input.action_release("fire_back_left")
-	await _frames(int(brace.hold_time * 60.0) - 20)
 	_check(brace.amount > 0.99, "the brace holds after the shot (%.2f at %.2f s)" % [brace.amount, brace.hold_time - 0.33])
 	await _frames(int(brace.recover_time * 60.0) + 40)
 	_check(brace.amount < 0.01, "the brace recovers (%.2f)" % brace.amount)
@@ -195,15 +204,19 @@ func _cannon_walking() -> void:
 		if stopped_at >= 0:
 			fastest_after_stop = maxf(fastest_after_stop, speed)
 		if not _shots.is_empty():
-			speed_at_shot = speed
+			speed_at_shot = _shot_speed
 			break
 	_check(not _shots.is_empty(), "walking: the cannon fires")
 	var delay := (_frame - press) / 60.0
 	_check(speed_at_shot >= 0.0 and speed_at_shot < 0.5, "walking: %.2f m/s at the shot, %.2f s after the key (the stop took %.2f s)" % [
 			speed_at_shot, delay, (stopped_at - press) / 60.0 if stopped_at >= 0 else -1.0])
-	# W still held: the mech stays put while the brace holds.
+	# W still held: the mech does not walk on while the brace holds (the shot only pushes it back).
+	var at_shot := _player.global_position
+	var ahead := Basis(Vector3.UP, _player.get_aim_yaw()) * Vector3.FORWARD
 	await _frames(30)
-	_check(_player.get_horizontal_speed() < 0.5 and fastest_after_stop < 0.6, "W held: the mech stays still while the cannon fires (%.2f m/s)" % fastest_after_stop)
+	var walked := (_player.global_position - at_shot).dot(ahead)
+	_check(_player.get_horizontal_speed() < 0.5 and walked < 0.05,
+			"W held: the mech does not walk on while the cannon fires (%.2f m forward, %.2f m/s)" % [walked, _player.get_horizontal_speed()])
 	Input.action_release("fire_back_left")
 	Input.action_release("move_forward")
 	await _frames(150)
@@ -213,10 +226,15 @@ func _cannon_walking() -> void:
 func _cannon_dual() -> void:
 	await _build("", SMG, CANNON, CANNON)
 	await _frames(20)
+	var place := _player.global_position
 	Input.action_press("fire_back_left")
 	Input.action_press("fire_back_right")
 	await _frames(int(_weapons.shoulder_brace.brace_time * 60.0) + 40)
 	_check(_shots.size() == 2 and _shots[0] == _shots[1], "dual: both cannons fire in the same frame (%s)" % str(_shots))
+	_check(absf(_weapons.shoulder_brace.feet_out - 1.0) < 0.01, "dual: the feet stand %.2f m wider (1.0)" % _weapons.shoulder_brace.feet_out)
+	var back := Basis(Vector3.UP, _player.get_aim_yaw()) * Vector3.BACK
+	var pushed := (_player.global_position - place).dot(back)
+	_check(absf(pushed - 1.0) < 0.2, "dual: the shots push the mech back %.2f m (1.0)" % pushed)
 	Input.action_release("fire_back_left")
 	Input.action_release("fire_back_right")
 	await _frames(100)
@@ -240,6 +258,16 @@ func _pods() -> void:
 	_check(speed_before > 5.0 and braking and slowest < 0.5, "pod on the ground: the mech stops for the volley (%.1f to %.2f m/s, bracing %s)" % [speed_before, slowest, braking])
 	Input.action_release("move_forward")
 	await _frames(100)
+	# Standing: one missile (no lock) pushes the mech back 0.25 m.
+	var place := _player.global_position
+	_shots.clear()
+	Input.action_press("fire_back_right")
+	await _frames(10)
+	Input.action_release("fire_back_right")
+	await _frames(60)
+	var back := Basis(Vector3.UP, _player.get_aim_yaw()) * Vector3.BACK
+	var pushed := (_player.global_position - place).dot(back)
+	_check(_shots.size() == 1 and absf(pushed - 0.25) < 0.08, "pod: one missile pushes the mech back %.2f m (0.25)" % pushed)
 
 
 ## 6 and 7. Boost and air.

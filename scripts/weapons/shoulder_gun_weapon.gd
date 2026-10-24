@@ -10,6 +10,8 @@ extends GunWeapon
 
 ## The mech must be slower than this (m/s) to fire.
 @export var max_fire_speed: float = 0.5
+## Each shot pushes the mech back this far (m; user request 2026-10-24). Both cannons at once: twice.
+@export var push_back_m: float = 0.5
 
 ## True while a shot waits for the brace.
 var armed: bool = false
@@ -37,6 +39,7 @@ func _update(_delta: float) -> void:
 		armed = false
 		_fire()
 		brace.shot()
+		controller.mech.push_back(push_back_m)
 
 
 ## True while the mech stands still on the ground.

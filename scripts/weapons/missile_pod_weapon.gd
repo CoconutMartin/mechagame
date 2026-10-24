@@ -102,6 +102,10 @@ func _fire_volley() -> void:
 	_after_shot()
 
 
+## Each missile pushes the mech back this far (m; user request 2026-10-24).
+@export var push_back_per_missile_m: float = 0.25
+
+
 func _update_launches(delta: float) -> void:
 	_launch_wait = maxf(_launch_wait - delta, 0.0)
 	if _queue.is_empty() or _launch_wait > 0.0:
@@ -111,6 +115,7 @@ func _update_launches(delta: float) -> void:
 	var tubes := find_children("Launch*", "Marker3D", false, false)
 	var tube := tubes[_next_tube % tubes.size()] as Node3D if not tubes.is_empty() else self
 	_next_tube += 1
+	controller.mech.push_back(push_back_per_missile_m)
 	var missile := MISSILE.instantiate() as Missile
 	controller.get_world().add_child(missile)
 	missile.global_transform = tube.global_transform

@@ -16,9 +16,10 @@ const RIGHT_LEG: Array[StringName] = [&"thigh_R", &"shin_R", &"foot_R"]
 ## amount: 0 = standing, 1 = full crouch. lean_deg: hip bend forward (the whole upper body). torso_lean_deg:
 ## extra bend forward at the waist. hips_back: hips moved back (m). knee_deg: inner knee angle at full crouch.
 ## knee_out: the knees point this far to the side (to the front is 1). shift_x: hips moved to the mech's
-## left (m, skeleton space +X) at full crouch, toward a weapon that lies to the side.
+## left (m, skeleton space +X) at full crouch, toward a weapon that lies to the side. feet_out: the feet move
+## apart by this much at full crouch (m, both together; each foot half of it, along the floor).
 static func apply(skeleton: Skeleton3D, amount: float, lean_deg: float, torso_lean_deg: float, hips_back: float,
-		knee_deg: float, knee_out: float, shift_x: float = 0.0) -> void:
+		knee_deg: float, knee_out: float, shift_x: float = 0.0, feet_out: float = 0.0) -> void:
 	if amount <= 0.0001:
 		return
 	var pelvis := skeleton.find_bone(PELVIS)
@@ -26,6 +27,9 @@ static func apply(skeleton: Skeleton3D, amount: float, lean_deg: float, torso_le
 	if pelvis < 0 or torso < 0:
 		return
 	var legs := [_leg(skeleton, LEFT_LEG), _leg(skeleton, RIGHT_LEG)]
+	if feet_out != 0.0:
+		for i in legs.size():
+			legs[i].ankle = (legs[i].ankle as Vector3) + Vector3.RIGHT * (1.0 if i == 0 else -1.0) * feet_out * 0.5 * amount
 	var parent := skeleton.get_bone_global_pose(skeleton.get_bone_parent(pelvis))
 	var now := skeleton.get_bone_global_pose(pelvis)
 	var upper: float = legs[0].upper

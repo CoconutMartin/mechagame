@@ -66,6 +66,13 @@ signal landed(fall_speed: float)
 @export var torso_twist_left_deg: float = 52.0
 ## Largest torso twist to the right of the legs, in degrees.
 @export var torso_twist_right_deg: float = 64.0
+## True: the twist limits come from the weight class (user request 2026-10-24), the same to each side:
+## light 70, medium 45, heavy 25 degrees (the left and right values above are not used then).
+@export var twist_by_weight_class: bool = true
+## Largest torso twist to each side for a light, a medium and a heavy mech, in degrees.
+@export var torso_twist_light_deg: float = 70.0
+@export var torso_twist_medium_deg: float = 45.0
+@export var torso_twist_heavy_deg: float = 25.0
 ## Leg turn speed (following the torso) while moving, in degrees per second. Steady (no speed-up).
 @export var leg_turn_speed_deg: float = 60.0
 ## Leg turn speed (following the torso) while standing still, in degrees per second.
@@ -190,6 +197,8 @@ var is_skidding: bool = false
 ## True while the mech is entrenched (braced for a missile volley). It cannot move or boost.
 var is_bracing: bool = false
 var _brace_left: float = 0.0
+## Push back distance (m) waiting for the next physics step.
+var _push_pending: float = 0.0
 ## True during a blade lunge (the boosters push the mech toward the target).
 var is_lunging: bool = false
 var _lunge_direction: Vector3 = Vector3.ZERO
@@ -272,6 +281,7 @@ func _physics_process(delta: float) -> void:
 	is_bracing = _brace_left > 0.0
 	_update_boost(delta)
 	_update_horizontal(delta)
+	_apply_push()
 	_update_vertical(delta)
 	_turn_legs(delta)
 	_turn_torso(delta)
@@ -382,6 +392,29 @@ func get_torso_twist() -> float:
 func brace(seconds: float) -> void:
 	_brace_left = maxf(_brace_left, seconds)
 	is_bracing = true
+
+
+## Push back (user request 2026-10-24: shoulder weapons push the mech back): the mech gets a backward speed
+## (against the torso aim) that slides it about this many meters more while the brace slows it
+## (brace_deceleration). Pushes add up (two at once go twice as far) and start on the next physics step,
+## so a second cannon in the same frame still sees the mech standing still.
+func push_back(distance: float) -> void:
+	_push_pending += maxf(distance, 0.0)
+
+
+func _apply_push() -> void:
+	if _push_pending <= 0.0:
+		return
+	var back := Basis(Vector3.UP, _aim_yaw) * Vector3.BACK
+	var flat := Vector3(velocity.x, 0.0, velocity.z)
+	var along := maxf(flat.dot(back), 0.0)
+	var rate := maxf(brace_deceleration, 0.1)
+	var left := along * along / (2.0 * rate)
+	var speed := sqrt(2.0 * rate * (left + _push_pending))
+	_push_pending = 0.0
+	flat += back * (speed - along)
+	velocity.x = flat.x
+	velocity.z = flat.z
 
 
 ## Shoulder cannon brace snap (user request 2026-10-24): the mech stops at once (no boost stop, no skid,
@@ -830,8 +863,27 @@ func _turn_legs(delta: float) -> void:
 ## Keeps the torso aim inside the twist limits of the current leg heading.
 func _clamp_torso_aim() -> void:
 	var twist := clampf(wrapf(_aim_yaw - rotation.y, -PI, PI),
-			-deg_to_rad(torso_twist_right_deg), deg_to_rad(torso_twist_left_deg))
+			-deg_to_rad(get_twist_right_deg()), deg_to_rad(get_twist_left_deg()))
 	_aim_yaw = wrapf(rotation.y + twist, -PI, PI)
+
+
+## Largest torso twist to the left of the legs now, in degrees.
+func get_twist_left_deg() -> float:
+	return _class_twist_deg() if twist_by_weight_class else torso_twist_left_deg
+
+
+## Largest torso twist to the right of the legs now, in degrees.
+func get_twist_right_deg() -> float:
+	return _class_twist_deg() if twist_by_weight_class else torso_twist_right_deg
+
+
+func _class_twist_deg() -> float:
+	match WeightClass.of_mech(self):
+		WeightClass.Class.LIGHT:
+			return torso_twist_light_deg
+		WeightClass.Class.HEAVY:
+			return torso_twist_heavy_deg
+	return torso_twist_medium_deg
 
 
 ## Bounces the mech off walls (buildings, platforms, map edge), then slows it down.

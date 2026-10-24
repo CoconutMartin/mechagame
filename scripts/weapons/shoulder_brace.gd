@@ -20,11 +20,19 @@ extends Node
 @export var recover_time: float = 0.4
 ## Seconds the mech is told to stand still on each frame of a brace. It must be longer than a frame.
 @export var stop_hold: float = 0.12
+## The feet go this much wider apart (m, both feet together) per armed cannon (user request 2026-10-24:
+## 0.5 m for one cannon, 1 m for both), and how fast they move out (m/s).
+@export var feet_out_per_cannon: float = 0.5
+@export var feet_out_speed: float = 4.0
 
 ## The mech. WeaponController sets it.
 var mech: Mech
 ## 0 = standing, 1 = full brace. BracePose reads it.
 var amount: float = 0.0
+## Cannons armed now (WeaponController sets it before step()).
+var armed_cannons: int = 0
+## How much wider the feet stand at full brace (m). BracePose reads it.
+var feet_out: float = 0.0
 
 var _hold_left: float = 0.0
 ## Wind-up left after a snap (s): the stance is set, the shot waits.
@@ -50,8 +58,12 @@ func step(delta: float, want: bool) -> void:
 	if holding:
 		mech.brace(stop_hold)
 		amount = move_toward(amount, 1.0, delta / maxf(brace_time, 0.01))
+		# The widest stance of this brace stays until it ends (the second cannon adds to the first).
+		feet_out = move_toward(feet_out, maxf(feet_out, feet_out_per_cannon * armed_cannons), feet_out_speed * delta)
 	else:
 		amount = move_toward(amount, 0.0, delta / maxf(recover_time, 0.01))
+		if amount <= 0.0:
+			feet_out = 0.0
 
 
 ## True when the brace is set (a cannon may fire). A kneeling mech is set at once: it stands still already.
