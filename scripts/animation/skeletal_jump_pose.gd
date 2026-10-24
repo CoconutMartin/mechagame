@@ -22,6 +22,11 @@ extends SkeletonModifier3D
 ## dropped back, torso hunched) and the jump guard held the weapon out like an offering and twisted the
 ## arms. Now the charge is the coded athletic crouch (hips over the feet, chest up, knees forward; the
 ## Jumping_Up clip plays from the release on) and the guard is small (guard_max).
+## User request 2026-10-24: a short charge made a twitch (the full crouch, the clips and the landing at full
+## size in a short, fast hop) and the feet were not at the standing width on the landing. Now the strength of
+## the jump motion follows the height of the flight (JumpClipDirector.strength: the clips blend back toward
+## the pose under them by that part, the coded air pose and the weapon lift scale with it; a full jump is 1),
+## and the feet stand at the standing width from the touchdown through the landing recovery (stance).
 ## A skeleton modifier must be a child of the Skeleton3D; this node moves itself there at start. Keep
 ## it after SkeletalAimStance and before SkeletalArmRig.
 
@@ -42,6 +47,9 @@ extends SkeletonModifier3D
 ## Part of the Jumping_Up clip that plays while the jets charge (0 = the coded crouch only; the clip plays
 ## from the release, the push and the tuck). The clip's own crouch hunches the torso with the hips back.
 @export_range(0.0, 1.0) var charge_clip_weight: float = 0.0
+## How much the jump strength (the height of the planned jump, see Strength) scales the crouch: 0 = the crouch
+## follows the charge only, 1 = a short charge crouches very little (user request 2026-10-24).
+@export_range(0.0, 1.0) var charge_strength_part: float = 1.0
 ## How fast the crouch follows the charge going up and lets go at the launch (per second).
 @export var charge_in_speed: float = 3.0
 @export var charge_out_speed: float = 5.0
@@ -61,7 +69,8 @@ extends SkeletonModifier3D
 @export var land_knee_deg: float = 95.0
 @export var land_lean_deg: float = 15.0
 @export var land_hips_back: float = 0.2
-@export var land_feet_out: float = 0.25
+## Feet out is 0: the feet stand at the standing width on the landing (user request 2026-10-24).
+@export var land_feet_out: float = 0.0
 @export var land_full_height: float = 9.0
 ## Higher falls compress more, up to this many times the full landing.
 @export var land_max_scale: float = 1.15
@@ -111,6 +120,22 @@ extends SkeletonModifier3D
 ## their own hold as the mech stands up (user request 2026-10-19).
 @export var guard_release_lead: float = 0.5
 
+@export_group("Strength")
+## Strength of the jump motion by the height of the flight (user request 2026-10-24: a short jump is a
+## small, calm motion; a full jump is as before). Strength of a hop of no height (0 to 1).
+@export_range(0.0, 1.0) var strength_min: float = 0.08
+## Flight height (m) with full strength: a full 3 s jump is 9 m.
+@export var strength_full_height: float = 8.0
+## Curve of strength over height (1 = straight; above 1 the small jumps stay calmer).
+@export_range(0.2, 2.0) var strength_curve: float = 1.2
+## How fast the strength follows a change of the predicted flight height in the air (per second).
+@export var strength_follow: float = 4.0
+
+@export_group("Stance")
+## The feet stand this far apart sideways (m) from the touchdown through the landing recovery
+## (user request 2026-10-24: shoulder width, the standing width). 0 = read from the rest pose.
+@export var stance_width: float = 0.0
+
 @export_group("Clips")
 ## Jumping_Up: the charge crouch, the push and the tuck while rising.
 @export var jump_up_clip: AirClip = preload("res://data/jump_clips/jump_up.tres")
@@ -150,7 +175,13 @@ var clip_depth: float = 0.0
 ## Guard now (0 to 1): see guard_in_speed.
 var guard: float = 0.0
 
+## Strength of the jump motion now (0 to 1): see the Strength group.
+var strength: float:
+	get:
+		return director.strength if director != null else 1.0
+
 var _clip_body: AirClipBody
+var _stand_width: float = 0.0
 var _landing_speed: float = 0.0
 var _air_time: float = 0.0
 var _last_recovery_left: float = 0.0
@@ -168,7 +199,7 @@ func weapon_offset() -> Vector3:
 	if director == null:
 		return base
 	var clip := clampf(maxf(director.weights[0], maxf(director.weights[1], director.weights[2])), 0.0, 1.0)
-	return base.lerp(air_lift, smoothstep(0.0, 1.0, clip))
+	return base.lerp(air_lift, smoothstep(0.0, 1.0, clip) * strength)
 
 
 ## Jump guard: how far (m) the weapon frame rises straight up when its origin is height m above the feet.
@@ -225,9 +256,17 @@ func _setup_clips(skeleton: Skeleton3D) -> void:
 	director.land_lead = landing_lead
 	director.land_blend = landing_blend
 	director.ground_mask = ground_mask
+	director.strength_min = strength_min
+	director.strength_full_height = strength_full_height
+	director.strength_curve = strength_curve
+	director.strength_follow = strength_follow
+	var left := skeleton.find_bone(leg_bones_left[2])
+	var right := skeleton.find_bone(leg_bones_right[2])
+	_stand_width = stance_width if stance_width > 0.0 else absf(skeleton.get_bone_global_rest(left).origin.x - skeleton.get_bone_global_rest(right).origin.x)
 
 
-## The clip layers over the coded pose, then the feet are kept out of the floor.
+## The clip layers over the coded pose, then the pose goes back toward the coded pose by 1 - strength (a short
+## jump is a small motion), the feet are kept on the floor and the landing feet are set to the standing width.
 func _pose_clips(skeleton: Skeleton3D, parent: Transform3D, now: Transform3D, legs: Array) -> void:
 	clip_depth = 0.0
 	if not director.is_active():
@@ -236,6 +275,7 @@ func _pose_clips(skeleton: Skeleton3D, parent: Transform3D, now: Transform3D, le
 	var anchor := ((legs[0].ankle as Vector3) + (legs[1].ankle as Vector3)) * 0.5
 	var yaw := atan2(now.basis.z.x, now.basis.z.z) - atan2(parent.basis.z.x, parent.basis.z.z)
 	var all := director.clips()
+	var before := _clip_body.snapshot() if strength < 0.999 else {}
 	for i in JumpClipDirector.LAYERS:
 		var weight := director.weights[i]
 		if weight <= 0.001:
@@ -245,8 +285,40 @@ func _pose_clips(skeleton: Skeleton3D, parent: Transform3D, now: Transform3D, le
 		if clip.lift_scale > 0.0:
 			level += _clip_body.clip_height(clip, director.times[i]) * clip.lift_scale
 		var depth := _clip_body.apply(clip, director.times[i], weight, anchor, yaw, level)
-		clip_depth = maxf(clip_depth, depth * weight)
-	_clip_body.keep_feet_up(floor_height)
+		clip_depth = maxf(clip_depth, depth * weight * strength)
+	if not before.is_empty():
+		_clip_body.blend_back(before, 1.0 - strength)
+	if before.is_empty() or not mech.is_on_floor():
+		_clip_body.keep_feet_up(floor_height)
+	else:
+		_clip_body.plant_feet(floor_height)
+	# Full while the landing clip has any weight to speak of: its pose is closer than the standing width.
+	_set_stance(skeleton, clampf(maxf(smoothstep(0.0, 0.3, director.weights[2]), minf(landing, 1.0)), 0.0, 1.0))
+
+
+## The feet stand stance_width apart sideways (the standing width), by weight (0 to 1): each ankle moves
+## along the pelvis' side axis and the legs are solved again (the soles stay flat, the knees keep their side).
+func _set_stance(skeleton: Skeleton3D, weight: float) -> void:
+	if weight <= 0.001 or _stand_width <= 0.0:
+		return
+	var pelvis := skeleton.find_bone(pelvis_bone)
+	var pelvis_pose := skeleton.get_bone_global_pose(pelvis)
+	var axis := pelvis_pose.basis.x
+	axis.y = 0.0
+	if axis.length_squared() < 0.0001:
+		return
+	axis = axis.normalized()
+	var legs := [_leg(skeleton, leg_bones_left), _leg(skeleton, leg_bones_right)]
+	var spread := ((legs[0].ankle as Vector3) - (legs[1].ankle as Vector3)).dot(axis)
+	var shift := (_stand_width - spread) * weight * 0.5
+	if absf(shift) < 0.002:
+		return
+	for i in legs.size():
+		var leg: Dictionary = legs[i]
+		var hip := skeleton.get_bone_global_pose(leg.thigh).origin
+		var knee := skeleton.get_bone_global_pose(leg.shin).origin - hip
+		var ankle: Vector3 = (leg.ankle as Vector3) + axis * (shift if i == 0 else -shift)
+		_solve(skeleton, pelvis_pose, leg, ankle, leg.foot_basis, knee)
 
 
 func _update_weights(delta: float) -> void:
@@ -256,16 +328,16 @@ func _update_weights(delta: float) -> void:
 	var charging := jump_charge != null and jump_charge.is_charging and on_floor and free
 	var standing_up := on_floor and landing_recovery != null and landing_recovery.time_left < guard_release_lead
 	var guard_on := guard_enabled and free and ((guard_in_charge and charging) or (director.is_active() and not standing_up))
-	guard = move_toward(guard, guard_max if guard_on else 0.0, (guard_in_speed if guard_on else guard_out_speed) * delta)
-	var crouch_target := smoothstep(0.0, 1.0, jump_charge.charge) if charging else 0.0
+	guard = move_toward(guard, guard_max * strength if guard_on else 0.0, (guard_in_speed if guard_on else guard_out_speed) * delta)
+	var crouch_target := smoothstep(0.0, 1.0, jump_charge.charge) * lerpf(1.0, director.strength, charge_strength_part) if charging else 0.0
 	crouch = move_toward(crouch, crouch_target, (charge_in_speed if crouch_target > crouch else charge_out_speed) * delta)
 	# A2 and B0: the flight of a jump or a fall (not a dodge hop or the boost exit leap).
 	var flying := not on_floor and free and not mech.dodge.is_dodging and not mech.is_exiting_boost
 	_air_time = _air_time + delta if flying else 0.0
 	var launch_target := 1.0 - smoothstep(0.0, launch_time, _air_time) if flying and mech.velocity.y > 0.0 else 0.0
-	launch = move_toward(launch, launch_target, 10.0 * delta)
+	launch = move_toward(launch, launch_target * strength, 10.0 * delta)
 	var air_target := smoothstep(launch_time * 0.5, launch_time * 1.5, _air_time) if flying else 0.0
-	air = move_toward(air, air_target, (air_speed if flying else 12.0) * delta)
+	air = move_toward(air, air_target * strength, (air_speed if flying else 12.0) * delta)
 	# B: a new landing starts the impact spring toward the depth of the fall, held through the recovery.
 	var target := 0.0
 	if landing_recovery != null and landing_recovery.is_recovering() and on_floor and free:
@@ -396,7 +468,7 @@ func _solve(skeleton: Skeleton3D, pelvis_pose: Transform3D, leg: Dictionary, ank
 	var along := reach.normalized()
 	var cos_hip := clampf((upper * upper + distance * distance - lower * lower) / (2.0 * upper * distance), -1.0, 1.0)
 	var side := pole - along * pole.dot(along)
-	side = side.normalized() if side.length_squared() > 0.0001 else Vector3.FORWARD
+	side = side.normalized() if side.length_squared() > 0.0001 else Vector3.BACK
 	var knee := hip + along * upper * cos_hip + side * upper * sqrt(1.0 - cos_hip * cos_hip)
 	var end := hip + along * distance
 	var thigh_swing := Basis(Quaternion((shin_pose.origin - hip).normalized(), (knee - hip).normalized()))

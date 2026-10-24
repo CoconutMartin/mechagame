@@ -55,6 +55,19 @@ var land_lead: float = 0.3
 ## Seconds the landing clip takes to come in while the mech is still in the air.
 var land_blend: float = 0.5
 
+## Strength of the jump motion now (0 to 1; user request 2026-10-24: a short charge made a twitch). It follows
+## the height of the flight: the predicted jump height on the ground and in the air, the fall height on the
+## landing. SkeletalJumpPose scales the clips, the coded air pose and the weapon lift by it. A full jump
+## (strength_full_height or more) is 1: the motion as before.
+var strength: float = 1.0
+## Strength of a hop of no height, the flight height (m) with full strength, and the curve (below 1: the
+## small jumps gain strength quickly).
+var strength_min: float = 0.08
+var strength_full_height: float = 8.0
+var strength_curve: float = 1.2
+## How fast the strength follows a change of the predicted height in the air (per second).
+var strength_follow: float = 4.0
+
 ## Per layer now (eased: smoothstep of _linear, so a blend starts and ends gently).
 var weights: Array[float] = [0.0, 0.0, 0.0]
 ## Per layer, the blend amount that moves at the clip's blend rate.
@@ -68,6 +81,7 @@ var coded_landing: float = 1.0
 var time_to_impact: float = INF
 
 var _air_time: float = 0.0
+var _was_flying: bool = false
 var _falling_clip: bool = false
 var _peak_y: float = 0.0
 var _last_left: float = 0.0
@@ -96,6 +110,7 @@ func update(delta: float) -> void:
 	else:
 		_peak_y = maxf(_peak_y, mech.global_position.y)
 	time_to_impact = INF
+	_update_strength(delta, flying, on_floor and free, recovering)
 	var targets: Array[float] = [0.0, 0.0, 0.0]
 	if flying:
 		_landing_clip = false
@@ -116,6 +131,31 @@ func update(delta: float) -> void:
 			_from_jump = false
 	coded_landing = 0.0 if _landing_clip else 1.0
 	_slew(delta, targets, free)
+
+
+## Strength of a flight of this height (m): strength_min for no height, 1 from strength_full_height.
+func strength_for(height: float) -> float:
+	var part := clampf(height / maxf(strength_full_height, 0.1), 0.0, 1.0)
+	return lerpf(strength_min, 1.0, pow(part, strength_curve))
+
+
+## The strength follows the flight height: from the charge before the launch, from the predicted jump
+## height (the rise) and the height to fall (the fall) in the air, from the fall height on the landing.
+func _update_strength(delta: float, flying: bool, grounded: bool, recovering: bool) -> void:
+	if flying:
+		var peak := _peak_y
+		if mech.velocity.y > 0.0:
+			peak = maxf(peak, mech.global_position.y + mech.velocity.y * mech.velocity.y / (2.0 * maxf(_gravity * mech.gravity_scale, 0.1)))
+		var remaining := _height_above_ground()
+		var target := 1.0 if remaining == INF else strength_for((peak - mech.global_position.y) + remaining)
+		# The first frame of a flight takes the value at once (a jump: the same as the charge gave).
+		strength = move_toward(strength, target, strength_follow * delta) if _was_flying else target
+	elif grounded:
+		if jump_charge != null and jump_charge.is_charging:
+			strength = strength_for(jump_charge.charge * jump_charge.full_height)
+		elif recovering:
+			strength = strength_for(landing_recovery.fall_height)
+	_was_flying = flying
 
 
 ## On the ground: the crouch follows the charge, then the push to the takeoff.

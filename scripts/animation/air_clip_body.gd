@@ -183,6 +183,43 @@ func _clip_sole_y(animation: Animation, time: float, low: float) -> float:
 ## Lifts the pelvis when a sole is under floor_height (skeleton space), after all layers. Returns the
 ## lift in meters.
 func keep_feet_up(floor_height: float) -> float:
+	var shift := _sole_gap(floor_height)
+	if shift <= 0.0:
+		return 0.0
+	_move_pelvis(shift)
+	return shift
+
+
+## Moves the pelvis up or down until the lowest sole is at floor_height (a pose blended back toward the
+## pose under the clips can float or sink a little). Returns the move in meters.
+func plant_feet(floor_height: float) -> float:
+	var shift := _sole_gap(floor_height)
+	_move_pelvis(shift)
+	return shift
+
+
+## Rotations of all bones and the pelvis place now, to blend back to with blend_back().
+func snapshot() -> Dictionary:
+	var rotations: Array[Quaternion] = []
+	for bone in skeleton.get_bone_count():
+		rotations.append(skeleton.get_bone_pose_rotation(bone))
+	return {"rotations": rotations, "pelvis": skeleton.get_bone_pose_position(pelvis)}
+
+
+## Blends the pose back toward a snapshot taken before the clips: amount 0 keeps the clips, 1 is the
+## snapshot. This makes the clips' motion smaller by that part (user request 2026-10-24: a short jump
+## is a calm motion).
+func blend_back(before: Dictionary, amount: float) -> void:
+	var rotations: Array[Quaternion] = before.rotations
+	for bone in rotations.size():
+		var now := skeleton.get_bone_pose_rotation(bone)
+		if not now.is_equal_approx(rotations[bone]):
+			skeleton.set_bone_pose_rotation(bone, now.slerp(rotations[bone], amount))
+	skeleton.set_bone_pose_position(pelvis, skeleton.get_bone_pose_position(pelvis).lerp(before.pelvis as Vector3, amount))
+
+
+## How far the pelvis must move up (positive) to put the lowest sole at floor_height.
+func _sole_gap(floor_height: float) -> float:
 	var parent := skeleton.get_bone_global_pose(skeleton.get_bone_parent(pelvis))
 	var pelvis_pose := parent * Transform3D(Basis(skeleton.get_bone_pose_rotation(pelvis)), skeleton.get_bone_pose_position(pelvis))
 	var rotations := {}
@@ -190,10 +227,10 @@ func keep_feet_up(floor_height: float) -> float:
 		for key: String in ["thigh", "shin", "foot"]:
 			rotations[leg[key]] = skeleton.get_bone_pose_rotation(leg[key])
 	var feet := _feet(rotations, pelvis_pose.basis)
-	var low := (feet.low as float) + pelvis_pose.origin.y
-	if low >= floor_height:
-		return 0.0
-	var lift := floor_height - low
-	var raised := parent.affine_inverse() * (pelvis_pose.origin + Vector3.UP * lift)
-	skeleton.set_bone_pose_position(pelvis, raised)
-	return lift
+	return floor_height - ((feet.low as float) + pelvis_pose.origin.y)
+
+
+func _move_pelvis(up: float) -> void:
+	var parent := skeleton.get_bone_global_pose(skeleton.get_bone_parent(pelvis))
+	var pelvis_pose := parent * Transform3D(Basis(skeleton.get_bone_pose_rotation(pelvis)), skeleton.get_bone_pose_position(pelvis))
+	skeleton.set_bone_pose_position(pelvis, parent.affine_inverse() * (pelvis_pose.origin + Vector3.UP * up))
