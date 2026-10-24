@@ -49,8 +49,11 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export var punch_time: float = 0.12
 ## The punch pose stays this long after the punch while the stake is out, in seconds.
 @export var hold_time: float = 0.3
-## Time back to the rest pose, in seconds.
+## Time the attack stays busy after the hold (the next attack can start after it), in seconds.
 @export var recover_time: float = 0.45
+## The arm lowers to the rest pose over recover_time x this value (user request 2026-10-24: the bare hand fix,
+## "hands lower 50% slower" = half the speed, for the fist weapons too). It goes on lowering after the busy time.
+@export var lower_time_scale: float = 2.0
 
 @export_group("Stake")
 ## How far the stake shoots out, in meters.
@@ -189,8 +192,8 @@ func _update(delta: float) -> void:
 	_time += delta
 	match state:
 		State.IDLE:
-			_pose_weight = move_toward(_pose_weight, 0.0, delta / recover_time)
-			_twist = move_toward(_twist, 0.0, absf(punch_twist_deg) * delta / recover_time)
+			_pose_weight = move_toward(_pose_weight, 0.0, delta / _lower_time())
+			_twist = move_toward(_twist, 0.0, absf(punch_twist_deg) * delta / _lower_time())
 			if trigger_pressed() and can_use() and controller.mech.energy.current >= data.lunge_energy:
 				power = 0.0
 				_next(State.POWER)
@@ -233,15 +236,20 @@ func _update(delta: float) -> void:
 			if _time >= hold_time:
 				_next(State.RECOVER)
 		State.RECOVER:
-			_pose_weight = move_toward(_pose_weight, 0.0, delta / recover_time)
+			_pose_weight = move_toward(_pose_weight, 0.0, delta / _lower_time())
 			_twist = punch_twist_deg * smoothstep(0.0, 1.0, _pose_weight)
-			if _pose_weight <= 0.0:
+			# Not busy after recover_time; IDLE lowers the rest of the way at the same speed.
+			if _time >= recover_time or _pose_weight <= 0.0:
 				state = State.IDLE
 	_update_stake(delta)
 	# Charge with the shield up. The lunge moves the mech, so the shield does not slow it down.
 	if not is_left:
 		controller.mech_shield.force_up = state == State.CHARGE
 	controller.torso_pose.action_twist_deg = _twist * (-1.0 if is_left else 1.0)
+
+
+func _lower_time() -> float:
+	return maxf(recover_time * lower_time_scale, 0.01)
 
 
 func _next(next_state: State) -> void:
