@@ -10,6 +10,8 @@ extends SkeletonModifier3D
 ## Neutral arms (user rule 2026-10-11): the shoulder armor block (the upper arm mesh) is flat on top, so
 ## the elbow sits under its outer edge. Each upper arm swings from that flat pose, and the elbow stays
 ## as near to it as the hand target lets it (tucked elbows).
+## Hinge arms (user drawing 2026-10-24, hinge_arms): the upper arm only rolls about the torso's forward axis and
+## pitches about the block's long axis, and the elbow only bends about that axis (no block turn about up, no swivel).
 ## Relaxed arms (user request 2026-10-18, stride swing 2026-10-24): an arm at its relaxed hang (an empty or fist hand)
 ## is solved to the still hang marker (with FreeArmSwing's small idle sway while standing), then its upper arm swings
 ## about the shoulder and its elbow bends, by a sine locked to the stride (FreeArmSwing.swing; the arm opposite to
@@ -99,6 +101,15 @@ extends SkeletonModifier3D
 ## Elbows stay as near as the hand target lets them to their neutral place (under the flat shoulder
 ## block): the elbow turns around the shoulder-to-hand line. Off: the IK elbow directions (poles) decide.
 @export var tuck_elbows: bool = true
+## Hinge arms (user drawing 2026-10-24, all arm movement): the shoulder block turns with the upper arm about
+## the block's long axis (the torso's side axis: forward and back) and rolls about the torso's forward axis
+## (out to the side); the elbow bends about one axis, parallel to the block's long axis. No block turn about
+## the up axis, no elbow swivel. On: the elbow tuck, the block yaw, the elbow hints and the elbow speed
+## limit are off. Off: the old free (ball) shoulder.
+@export var hinge_arms: bool = true
+## Hinge arms: the largest roll of the arm out to the side or in toward the body (degrees). Past it the hand
+## falls short and the held weapon moves to the hand.
+@export var max_roll_deg: float = 60.0
 ## The flat block may turn about the up axis up to this much (degrees) to bring the elbow forward or
 ## back; its top stays flat. 20 (user, 2026-10-13: "the shoulder blocks can take some angle"; was 0,
 ## the rule of 2026-10-12 that the shoulders face forward at neutral). At rest only: it fades out
@@ -415,6 +426,22 @@ func _pose_arm(side: Dictionary) -> void:
 	var fore_pose := upper_pose * _skeleton.get_bone_rest(fore)
 	var grip_point := (fore_pose * _skeleton.get_bone_global_rest(fore).affine_inverse() \
 			* _skeleton.get_bone_global_rest(side.grip)).origin
+	if hinge_arms and side.has("hinge"):
+		# Hinge arm: the neutral arm turns by roll * pitch (the upper arm) and roll * (pitch + bend) (the forearm),
+		# about the torso's axes.
+		var angles: Vector3 = side.hinge
+		var frame := _torso_in_skeleton()
+		var roll := Basis(Vector3.BACK, angles.x)
+		var upper_turn := frame * roll * Basis(Vector3.RIGHT, angles.y) * frame.inverse()
+		var fore_turn := frame * roll * Basis(Vector3.RIGHT, angles.y + angles.z) * frame.inverse()
+		var hinge_upper := upper_turn * upper_pose.basis
+		var hinge_fore := fore_turn * fore_pose.basis
+		_skeleton.set_bone_pose_rotation(upper, (parent_pose.basis.inverse() * hinge_upper).get_rotation_quaternion())
+		_skeleton.set_bone_pose_rotation(fore, (hinge_upper.inverse() * hinge_fore).get_rotation_quaternion())
+		_close_fingers(side, ik)
+		shoulder.global_basis = (skin.basis.orthonormalized() * hinge_upper * (side.upper_offset as Basis).inverse()).orthonormalized()
+		ik.mid_joint.global_basis = (skin.basis.orthonormalized() * hinge_fore * (side.fore_offset as Basis).inverse()).orthonormalized()
+		return
 	# Upper arm: animated shoulder-to-elbow direction to the IK direction.
 	var ik_upper := (to_skeleton * (ik.mid_joint.global_position - shoulder.global_position)).normalized()
 	# The flat block first turns about the up axis toward the elbow (top stays flat), then swings.
@@ -430,12 +457,16 @@ func _pose_arm(side: Dictionary) -> void:
 	fore_basis = Basis(Quaternion((fore_basis * palm_local).normalized(), ik_fore)) * fore_basis
 	_skeleton.set_bone_pose_rotation(upper, (parent_pose.basis.inverse() * upper_basis).get_rotation_quaternion())
 	_skeleton.set_bone_pose_rotation(fore, (upper_basis.inverse() * fore_basis).get_rotation_quaternion())
-	# A holding hand closes; the free (relaxed) left hand stays open.
+	_close_fingers(side, ik)
+	shoulder.global_basis = (skin.basis.orthonormalized() * upper_basis * (side.upper_offset as Basis).inverse()).orthonormalized()
+	ik.mid_joint.global_basis = (skin.basis.orthonormalized() * fore_basis * (side.fore_offset as Basis).inverse()).orthonormalized()
+
+
+## A holding hand closes; the free (relaxed) left hand stays open.
+func _close_fingers(side: Dictionary, ik: TwoBoneIK) -> void:
 	if weapons == null or (ik.target != weapons.free_left_hand and ik.target != weapons.free_right_hand):
 		for bone: int in side.fingers:
 			_skeleton.set_bone_pose_rotation(bone, side.fingers[bone])
-	shoulder.global_basis = (skin.basis.orthonormalized() * upper_basis * (side.upper_offset as Basis).inverse()).orthonormalized()
-	ik.mid_joint.global_basis = (skin.basis.orthonormalized() * fore_basis * (side.fore_offset as Basis).inverse()).orthonormalized()
 
 
 ## The joint nodes take the arm bones' turn now (after a change of the bones), so the weapons, the shield
@@ -452,6 +483,8 @@ func _joints_from_bones(side: Dictionary) -> void:
 ## moves back to a limited left hand (if it falls short), and the right arm takes its grip again.
 func _solve_arms(active: Array[Dictionary]) -> void:
 	_solve_arms_once(active)
+	if hinge_arms:
+		return
 	for side in active:
 		_limit_elbow_speed(side.ik as TwoBoneIK, side)
 		if side.has("next_elbow"):
@@ -472,18 +505,14 @@ func _solve_arms_once(active: Array[Dictionary]) -> void:
 			right_side = side
 	if right_ik != null:
 		_restore_weapon(weapons.right_weapon if weapons != null else null, 1)
-		right_ik.solve()
-		_tuck_elbow(right_ik)
-		_limit_arm(right_ik, right_side, swing_limit(true))
+		_solve_one(right_ik, right_side, swing_limit(true))
 		_move_weapon_to_hand(weapons.right_weapon if weapons != null else null, right_ik, 1)
 	if left_ik == null:
 		return
 	# A gun or the pile bunker in the left hand moves to a limited left hand like the right one.
 	var left_gun := _left_gun()
 	_restore_weapon(left_gun, 0)
-	left_ik.solve()
-	_tuck_elbow(left_ik)
-	_limit_arm(left_ik, left_side, swing_limit(false))
+	_solve_one(left_ik, left_side, swing_limit(false))
 	_move_weapon_to_hand(left_gun, left_ik, 0)
 	var weapon := weapons.right_weapon if weapons != null else null
 	if right_ik == null or weapon == null or not weapon.is_ancestor_of(left_ik.target):
@@ -493,9 +522,105 @@ func _solve_arms_once(active: Array[Dictionary]) -> void:
 		return
 	weapon.global_position += gap
 	_weapon_moved[1] = weapon.transform
-	right_ik.solve()
-	_tuck_elbow(right_ik)
-	_limit_arm(right_ik, right_side, swing_limit(true))
+	_solve_one(right_ik, right_side, swing_limit(true))
+
+
+## One arm to its target: the hinge solve, or the free IK with the elbow tuck and the swing limit.
+func _solve_one(ik: TwoBoneIK, side: Dictionary, limit: float) -> void:
+	if hinge_arms:
+		_hinge_solve(ik, side, limit)
+		return
+	ik.solve()
+	_tuck_elbow(ik)
+	_limit_arm(ik, side, limit)
+
+
+## The torso frame's basis in skeleton space.
+func _torso_in_skeleton() -> Basis:
+	return _skeleton.global_transform.basis.orthonormalized().inverse() * torso.global_basis.orthonormalized()
+
+
+## The neutral arm of a side in the torso frame (from the shoulder): [elbow, palm - elbow]. The neutral arm is the
+## flat block pose under the torso now.
+func _neutral_arm(side: Dictionary) -> Array[Vector3]:
+	var upper: int = side.upper
+	var parent_pose := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(upper)).orthonormalized()
+	var upper_pose := parent_pose * Transform3D(Basis(side.flat_local as Quaternion), _skeleton.get_bone_rest(upper).origin)
+	var fore_pose := upper_pose * _skeleton.get_bone_rest(side.fore as int)
+	var grip_point := (fore_pose * _skeleton.get_bone_global_rest(side.fore as int).affine_inverse() \
+			* _skeleton.get_bone_global_rest(side.grip as int)).origin
+	var to_torso := _torso_in_skeleton().inverse()
+	return [to_torso * (fore_pose.origin - upper_pose.origin), to_torso * (grip_point - fore_pose.origin)]
+
+
+## Hinge arm solve (torso frame; hinge_arms): the arm turns as roll(about forward Z) * pitch(about side X) from its
+## neutral pose, and the forearm bends about the same side axis (pitch + bend). A pitch about X keeps the x of the
+## neutral elbow and palm, so the roll is the one that brings the target to that x; then a plane two-bone solve
+## (the forearm bends forward) gives the pitch and the bend. The pitch stays inside the swing limit, the roll
+## inside max_roll_deg; there the hand falls short. Sets side.hinge = (roll, pitch, bend) and the joint nodes.
+func _hinge_solve(ik: TwoBoneIK, side: Dictionary, limit: float) -> void:
+	var arm := _neutral_arm(side)
+	var e0: Vector3 = arm[0]
+	var f0: Vector3 = arm[1]
+	var torso_basis := torso.global_basis.orthonormalized()
+	var shoulder := ik.root_joint.global_position
+	var target := torso_basis.inverse() * (ik.target.global_position - shoulder)
+	# Roll: x cos(roll) + y sin(roll) = c, the root nearest no roll.
+	var c := e0.x + f0.x
+	var r := Vector2(target.x, target.y).length()
+	var roll := 0.0
+	if r > absf(c) + 0.0001:
+		var base := atan2(target.y, target.x)
+		var spread := acos(clampf(c / r, -1.0, 1.0))
+		var first := wrapf(base + spread, -PI, PI)
+		var second := wrapf(base - spread, -PI, PI)
+		roll = first if absf(first) < absf(second) else second
+	var roll_limit := deg_to_rad(max_roll_deg)
+	roll = clampf(roll, -roll_limit, roll_limit)
+	# A relaxed arm hangs with a flat block (no roll); the hand may miss its hang marker to the side. The jump
+	# guard brings the roll in.
+	if _is_relaxed(ik) or ik.target == _guard_markers[0] or ik.target == _guard_markers[1]:
+		roll *= smoothstep(0.0, 1.0, jump_pose.guard) if jump_pose != null else 0.0
+	var in_plane := Basis(Vector3.BACK, -roll) * target
+	# Plane (y, z) two-bone solve. Angles in the plane: atan2(z, y) grows with a turn about +X.
+	var goal := Vector2(in_plane.y, in_plane.z)
+	var l1 := Vector2(e0.y, e0.z).length()
+	var l2 := Vector2(f0.y, f0.z).length()
+	var distance := clampf(goal.length(), absf(l1 - l2) + 0.001, l1 + l2 - 0.001)
+	var toward := goal.normalized() if goal.length_squared() > 0.000001 else Vector2(-1.0, 0.0)
+	var along := (l1 * l1 - l2 * l2 + distance * distance) / (2.0 * distance)
+	var across := sqrt(maxf(l1 * l1 - along * along, 0.0))
+	var normal := Vector2(-toward.y, toward.x)
+	var elbow := toward * along + normal * across
+	# The forearm bends forward: the hand on the forward side of the upper arm line.
+	if elbow.cross(toward) < 0.0:
+		elbow = toward * along - normal * across
+	var angle_of := func(v: Vector2) -> float: return atan2(v.y, v.x)
+	var pitch := wrapf(angle_of.call(elbow) - angle_of.call(Vector2(e0.y, e0.z)), -PI, PI)
+	var lean := clampf(pitch, -limit, limit)
+	if lean != pitch:
+		pitch = lean
+		elbow = Vector2(e0.y, e0.z).rotated(pitch)
+	var reach := goal - elbow
+	var bend := 0.0
+	if reach.length_squared() > 0.000001:
+		bend = wrapf(angle_of.call(reach) - angle_of.call(Vector2(f0.y, f0.z)) - pitch, -PI, PI)
+	side.hinge = Vector3(roll, pitch, bend)
+	_hinge_joints(ik, e0, f0, side.hinge)
+
+
+## The joint nodes of a hinge arm from its angles (roll, pitch, bend), so _hand() and the weapon moves see it.
+func _hinge_joints(ik: TwoBoneIK, e0: Vector3, f0: Vector3, angles: Vector3) -> void:
+	var torso_basis := torso.global_basis.orthonormalized()
+	var roll := Basis(Vector3.BACK, angles.x)
+	var elbow_local := roll * (Basis(Vector3.RIGHT, angles.y) * e0)
+	var hand_local := elbow_local + roll * (Basis(Vector3.RIGHT, angles.y + angles.z) * f0)
+	var shoulder := ik.root_joint.global_position
+	var axis := torso_basis * (roll * Vector3.RIGHT)
+	var elbow := shoulder + torso_basis * elbow_local
+	var hand := shoulder + torso_basis * hand_local
+	ik.root_joint.global_basis = TwoBoneIK._bone_basis(shoulder, elbow, axis)
+	ik.mid_joint.global_basis = TwoBoneIK._bone_basis(elbow, hand, axis)
 
 
 ## The limits of one arm: the elbow turns into the swing limit (the hand stays on its target), and the upper
@@ -822,6 +947,14 @@ func _swing_relaxed(side: Dictionary) -> void:
 		return
 	var angle := _free_swing.right_angle if ik == ik_right else _free_swing.left_angle
 	if absf(angle) < 0.00001:
+		return
+	if hinge_arms and side.has("hinge"):
+		# The sway is a turn about the torso's side axis: the hinge pitch.
+		var angles: Vector3 = side.hinge
+		angles.y += angle
+		side.hinge = angles
+		var arm := _neutral_arm(side)
+		_hinge_joints(ik, arm[0], arm[1], angles)
 		return
 	var axis := torso.global_basis.x.normalized()
 	ik.root_joint.global_basis = (Basis(axis, angle) * ik.root_joint.global_basis).orthonormalized()
