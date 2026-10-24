@@ -1102,6 +1102,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
     - Open: a single-frame 9 to 11 deg roll of the right upper arm (frames 42 and 99 of the test; the elbow does not move). Not from the swing limit search. Cause not found.
 
 ## Reminders for the user
+- Open (2026-10-24, user play test results, not built): see docs/HANDOFF_hinge_playtest.md: right forearm twitch in ADS and charged firing; hands lower slowly after a punch (no snap); SMG crosshair kick 25% less and no automatic return; pulse scan with no second ring (the first wave fades out from the mech); thin dust when a foot lands; horizontal mouse sensitivity x2. Items ok: combo 1 s, empty hand swing, recoil with W.
 - Open (2026-10-24, built): play test "Play test fixes 2026-10-24": the Beam Rifle in ADS while shooting (no twitch, still left fingers), a short charge jump (one push), the 1 s combo time, the higher empty hand swing, the crosshair kick, and W held while the missile pods and cannons fire.
 - Open (2026-10-24, built twice): play test the hinge arms (see "Hinge arms"): level shoulder blocks with no turn about the up axis, the elbow out and the forearm turning in, at rest, aim, walk, boost and full jump charge with every weapon. Decide the clip-driven arms (melee, hits, death, dodge).
 - Open (2026-10-24, user): the thumb grip is still not right in play. Fix it in Blender (the hand model `tools/blender/mech_hand_build.py`, `models/mech_hand/`; the thumb mount and segment lengths), then re-tune `MechHand` thumb wrap.
