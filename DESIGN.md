@@ -1034,6 +1034,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
   - Recoil table (aim up / side in degrees, model kick, shake trauma / kick; side is about 0.4 x up; the crosshair has no auto recovery): SMG 0.5 / 0.2, 0.25 m 2 deg, 0.08 / 0.04. Missile pods 0.3 / 0.12, 0.08 / 0.10. Heavy Rifle 2.0 / 0.8, 0.7 m 10 deg, 0.25 / 0.12. Shotgun 3.0 / 1.2, 0.6 m 8 deg, 0.30 / 0.15. Auto Cannon (hand, +50% recoil) 6.0 / 2.25, 1.2 m 6 deg, 0.45 / 0.30. Shoulder Cannon 2.0 / 0.75, 0.35 / 0.25. Beam Rifle and Sniper unchanged (3.5 / 0.5).
   - Test: `tools/godot/test_stagger_rules.gd` (36 checks, both sides of each rule). `test_stability.gd` expects the new values.
 
+- Handoff 2026-10-24: `docs/HANDOFF_arms_wrist_brace.md` (wrist, arms, jump strength, brace snap and recoil; known issues; next: the user's play test).
 - Handoff 2026-10-16: `docs/HANDOFF_stagger_ranges_fixes.md` (next pipeline: flinch review and three stagger items, open reminders, phase 3 pick-up and free-hand fist, phase 4 jump clips from `models/mixamo/library/Jumping_Up.fbx` and `Landing.fbx`).
 
 - Phase 3: weapon drop and pick-up, empty hands are fists (user choices 2026-10-17), awaiting the user's test:
