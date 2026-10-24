@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="LegPart" format=3]
+
+[ext_resource type="PackedScene" path="res://models/new_mech/parts/new_mech_legs.gltf" id="1_lmnyr"]
+[ext_resource type="Script" path="res://scripts/data/leg_part.gd" id="2_3c5ar"]
+
+[resource]
+script = ExtResource("2_3c5ar")
+turn_speed_deg = 116.1
+turn_speed_standing_deg = 58.05
+display_name = "New Mech Legs"
+weight_t = 16.0
+hp = 1400.0
+scene = ExtResource("1_lmnyr")
+material_library = ""

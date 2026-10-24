@@ -1,18 +1,30 @@
 extends SceneTree
-## Builds scenes/mech/skeletal_mech.tscn and data/loadouts/new_mech.tres: the new mech (rigged model
-## models/new_mech/new_mech_exploded.glb) as a playable mech that plays its own animations.
+## Builds scenes/mech/skeletal_mech.tscn (the standard medium rig as a playable mech that plays the
+## rig's animations), the New Mech part data (data/parts/new_mech/) and data/loadouts/new_mech.tres.
+## SkeletalAssembler puts the loadout's part models on the rig when the mech starts.
 ## Run from the project root:
 ##   godot --headless --path . --script res://tools/godot/build_skeletal_mech.gd
 ##
 ## It starts from the player mech scene and keeps its movement, input, aim and camera nodes; the
 ## part-built body (frame joints, parts, procedural animation, weapons, damage, falls) is removed and the
-## rigged model goes in its place, played by SkeletalLocomotion. Weapons, damage, falls and the run
+## standard rig goes in its place, played by SkeletalLocomotion. Weapons, damage, falls and the run
 ## start / stop / slide animations come in later phases.
 
 const SOURCE := "res://scenes/mech/player_mech.tscn"
-const MODEL := "res://models/new_mech/new_mech_exploded.glb"
+## Standard rig: skeleton and animations, no part meshes (tools/blender/export_std_rig.py).
+const MODEL := "res://models/std_rig/medium/std_medium_rig.glb"
 const OUT_SCENE := "res://scenes/mech/skeletal_mech.tscn"
 const OUT_LOADOUT := "res://data/loadouts/new_mech.tres"
+## Part models of the New Mech (tools/blender/export_std_parts.py) by loadout slot, and the part data
+## each one copies its stats from (the New Mech uses the Medium values, which are the Warden values).
+const PARTS := {
+	"head": ["res://models/new_mech/parts/new_mech_head.gltf", "res://data/parts/warden/warden_head.tres"],
+	"core": ["res://models/new_mech/parts/new_mech_core.gltf", "res://data/parts/warden/warden_core.tres"],
+	"arm_left": ["res://models/new_mech/parts/new_mech_arm_l.gltf", "res://data/parts/warden/warden_arm_l.tres"],
+	"arm_right": ["res://models/new_mech/parts/new_mech_arm_r.gltf", "res://data/parts/warden/warden_arm_r.tres"],
+	"legs": ["res://models/new_mech/parts/new_mech_legs.gltf", "res://data/parts/warden/warden_legs.tres"],
+}
+const PART_FOLDER := "res://data/parts/new_mech/"
 ## Part HP and the bones of each part.
 const HIT_PARTS := "res://data/mechs/new_mech_hit_parts.tres"
 ## Player mech nodes that belong to the part-built body.
@@ -56,16 +68,22 @@ func _initialize() -> void:
 	for node in tops:
 		node.free()
 
+	var assembler := SkeletalAssembler.new()
+	assembler.name = "SkeletalAssembler"
+	root.add_child(assembler)
+	root.move_child(assembler, 1)
+	assembler.owner = root
 	var visual := Node3D.new()
 	visual.name = "Visual"
 	root.add_child(visual)
-	root.move_child(visual, 1)
+	root.move_child(visual, 2)
 	visual.owner = root
 	var model := (load(MODEL) as PackedScene).instantiate() as Node3D
 	model.name = "Model"
 	model.rotation.y = PI  # the model faces +Z (glTF front); the mech faces -Z
 	visual.add_child(model)
 	model.owner = root
+	assembler.model = model
 	var tree := AnimationTree.new()
 	tree.name = "AnimationTree"
 	model.add_child(tree)
@@ -144,6 +162,15 @@ func _initialize() -> void:
 	var loadout := Loadout.new()
 	loadout.display_name = "New Mech"
 	loadout.mech_scene = load(OUT_SCENE)
+	DirAccess.make_dir_recursive_absolute(PART_FOLDER)
+	for slot: String in PARTS:
+		var part := (load(PARTS[slot][1]) as PartData).duplicate() as PartData
+		part.display_name = "New Mech " + slot.capitalize()
+		part.scene = load(PARTS[slot][0])
+		part.material_library = ""
+		var path: String = PART_FOLDER + PARTS[slot][0].get_file().get_basename() + ".tres"
+		print("BUILD part ", path, " ", error_string(ResourceSaver.save(part, path)))
+		loadout.set(slot, load(path))
 	print("BUILD loadout ", OUT_LOADOUT, " ", error_string(ResourceSaver.save(loadout, OUT_LOADOUT)))
 	root.free()
 	quit()

@@ -1,11 +1,21 @@
 [gd_resource type="Resource" script_class="Loadout" format=3]
 
-[ext_resource type="PackedScene" path="res://scenes/mech/skeletal_mech.tscn" id="1_ax0kv"]
-[ext_resource type="Script" path="res://scripts/data/mod_data.gd" id="2_vi7pw"]
-[ext_resource type="Script" path="res://scripts/data/plate_data.gd" id="3_nl2bh"]
-[ext_resource type="Script" path="res://scripts/data/loadout.gd" id="4_812vl"]
+[ext_resource type="Resource" path="res://data/parts/new_mech/new_mech_arm_l.tres" id="1_qarb7"]
+[ext_resource type="Resource" path="res://data/parts/new_mech/new_mech_arm_r.tres" id="2_ycg13"]
+[ext_resource type="Resource" path="res://data/parts/new_mech/new_mech_core.tres" id="3_02mwu"]
+[ext_resource type="Resource" path="res://data/parts/new_mech/new_mech_head.tres" id="4_r5m65"]
+[ext_resource type="Resource" path="res://data/parts/new_mech/new_mech_legs.tres" id="5_5btu1"]
+[ext_resource type="PackedScene" path="res://scenes/mech/skeletal_mech.tscn" id="6_kuxf7"]
+[ext_resource type="Script" path="res://scripts/data/mod_data.gd" id="7_p860a"]
+[ext_resource type="Script" path="res://scripts/data/plate_data.gd" id="8_k0pl8"]
+[ext_resource type="Script" path="res://scripts/data/loadout.gd" id="9_lofwf"]
 
 [resource]
-script = ExtResource("4_812vl")
+script = ExtResource("9_lofwf")
 display_name = "New Mech"
-mech_scene = ExtResource("1_ax0kv")
+mech_scene = ExtResource("6_kuxf7")
+head = ExtResource("4_r5m65")
+core = ExtResource("3_02mwu")
+arm_left = ExtResource("1_qarb7")
+arm_right = ExtResource("2_ycg13")
+legs = ExtResource("5_5btu1")

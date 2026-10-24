@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CorePart" format=3]
+
+[ext_resource type="PackedScene" path="res://models/new_mech/parts/new_mech_core.gltf" id="1_6h58i"]
+[ext_resource type="Script" path="res://scripts/data/core_part.gd" id="2_sp1ci"]
+
+[resource]
+script = ExtResource("2_sp1ci")
+torso_turn_speed_deg = 85.35
+display_name = "New Mech Core"
+weight_t = 18.0
+hp = 1600.0
+scene = ExtResource("1_6h58i")
+material_library = ""

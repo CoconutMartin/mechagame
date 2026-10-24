@@ -47,6 +47,9 @@ func rebuild(loadout: Loadout, place: Transform3D) -> void:
 	var assembler := new_mech.get_node_or_null("MechAssembler") as MechAssembler
 	if assembler != null:
 		assembler.loadout = loadout
+	var skeletal := new_mech.get_node_or_null("SkeletalAssembler") as SkeletalAssembler
+	if skeletal != null:
+		skeletal.loadout = loadout
 	new_mech.name = mech.name
 	mech.name = "OldMech"
 	mech.queue_free()

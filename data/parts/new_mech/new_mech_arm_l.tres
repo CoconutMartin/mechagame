@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ArmPart" format=3]
+
+[ext_resource type="PackedScene" path="res://models/new_mech/parts/new_mech_arm_l.gltf" id="1_gial7"]
+[ext_resource type="Script" path="res://scripts/data/arm_part.gd" id="2_w4ga8"]
+
+[resource]
+script = ExtResource("2_w4ga8")
+display_name = "New Mech Arm Left"
+weight_t = 5.0
+hp = 600.0
+scene = ExtResource("1_gial7")
+material_library = ""

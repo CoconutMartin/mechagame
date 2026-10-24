@@ -1,0 +1,116 @@
+{
+  "fps": 30,
+  "note": "Footstep and slide events per animation (frame / seconds from its start). glTF cannot store pose markers.",
+  "animations": {
+    "biped_run_full": [
+      {
+        "name": "footstep_L",
+        "frame": 0,
+        "time": 0.0
+      },
+      {
+        "name": "footstep_R",
+        "frame": 15,
+        "time": 0.5
+      }
+    ],
+    "biped_run_full_unarmed": [
+      {
+        "name": "footstep_L",
+        "frame": 0,
+        "time": 0.0
+      },
+      {
+        "name": "footstep_R",
+        "frame": 15,
+        "time": 0.5
+      }
+    ],
+    "biped_run_start": [
+      {
+        "name": "footstep_L",
+        "frame": 17,
+        "time": 0.5667
+      },
+      {
+        "name": "footstep_R",
+        "frame": 33,
+        "time": 1.1
+      }
+    ],
+    "biped_run_stop": [
+      {
+        "name": "footstep_R",
+        "frame": 12,
+        "time": 0.4
+      },
+      {
+        "name": "skid_start",
+        "frame": 12,
+        "time": 0.4
+      },
+      {
+        "name": "skid_end",
+        "frame": 24,
+        "time": 0.8
+      },
+      {
+        "name": "footstep_L",
+        "frame": 24,
+        "time": 0.8
+      },
+      {
+        "name": "footstep_R",
+        "frame": 36,
+        "time": 1.2
+      }
+    ],
+    "biped_run_stop_akira": [
+      {
+        "name": "footstep_R",
+        "frame": 8,
+        "time": 0.2667
+      },
+      {
+        "name": "slide_start",
+        "frame": 8,
+        "time": 0.2667
+      },
+      {
+        "name": "slide_end",
+        "frame": 30,
+        "time": 1.0
+      },
+      {
+        "name": "footstep_R",
+        "frame": 40,
+        "time": 1.3333
+      },
+      {
+        "name": "footstep_L",
+        "frame": 50,
+        "time": 1.6667
+      },
+      {
+        "name": "footstep_R",
+        "frame": 58,
+        "time": 1.9333
+      },
+      {
+        "name": "footstep_L",
+        "frame": 68,
+        "time": 2.2667
+      },
+      {
+        "name": "footstep_R",
+        "frame": 78,
+        "time": 2.6
+      },
+      {
+        "name": "footstep_L",
+        "frame": 88,
+        "time": 2.9333
+      }
+    ]
+  }
+}
