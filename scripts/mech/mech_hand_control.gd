@@ -14,6 +14,11 @@ extends Node
 ## GripSocketLeftAimLow (optional, with GripLeftAimLow) the socket of the low aim hold (WeaponPose
 ## low_aim_amount). Without sockets: the old grips (the right fist hollow PALM_HOLLOW from grip_R,
 ## tools/mech_gen/arm_poses.py; the left grip at grip_L).
+## Wrist (user report 2026-10-24: "hand and arms are still disjointed at the wrist"): the hand model's own
+## wrist joint (the roller on the back of the hand block, MechHand.wrist_local) stays on the forearm's wrist
+## pin (the dark joint at the end of the forearm armor; its center is wrist_pin_right / wrist_pin_left in the
+## forearm bone frame, written by build_sanggigilid.gd) in every pose, and a turning hand turns about it.
+## The arm, not the hand, makes up the rest of the way to a grip (the HandTarget).
 
 const PALM_HOLLOW := Vector3(0.2, 0.0, 0.18)
 ## The fist hollows in the hand frames (wrist origin, +Y to the fingers, +Z to the back of the hand),
@@ -45,11 +50,18 @@ const PALM_FACE_Z := 0.07
 ## (degrees) to line the fist up with a socket's grip.
 @export var max_wrist_twist_deg: float = 150.0
 @export var max_wrist_bend_deg: float = 60.0
-## Turn pivot from the wrist (0) to the fist hollow (1): the wrist and the fist each move part of the way.
-@export_range(0.0, 1.0) var pivot_on_fist: float = 1.0
-## Part of the wrist gap the arm target closes each frame, and the largest target move (meters).
+## Wrist pin center (meters) in the forearm bone frame at rest: the dark joint at the end of the forearm
+## armor. build_sanggigilid.gd writes both (the forearm mesh's end, measured from the model).
+@export var wrist_pin_right: Vector3 = Vector3.ZERO
+@export var wrist_pin_left: Vector3 = Vector3.ZERO
+## How far build_sanggigilid.gd moved each hand model on its hand bone to put the wrist joint on the pin (meters,
+## in the hand bone frame). A melee weapon sits on the hand bone, so its model moves by the same amount.
+@export var hand_shift_right: Vector3 = Vector3.ZERO
+@export var hand_shift_left: Vector3 = Vector3.ZERO
+## Part of the miss between the fist hollow and the grip that the arm target closes each frame, and the
+## largest target move (meters).
 @export var reach_gain: float = 0.7
-@export var max_reach_offset: float = 0.5
+@export var max_reach_offset: float = 1.0
 ## A gun held without arm reach: the wrist turns for the other direction of the grip axis when that puts the
 ## fist hollow nearer the grip by more than this (meters).
 @export var flip_margin: float = 0.05
@@ -58,6 +70,8 @@ const PALM_FACE_Z := 0.07
 
 ## Per side: hand, base transform, socket weight, socket.
 var _sides := {}
+## Per side: the stand-in socket node of an old-style hold (see _stand_in).
+var _stand_ins := {}
 
 
 func _ready() -> void:
@@ -67,7 +81,7 @@ func _ready() -> void:
 	for side in ["R", "L"]:
 		var hand := hand_right if side == "R" else hand_left
 		_sides[side] = {"hand": hand, "base": hand.transform if hand != null else Transform3D.IDENTITY,
-				"weight": 0.0, "socket": null, "weapon": null, "target": null, "offset": Vector3.ZERO}
+				"wrist": hand.wrist_local() if hand != null else Vector3.ZERO, "weight": 0.0, "socket": null, "weapon": null, "target": null, "offset": Vector3.ZERO}
 	if skeleton != null:
 		skeleton.skeleton_updated.connect(_after_skeleton)
 
@@ -86,14 +100,24 @@ func _process(delta: float) -> void:
 	var socket_r := _socket(gun, ^"GripSocketRight")
 	if socket_r == null and gun != null and not gun is PileBunkerWeapon:
 		socket_r = _handle_socket(gun)
+	# A melee weapon or the pile bunker has no socket marker: a stand-in at its grip marker gives the hand the same
+	# reach (the wrist stays on the pin, the arm brings the fist to the weapon's grip).
+	if socket_r == null and gun != null:
+		socket_r = _stand_in("R", gun, ^"GripRight")
+	_move_melee_model(gun, hand_shift_right)
+	var melee_left := weapons.left_weapon if weapons.left_weapon is MeleeWeapon and is_instance_valid(weapons.left_weapon) \
+			and weapons.left_data != null and weapons.left_data.kind != WeaponData.Kind.FIST else null
 	# A one-hand gun in the left hand (user rule 2026-10-15): its GripSocketRight fits the left fist too.
 	var left_gun := weapons.left_weapon if weapons.left_weapon != null and is_instance_valid(weapons.left_weapon) \
 			and not weapons.left_weapon is MeleeWeapon else null
 	var socket_l := _socket(gun, ^"GripSocketLeft") if two_hand else _socket(left_gun, ^"GripSocketRight")
 	_update_side("R", socket_r, weapons.arm_ik_right, ^"GripRight", gun, delta)
-	_update_side("L", socket_l, weapons.arm_ik_left, ^"GripLeft", gun if two_hand else left_gun, delta)
+	_move_melee_model(melee_left, hand_shift_left)
+	if socket_l == null and melee_left != null:
+		socket_l = _stand_in("L", melee_left, ^"GripLeft")
+	_update_side("L", socket_l, weapons.arm_ik_left, ^"GripLeft", gun if two_hand else (left_gun if left_gun != null else melee_left), delta)
 	if is_instance_valid(hand_right) and hand_right.visible:
-		if socket_r != null:
+		if socket_r != null and not gun is PileBunkerWeapon:
 			hand_right.set_grip(socket_r.global_position, socket_r.global_basis.y, _radius(socket_r, grip_radius))
 		elif gun != null and not gun is PileBunkerWeapon:
 			var grip := _grip_pose(grip_bones[1])
@@ -105,7 +129,7 @@ func _process(delta: float) -> void:
 			# punch and while the mech moves; at rest it stays relaxed (user report 2026-10-22).
 			hand_right.mode = MechHand.Mode.FIST if moving or punching else MechHand.Mode.RELAXED
 	if is_instance_valid(hand_left) and hand_left.visible:
-		if socket_l != null:
+		if socket_l != null and melee_left == null:
 			var place := _left_socket_place(socket_l, gun) if two_hand else socket_l.global_transform.orthonormalized()
 			hand_left.set_grip(place.origin, place.basis.y, _radius(socket_l, forestock_radius))
 		elif two_hand:
@@ -115,6 +139,39 @@ func _process(delta: float) -> void:
 			hand_left.mode = MechHand.Mode.FIST
 		else:
 			hand_left.mode = MechHand.Mode.FIST if moving or punching else MechHand.Mode.RELAXED
+
+
+## A melee weapon's model sits on the hand bone, placed for the old hand (on the bone). The jointed hand sits
+## `shift` away from there (its wrist joint is on the pin), so the model moves by the same amount, once.
+func _move_melee_model(weapon: Node3D, shift: Vector3) -> void:
+	if not weapon is MeleeWeapon:
+		return
+	var model := (weapon as MeleeWeapon).get_model()
+	if not is_instance_valid(model) or model.has_meta(&"wrist_shifted") or not model.get_parent() is BoneAttachment3D:
+		return
+	model.position += shift
+	model.set_meta(&"wrist_shifted", true)
+
+
+## Stand-in socket of an old-style hold (a melee weapon, the pile bunker; no socket marker): at the weapon's grip
+## marker plus the fist offset the old grip code used (PALM_HOLLOW in the grip bone's frame, mirrored for the left
+## hand). Null when the weapon has no such marker.
+func _stand_in(side: String, weapon: Node3D, marker_path: NodePath) -> Node3D:
+	var marker := weapon.get_node_or_null(marker_path) as Node3D
+	if marker == null:
+		return null
+	var node := _stand_ins.get(side) as Node3D if is_instance_valid(_stand_ins.get(side)) else null
+	if node == null:
+		node = Node3D.new()
+		node.name = "StandIn" + side
+		# The old hold never turned the hand: it keeps the arm rig's pose, and only the reach moves.
+		node.set_meta(&"keep_turn", true)
+		add_child(node)
+		_stand_ins[side] = node
+	var bone := _grip_pose(grip_bones[1 if side == "R" else 0])
+	var offset := PALM_HOLLOW if side == "R" else Vector3(-PALM_HOLLOW.x, PALM_HOLLOW.y, PALM_HOLLOW.z)
+	node.global_transform = Transform3D(bone.basis.orthonormalized(), marker.global_position + bone.basis * offset)
+	return node
 
 
 ## The weapon's socket marker, or null (no weapon, or a weapon without sockets).
@@ -210,8 +267,9 @@ func _update_side(side: String, socket: Node3D, ik: TwoBoneIK, marker_path: Node
 		target.position = marker.position + (state.offset as Vector3)
 
 
-## After the arm rig: each hand turns to its socket's grip axis (blended, limited), about a point
-## between its wrist and its fist hollow.
+## After the arm rig: the hand's wrist joint goes on the wrist pin; a hand on a socket turns (blended,
+## limited) about that joint so its fist lines up with the grip axis, and the arm target moves by part of
+## the fist's miss, so the fist comes onto the grip without the wrist leaving the pin.
 func _after_skeleton() -> void:
 	for side: String in _sides:
 		var state: Dictionary = _sides[side]
@@ -220,13 +278,17 @@ func _after_skeleton() -> void:
 			continue
 		var hand := state.hand as MechHand
 		var bone_pose := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("hand_" + side))
+		var pin := wrist_pin(side)
+		var wrist: Vector3 = state.wrist
 		var base: Transform3D = state.base
 		var socket: Node3D = state.socket as Node3D if is_instance_valid(state.socket) else null
 		var weight: float = state.weight
-		if socket == null or weight <= 0.0:
-			hand.transform = base
-			continue
 		var attached := (bone_pose * base).orthonormalized()
+		# The hand model rides on the hand bone; the wrist joint goes onto the pin (the forearm's end).
+		attached.origin += pin - attached * wrist
+		if socket == null or weight <= 0.0:
+			hand.transform = bone_pose.affine_inverse() * attached
+			continue
 		var place := _socket_place(side, socket)
 		var hollow := RIGHT_HOLLOW if side == "R" else LEFT_HOLLOW
 		hollow.z = PALM_FACE_Z - _radius(socket, grip_radius)
@@ -235,13 +297,14 @@ func _after_skeleton() -> void:
 		hollow.x += float(socket.get_meta(&"hold_drop", 0.0)) * (-1.0 if side == "R" else 1.0)
 		var reach := bool(socket.get_meta(&"hand_reach", true))
 		var axis := place.basis.y.normalized()
-		var turn := _wrist_turn(attached, side, axis)
+		var turn := _wrist_turn(attached, side, axis) if not bool(socket.get_meta(&"keep_turn", false)) else Quaternion.IDENTITY
 		if not reach:
 			# The arm keeps its pose, so the turn decides where the grip lies in the hand: a grip axis has two
 			# directions, and the turn for the one that brings the fist hollow nearer the grip wins.
-			var other := _wrist_turn(attached, side, -axis)
-			var gap := _hollow_gap(attached, turn, hollow, place.origin)
-			var gap_other := _hollow_gap(attached, other, hollow, place.origin)
+			turn = _spin_to_grip(attached, wrist, turn, hollow, place.origin, axis)
+			var other := _spin_to_grip(attached, wrist, _wrist_turn(attached, side, -axis), hollow, place.origin, axis)
+			var gap := _hollow_gap(attached, wrist, turn, hollow, place.origin)
+			var gap_other := _hollow_gap(attached, wrist, other, hollow, place.origin)
 			var flipped := bool(state.get("flip", false))
 			if gap_other + (0.0 if flipped else flip_margin) < gap or (flipped and gap_other < gap + flip_margin):
 				turn = other
@@ -250,23 +313,50 @@ func _after_skeleton() -> void:
 				flipped = false
 			state["flip"] = flipped
 		var rotation := Basis(turn.slerp(Quaternion.IDENTITY, 1.0 - smoothstep(0.0, 1.0, weight)))
-		# hand_reach false: the arm keeps its pose; the hand only turns at the wrist.
-		var pivot := attached * (hollow * (pivot_on_fist if reach else 0.0))
-		var now := Transform3D(rotation * attached.basis, pivot + rotation * (attached.origin - pivot))
-		# Then the fist hollow onto the socket (blended in), so the fingers close on the real grip.
-		if reach:
-			now.origin += (place.origin - now * hollow) * smoothstep(0.0, 1.0, weight)
+		# The hand turns about its wrist joint, which stays on the pin.
+		var now := Transform3D(rotation * attached.basis, pin + rotation * (attached.origin - pin))
 		hand.transform = bone_pose.affine_inverse() * now
-		# The arm reaches by part of the gap between its wrist and the placed hand's wrist.
+		# The arm reaches by part of the fist's miss (the hollow to the grip center).
 		var weapon: Node3D = state.weapon as Node3D if is_instance_valid(state.weapon) else null
 		if reach and weapon != null:
-			var local := weapon.global_basis.orthonormalized().inverse() * (now.origin - attached.origin)
+			var miss := (place.origin - now * hollow) * smoothstep(0.0, 1.0, weight)
+			var local := weapon.global_basis.orthonormalized().inverse() * miss
 			state.offset = ((state.offset as Vector3) + local * reach_gain).limit_length(max_reach_offset)
 
 
-## Distance from the fist hollow to a grip center when the hand turns by this wrist turn about its wrist.
-func _hollow_gap(attached: Transform3D, turn: Quaternion, hollow: Vector3, center: Vector3) -> float:
-	return (attached.origin + Basis(turn) * (attached.basis * hollow)).distance_to(center)
+## World center of the forearm's wrist pin this frame (call it when the skeleton has its final pose).
+func wrist_pin(side: String) -> Vector3:
+	var forearm := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("forearm_" + side))
+	return forearm * (wrist_pin_right if side == "R" else wrist_pin_left)
+
+
+## A hand whose arm cannot reach (the arm keeps its pose) also turns about the grip axis through its wrist, so
+## the fist hollow points at the grip: the fist stays lined up and the miss gets smaller. Limited by the wrist
+## bend (the spin shrinks until the bend fits).
+func _spin_to_grip(attached: Transform3D, wrist: Vector3, turn: Quaternion, hollow: Vector3, center: Vector3,
+		axis: Vector3) -> Quaternion:
+	var line := axis.normalized()
+	var to_fist := Basis(turn) * (attached.basis * (hollow - wrist))
+	var to_grip := center - attached * wrist
+	var fist_flat := to_fist - line * to_fist.dot(line)
+	var grip_flat := to_grip - line * to_grip.dot(line)
+	if fist_flat.length_squared() < 0.0001 or grip_flat.length_squared() < 0.0001:
+		return turn
+	var angle := fist_flat.signed_angle_to(grip_flat, line)
+	var forearm_line := attached.basis.y.normalized()
+	for i in 5:
+		var spun := Quaternion(line, angle) * turn
+		if (Basis(spun) * forearm_line).angle_to(forearm_line) <= deg_to_rad(max_wrist_bend_deg):
+			return spun
+		angle *= 0.5
+	return turn
+
+
+## Distance from the fist hollow to a grip center when the hand turns by this wrist turn about its wrist joint
+## (which sits on the pin).
+func _hollow_gap(attached: Transform3D, wrist: Vector3, turn: Quaternion, hollow: Vector3, center: Vector3) -> float:
+	var pivot := attached * wrist
+	return (pivot + Basis(turn) * (attached.basis * (hollow - wrist))).distance_to(center)
 
 
 ## The wrist turn (world) that lines the fist up with a grip axis: first a roll about the forearm line

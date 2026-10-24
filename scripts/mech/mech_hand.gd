@@ -31,6 +31,8 @@ const FINGERS := ["Index", "Middle", "Ring", "Pinky", "Thumb"]
 @export var open_spread_deg: Dictionary = {"Index": 7.0, "Middle": 2.0, "Ring": 3.0, "Pinky": 8.0}
 ## How fast a finger bends (part of the full bend per second).
 @export var close_speed: float = 4.0
+## Name of the model's wrist joint (the round roller on the back of the hand block).
+@export var wrist_joint: String = "Wrist"
 ## Finger and thumb thickness (radius, meters) for the grip fit.
 @export var finger_radius: float = 0.075
 @export var thumb_radius: float = 0.08
@@ -107,6 +109,20 @@ func set_grip(center: Vector3, axis: Vector3, radius: float) -> void:
 	grip_center = center
 	grip_axis = axis.normalized() if axis.length_squared() > 0.0001 else Vector3.UP
 	grip_radius = radius
+
+
+## Center of the model's own wrist joint (the roller) in this node's frame. MechHandControl puts it on the
+## forearm's wrist pin (user report 2026-10-24: hand and forearm disjointed at the wrist).
+func wrist_local() -> Vector3:
+	var joint := find_child(wrist_joint, true, false) as MeshInstance3D
+	if joint == null:
+		return Vector3.ZERO
+	var place := joint.get_aabb().get_center()
+	var node: Node3D = joint
+	while node != self and node != null:
+		place = node.transform * place
+		node = node.get_parent() as Node3D
+	return place
 
 
 func _process(delta: float) -> void:

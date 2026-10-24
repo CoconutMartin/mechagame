@@ -390,10 +390,15 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	mount.shoulder_mounts = shoulder_tops
 
 
+## Length (meters) of the forearm's end that holds the wrist pin.
+const WRIST_PIN_SLAB := 0.12
 ## Jointed hands (user drawings 2026-10-13; scenes/mech/mech_hand_r/l.tscn): each follows its old hand
 ## bone (a BoneAttachment3D with the external skeleton), placed in the hand frame H measured from the old
 ## hand at rest: origin at the wrist, +Y to the finger roots, +Z to the back of the hand. MechHandControl
 ## poses the fingers and hides the old hand meshes.
+## Wrist (user report 2026-10-24): the hand model's own wrist joint (MechHand.wrist_local) goes onto the wrist
+## pin (the dark joint at the end of the forearm armor, WRIST_PIN_SLAB); the pin's place in the forearm bone
+## frame is written to MechHandControl.wrist_pin_right / wrist_pin_left, which keep the joint there in play.
 func _add_hands(root: Mech, visual: Node3D, model: Node3D, health: MechHealth, hitboxes: SkeletalHitboxes) -> void:
 	var skeleton := model.find_child("Skeleton3D", true, false) as Skeleton3D
 	var control := MechHandControl.new()
@@ -424,11 +429,38 @@ func _add_hands(root: Mech, visual: Node3D, model: Node3D, health: MechHealth, h
 		var hand := (load("res://scenes/mech/mech_hand_%s.tscn" % side.to_lower()) as PackedScene).instantiate() as MechHand
 		attach.add_child(hand)
 		hand.owner = root
-		hand.transform = hand_rest.affine_inverse() * frame
+		var base := hand_rest.affine_inverse() * frame
+		var forearm_rest := skeleton.get_bone_global_rest(skeleton.find_bone("forearm_" + side))
+		var pin := _wrist_pin(skeleton, side, model)
+		var shift := hand_rest.affine_inverse() * (forearm_rest * pin) - base * hand.wrist_local()
+		base.origin += shift
+		hand.transform = base
 		if side == "R":
 			control.hand_right = hand
+			control.wrist_pin_right = pin
+			control.hand_shift_right = shift
 		else:
 			control.hand_left = hand
+			control.wrist_pin_left = pin
+			control.hand_shift_left = shift
+
+
+## Wrist pin center in the forearm bone frame at rest: the center of the box around the forearm mesh's last
+## WRIST_PIN_SLAB meters (the dark joint at the end of the forearm armor; there is no separate pin mesh).
+func _wrist_pin(skeleton: Skeleton3D, side: String, model: Node3D) -> Vector3:
+	var mesh := model.find_child("Arm_%s_02" % side, true, false) as MeshInstance3D
+	var hand_rest := skeleton.get_bone_global_rest(skeleton.find_bone("hand_" + side))
+	var to_hand := hand_rest.affine_inverse() * mesh.transform
+	var box := AABB()
+	var first := true
+	for vertex in (mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array):
+		# The hand bone's -Y runs back up the forearm: its end is where the hand bone sits.
+		if (to_hand * vertex).y < -WRIST_PIN_SLAB:
+			continue
+		var point: Vector3 = mesh.transform * vertex
+		box = AABB(point, Vector3.ZERO) if first else box.expand(point)
+		first = false
+	return skeleton.get_bone_global_rest(skeleton.find_bone("forearm_" + side)).affine_inverse() * box.get_center()
 
 
 ## Camera for Sanggigilid (kept here so a rebuild keeps them; user requests 2026-10-13 to 2026-10-15,
