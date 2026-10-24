@@ -38,7 +38,7 @@ const KEYS := {
 @export var attack_delay_min: float = 0.2
 @export var attack_delay_max: float = 0.7
 ## Seconds after a hit until it presses the next swing of a fist combo, random in this range (the
-## melee window is 0.6 s: SkeletalMeleeAnimation.combo_window).
+## melee window is 1.0 s: SkeletalMeleeAnimation.combo_window).
 @export var combo_delay_min: float = 0.05
 @export var combo_delay_max: float = 0.3
 

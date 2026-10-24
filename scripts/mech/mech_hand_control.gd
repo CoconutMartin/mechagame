@@ -58,9 +58,11 @@ const PALM_FACE_Z := 0.07
 ## in the hand bone frame). A melee weapon sits on the hand bone, so its model moves by the same amount.
 @export var hand_shift_right: Vector3 = Vector3.ZERO
 @export var hand_shift_left: Vector3 = Vector3.ZERO
-## Part of the miss between the fist hollow and the grip that the arm target closes each frame, and the
-## largest target move (meters).
-@export var reach_gain: float = 0.7
+## Part of the miss between the fist hollow and the grip that the arm target closes each frame (once per frame,
+## also when the skeleton updates more than once), and the largest target move (meters). 0.3 since the hinge
+## arms (user report 2026-10-24: the rifle and the left fingers twitched in ADS): at 0.7 and 0.4 the reach
+## overshot and swung back every frame (the hinge forearm turns a lot for a small target move).
+@export var reach_gain: float = 0.3
 @export var max_reach_offset: float = 1.0
 ## A gun held without arm reach: the wrist turns for the other direction of the grip axis when that puts the
 ## fist hollow nearer the grip by more than this (meters).
@@ -70,6 +72,8 @@ const PALM_FACE_Z := 0.07
 
 ## Per side: hand, base transform, socket weight, socket.
 var _sides := {}
+## Process frame of the last reach step per side (the reach closes once per frame).
+var _reach_frame := {}
 ## Per side: the stand-in socket node of an old-style hold (see _stand_in).
 var _stand_ins := {}
 
@@ -318,7 +322,8 @@ func _after_skeleton() -> void:
 		hand.transform = bone_pose.affine_inverse() * now
 		# The arm reaches by part of the fist's miss (the hollow to the grip center).
 		var weapon: Node3D = state.weapon as Node3D if is_instance_valid(state.weapon) else null
-		if reach and weapon != null:
+		if reach and weapon != null and _reach_frame.get(side, -1) != Engine.get_process_frames():
+			_reach_frame[side] = Engine.get_process_frames()
 			var miss := (place.origin - now * hollow) * smoothstep(0.0, 1.0, weight)
 			var local := weapon.global_basis.orthonormalized().inverse() * miss
 			state.offset = ((state.offset as Vector3) + local * reach_gain).limit_length(max_reach_offset)

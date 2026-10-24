@@ -50,8 +50,12 @@ extends SkeletonModifier3D
 @export var cooldown: float = 5.0
 @export_group("Combo")
 ## The next swing of a chain needs its button press within this many seconds after the swing before
-## hit a target (and before that swing ends). User rule 2026-10-18: 0.6 s (was 0.5 s).
-@export var combo_window: float = 0.6
+## hit a target. User rule 2026-10-24: 1.0 s (was 0.6 s, before 0.5 s). A swing whose clip ends sooner holds its
+## last pose until the window closes (hold_for_combo).
+@export var combo_window: float = 1.0
+## The swing holds its last pose while its combo window is open (so the whole combo_window counts). Off: the
+## chain must start before the clip ends.
+@export var hold_for_combo: bool = true
 ## A press during a swing, from this many seconds after the swing starts until its hit, is remembered
 ## (input buffer, 2026-10-18): the next swing starts right after the hit. Presses wait in order, with their
 ## move keys, up to the swings that are left in the chain (2026-10-22; before, only the latest was kept).
@@ -298,7 +302,9 @@ func _is_usable(weapon: MechWeapon) -> bool:
 ## or missed with chain_on_miss) less than combo_window seconds ago, the swing still plays, the chain has
 ## room for one more swing and the swing is no S attack.
 func _can_chain() -> bool:
-	if not is_playing or not _window_open() or _since_hit > combo_window or _time >= _end_time:
+	if not is_playing or not _window_open() or _since_hit > combo_window:
+		return false
+	if _time >= _end_time and not hold_for_combo:
 		return false
 	return chain_count < max_chain_swings and not _chain_closed
 
@@ -420,7 +426,7 @@ func _physics_process(delta: float) -> void:
 	mech.root_motion_active = true
 	mech.root_motion_velocity = _keep_away(_direction * speed + _lunge_direction * _lunge_velocity)
 	_strike()
-	if _time >= _end_time:
+	if _time >= _end_time and not (hold_for_combo and _can_chain()):
 		_finish(true)
 
 

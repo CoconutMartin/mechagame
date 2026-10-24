@@ -7,8 +7,10 @@ extends Node
 ## heavy arm shares of 2026-10-22): a relaxed arm (a free or fist hand at its hang marker) swings about its
 ## hang pose by a sine locked to the stride phase (SkeletalLocomotion: phase 0 = the left foot lands). The arm
 ## is opposite to its leg: when the left foot is forward the left arm is back and the right arm is forward.
-## The shoulder swings the whole arm forward and back; the elbow bends more on the back swing and opens on
-## the forward swing, a little behind the shoulder (elbow_lag). A sine has no kicks, so the arm is smooth;
+## The shoulder swings the whole arm forward and back; the elbow bends more on the forward swing (the forearm
+## comes up toward level) and opens on the back swing (the forearm hangs down), a little behind the shoulder
+## (elbow_lag), as in the user's drawing of 2026-10-24; while moving the forearm also rides a little higher
+## (elbow_raise_deg; user request 2026-10-24: "swing the forearm and hands a bit higher"). A sine has no kicks, so the arm is smooth;
 ## the size grows with the ground speed (walk, run, boost). SkeletalArmRig applies swing() after it solved
 ## the arm to the still hang marker. A one-hand gun arm uses a small share of it (WeaponPose.gun_sway).
 ## Standing: the small idle sway about the shoulder (left_angle, right_angle) stays; it fades out as the
@@ -22,9 +24,13 @@ extends Node
 @export var shoulder_swing_deg: float = 14.0
 @export var shoulder_swing_fast_deg: float = 22.0
 ## Elbow bend range (degrees, from the most open to the most bent) at the walk speed and at the fast speed.
-## The mean bend stays the hang pose's.
-@export var elbow_bend_deg: float = 18.0
-@export var elbow_bend_fast_deg: float = 30.0
+## 36 / 40 since 2026-10-24 (was 18 / 30).
+@export var elbow_bend_deg: float = 36.0
+@export var elbow_bend_fast_deg: float = 40.0
+## Extra mean elbow bend while moving (degrees, forearm up) at the walk speed and at the fast speed: the
+## forearm is about level at the front of the walk swing.
+@export var elbow_raise_deg: float = 10.0
+@export var elbow_raise_fast_deg: float = 12.0
 ## Ground speed as a part of the walk speed where the fast sizes are full (the boost is 1.5).
 @export var fast_speed_share: float = 1.5
 ## The elbow trails the shoulder by this part of a stride (the forearm follows the upper arm).
@@ -81,13 +87,14 @@ func swing(right: bool) -> Vector2:
 	var fast := smoothstep(1.0, maxf(fast_speed_share, 1.01), speed_share)
 	var shoulder := deg_to_rad(lerpf(shoulder_swing_deg, shoulder_swing_fast_deg, fast)) * amount
 	var bend := deg_to_rad(lerpf(elbow_bend_deg, elbow_bend_fast_deg, fast)) * amount
+	var raise := deg_to_rad(lerpf(elbow_raise_deg, elbow_raise_fast_deg, fast)) * amount
 	# Phase 0: the left foot lands, so the right arm is forward and the left arm back.
 	var arm_phase := locomotion.get_phase() - phase_shift
 	var side := 1.0 if right else -1.0
 	var forward := side * cos(TAU * arm_phase)
 	var elbow_forward := side * cos(TAU * (arm_phase - elbow_lag))
-	# More bend while the arm is back, less while it is forward; the bend swings about the hang bend.
-	return Vector2(shoulder * forward, -0.5 * bend * elbow_forward)
+	# More bend while the arm is forward, less while it is back, about the hang bend plus the raise.
+	return Vector2(shoulder * forward, raise + 0.5 * bend * elbow_forward)
 
 
 ## One arm's idle sway (radians); offset (0 to 1) shifts it in time.

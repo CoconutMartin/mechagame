@@ -184,6 +184,12 @@ func _update_rise(delta: float, targets: Array[float]) -> void:
 		_rising = false
 		return
 	var hold := jump_up.get_hold_time()
+	if _air_time <= delta * 1.5 and times[0] < jump_up.crouch_time:
+		# Launched before the full crouch (a short charge): the push in the air starts as far into it as the
+		# charge crouched, not from the crouch start (user report 2026-10-24: a short charge "double jumped":
+		# the clip played its whole crouch in the air, then pushed again).
+		var crouched := times[0] / maxf(jump_up.crouch_time, 0.001)
+		times[0] = lerpf(jump_up.takeoff_time, jump_up.crouch_time, crouched)
 	if _air_time <= delta * 1.5:
 		var rise_time := mech.velocity.y / maxf(_gravity * mech.gravity_scale, 0.1)
 		var span := hold - jump_up.takeoff_time

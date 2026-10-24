@@ -70,8 +70,9 @@ extends SkeletonModifier3D
 ## Largest upper arm swing forward or back from hanging down (degrees), for weapons up to
 ## light_weapon_t. Heavier weapons: limit_per_ton less per ton, down to min_swing_deg. The limit
 ## holds the arms below a right angle (user rule 2026-10-11). When an arm stops at its limit, the
-## held weapon moves to the hand.
-@export var max_swing_deg: float = 50.0
+## held weapon moves to the hand. 70 since the hinge arms (2026-10-24; was 50): a hinge arm can only pitch,
+## and at 42.5 deg (Beam Rifle, 3.5 t) the right arm stopped at aim, so the rifle moved to the hand every frame.
+@export var max_swing_deg: float = 70.0
 @export var light_weapon_t: float = 2.0
 @export var limit_per_ton: float = 5.0
 @export var min_swing_deg: float = 30.0

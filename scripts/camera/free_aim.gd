@@ -41,6 +41,11 @@ extends Node
 @export var recoil_side_deg: float = 1.0
 ## How fast a kick rises (1 / seconds). 25 = most of the kick in about 0.1 s.
 @export var recoil_rise_speed: float = 25.0
+## With no box: the kick first moves the crosshair (ring and brackets) up and to the side with the gun, then the
+## camera follows it back to the screen center at this speed (1 / seconds; the aim stays where the kick put it).
+## User request 2026-10-24: "displace the crosshair in-line with the weapon recoils". 0 = the old way (the kick
+## turns the camera at once, the crosshair stays in the center).
+@export var crosshair_return_speed: float = 5.0
 ## Jitter added by each shot, in degrees. It fades out.
 @export var jitter_per_shot_deg: float = 0.0
 ## Largest jitter, in degrees.
@@ -113,6 +118,8 @@ var _drag_y := AimSpring.new(0.0)
 var _drag_time: float = 0.0
 ## Recoil that turns the camera (no box), degrees. The camera rig takes it each frame.
 var _camera_kick: Vector2 = Vector2.ZERO
+## Recoil shown on the crosshair (no box), degrees; it goes to the camera at crosshair_return_speed.
+var _kick_offset: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -128,6 +135,11 @@ func _physics_process(delta: float) -> void:
 	_pending_kick -= take
 	if _has_box():
 		offset = _clamp_to_box(offset + take)
+	elif crosshair_return_speed > 0.0:
+		_kick_offset += take
+		var back := _kick_offset * (1.0 - exp(-crosshair_return_speed * delta))
+		_kick_offset -= back
+		_camera_kick += back
 	else:
 		_camera_kick += take
 	_jitter = maxf(_jitter - jitter_fade * delta, 0.0)
@@ -139,10 +151,12 @@ func _physics_process(delta: float) -> void:
 	var sway_factor := class_tuning.get_sway_factor(mech) if class_tuning != null else 1.0
 	shake *= sway_factor
 	_smoothed = _smoothed.lerp(offset, 1.0 - exp(-follow_speed * delta))
+	# The kick on the crosshair is not smoothed (it has its own rise).
+	var kicked := _smoothed + _kick_offset
 	if unsteady <= 0.0:
 		_spring_x = AimSpring.new(_smoothed.x)
 		_spring_y = AimSpring.new(_smoothed.y)
-		aim_offset = _smoothed + shake
+		aim_offset = kicked + shake
 		return
 	# Heavy one-hand hold: a soft spring that swings past the target, plus a slow sway.
 	var limit := deg_to_rad(maxf(box_half_yaw_deg, box_half_pitch_deg) * 2.0)
@@ -151,7 +165,7 @@ func _physics_process(delta: float) -> void:
 	_sway_time += delta * unsteady_sway_speed
 	var sway := Vector2(_noise.get_noise_2d(_sway_time, 100.0), _noise.get_noise_2d(_sway_time, 150.0)) * 2.0 * unsteady_sway_deg * sway_factor
 	var swing := Vector2(rad_to_deg(_spring_x.value), rad_to_deg(_spring_y.value))
-	aim_offset = _smoothed.lerp(swing + sway, unsteady) + shake
+	aim_offset = _smoothed.lerp(swing + sway, unsteady) + _kick_offset + shake
 
 
 ## Moves the mech aim by a mouse movement (degrees, same signs as offset).

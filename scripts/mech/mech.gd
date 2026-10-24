@@ -199,6 +199,9 @@ var is_bracing: bool = false
 var _brace_left: float = 0.0
 ## Push back distance (m) waiting for the next physics step.
 var _push_pending: float = 0.0
+## The push back part of the velocity (level). It slows at brace_deceleration whatever the keys do: the walk, run
+## and boost steer only the rest of the velocity (user report 2026-10-24: W cancelled the missile recoil).
+var _push_velocity: Vector3 = Vector3.ZERO
 ## True during a blade lunge (the boosters push the mech toward the target).
 var is_lunging: bool = false
 var _lunge_direction: Vector3 = Vector3.ZERO
@@ -280,8 +283,11 @@ func _physics_process(delta: float) -> void:
 	_brace_left = maxf(_brace_left - delta, 0.0)
 	is_bracing = _brace_left > 0.0
 	_update_boost(delta)
+	# The keys steer the velocity without the push; the push comes back on top (slowed) after.
+	velocity.x -= _push_velocity.x
+	velocity.z -= _push_velocity.z
 	_update_horizontal(delta)
-	_apply_push()
+	_apply_push(delta)
 	_update_vertical(delta)
 	_turn_legs(delta)
 	_turn_torso(delta)
@@ -289,6 +295,9 @@ func _physics_process(delta: float) -> void:
 	var fall_speed := -velocity.y
 	var velocity_before := velocity
 	move_and_slide()
+	# A wall or another mech stopped the slide: the push is spent.
+	if _push_velocity != Vector3.ZERO and get_slide_collision_count() > 0 and is_on_wall():
+		_push_velocity = Vector3.ZERO
 	_check_bump(velocity_before)
 	_check_landing(fall_speed)
 
@@ -347,6 +356,7 @@ func set_heading(yaw: float) -> void:
 func end_fall() -> void:
 	is_fallen = false
 	velocity = Vector3.ZERO
+	_push_velocity = Vector3.ZERO
 
 
 func get_horizontal_speed() -> float:
@@ -395,26 +405,33 @@ func brace(seconds: float) -> void:
 
 
 ## Push back (user request 2026-10-24: shoulder weapons push the mech back): the mech gets a backward speed
-## (against the torso aim) that slides it about this many meters more while the brace slows it
-## (brace_deceleration). Pushes add up (two at once go twice as far) and start on the next physics step,
-## so a second cannon in the same frame still sees the mech standing still.
+## (against the torso aim) that slides it about this many meters more while it slows at brace_deceleration.
+## Pushes add up (two at once go twice as far) and start on the next physics step, so a second cannon in the
+## same frame still sees the mech standing still. The move keys do not cancel it (_push_velocity).
 func push_back(distance: float) -> void:
 	_push_pending += maxf(distance, 0.0)
 
 
-func _apply_push() -> void:
-	if _push_pending <= 0.0:
-		return
-	var back := Basis(Vector3.UP, _aim_yaw) * Vector3.BACK
-	var flat := Vector3(velocity.x, 0.0, velocity.z)
-	var along := maxf(flat.dot(back), 0.0)
+func _apply_push(delta: float) -> void:
 	var rate := maxf(brace_deceleration, 0.1)
-	var left := along * along / (2.0 * rate)
-	var speed := sqrt(2.0 * rate * (left + _push_pending))
-	_push_pending = 0.0
-	flat += back * (speed - along)
-	velocity.x = flat.x
-	velocity.z = flat.z
+	_push_velocity = _push_velocity.move_toward(Vector3.ZERO, rate * delta)
+	if _push_pending > 0.0:
+		var back := Basis(Vector3.UP, _aim_yaw) * Vector3.BACK
+		# On the ground (no boost) the shot also takes away the walk forward, so the mech always slides back the
+		# push distance, also with W held (user report 2026-10-24: W cancelled the missile recoil).
+		var forward := Vector3(velocity.x, 0.0, velocity.z).dot(-back)
+		if is_on_floor() and not is_boosting and forward > 0.0:
+			velocity.x += back.x * forward
+			velocity.z += back.z * forward
+		# The speed the mech already has backward (keys and push) counts, so a push on a backward walk does
+		# not add more than its distance.
+		var along := maxf((Vector3(velocity.x, 0.0, velocity.z) + _push_velocity).dot(back), 0.0)
+		var left := along * along / (2.0 * rate)
+		var speed := sqrt(2.0 * rate * (left + _push_pending))
+		_push_pending = 0.0
+		_push_velocity += back * (speed - along)
+	velocity.x += _push_velocity.x
+	velocity.z += _push_velocity.z
 
 
 ## Shoulder cannon brace snap (user request 2026-10-24): the mech stops at once (no boost stop, no skid,
@@ -422,6 +439,7 @@ func _apply_push() -> void:
 func snap_stop(seconds: float) -> void:
 	velocity.x = 0.0
 	velocity.z = 0.0
+	_push_velocity = Vector3.ZERO
 	is_boosting = false
 	is_air_boosting = false
 	is_running = false
