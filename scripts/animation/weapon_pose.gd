@@ -85,6 +85,9 @@ var low_aim_amount: float = 0.0
 var use_weapon_data: bool = false
 var rest_transform: Transform3D = Transform3D.IDENTITY
 var aim_origin: Vector3 = Vector3.ZERO
+## Weapon-space shift of the aim pose (a borrowed hold, BorrowedHold.shift): the weapon moves by it after it is
+## aimed from aim_origin.
+var aim_shift: Vector3 = Vector3.ZERO
 var wants_raise: bool = false
 var _swing: FreeArmSwing
 
@@ -106,7 +109,7 @@ func _physics_process(delta: float) -> void:
 	var origin := aim_origin if use_weapon_data else aim_anchor.transform.origin
 	var rest := rest_transform if use_weapon_data else rest_pose.transform
 	var target := parent.global_transform.affine_inverse() * mech_aim.aim_point
-	var aim_pose := Transform3D(Basis.looking_at(target - origin, Vector3.UP), origin)
+	var aim_pose := Transform3D(Basis.looking_at(target - origin, Vector3.UP), origin).translated_local(aim_shift)
 	low_aim_amount = move_toward(low_aim_amount, _low_aim(mech_aim.aim_point - parent.global_transform * origin),
 			low_aim_speed * delta)
 	if one_hand_elbow_pivot and left_grip_target == null and weapon is GunWeapon \

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/beam_sniper.tscn" id="scene"]
+[ext_resource type="Resource" path="res://data/weapons/beam_rifle.tres" id="rifle"]
 
 [resource]
 script = ExtResource("script")
@@ -27,6 +28,7 @@ heat_cooling = 10.0
 overheat_cooling = 25.0
 rest_transform = Transform3D(0.25882, -0.16773, 0.95125, -0, 0.98481, 0.17365, -0.96593, -0.04494, 0.25489, 2.28264, 1.95607, -1.50632)
 aim_anchor = Vector3(2.3000, 1.5000, -1.5000)
+shoulder_guns_hold = ExtResource("rifle")
 right_pole_rest = Vector3(1.0000, -0.6000, 0.4000)
 right_pole_aim = Vector3(1.0000, -0.6000, 0.3000)
 left_pole_rest = Vector3(-1.0000, -0.5000, 0.3000)

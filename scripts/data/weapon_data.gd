@@ -92,6 +92,10 @@ enum Slot { ARM, BACK }
 @export var rest_transform: Transform3D = Transform3D.IDENTITY
 ## Stock position in the aim pose, in torso space.
 @export var aim_anchor: Vector3 = Vector3.ZERO
+## Optional (two-hand weapons). With a shoulder gun (a back GUN) on both back slots, the weapon is held with this
+## weapon's arm and hand places (BorrowedHold; user request 2026-10-24: Beam Sniper with 2 shoulder Auto Cannons
+## held like the Beam Rifle).
+@export var shoulder_guns_hold: WeaponData
 ## Elbow directions (right arm) at rest and aimed.
 @export var right_pole_rest: Vector3 = Vector3(0.4, -1.0, 0.5)
 @export var right_pole_aim: Vector3 = Vector3(0.4, -1.0, 0.5)

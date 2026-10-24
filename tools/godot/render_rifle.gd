@@ -6,7 +6,7 @@ extends SceneTree
 ## RIFLE_OUT (rifle_<view>.png). RIFLE_VIEWS: comma list of side, front, top (orthographic, centred on the
 ## chest, RIFLE_SIZE m tall, default 8) and p_side, p_front, p_back (perspective close-ups). With
 ## RIFLE_LINES=1 the forearm bone line (red), the forearm armor axis (yellow) and the gun's bore line (green)
-## are drawn through the arm. RIFLE_SIDE (R or L) picks the arm the close-ups look at.
+## are drawn through the arm. RIFLE_BACK=left/right sets the back weapons (e.g. auto_cannon_shoulder/auto_cannon_shoulder). RIFLE_SIDE (R or L) picks the arm the close-ups look at.
 ##   RIFLE_OUT=/tmp/x xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 \
 ##     --resolution 1280x720 --fixed-fps 60 --script res://tools/godot/render_rifle.gd
 
@@ -48,6 +48,11 @@ func _run() -> void:
 	var loadout := switcher.current_loadout.duplicate() as Loadout
 	loadout.weapon_right = _weapon(_env("RIFLE_RIGHT", "heavy_rifle"))
 	loadout.weapon_left = _weapon(_env("RIFLE_LEFT", "-"))
+	# RIFLE_BACK: "left/right" back weapon file names ("-" = empty); unset keeps the loadout's.
+	if OS.has_environment("RIFLE_BACK"):
+		var backs := OS.get_environment("RIFLE_BACK").split("/")
+		loadout.back_left = _weapon(backs[0])
+		loadout.back_right = _weapon(backs[1] if backs.size() > 1 else "-")
 	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
 	await _frames(40)
 	var player := switcher.mech

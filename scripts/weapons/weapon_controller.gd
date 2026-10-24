@@ -113,6 +113,8 @@ var left_arm_lost: bool = false
 
 var right_weapon: MechWeapon
 var back_left: MechWeapon
+## The loadout's back weapon data [left, right] (set in mount; for the shoulder guns hold).
+var _back_data: Array = []
 ## What the left hand holds when it is not a shield: a fist, a one-hand gun or the pile bunker.
 var left_weapon: MechWeapon
 ## The left weapon's own pose and recoil (a gun or the pile bunker; made on first use).
@@ -164,6 +166,7 @@ func mount(loadout: Loadout, attach: Callable) -> void:
 		fist_data = load("res://data/weapons/fist.tres") as WeaponData
 	right_data = loadout.weapon_right
 	left_data = loadout.weapon_left
+	_back_data = [loadout.back_left, loadout.back_right]
 	# A fist is no loadout weapon (user rule 2026-10-17): every empty hand gets one (_refresh_fists).
 	if right_data != null and right_data.kind == WeaponData.Kind.FIST:
 		right_data = null
@@ -200,6 +203,14 @@ func mount(loadout: Loadout, attach: Callable) -> void:
 	_make_hand_control()
 
 
+## True when both back slots of the loadout carry a shoulder gun (a GUN on a back slot: the shoulder Auto Cannon).
+func _has_shoulder_guns() -> bool:
+	for data: WeaponData in _back_data:
+		if data == null or data.slot != WeaponData.Slot.BACK or data.kind != WeaponData.Kind.GUN:
+			return false
+	return _back_data.size() == 2
+
+
 ## owner_controller: the controller the weapon talks to (the left view for a left weapon).
 func _add_weapon(data: WeaponData, node_name: String, owner_controller: WeaponController = null) -> MechWeapon:
 	var weapon := data.scene.instantiate() as MechWeapon
@@ -212,11 +223,20 @@ func _add_weapon(data: WeaponData, node_name: String, owner_controller: WeaponCo
 func _wire_right(data: WeaponData) -> void:
 	weapon_pose.weapon = right_weapon
 	weapon_pose.use_weapon_data = true
-	weapon_pose.rest_transform = data.rest_transform.translated(hold_offset)
-	weapon_pose.aim_origin = data.aim_anchor + hold_offset
+	var rest := data.rest_transform
+	var anchor := data.aim_anchor
+	weapon_pose.aim_shift = Vector3.ZERO
+	# A weapon held like another one when both back slots carry shoulder guns (WeaponData.shoulder_guns_hold).
+	var hold := BorrowedHold.apply(right_weapon, data.shoulder_guns_hold) if data.two_handed and _has_shoulder_guns() else null
+	if hold != null:
+		rest = hold.rest_transform
+		anchor = hold.aim_anchor
+		weapon_pose.aim_shift = hold.shift
+	weapon_pose.rest_transform = rest.translated(hold_offset)
+	weapon_pose.aim_origin = anchor + hold_offset
 	weapon_pose.right_pole_rest = data.right_pole_rest
 	weapon_pose.right_pole_aim = data.right_pole_aim
-	right_weapon.transform = data.rest_transform.translated(hold_offset)
+	right_weapon.transform = rest.translated(hold_offset)
 	arm_ik_right.target = right_weapon.get_node("GripRight")
 	weapon_pose.right_grip_target = right_weapon.get_node_or_null("GripRight") as Node3D
 	weapon_pose.right_grip_rest = right_weapon.get_node_or_null("GripRightRest") as Node3D
@@ -762,6 +782,7 @@ func _hold_one_hand() -> void:
 	var rest_basis := Basis(Vector3.RIGHT, deg_to_rad(one_hand_rest_pitch_deg))
 	weapon_pose.left_grip_target = null
 	weapon_pose.aim_origin = one_hand_grip_aim + hold_offset - grip
+	weapon_pose.aim_shift = Vector3.ZERO
 	weapon_pose.rest_transform = Transform3D(rest_basis, one_hand_grip_rest + hold_offset - rest_basis * grip)
 	weapon_pose.right_pole_rest = one_hand_pole
 	weapon_pose.right_pole_aim = one_hand_pole
