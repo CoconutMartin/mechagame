@@ -44,8 +44,9 @@ func is_ready() -> bool:
 func scan() -> bool:
 	if not is_ready() or _mech == null:
 		return false
-	uses_left -= 1
-	cooldown_left = data.cooldown
+	if not TestMode.settings().free_scan:
+		uses_left -= 1
+		cooldown_left = data.cooldown
 	var origin := _mech.global_position
 	var world := get_tree().current_scene
 	PulseScanEffect.create(world, origin, data)

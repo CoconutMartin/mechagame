@@ -25,6 +25,8 @@ func _ready() -> void:
 
 ## Uses energy. Returns false if there is none to use.
 func try_drain(amount: float) -> bool:
+	if TestMode.settings().free_energy:
+		return true
 	if is_depleted or current <= 0.0:
 		return false
 	current = maxf(current - amount, 0.0)

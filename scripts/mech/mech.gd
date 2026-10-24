@@ -384,6 +384,26 @@ func brace(seconds: float) -> void:
 	is_bracing = true
 
 
+## Shoulder cannon brace snap (user request 2026-10-24): the mech stops at once (no boost stop, no skid,
+## no steps) and stands still for seconds.
+func snap_stop(seconds: float) -> void:
+	velocity.x = 0.0
+	velocity.z = 0.0
+	is_boosting = false
+	is_air_boosting = false
+	is_running = false
+	is_skidding = false
+	is_brake_skidding = false
+	is_exiting_boost = false
+	akira_skid = false
+	_in_exit_leap = false
+	_boost_on_ground = false
+	_run_steps_done = 0
+	_stop_deceleration = 0.0
+	_landing_stop = false
+	brace(seconds)
+
+
 ## Blade lunge: moves the mech along direction at speed for distance meters (no steering).
 ## At the end the mech keeps a third of the speed and slows down normally.
 func start_lunge(direction: Vector3, speed: float, distance: float) -> void:

@@ -1,16 +1,17 @@
 extends SceneTree
 ## Shield raise, shoulder cannon brace and stop to fire test in the game (user requests 2026-10-22). The player
 ## mech uses the real input path (Input.action_press into MechInput, WeaponController, ShoulderBrace). It checks:
-##  1. LMB with a shield in the left hand raises it (MechShield.amount 0 to 1, the left hand goes to the guard
-##     place) and releasing lowers it again.
+##  1. LMB with a shield in the left hand does nothing (user request 2026-10-24, MechShield.lmb_raises off).
+##     With lmb_raises on, LMB raises it (MechShield.amount 0 to 1, the left hand goes to the guard place) and
+##     releasing lowers it again (the pose the shield dash uses).
 ##  2. Shoulder cannon, standing: the first shot comes after the brace wind-up (ShoulderBrace.brace_time), with
 ##     the brace set and the mech still; a short tap still fires; the brace holds after the shot and recovers.
 ##  3. Shoulder cannon, walking (W held): the mech stops, the shot comes only when it is still, and W does not
 ##     move it while the cannon waits and fires.
 ##  4. Both cannons (Q and E) fire in the same frame.
 ##  5. Missile pod on the ground: the mech stops for the volley; in the air the pod fires and nothing stops.
-##  6. Ground boost: the pod fires without the stop. The cannon key ends the boost (user choice 2026-10-22): the
-##     mech stops, then the cannon fires with the mech still.
+##  6. Ground boost: the pod fires without the stop. The cannon key ends the boost: the mech stops at once and
+##     snaps to the brace (user request 2026-10-24), then the cannon fires with the mech still.
 ##  7. Air: the cannon does not fire.
 ## Exits with code 1 on any failure. Headless:
 ##   godot --headless --path . --script res://tools/godot/test_shoulder_stop.gd
@@ -108,6 +109,12 @@ func _shield(path: String) -> void:
 	var name := (load(path) as WeaponData).display_name
 	_check(shield.enabled and shield.amount == 0.0, "%s: down at start" % name)
 	var rest := pose.hand_target.position
+	Input.action_press("use_left_arm")
+	await _frames(60)
+	_check(shield.amount == 0.0, "%s: LMB does nothing (amount %.2f)" % [name, shield.amount])
+	Input.action_release("use_left_arm")
+	await _frames(5)
+	shield.lmb_raises = true
 	Input.action_press("use_left_arm")
 	var frames := 0
 	while shield.amount < 0.999 and frames < 300:
@@ -258,6 +265,9 @@ func _boost_and_air() -> void:
 	Input.action_press("fire_back_left")
 	await _frames(3)
 	_check(not _player.is_boosting and not _player.is_running, "boosting: the cannon key ends the boost (boosting %s)" % _player.is_boosting)
+	var brace_now := _weapons.shoulder_brace
+	_check(_player.get_horizontal_speed() < 0.5 and brace_now.amount >= 0.999,
+			"boosting: the mech stops at once and snaps to the brace (%.2f m/s, brace %.2f, 3 frames)" % [_player.get_horizontal_speed(), brace_now.amount])
 	var waited := 0
 	var still_at_shot := false
 	while _shots.is_empty() and waited < 600:

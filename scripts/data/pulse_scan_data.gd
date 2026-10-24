@@ -8,9 +8,10 @@ extends EquipmentData
 
 ## Ring reach in meters.
 @export var range_m: float = 500.0
-## Ring speed in m/s (the ring reaches range_m after range_m / ring_speed seconds).
-@export var ring_speed: float = 350.0
-## Seconds a place stays in wire frame after the ring passes it.
+## Ring speed in m/s (the ring reaches range_m after range_m / ring_speed seconds). 70 since 2026-10-24
+## (user: "slow down the scan creep by 80%"; was 350).
+@export var ring_speed: float = 70.0
+## Seconds a place stays in wire frame after the ring passes it (halved 2026-10-24, user request).
 @export var wireframe_time: float = 4.0
 ## Seconds a found mech stays highlighted.
 @export var highlight_time: float = 4.0

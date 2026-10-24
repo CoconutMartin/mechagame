@@ -1,6 +1,8 @@
 class_name MechShield
 extends Node
-## The shield on the left arm. Hold the left arm key (LMB) to lift it.
+## The shield on the left arm. Hold the left arm key (LMB) to lift it, when lmb_raises is on (off since
+## 2026-10-24, user: "make all left shields inactive, LMB does nothing when a shield is equipped"; the
+## shield dash and the Pile Bunker charge still lift it).
 ## While it is up the mech moves slower. A bigger shield gives a lower top speed:
 ## top speed = reference_speed x reference_area / area. ShieldPose moves the arm.
 
@@ -14,6 +16,8 @@ extends Node
 ## Top speed limits (m/s) for very big or very small shields.
 @export var min_speed: float = 2.0
 @export var max_speed: float = 9.1
+## True: LMB (and the AI's shield key) lifts the shield.
+@export var lmb_raises: bool = false
 ## How fast the shield comes up (1 / seconds). 2 = 0.5 s.
 @export var raise_speed: float = 2.0
 ## How fast the shield goes down (1 / seconds).
@@ -33,7 +37,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var held := enabled and (input.shield_held or force_up)
+	var held := enabled and ((input.shield_held and lmb_raises) or force_up)
 	var speed := raise_speed if held else lower_speed
 	amount = move_toward(amount, 1.0 if held else 0.0, speed * delta)
 

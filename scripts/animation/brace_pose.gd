@@ -2,6 +2,9 @@ extends SkeletonModifier3D
 ## Brace stance of the rigged mech for the shoulder cannons (user request 2026-10-22): the knees bend, the
 ## hips go down and back and the body leans a little forward, with the feet where they stand (the leg solve of
 ## CrouchPose). It follows ShoulderBrace.amount: 0 = standing, 1 = braced.
+## Since 2026-10-24 (user: "snap to bracing position, pose like holding space for 2 s") the full brace is the
+## jump charge crouch of JumpPose at charge_seconds of charge (its knee, lean, hips and chest values), when
+## use_jump_crouch is on; the Stance values below are the fallback.
 ## WeaponController makes this node and puts it in the Skeleton3D just before the arm rig (ArmRig), so the arms
 ## and the shoulder cannons follow the lowered body. A skeleton modifier must be a child of the Skeleton3D.
 
@@ -9,6 +12,10 @@ extends SkeletonModifier3D
 var brace: Node
 var mech: Mech
 
+## True: the brace takes the jump charge crouch (JumpPose) at charge_seconds.
+@export var use_jump_crouch: bool = true
+## Seconds of jump charge the brace looks like.
+@export var charge_seconds: float = 2.0
 @export_group("Stance")
 ## Hip bend forward at full brace (degrees; the whole upper body).
 @export var lean_deg: float = 3.0
@@ -55,4 +62,23 @@ func _process_modification_with_delta(_delta: float) -> void:
 		amount *= 1.0 - clampf(maxf(_jump_pose.crouch, absf(_jump_pose.landing)), 0.0, 1.0)
 	if amount <= 0.001:
 		return
+	if use_jump_crouch and _jump_pose != null and mech.jump_charge != null:
+		# The crouch of a charge_seconds charge: JumpPose uses smoothstep(charge) of its full-charge values.
+		var depth := smoothstep(0.0, 1.0, _charge_at(charge_seconds))
+		CrouchPose.apply(get_skeleton(), amount, _jump_pose.charge_lean_deg * depth,
+				-_jump_pose.charge_chest_deg * depth, _jump_pose.charge_hips_back * depth,
+				lerpf(180.0, _jump_pose.charge_knee_deg, depth), knee_out)
+		return
 	CrouchPose.apply(get_skeleton(), amount, lean_deg, torso_lean_deg, hips_back, knee_deg, knee_out)
+
+
+## Jump charge (part of full height) after this many seconds (MechJumpCharge.height_at_second, blended).
+func _charge_at(seconds: float) -> float:
+	var table := mech.jump_charge.height_at_second
+	if table.is_empty():
+		return 1.0
+	var index := clampf(seconds, 0.0, float(table.size()))
+	var whole := int(floor(index))
+	var low := 0.0 if whole == 0 else table[mini(whole - 1, table.size() - 1)]
+	var high := table[mini(whole, table.size() - 1)]
+	return lerpf(low, high, index - whole)

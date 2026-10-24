@@ -8,8 +8,9 @@ extends Node
 ## BracePose), and the shot goes out when the brace is set and the mech stands still. The brace holds
 ## while the cannon fires (hold_time after each shot) and the stance recovers after that.
 ## Missile pods: they call stop() for the time of a volley (the mech does not walk while it launches).
-## Boost cancel (user choice 2026-10-22): a cannon key while the mech boosts or runs on the ground ends the
-## boost. The mech stops (the boost stop or skid plays), then braces and fires.
+## Snap (user request 2026-10-24, replaces the 2026-10-22 boost cancel): a cannon key (Q, E or both) on the
+## ground stops the mech at once, also from a run or a boost, and the brace stance is there at once. The shot
+## goes out after brace_time in that stance.
 
 ## Seconds from the start of the brace to the first shot (the wind-up).
 @export var brace_time: float = 0.4
@@ -26,12 +27,22 @@ var mech: Mech
 var amount: float = 0.0
 
 var _hold_left: float = 0.0
+## Wind-up left after a snap (s): the stance is set, the shot waits.
+var _wind_left: float = 0.0
+var _wanted: bool = false
 var _stagger: SkeletalStaggerAnimation
 
 
 ## want: a shoulder cannon is armed (its key is down or its shot waits for the brace).
 func step(delta: float, want: bool) -> void:
 	_hold_left = maxf(_hold_left - delta, 0.0)
+	_wind_left = maxf(_wind_left - delta, 0.0)
+	if want and not _wanted and amount < 0.999 and (can_stop() or can_cancel()) and not _kneeling():
+		# The key went down: stop and take the stance at once.
+		mech.snap_stop(stop_hold)
+		amount = 1.0
+		_wind_left = brace_time
+	_wanted = want
 	var holding := (want or _hold_left > 0.0) and can_stop() and not _kneeling()
 	if want and not holding and can_cancel():
 		# Hold the brace: the boost and the run end, and the mech slows down to a stop.
@@ -45,7 +56,7 @@ func step(delta: float, want: bool) -> void:
 
 ## True when the brace is set (a cannon may fire). A kneeling mech is set at once: it stands still already.
 func is_set() -> bool:
-	return amount >= 0.999 or _kneeling()
+	return (amount >= 0.999 and _wind_left <= 0.0) or _kneeling()
 
 
 ## A cannon fired: the brace holds for hold_time.

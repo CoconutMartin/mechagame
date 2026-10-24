@@ -40,6 +40,8 @@ func _box_target(place: Vector3) -> Node3D:
 
 
 func _run() -> void:
+	# The play-test switch (TestMode.free_scan) would keep the uses and the cool down from running.
+	TestMode.settings().free_scan = false
 	change_scene_to_file(MAP)
 	await _frames(30)
 	var player := get_first_node_in_group(&"player") as Mech
@@ -68,9 +70,14 @@ func _run() -> void:
 	_check(scanner.uses_left == data.uses - 1 and scanner.cooldown_left > 0.0, "a use is spent and the cool down runs")
 	_check(not scanner.scan(), "no second scan during the cool down")
 	_check(current_scene.get_node_or_null(^"PulseScanEffect") != null, "wire frame effect made")
-	var found := [0]
+	var found := [-1]
 	scanner.scanned.connect(func(count: int) -> void: found[0] = count)
-	await _frames(int(data.range_m / data.ring_speed * 60.0) + 10)
+	# Wait for the ring to pass the last target (the highlights may end before it reaches the range).
+	var waited := 0
+	while found[0] < 0 and waited < int(data.range_m / data.ring_speed * 60.0) + 10:
+		await _frames(1)
+		waited += 1
+	await _frames(2)
 	_check(found[0] == targets.size(), "scanned signal counts every target in range (%d of %d)" % [found[0], targets.size()])
 	var lit := 0
 	for target: Node3D in targets:
