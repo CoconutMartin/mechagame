@@ -57,6 +57,11 @@ func _run() -> void:
 	var data := scanner.data
 	_check(data.grade == 2 and data.uses == 4 and is_equal_approx(data.range_m, 500.0), "grade 2 data (500 m, 4 uses)")
 	_check(InputMap.action_get_events(&"aux_1").size() == 1, "aux_1 has one key")
+	# Away from the world origin, so a wave that starts at the origin instead of the mech shows (user report
+	# 2026-10-24: the effect took its origin before it was placed).
+	player.global_position += Vector3(40.0, 0.0, 0.0)
+	player.velocity = Vector3.ZERO
+	await _frames(10)
 	# Test targets: boxes in group "lockable" at 200 m (found) and 600 m (out of range).
 	var near := _box_target(player.global_position + Vector3(200.0, 0.0, 0.0))
 	var far := _box_target(player.global_position + Vector3(0.0, 0.0, 600.0))
@@ -69,7 +74,12 @@ func _run() -> void:
 	_check(scanner.scan(), "first scan starts")
 	_check(scanner.uses_left == data.uses - 1 and scanner.cooldown_left > 0.0, "a use is spent and the cool down runs")
 	_check(not scanner.scan(), "no second scan during the cool down")
-	_check(current_scene.get_node_or_null(^"PulseScanEffect") != null, "wire frame effect made")
+	var effect := current_scene.get_node_or_null(^"PulseScanEffect") as PulseScanEffect
+	_check(effect != null, "wire frame effect made")
+	if effect != null:
+		var wave_origin: Vector3 = (effect.material_override as ShaderMaterial).get_shader_parameter(&"origin")
+		_check(wave_origin.distance_to(player.global_position) < 0.5 and player.global_position.length() > 20.0,
+				"the wave starts at the mech (%s, mech %s)" % [wave_origin, player.global_position])
 	var found := [-1]
 	scanner.scanned.connect(func(count: int) -> void: found[0] = count)
 	# Wait for the ring to pass the last target (the highlights may end before it reaches the range).

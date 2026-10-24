@@ -29,6 +29,9 @@ static func create(world: Node, origin: Vector3, scan: PulseScanData) -> PulseSc
 	effect.data = scan
 	world.add_child(effect)
 	effect.global_position = origin
+	# _ready ran inside add_child, before the place was set: the wave started at the world origin, not at the
+	# mech (user report 2026-10-24: "the scan should start from the mech").
+	effect._material.set_shader_parameter(&"origin", origin)
 	return effect
 
 
