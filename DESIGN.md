@@ -15,8 +15,6 @@ Since 2026-10-11 (user request) the game has one mech: **Sanggigilid** (the rigg
 | 3 | Weapons: guns, lock-on missiles, sniper zoom, melee blade, energy use | Done |
 | 4 | Per-part HP, hitboxes, destruction, target dummies, enemy AI, greybox urban map with destructible props | Done: 4a (part HP, hitboxes, part breaks, respawn), 4b (enemy AI gunner), 4c (destructible buildings and props) |
 | 5 | Garage screen: swap parts, add plates, live stat preview. Graphics settings menu (low, medium, high) | Done |
-| 6 | Pilot creation and skill tree | Skipped for now (user request, after Phase 5) |
-| 7 | Save/load builds (JSON) and 4 preset archetype loadouts | Skipped for now (user request, after Phase 5) |
 | 8 | Realistic graphics pass and complete mech animation | Done: 8a graphics (materials, CC0 textures), 8b animation (hit reactions, foot planting, idle motion, turn steps) |
 | Urban | Urban map (replaces the Phase 4 test map): layout, buildings from data, props, textures, lighting; then destruction | Checkpoint 1 and 2 done (2026-10-12: break, support, collapse, craters). New phase 5 (2026-10-19): destruction improvements, see "Phase 5: building destruction" |
 
@@ -854,6 +852,9 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
 - Beam Sniper with 2 shoulder Auto Cannons (user choice: copy the Beam Rifle's arm and hand places): the cannons turn with the upper arms, and the Beam Sniper's far forestock hold pitched the left arm so the left cannon pointed straight up. `WeaponData.shoulder_guns_hold` (Beam Sniper: Beam Rifle): with a shoulder gun (a back GUN) on both back slots of the loadout, `BorrowedHold` holds the weapon with that weapon's arm and hand places: the weapon shifts in its own space so its right grip socket lands on the Beam Rifle's, its other hand markers and sockets move to the Beam Rifle's places (minus the shift), the rest pose and the aim anchor are the Beam Rifle's, and `WeaponPose.aim_shift` shifts the aim pose. The right socket keeps its own turn and radius (it is on the sniper's grip). Decided at mount (a cannon lost in battle does not change the hold). Pictures: both cannons upright at rest and in ADS, like the Beam Rifle. Note: `tools/mech_gen/weapons.py` writes `beam_sniper.tres`; running it again drops `shoulder_guns_hold`. `render_rifle.gd` RIFLE_BACK sets the back weapons.
 - Decision (user, 2026-10-24): no hinge arms for clip-driven arms (melee attacks, hit reactions, death, dodge). They stay as they are (the clips set the arm bones).
 
+### Auto Cannon grip fix (user request 2026-10-25)
+- The cannon sits rigid under the forearm with its `Model/Grip` at the forearm bone end, but the fist sits on the wrist pin, so the handle hung 0.18 m (right hand) and 0.30 m (left hand) off the fist. `ForearmGunWeapon.handle_offset` (right) and `handle_offset_left` (left; the left fist does not turn to the handle, so it is not a mirror) shift the cannon in the forearm joint's space: Auto Cannon right (-0.0522, 0.1736, -0.0321), left (0.1004, 0.2803, 0.0216) (set in `scenes/weapons/auto_cannon.tscn` and `tools/mech_gen/auto_cannon.py`). Probe `tools/godot/measure_forearm_grip.gd` (SIDE=R or L, OFFSET to try): miss 0.000 m both hands standing. `measure_wrist_pin.gd` right hand: 0.000 m walking, guarding, aiming and stopping; up to 0.07 m firing and 0.06 m boosting (the arm moves under the rigid cannon).
+
 ## Beam Rifle (user design, Blender model, in the game since 2026-10-11)
 
 - Picture: `models/guides/beam_rifle_ref.png` (side, front and 3/4 views). Script: `tools/blender/beam_rifle_build.py` (run `blender -b --python tools/blender/beam_rifle_build.py`; it starts from an empty file, so hand edits are lost). Output: `models/beam_rifle/beam_rifle.blend` and `beam_rifle.glb`.
@@ -862,19 +863,6 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
 - Empties for the weapon scene: `GripRight` (pistol grip), `GripLeft`, `GripLeftRest`, `GripLeftAim` (all under the lower rail, 2.5 m behind the muzzle, neutral hold), `Muzzle`.
 - Game (2026-10-11): `scenes/weapons/beam_rifle.tscn` (the .glb as `Model` under a `BeamRifleWeapon` root, with the markers as Marker3D at the root) and `data/weapons/beam_rifle.tres`, both written by `tools/mech_gen/warden_weapons.py`. Garage: right arm weapon list. Behavior and values: the beam sniper (charged beam, zoom 52.6°, heat), weight 3.5 t. Charging lights the cyan ring (`Model/Coil0`) and the muzzle bore (`Model/MuzzleBore`); the orange cell always glows. `BeamRifleWeapon.coil_paths` and `emitter_path` (new exports) name these meshes; the defaults keep the beam sniper's Coil0..2 and Emitter.
 - Hold (Warden frame, torso space): rest (neutral) = low ready, right hand on the pistol grip at (0.83, 0.5, -2.0), muzzle along (-0.9, -0.35, -1) (left, down, forward), left hand under the lower rail. The beam sniper rest was out of reach for this grip (left arm 108%); now left arm 92%, right arm 67%. Aim (RMB) = the beam sniper aim with the right hand at the same place: left arm 94%, right arm 69%. Test: headless Godot 4.7.2, Warden sniper loadout with the beam rifle, both hands 0.000 m from their markers.
-
-## Archetypes (preset loadouts; player can mix any parts)
-
-- Melee: light, fast, blade arms, strong boost
-- Gunner: medium weight, rifles and machine guns
-- Missile: heavy back units, multi-lock FCS
-- Sniper: long-range rifle, high-zoom head, slow
-
-## Pilot
-
-Name, callsign, portrait, skill tree.
-Skills give passive bonuses (example: faster lock-on, less recoil, more boost energy).
-One active skill slot (example: Overdrive, +30% speed for 8 seconds).
 
 ## Part system (Phase 2)
 
@@ -929,10 +917,10 @@ User answers 2026-10-14 (see the reminder) and 2026-10-22: a back pack part with
 
 ## Architecture rules
 
-- Parts, weapons, mods, plates, and skills are Godot Resources (.tres) in `/data`. New parts need no code changes.
+- Parts, weapons, mods and plates are Godot Resources (.tres) in `/data`. New parts need no code changes.
 - Each part is its own scene with Marker3D sockets (example: `socket_head`, `socket_arm_L`, `socket_weapon`). MechAssembler attaches parts by socket. Placeholder meshes are replaced with .glb models later, with no code changes.
 - MechAssembler builds a mech from a Loadout resource.
-- StatCalculator computes final stats from parts, plates, mods, and pilot skills.
+- StatCalculator computes final stats from parts, plates and mods.
 - Small scripts, one job per script.
 - Debug HUD: total weight, load ratio, speed, HP of each part.
 - Rendering: Forward+ renderer. PBR StandardMaterial3D, SDFGI, SSAO, SSR, volumetric fog, glow, AgX tonemap, TAA.
@@ -1074,6 +1062,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
   - Recoil table (aim up / side in degrees, model kick, shake trauma / kick; side is about 0.4 x up; the crosshair has no auto recovery): SMG 0.375 / 0.15 (25% less, 2026-10-24), 0.25 m 2 deg, 0.08 / 0.04. Missile pods 0.3 / 0.12, 0.08 / 0.10. Heavy Rifle 2.0 / 0.8, 0.7 m 10 deg, 0.25 / 0.12. Shotgun 3.0 / 1.2, 0.6 m 8 deg, 0.30 / 0.15. Auto Cannon (hand, +50% recoil) 6.0 / 2.25, 1.2 m 6 deg, 0.45 / 0.30. Shoulder Cannon 2.0 / 0.75, 0.35 / 0.25. Beam Rifle and Sniper unchanged (3.5 / 0.5).
   - Test: `tools/godot/test_stagger_rules.gd` (36 checks, both sides of each rule). `test_stability.gd` expects the new values.
 
+- Handoff 2026-10-25: `docs/HANDOFF_playtest_rounds_2026-10-25.md` (play test rounds 2 to 4, Auto Cannon grip, phases 6 and 7 removed; next: the new Pile Bunker model).
 - Handoff 2026-10-24: `docs/HANDOFF_arms_wrist_brace.md` (wrist, arms, jump strength, brace snap and recoil; known issues; next: the user's play test).
 - Handoff 2026-10-16: `docs/HANDOFF_stagger_ranges_fixes.md` (next pipeline: flinch review and three stagger items, open reminders, phase 3 pick-up and free-hand fist, phase 4 jump clips from `models/mixamo/library/Jumping_Up.fbx` and `Landing.fbx`).
 
@@ -1124,6 +1113,8 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
     - Open: a single-frame 9 to 11 deg roll of the right upper arm (frames 42 and 99 of the test; the elbow does not move). Not from the swing limit search. Cause not found.
 
 ## Reminders for the user
+- Open (2026-10-25, user): replace the Pile Bunker with a better model (the current one is a placeholder; its fist also misses the grip by up to 0.6 m in the jump guard and while boosting). Needs the new model first (Blender or an upload), then the PS1 skin and the hold.
+- Open (2026-10-25, built): play test the Auto Cannon grip in both hands (the fist on the handle).
 - Closed (2026-10-25, user: play tested, OK; was open (2026-10-24, built round 3): play test "Play test fixes 2026-10-24, round 3": punch lowering after A / D / S (with the key held), the smoother crosshair kick, mouse speed 2 and the faster torso turn, a beam that stops when its arm breaks, the Beam Rifle forearm on the beam release (the softer weapon kick is on every hand weapon: check the shotgun and heavy rifle feel).
 - Closed (2026-10-25, user: play tested, OK; was open (2026-10-24, built round 4): play test "Play test fixes 2026-10-24, round 4": Beam Rifle ADS (no forearm turn, the new hold), Beam Sniper with 2 shoulder Auto Cannons (held like the Beam Rifle, cannons upright).
 - Closed (2026-10-25, user: play tested, OK; was open (2026-10-24, built): play test "Play test fixes 2026-10-24": the Beam Rifle in ADS while shooting (no twitch, still left fingers), a short charge jump (one push), the 1 s combo time, the higher empty hand swing, the crosshair kick, and W held while the missile pods and cannons fire.
@@ -1173,6 +1164,8 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - Closed (2026-10-11): broken part look for the new mech. The user gave a reference picture; built as the Godot-only charred crust (Phase D1).
 
 ## Decisions log
+
+- 2026-10-25 (user): phases 6 (pilot creation and skill tree) and 7 (save/load builds and preset archetype loadouts) are removed from the plan, with their design sections (Pilot, Archetypes).
 
 - Phase 1: Space was a jump plus hold-in-air jets. Replaced in revision 5 by charged jump jets.
 - Phase 1: test map ground is 400 x 400 m with invisible walls at the edge. Distance fog hides the edge.

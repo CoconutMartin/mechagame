@@ -23,7 +23,7 @@ Blender. Keep the model's own colors. Use `PS1SkinLook` / `PS1Skin` and `data/sk
 
 - Small scripts, one job per script. Use `class_name` and typed GDScript.
 - Tuning values are `@export` variables with a short `##` doc comment.
-- Data (parts, weapons, mods, plates, skills) are Resources (.tres) in /data.
+- Data (parts, weapons, mods, plates) are Resources (.tres) in /data.
 - 1 unit = 1 meter. Mech height about 10 m.
 
 ## Chat reply style

@@ -1,7 +1,6 @@
 class_name StatCalculator
 extends RefCounted
 ## Computes final mech stats from a Loadout: parts, weapons and mods.
-## Phase 6 adds pilot skills here.
 
 
 ## Weight formula (the only place it lives, so it is easy to tune).

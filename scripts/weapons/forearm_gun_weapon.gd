@@ -14,6 +14,13 @@ extends GunWeapon
 ## it blends between them with the aim amount. 0 = straight under the fist (user's arm drawing).
 @export var rest_roll_deg: float = 0.0
 @export var aim_roll_deg: float = 0.0
+## Shift of the cannon from the forearm end, in the forearm joint's space (meters). The fist sits on the wrist
+## pin, not at the bone end, so the handle hung 0.18 m off the fist (user request 2026-10-25: fix the Auto
+## Cannon grip). Measured with tools/godot/measure_forearm_grip.gd. Right hand.
+@export var handle_offset: Vector3 = Vector3.ZERO
+## The same in the left hand (the left forearm joint's space; the left fist does not turn to the handle, so it is
+## not the mirror of the right value).
+@export var handle_offset_left: Vector3 = Vector3.ZERO
 
 @onready var _mount: Node3D = $Mount
 
@@ -65,7 +72,8 @@ func _attach_to_forearm() -> void:
 	up = Basis(Vector3.UP, -roll if controller.left_arm_view else roll) * up
 	var back := Vector3.UP
 	var basis := Basis(up.cross(back), up, back)
-	_mount.transform = Transform3D(basis, Vector3(0.0, -ik.lower_length, 0.0) - basis * grip.position)
+	var offset := handle_offset_left if controller.left_arm_view else handle_offset
+	_mount.transform = Transform3D(basis, Vector3(0.0, -ik.lower_length, 0.0) + offset - basis * grip.position)
 
 
 ## The arm holds it like the heavy rifle: the weapon data poses are the rifle's, and the fist goes

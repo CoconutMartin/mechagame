@@ -63,7 +63,10 @@ rings = 4
 
 def baton(path):
     o = [HEAD.format(script="forearm_gun_weapon", model="auto_cannon"),
-         '[node name="AutoCannon" type="Node3D"]\nscript = ExtResource("script")\n',
+         # handle_offset: the handle in the fist (measured 2026-10-25, tools/godot/measure_forearm_grip.gd).
+         '[node name="AutoCannon" type="Node3D"]\nscript = ExtResource("script")\n'
+         'handle_offset = Vector3(-0.0522, 0.1736, -0.0321)\n'
+         'handle_offset_left = Vector3(0.1004, 0.2803, 0.0216)\n',
          '[node name="GripRight" type="Marker3D" parent="."]\n',
          '[node name="Mount" type="Node3D" parent="."]\n',
          '[node name="Model" parent="Mount" instance=ExtResource("model")]\n',
