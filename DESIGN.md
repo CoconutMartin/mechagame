@@ -855,6 +855,14 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
 ### Auto Cannon grip fix (user request 2026-10-25)
 - The cannon sits rigid under the forearm with its `Model/Grip` at the forearm bone end, but the fist sits on the wrist pin, so the handle hung 0.18 m (right hand) and 0.30 m (left hand) off the fist. `ForearmGunWeapon.handle_offset` (right) and `handle_offset_left` (left; the left fist does not turn to the handle, so it is not a mirror) shift the cannon in the forearm joint's space: Auto Cannon right (-0.0522, 0.1736, -0.0321), left (0.1004, 0.2803, 0.0216) (set in `scenes/weapons/auto_cannon.tscn` and `tools/mech_gen/auto_cannon.py`). Probe `tools/godot/measure_forearm_grip.gd` (SIDE=R or L, OFFSET to try): miss 0.000 m both hands standing. `measure_wrist_pin.gd` right hand: 0.000 m walking, guarding, aiming and stopping; up to 0.07 m firing and 0.06 m boosting (the arm moves under the rigid cannon).
 
+## Pile Bunker model (user design 2026-10-26, Blender model, not in the game yet)
+
+- Picture: `models/guides/pile_bunker_ref.png` (one 3/4 view; sizes estimated). Script: `tools/blender/pile_bunker_build.py` (`blender -b --python tools/blender/pile_bunker_build.py`; it starts from an empty file). Output: `models/pile_bunker/pile_bunker.blend` and `pile_bunker.glb`. User choice: Blender script from a picture.
+- Twin stakes (upper and lower), magazine box on top at the back (rail, button, side plates, round port), middle tube with a lower skirt, front housing with a split line and a side lug, round sleeves, forearm bracket on the -X side. About 4.2 m from the back to the stake tips (`SIZE` 0.8), 1.1 m high at the front housing. About 3,500 triangles, 52 objects, 5 materials (`pile_bunker_grey`, `_dark`, `_steel`, `_bore`, `_glow`).
+- Blender +Y = forward (Godot -Z). Origin: back face, halfway between the stake axes. Names for `PileBunkerWeapon`: `Stake` (empty, parent of both stakes; moves along +Y), `Drum` (side port glow), `NoseRing` (both sleeve rings, one mesh), empties `Nose` (sleeve front) and `Mount` (forearm axis in the bracket).
+- Stake rods are 1.76 m long (2.2 m before `SIZE`): a longer rod shows through the skirt cut-out. The game's `stake_travel` 3.5 m and `cock_distance` 0.8 m need new values for this model (next step).
+- Next step: the Godot scene (glb as the model, PS1 skin, the forearm place, the fist, the stake travel).
+
 ## Beam Rifle (user design, Blender model, in the game since 2026-10-11)
 
 - Picture: `models/guides/beam_rifle_ref.png` (side, front and 3/4 views). Script: `tools/blender/beam_rifle_build.py` (run `blender -b --python tools/blender/beam_rifle_build.py`; it starts from an empty file, so hand edits are lost). Output: `models/beam_rifle/beam_rifle.blend` and `beam_rifle.glb`.
@@ -1113,7 +1121,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
     - Open: a single-frame 9 to 11 deg roll of the right upper arm (frames 42 and 99 of the test; the elbow does not move). Not from the swing limit search. Cause not found.
 
 ## Reminders for the user
-- Open (2026-10-25, user): replace the Pile Bunker with a better model (the current one is a placeholder; its fist also misses the grip by up to 0.6 m in the jump guard and while boosting). Needs the new model first (Blender or an upload), then the PS1 skin and the hold.
+- Open (2026-10-25, user): replace the Pile Bunker with a better model (the current one is a placeholder; its fist also misses the grip by up to 0.6 m in the jump guard and while boosting). Needs the new model first (Blender or an upload), then the PS1 skin and the hold. Update 2026-10-26: the Blender model is built from the user picture (see "Pile Bunker model"); the game scene is next.
 - Open (2026-10-25, built): play test the Auto Cannon grip in both hands (the fist on the handle).
 - Closed (2026-10-25, user: play tested, OK; was open (2026-10-24, built round 3): play test "Play test fixes 2026-10-24, round 3": punch lowering after A / D / S (with the key held), the smoother crosshair kick, mouse speed 2 and the faster torso turn, a beam that stops when its arm breaks, the Beam Rifle forearm on the beam release (the softer weapon kick is on every hand weapon: check the shotgun and heavy rifle feel).
 - Closed (2026-10-25, user: play tested, OK; was open (2026-10-24, built round 4): play test "Play test fixes 2026-10-24, round 4": Beam Rifle ADS (no forearm turn, the new hold), Beam Sniper with 2 shoulder Auto Cannons (held like the Beam Rifle, cannons upright).
