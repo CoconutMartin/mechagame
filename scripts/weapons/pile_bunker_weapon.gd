@@ -71,6 +71,17 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 ## Layers the contact check hits: 1 world, 3 props, 4 hitboxes.
 @export_flags_3d_physics var collision_mask: int = 29
 
+@export_group("Model")
+## The parts in the model (paths from the weapon root): the stake that slides out, the nose (front of
+## the pile bunker), the drum meshes and the nose ring that glow with the stored power.
+@export var stake_path: NodePath = ^"Mount/Stake"
+@export var nose_path: NodePath = ^"Mount/Nose"
+@export var drum_paths: Array[NodePath] = [^"Mount/Drum"]
+@export var nose_ring_path: NodePath = ^"Mount/NoseRing"
+## The model node under Mount that is mirrored (X) in the left hand, so its forearm bracket is on the arm
+## side there too. Empty = no mirror (a model that looks the same from both sides).
+@export var mirror_path: NodePath = ^""
+
 @export_group("Power")
 ## Hold RMB to power up the stake: seconds to full power, and energy use per second while holding.
 ## Release RMB (or run out of energy) to attack. More power = more damage, push and shake.
@@ -119,8 +130,8 @@ var _aim_point := Vector3.ZERO
 var is_left: bool = false
 
 @onready var _mount: Node3D = $Mount
-@onready var _stake: Node3D = $Mount/Stake
-@onready var _nose: Node3D = $Mount/Nose
+@onready var _stake: Node3D = get_node(stake_path)
+@onready var _nose: Node3D = get_node(nose_path)
 @onready var _glow := ChargeGlow.new()
 
 
@@ -130,8 +141,10 @@ func _ready() -> void:
 	# The drum and the nose ring glow with the stored power.
 	_glow.color = Color(1.0, 0.55, 0.2)
 	add_child(_glow)
-	var drum: Array[MeshInstance3D] = [$Mount/Drum as MeshInstance3D]
-	_glow.setup(drum, $Mount/NoseRing as MeshInstance3D, _nose)
+	var drum: Array[MeshInstance3D] = []
+	for path in drum_paths:
+		drum.append(get_node(path) as MeshInstance3D)
+	_glow.setup(drum, get_node(nose_ring_path) as MeshInstance3D, _nose)
 
 
 ## Called by WeaponController after the node is added: a left view means the left hand.
@@ -177,6 +190,7 @@ func _attach_to_forearm() -> void:
 	var forearm := controller.holding_arm_ik().mid_joint
 	if forearm == null or _mount.get_parent() == forearm:
 		return
+	var model := get_node_or_null(mirror_path) as Node3D if is_left else null
 	_mount.reparent(forearm, false)
 	var basis := Basis.from_euler(mount_rotation_deg * PI / 180.0)
 	var place := mount_position
@@ -185,6 +199,9 @@ func _attach_to_forearm() -> void:
 		# frames are proper rotations on both sides), so the same model place is flip * place * mirror.
 		basis = Basis.from_scale(Vector3(1.0, 1.0, -1.0)) * basis * Basis.from_scale(Vector3(-1.0, 1.0, 1.0))
 		place.z = -place.z
+		# That place turns the model round (the forearm is on its +X side): mirror the model to put it back.
+		if model != null:
+			model.transform = Transform3D(Basis.from_scale(Vector3(-1.0, 1.0, 1.0)), Vector3.ZERO) * model.transform
 	_mount.transform = Transform3D(basis, place)
 
 func _update(delta: float) -> void:

@@ -319,7 +319,7 @@ def v3(p):
 if __name__ == "__main__":
     os.makedirs("scenes/weapons", exist_ok=True)
     write_model("scenes/weapons/beam_sniper.tscn", "BeamSniper", "beam_rifle_weapon", sniper, root_meta=SNIPER_ELBOW)
-    write_model("scenes/weapons/pile_bunker.tscn", "PileBunker", "pile_bunker_weapon", pile_bunker)
+    # The Pile Bunker scene is hand made since 2026-10-26 (the Blender model, tools/blender/pile_bunker_build.py).
     # Pods sit above the shoulders, behind the head (torso space), tilted 10 degrees up.
     for side, sign in (("l", -1), ("r", 1)):
         place = xf(TT(*torso_point((sign * 1.6, 10.1, 1.2), K)), (10, 0, 0))
