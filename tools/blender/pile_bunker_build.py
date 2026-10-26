@@ -23,13 +23,16 @@ OUT_DIR = os.path.join(ROOT, "models", "pile_bunker")
 
 ## Size after the design (all parts): 0.8 gives about 4.2 m from the back to the stake tips.
 SIZE = 0.8
+## Length of the body and the bracket (not the stakes) after SIZE (user request 2026-10-26): the body
+## goes from the elbow to the front of the fist (2.7 m), so only the stakes stick out past the hand.
+BODY_LENGTH = 0.854
 ## Height of the two stake axes above and under the body center.
 STAKE_Z = 0.25
 ## Front face of the sleeves (the Nose).
 NOSE_Y = 3.95
 ## Stake rod length (it stays inside the front housing and the middle tube; a longer rod shows through
-## the skirt cut-out) and how far the rod shows in front of the sleeves.
-ROD_LENGTH = 2.2
+## the skirt cut-out; it is not shortened by BODY_LENGTH) and how far the rod shows in front of the sleeves.
+ROD_LENGTH = 1.9
 ROD_SHOWN = 0.25
 ## Forearm axis in the bracket (x, z).
 MOUNT_X, MOUNT_Z = -0.8, -0.35
@@ -224,11 +227,13 @@ def build_stakes(nose_y):
 
 
 def apply_size(objects):
-    """Scale every root object and its place by SIZE (children follow their parent)."""
+    """Scale every root object and its place by SIZE (children follow their parent). The body, the
+    bracket and the empties are also BODY_LENGTH long along Y; the stakes (under the Stake empty) only move."""
+    length = SIZE * BODY_LENGTH
     for obj in objects:
         if obj.parent is None:
-            obj.location = obj.location * SIZE
-            obj.scale = (SIZE, SIZE, SIZE)
+            obj.location = Vector((obj.location.x * SIZE, obj.location.y * length, obj.location.z * SIZE))
+            obj.scale = (SIZE, SIZE if obj.name == "Stake" or obj.type == "EMPTY" else length, SIZE)
     bpy.context.view_layer.update()
     for obj in objects:
         if obj.type == "MESH":

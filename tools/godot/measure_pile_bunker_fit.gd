@@ -33,6 +33,26 @@ func _run() -> void:
 	print("%s fist (hand origin) in Mount space: %s" % [side, inv * hand.global_position])
 	print("%s forearm joint origin in Mount space: %s" % [side, inv * mount.get_parent().global_position])
 	print("%s nose in Mount space: %s" % [side, inv * bunker._nose.global_position])
+	# The front of the fist: the hand mesh point furthest forward (-Z) in the Mount space.
+	var front := INF
+	for mesh: MeshInstance3D in hand.find_children("*", "MeshInstance3D", true, false):
+		var aabb := mesh.get_aabb()
+		for i in 8:
+			front = minf(front, (inv * (mesh.global_transform * aabb.get_endpoint(i))).z)
+	print("%s fist front (z) in Mount space: %.3f" % [side, front])
+	var model := mount.get_node_or_null("Model") as Node3D
+	if model:
+		var back := -INF
+		var body_front := INF
+		for mesh: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+			if String(mesh.name).begins_with("Stake"):
+				continue
+			var aabb := mesh.get_aabb()
+			for i in 8:
+				var z := (inv * (mesh.global_transform * aabb.get_endpoint(i))).z
+				back = maxf(back, z)
+				body_front = minf(body_front, z)
+		print("%s model body z in Mount space: back %.3f, front %.3f" % [side, back, body_front])
 	var axis := mount.find_child("Mount", true, false) as Node3D
 	if axis:
 		print("%s model bracket axis in Mount space: %s" % [side, inv * axis.global_position])

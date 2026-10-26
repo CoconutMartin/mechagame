@@ -5,8 +5,8 @@
 
 [node name="PileBunker" type="Node3D"]
 script = ExtResource("script")
-stake_travel = 1.4
-contact_reach = 2.5
+stake_travel = 1.3
+contact_reach = 2.4
 cock_distance = 0.15
 stake_path = NodePath("Mount/Model/Stake")
 nose_path = NodePath("Mount/Model/Nose")
@@ -19,4 +19,4 @@ mirror_path = NodePath("Mount/Model")
 [node name="Mount" type="Marker3D" parent="."]
 
 [node name="Model" parent="Mount" instance=ExtResource("model")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.54, 0.28, 1.6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.54, 0.28, 2.4)
