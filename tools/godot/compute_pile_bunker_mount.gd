@@ -14,6 +14,8 @@ const BODY_HALF_WIDTH := 0.264
 const BODY_LENGTH := 2.7
 ## Gap between the forearm underside and the body top.
 const CLEARANCE := 0.06
+## Shift toward the outer side of the arm (away from the thigh, m; OUTSET overrides).
+const OUTSET := 0.0
 
 
 func _initialize() -> void:
@@ -94,7 +96,11 @@ func _run() -> void:
 		var origin := across * middle + down * (under + CLEARANCE + BODY_TOP)
 		var y := -down
 		var z := -along
-		var place := Transform3D(Basis(y.cross(z).normalized(), y, z), origin)
+		var x := y.cross(z).normalized()
+		# Mount +X is the outer side for the right arm, the inner side for the left arm.
+		var outset := float(OS.get_environment("OUTSET")) if OS.has_environment("OUTSET") else OUTSET
+		origin += x * outset * (1.0 if side == "R" else -1.0)
+		var place := Transform3D(Basis(x, y, z), origin)
 		print("%s armor along %s, across %.3f..%.3f, underside %.3f, length %.3f..%.3f" % [side, along, side_low, side_high, under, low, high])
 		print("bone_mount_%s = %s" % ["right" if side == "R" else "left", _tscn(place)])
 	quit()
