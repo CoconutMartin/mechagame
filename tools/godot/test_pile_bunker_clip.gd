@@ -35,7 +35,8 @@ func _run() -> void:
 			node.process_mode = Node.PROCESS_MODE_DISABLED
 			node.visible = false
 	for side in ["R", "L"]:
-		await _side(map, switcher, side)
+		if OS.get_environment("CLIP_SIDE") in ["", side]:
+			await _side(map, switcher, side)
 	print("RESULT: %d failures" % _failures)
 	quit(1 if _failures > 0 else 0)
 
@@ -98,15 +99,22 @@ func _phase(side: String, phase: String, skeleton: Skeleton3D, bunker: PileBunke
 		_failures += 1
 
 
-## Points of the model inside the body hulls now: {"armor/bone <- part": count}.
+## Points of the model inside the body hulls now: {"armor/bone <- part": count}. The bone poses are read during
+## the skeleton update: the arm and hip modifiers (SkeletonModifier3D) change them only then, and the skin and the
+## model's bone attachment use those poses.
 func _clip(skeleton: Skeleton3D, model: Node3D) -> Dictionary:
+	await skeleton.skeleton_updated
+	var poses: Array[Transform3D] = []
+	for bone in skeleton.get_bone_count():
+		poses.append(skeleton.global_transform * skeleton.get_bone_global_pose(bone))
+	var attach := model.get_parent() as BoneAttachment3D
+	var model_world := poses[attach.bone_idx] * model.transform
 	var bodies: Array[StaticBody3D] = []
 	var names := {}
 	for node in skeleton.get_children():
 		var mesh := node as MeshInstance3D
 		if mesh == null or mesh.skin == null or not mesh.visible:
 			continue
-		var name := String(mesh.name)
 		var arrays := mesh.mesh.surface_get_arrays(0)
 		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
@@ -122,13 +130,15 @@ func _clip(skeleton: Skeleton3D, model: Node3D) -> Dictionary:
 					best = k
 			var index := bones[v * per + best]
 			var bone := skeleton.find_bone(mesh.skin.get_bind_name(index))
-			if bone < 0 or skeleton.get_bone_name(bone).begins_with("hand") or skeleton.get_bone_name(bone).begins_with("index") \
-					or skeleton.get_bone_name(bone).begins_with("middle") or skeleton.get_bone_name(bone).begins_with("ring") \
-					or skeleton.get_bone_name(bone).begins_with("pinky") or skeleton.get_bone_name(bone).begins_with("thumb"):
+			if bone < 0:
+				continue
+			var bone_name := String(skeleton.get_bone_name(bone))
+			if bone_name.begins_with("hand") or bone_name.begins_with("index") or bone_name.begins_with("middle") \
+					or bone_name.begins_with("ring") or bone_name.begins_with("pinky") or bone_name.begins_with("thumb"):
 				continue
 			if not per_bone.has(bone):
 				per_bone[bone] = []
-			(per_bone[bone] as Array).append(skeleton.global_transform * skeleton.get_bone_global_pose(bone) * (mesh.skin.get_bind_pose(index) * vertices[v]))
+			(per_bone[bone] as Array).append(poses[bone] * (mesh.skin.get_bind_pose(index) * vertices[v]))
 		for bone: int in per_bone:
 			if (per_bone[bone] as Array).size() < 4:
 				continue
@@ -142,16 +152,18 @@ func _clip(skeleton: Skeleton3D, model: Node3D) -> Dictionary:
 			body.add_child(shape)
 			root.add_child(body)
 			bodies.append(body)
-			names[body.get_rid()] = "%s/%s" % [name, skeleton.get_bone_name(bone)]
+			names[body.get_rid()] = "%s/%s" % [mesh.name, skeleton.get_bone_name(bone)]
 	await physics_frame
 	var space := skeleton.get_world_3d().direct_space_state
 	var query := PhysicsPointQueryParameters3D.new()
 	query.collision_mask = LAYER
 	var found := {}
+	var model_inverse := model.global_transform.affine_inverse()
 	for mesh: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+		var place := model_world * (model_inverse * mesh.global_transform)
 		var faces := mesh.mesh.get_faces()
 		for i in range(0, faces.size() - 2, 3):
-			query.position = mesh.global_transform * ((faces[i] + faces[i + 1] + faces[i + 2]) / 3.0)
+			query.position = place * ((faces[i] + faces[i + 1] + faces[i + 2]) / 3.0)
 			for hit in space.intersect_point(query, 8):
 				var key := "%s <- %s" % [names.get(hit.rid, "?"), mesh.name]
 				found[key] = int(found.get(key, 0)) + 1

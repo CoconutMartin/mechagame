@@ -13,7 +13,7 @@ const BODY_TOP := 0.44
 const BODY_HALF_WIDTH := 0.264
 const BODY_LENGTH := 2.7
 ## Gap between the forearm underside and the body top.
-const CLEARANCE := 0.02
+const CLEARANCE := 0.06
 
 
 func _initialize() -> void:
@@ -40,6 +40,8 @@ func _run() -> void:
 		await _frames(120)
 		var skeleton := switcher.mech.find_child("Skeleton3D", true, false) as Skeleton3D
 		var bone := skeleton.find_bone("forearm_" + side)
+		# The pose with the arm modifiers: read during the skeleton update (they are undone after it).
+		await skeleton.skeleton_updated
 		var frame := skeleton.global_transform * skeleton.get_bone_global_pose(bone)
 		var armor := skeleton.get_node("Arm_%s_02" % side) as MeshInstance3D
 		var arrays := armor.mesh.surface_get_arrays(0)
