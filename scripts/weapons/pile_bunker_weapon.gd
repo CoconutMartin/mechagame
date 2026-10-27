@@ -33,6 +33,15 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 ## clear the shoulder armor and the thigh.
 @export var mount_position: Vector3 = Vector3(-1.15, -2.4, 0.0)
 @export var mount_rotation_deg: Vector3 = Vector3(-90.0, 0.0, 180.0)
+## Rigged mech (user report 2026-10-26: the model clipped the forearm armor): the model follows the
+## skeleton's forearm bone itself, like its armor (the arm IK elbow node turns differently from the bone).
+## Place in that bone's frame for each hand (from tools/godot/compute_pile_bunker_mount.gd). Off: the
+## elbow place above.
+@export var on_forearm_bone: bool = false
+@export var forearm_bone_right: StringName = &"forearm_R"
+@export var forearm_bone_left: StringName = &"forearm_L"
+@export var bone_mount_right: Transform3D = Transform3D.IDENTITY
+@export var bone_mount_left: Transform3D = Transform3D.IDENTITY
 
 @export_group("Torso")
 ## Torso turn during the shield charge, in degrees. Negative = turn right (left shoulder leads).
@@ -128,6 +137,8 @@ var _stake_rest := Vector3.ZERO
 var _aim_point := Vector3.ZERO
 ## True for a pile bunker in the left hand (set in setup()).
 var is_left: bool = false
+## The forearm bone attachment that carries the model (on_forearm_bone).
+var _bone_attach: BoneAttachment3D
 
 @onready var _mount: Node3D = $Mount
 @onready var _stake: Node3D = get_node(stake_path)
@@ -145,6 +156,12 @@ func _ready() -> void:
 	for path in drum_paths:
 		drum.append(get_node(path) as MeshInstance3D)
 	_glow.setup(drum, get_node(nose_ring_path) as MeshInstance3D, _nose)
+
+
+## The model on the forearm bone goes with the weapon (a garage swap frees the weapon, not the mech).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and is_instance_valid(_bone_attach):
+		_bone_attach.queue_free()
 
 
 ## Called by WeaponController after the node is added: a left view means the left hand.
@@ -187,10 +204,24 @@ func get_model() -> Node3D:
 
 ## Moves the model onto the right forearm (once, after WeaponController has wired the arm IK).
 func _attach_to_forearm() -> void:
+	if _bone_attach != null:
+		return
+	var model := get_node_or_null(mirror_path) as Node3D if is_left else null
+	var skeleton := controller.mech.find_child("Skeleton3D", true, false) as Skeleton3D if on_forearm_bone else null
+	if skeleton != null:
+		_bone_attach = BoneAttachment3D.new()
+		_bone_attach.name = "PileBunkerMount" + ("L" if is_left else "R")
+		_bone_attach.bone_name = forearm_bone_left if is_left else forearm_bone_right
+		skeleton.add_child(_bone_attach)
+		_mount.reparent(_bone_attach, false)
+		_mount.transform = bone_mount_left if is_left else bone_mount_right
+		# The left place is a proper turn too: mirror the model so the drum is on the outer side there.
+		if model != null:
+			model.transform = Transform3D(Basis.from_scale(Vector3(-1.0, 1.0, 1.0)), Vector3.ZERO) * model.transform
+		return
 	var forearm := controller.holding_arm_ik().mid_joint
 	if forearm == null or _mount.get_parent() == forearm:
 		return
-	var model := get_node_or_null(mirror_path) as Node3D if is_left else null
 	_mount.reparent(forearm, false)
 	var basis := Basis.from_euler(mount_rotation_deg * PI / 180.0)
 	var place := mount_position

@@ -36,6 +36,9 @@ ROD_LENGTH = 1.9
 ROD_SHOWN = 0.25
 ## Forearm axis in the bracket (x, z).
 MOUNT_X, MOUNT_Z = -0.8, -0.35
+## The forearm bracket of the picture. Off since 2026-10-26 (user choice): the game hangs the Pile Bunker
+## upside down under the forearm, where the bracket would go into the forearm armor.
+WITH_BRACKET = False
 
 MATERIALS = {
     # name: (color, roughness, metallic, emission)
@@ -260,7 +263,7 @@ def export(path, objects):
 
 def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    objects = build_body() + build_bracket() + build_stakes(NOSE_Y)
+    objects = build_body() + (build_bracket() if WITH_BRACKET else []) + build_stakes(NOSE_Y)
     objects.append(empty("Nose", (0.0, NOSE_Y, 0.0)))
     objects.append(empty("Mount", (MOUNT_X, 0.75, MOUNT_Z)))
     apply_size(objects)
