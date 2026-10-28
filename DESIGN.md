@@ -1181,6 +1181,8 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 
 ## Decisions log
 
+- 2026-10-28 (user): the blender-skills pack (arjun988) is not installed (it needs Blender MCP and an open Blender window; our models are built by scripts with `blender -b`). Its useful rules for hard-surface models, picture matching and the pixel-art look are copied into `docs/blender_modeling_notes.md`.
+
 - 2026-10-25 (user): phases 6 (pilot creation and skill tree) and 7 (save/load builds and preset archetype loadouts) are removed from the plan, with their design sections (Pilot, Archetypes).
 
 - Phase 1: Space was a jump plus hold-in-air jets. Replaced in revision 5 by charged jump jets.
