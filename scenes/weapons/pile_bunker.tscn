@@ -13,13 +13,10 @@ nose_path = NodePath("Mount/Model/Nose")
 drum_paths = Array[NodePath]([NodePath("Mount/Model/Drum")])
 nose_ring_path = NodePath("Mount/Model/NoseRing")
 mirror_path = NodePath("Mount/Model")
-on_forearm_bone = true
-bone_mount_right = Transform3D(0.99678, -0.03883, 0.07019, 0.06991, -0.00846, -0.99752, 0.03932, 0.99921, -0.00572, 0.26444, 0.02538, -1.18262)
-bone_mount_left = Transform3D(0.99791, 0.01110, -0.06359, -0.06369, 0.00882, -0.99793, -0.01051, 0.99990, 0.00950, -0.21514, 0.00296, -1.12910)
 
 [node name="GripRight" type="Marker3D" parent="."]
 
 [node name="Mount" type="Marker3D" parent="."]
 
 [node name="Model" parent="Mount" instance=ExtResource("model")]
-transform = Transform3D(-1, 0, 0, 0, -1, 0, 0, 0, 1, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.54, 0.28, 2.4)
