@@ -125,6 +125,14 @@ func _run() -> void:
 				camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 				camera.size = 14.0
 				camera.look_at_from_position(center_f - player.global_basis.z * 40.0, center_f, Vector3.UP)
+			"p_inner":
+				camera.projection = Camera3D.PROJECTION_PERSPECTIVE
+				camera.fov = 20.0
+				camera.look_at_from_position(arm_center - out_dir * 14.0 + forward * 6.0, arm_center, Vector3.UP)
+			"p_below":
+				camera.projection = Camera3D.PROJECTION_PERSPECTIVE
+				camera.fov = 20.0
+				camera.look_at_from_position(arm_center + forward * 10.0 - Vector3.UP * 8.0 + out_dir * 4.0, arm_center, Vector3.UP)
 			"p_back":
 				camera.projection = Camera3D.PROJECTION_PERSPECTIVE
 				camera.fov = 30.0

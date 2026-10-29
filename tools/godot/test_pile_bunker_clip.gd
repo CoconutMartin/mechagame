@@ -68,7 +68,7 @@ func _side(map: Node, switcher: LoadoutSwitcher, side: String) -> void:
 	Input.action_press(button)
 	await _frames(60)
 	Input.action_release(button)
-	await _phase(side, "attack", skeleton, bunker, 150, [])
+	await _phase(side, "attack", skeleton, bunker, 240, [])
 	target.queue_free()
 	await _frames(240)
 	await _phase(side, "boost", skeleton, bunker, 120, ["move_forward", "boost"])

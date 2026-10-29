@@ -206,6 +206,8 @@ func _handle_socket(weapon: Node3D) -> Node3D:
 	if grip != null and not grip.has_meta(&"grip_radius"):
 		grip.set_meta(&"grip_radius", handle_radius)
 		grip.set_meta(&"hand_reach", false)
+	if grip != null and &"grip_axis_sign" in weapon:
+		grip.set_meta(&"grip_axis_sign", int(weapon.get(&"grip_axis_sign")))
 	return grip
 
 
@@ -314,7 +316,16 @@ func _after_skeleton() -> void:
 		if not reach:
 			# The arm keeps its pose, so the turn decides where the grip lies in the hand: a grip axis has two
 			# directions, and the turn for the one that brings the fist hollow nearer the grip wins.
-			turn = _spin_to_grip(attached, wrist, turn, hollow, place.origin, axis)
+			# Socket metadata grip_axis_sign (+1 or -1): the fist always takes that direction of the grip axis (index
+			# side toward it), no flip (user report 2026-10-29: the Auto Cannon fist was turned palm out).
+			var fixed := int(socket.get_meta(&"grip_axis_sign", 0))
+			if fixed != 0:
+				var signed_axis := axis * float(fixed)
+				turn = _spin_to_grip(attached, wrist, _wrist_turn(attached, side, signed_axis), hollow, place.origin, axis)
+				state["flip"] = false
+			else:
+				turn = _spin_to_grip(attached, wrist, turn, hollow, place.origin, axis)
+		if not reach and int(socket.get_meta(&"grip_axis_sign", 0)) == 0:
 			var other := _spin_to_grip(attached, wrist, _wrist_turn(attached, side, -axis), hollow, place.origin, axis)
 			var gap := _hollow_gap(attached, wrist, turn, hollow, place.origin)
 			var gap_other := _hollow_gap(attached, wrist, other, hollow, place.origin)

@@ -21,6 +21,9 @@ extends GunWeapon
 ## The same in the left hand (the left forearm joint's space; the left fist does not turn to the handle, so it is
 ## not the mirror of the right value).
 @export var handle_offset_left: Vector3 = Vector3.ZERO
+## The fist's index side points this way along the handle (+1 up its +Y, toward the cannon; -1 down; 0 = the
+## nearer of the two each frame). Set so the palm faces in (user report 2026-10-29: the right fist was palm out).
+@export var grip_axis_sign: int = 0
 
 @onready var _mount: Node3D = $Mount
 

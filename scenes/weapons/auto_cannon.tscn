@@ -20,8 +20,9 @@ rings = 4
 
 [node name="AutoCannon" type="Node3D"]
 script = ExtResource("script")
-handle_offset = Vector3(-0.0522, 0.1736, -0.0321)
+handle_offset = Vector3(-0.0593, 0.1736, -0.0508)
 handle_offset_left = Vector3(0.1004, 0.2803, 0.0216)
+grip_axis_sign = -1
 
 [node name="GripRight" type="Marker3D" parent="."]
 
