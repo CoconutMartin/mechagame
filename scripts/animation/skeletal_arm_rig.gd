@@ -132,6 +132,9 @@ extends SkeletonModifier3D
 ## (user request 2026-10-24: the right block was tilted and the elbow tucked in at aim). The other arms fade
 ## to a flat, forward block while aiming (max_block_yaw_deg).
 @export var hint_block_yaw_deg: float = 20.0
+## Hinge arms: an arm that holds a Pile Bunker has its block tilted this much (degrees, the outer end down; the
+## elbow comes in a little) so the shoulder is not quite flat (user request 2026-10-29).
+@export var pile_bunker_block_tilt_deg: float = 4.0
 @export_group("Moving arms")
 ## An arm that follows the animation keeps this part of the clip's raise to the side (the walk clips'
 ## shallow V) while the mech moves: 0.5 = half the angle (user rule 2026-10-18). 1 = the clip as it is.
@@ -433,7 +436,7 @@ func _pose_arm(side: Dictionary) -> void:
 		# Hinge arm: the neutral upper arm pitches about the torso's side axis; the forearm then turns about the
 		# neutral upper arm axis and bends about the side axis (see _hinge_turns).
 		var frame := _torso_in_skeleton()
-		var turns := _hinge_turns(side.hinge as Vector3, (side.hinge_axis as Vector3))
+		var turns := _hinge_turns(side.hinge as Vector3, (side.hinge_axis as Vector3), side.get("hinge_roll", Basis.IDENTITY))
 		var upper_turn := frame * turns[0] * frame.inverse()
 		var fore_turn := frame * turns[1] * frame.inverse()
 		var hinge_upper := upper_turn * upper_pose.basis
@@ -564,8 +567,11 @@ func _neutral_arm(side: Dictionary) -> Array[Vector3]:
 ## hand falls short. Sets side.hinge = (pitch, turn, bend), side.hinge_axis = v and the joint nodes.
 func _hinge_solve(ik: TwoBoneIK, side: Dictionary, limit: float) -> void:
 	var arm := _neutral_arm(side)
-	var e0: Vector3 = arm[0]
-	var f0: Vector3 = arm[1]
+	# The block tilt: the whole neutral arm turns about the torso's forward axis first.
+	var roll := _block_tilt(ik)
+	side.hinge_roll = roll
+	var e0: Vector3 = roll * arm[0]
+	var f0: Vector3 = roll * arm[1]
 	var torso_basis := torso.global_basis.orthonormalized()
 	var target := torso_basis.inverse() * (ik.target.global_position - ik.root_joint.global_position)
 	var l2 := f0.length()
@@ -589,7 +595,18 @@ func _hinge_solve(ik: TwoBoneIK, side: Dictionary, limit: float) -> void:
 	angles.y = clampf(angles.y, -turn_limit, turn_limit)
 	side.hinge = angles
 	side.hinge_axis = f0.normalized()
-	_hinge_joints(ik, e0, f0, side)
+	_hinge_joints(ik, arm[0], arm[1], side)
+
+
+## The block tilt of an arm (torso frame): pile_bunker_block_tilt_deg for an arm that holds a Pile Bunker, else none.
+func _block_tilt(ik: TwoBoneIK) -> Basis:
+	if weapons == null or is_zero_approx(pile_bunker_block_tilt_deg):
+		return Basis.IDENTITY
+	var is_right := ik == ik_right
+	if not (weapons.right_weapon if is_right else weapons.left_weapon) is PileBunkerWeapon:
+		return Basis.IDENTITY
+	# About the torso's forward axis (-Z): the right block's outer end (+X) goes down, the left one's (-X) too.
+	return Basis(Vector3.BACK, deg_to_rad(pile_bunker_block_tilt_deg) * (1.0 if is_right else -1.0))
 
 
 ## The root of a cos(x) + b sin(x) = k nearest 0; out of range, the x nearest to it (the largest or smallest sum).
@@ -619,15 +636,15 @@ static func _turn_about(axis: Vector3, from: Vector3, to: Vector3) -> float:
 
 ## The upper arm and forearm turns (torso frame) of hinge angles (pitch, elbow turn, bend), the elbow turn about the
 ## forearm's neutral hang axis v: [pitch, pitch * elbow turn * bend].
-static func _hinge_turns(angles: Vector3, u: Vector3) -> Array[Basis]:
+static func _hinge_turns(angles: Vector3, u: Vector3, roll := Basis.IDENTITY) -> Array[Basis]:
 	var upper := Basis(Vector3.RIGHT, angles.x)
-	return [upper, upper * Basis(u, angles.y) * Basis(Vector3.RIGHT, angles.z)]
+	return [upper * roll, upper * Basis(u, angles.y) * Basis(Vector3.RIGHT, angles.z) * roll]
 
 
 ## The joint nodes of a hinge arm from side.hinge, so _hand() and the weapon moves see it.
 func _hinge_joints(ik: TwoBoneIK, e0: Vector3, f0: Vector3, side: Dictionary) -> void:
 	var torso_basis := torso.global_basis.orthonormalized()
-	var turns := _hinge_turns(side.hinge as Vector3, side.hinge_axis as Vector3)
+	var turns := _hinge_turns(side.hinge as Vector3, side.hinge_axis as Vector3, side.get("hinge_roll", Basis.IDENTITY))
 	var elbow_local: Vector3 = turns[0] * e0
 	var hand_local: Vector3 = elbow_local + turns[1] * f0
 	var shoulder := ik.root_joint.global_position

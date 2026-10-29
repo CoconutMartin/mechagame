@@ -411,9 +411,10 @@ if __name__ == "__main__":
                                 muzzle_dir=arm_poses.forearm_dir(arm_poses.NEUTRAL_DEG, arm_poses.CANNON_OUT_DEG),
                                 up_hint=arm_poses.top_side(arm_poses.NEUTRAL_DEG), grip=(0, 0, 0))
     # Neutral fist place (user request 2026-10-29): the mirror of the empty left hand's relaxed place
-    # (LeftHandRelaxed in scenes/mech/sanggigilid.tscn, -2.1, -0.82, -1.95); the turn stays.
+    # (LeftHandRelaxed in scenes/mech/sanggigilid.tscn, -2.1, -0.82, -1.95), 0.2 m in (forearm tilted in,
+    # user 2026-10-29); the turn stays.
     bunker_rest = bunker_rest[:bunker_rest.rindex(",", 0, bunker_rest.rindex(",", 0, bunker_rest.rindex(",")))] \
-        + ", 2.1, -0.82, -1.95)"
+        + ", 1.9, -0.82, -1.95)"
     bunker_aim = RIGHT_HAND_AIM
     res("data/weapons/pile_bunker.tres", {"display_name": '"Pile Bunker"', "weight_t": 2.5, "hp": 300.0,
         "kind": 5, "fire_rate": 0.16667,  # 1 punch per 6 s (user 2026-10-15)

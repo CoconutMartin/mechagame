@@ -105,6 +105,8 @@ func _process(delta: float) -> void:
 	var fist_right := weapons.right_weapon is MeleeWeapon and weapons.right_data != null \
 			and weapons.right_data.kind == WeaponData.Kind.FIST
 	var punching := weapons.is_punching()
+	# A Pile Bunker on either arm: both hands stay closed (user request 2026-10-29).
+	var bunker := weapons.right_weapon is PileBunkerWeapon or weapons.left_weapon is PileBunkerWeapon
 	var gun := weapons.right_weapon if weapons.right_weapon != null and is_instance_valid(weapons.right_weapon) \
 			and not fist_right else null
 	var two_hand := gun != null and weapons.two_handed_left_grip()
@@ -138,7 +140,7 @@ func _process(delta: float) -> void:
 		else:
 			# An empty hand (it holds a Fist weapon without a model): the jointed hand makes the fist for a
 			# punch and while the mech moves; at rest it stays relaxed (user report 2026-10-22).
-			hand_right.mode = MechHand.Mode.FIST if moving or punching else MechHand.Mode.RELAXED
+			hand_right.mode = MechHand.Mode.FIST if moving or punching or bunker else MechHand.Mode.RELAXED
 	if is_instance_valid(hand_left) and hand_left.visible:
 		if socket_l != null and melee_left == null:
 			var place := _left_socket_place(socket_l, gun) if two_hand else socket_l.global_transform.orthonormalized()
@@ -149,7 +151,7 @@ func _process(delta: float) -> void:
 		elif weapons.left_data != null and weapons.left_data.kind != WeaponData.Kind.FIST:
 			hand_left.mode = MechHand.Mode.FIST
 		else:
-			hand_left.mode = MechHand.Mode.FIST if moving or punching else MechHand.Mode.RELAXED
+			hand_left.mode = MechHand.Mode.FIST if moving or punching or bunker else MechHand.Mode.RELAXED
 
 
 ## A melee weapon's model sits on the hand bone, placed for the old hand (on the bone). The jointed hand sits
