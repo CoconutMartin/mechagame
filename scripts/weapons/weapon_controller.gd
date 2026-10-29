@@ -457,6 +457,10 @@ func is_punching() -> bool:
 ## target is null then), or null. SkeletalArmRig poses a released fist arm at this hang under the punch
 ## clip, so the clip fades into the hang and the hand does not snap to it later (user report 2026-10-18).
 func fist_hang_target(is_right: bool) -> Node3D:
+	# The Pile Bunker punch clip has the arm: posed at the weapon's grip under the clip, so it fades back into it.
+	var held := right_weapon if is_right else left_weapon
+	if held is PileBunkerWeapon and is_instance_valid(held):
+		return (held as PileBunkerWeapon).clip_hold_target()
 	var fist := right_fist if is_right else left_fist
 	if fist == null or not is_instance_valid(fist) or (right_weapon if is_right else left_weapon) != fist:
 		return null

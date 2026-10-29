@@ -191,6 +191,9 @@ var _hold_time: float = 0.0
 ## Attack -> {bone name: [rotation track, position track]} (-1 = no track).
 var _tracks := {}
 var _ankle_pitch: SkeletonModifier3D
+## A clip played for another node (play_external: the Pile Bunker punch), or null. It has no strikes of its own,
+## no target glide and no chain.
+var _external: Node
 
 
 func _ready() -> void:
@@ -219,6 +222,36 @@ func get_combo_wait() -> float:
 	if not _landed or not _can_chain():
 		return -1.0
 	return _since_hit
+
+
+## Plays attack's clip on the whole body for owner (the Pile Bunker punch, user request 2026-10-29), with the clip's
+## travel but no strikes, no target glide and no chain: the owner does its own hit. False when the mech cannot
+## attack now or a swing plays.
+func play_external(attack: MeleeAttack, owner: Node) -> bool:
+	if is_playing or not _can_attack():
+		return false
+	_external = owner
+	chain_count = 1
+	_chain_closed = true
+	_begin_swing(attack, null, false)
+	_target = null
+	return true
+
+
+## Clip time (s) of the external clip of owner, or -1 when it does not play.
+func external_time(owner: Node) -> float:
+	return _time if is_playing and _external == owner else -1.0
+
+
+## True while owner's external clip plays or fades out.
+func is_external_busy(owner: Node) -> bool:
+	return _external == owner and (is_playing or is_fading())
+
+
+## Stops owner's external clip at once (the attack was cancelled).
+func stop_external(owner: Node) -> void:
+	if _external == owner and is_playing:
+		_finish(false)
 
 
 ## The mouse button of a melee weapon was pressed: starts the first swing of a chain for the move key.
@@ -364,6 +397,8 @@ func _input_direction() -> StringName:
 
 ## Starts one swing. chained = the next swing of a chain: it blends in from the pose of the swing before.
 func _begin_swing(attack: MeleeAttack, weapon: MeleeWeapon, chained: bool) -> void:
+	if weapon != null:
+		_external = null
 	if chained:
 		_prev_weight = smoothstep(0.0, 1.0, _weight())
 		_prev_attack = _attack
@@ -417,7 +452,11 @@ func _physics_process(delta: float) -> void:
 		_finish(false)
 		return
 	# The weapon or its arm broke: the attack stops.
-	if not is_instance_valid(_weapon) or _weapon.process_mode == Node.PROCESS_MODE_DISABLED \
+	if _external != null:
+		if not is_instance_valid(_external) or (_external as Node).process_mode == Node.PROCESS_MODE_DISABLED:
+			_finish(true)
+			return
+	elif not is_instance_valid(_weapon) or _weapon.process_mode == Node.PROCESS_MODE_DISABLED \
 			or not is_instance_valid(_weapon.get_model()):
 		_finish(true)
 		return
@@ -594,6 +633,8 @@ func _update_lunge(delta: float) -> bool:
 
 ## Hits every mech near the strike point during a strike window, once per strike.
 func _strike() -> void:
+	if _external != null:
+		return
 	for i in _attack.strikes.size():
 		var window := _attack.strikes[i]
 		if _time < window.x or _time > window.y or not is_instance_valid(_weapon):

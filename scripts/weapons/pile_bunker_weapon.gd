@@ -84,6 +84,15 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 ## Layers the contact check hits: 1 world, 3 props, 4 hitboxes.
 @export_flags_3d_physics var collision_mask: int = 29
 
+@export_group("Punch clip")
+## Punch clip (user upload 2026-10-29, "Punching - for pile bunker"): after the charge the whole body plays it
+## (SkeletalMeleeAnimation.play_external) instead of the coded wind-up and punch. The stakes fire when the nose
+## touches something during the clip's strike window. Null = the coded punch.
+@export var punch_clip_right: MeleeAttack = null
+@export var punch_clip_left: MeleeAttack = null
+## The clip's contact ray starts this far behind the nose, along the stakes (m).
+@export var clip_contact_back: float = 2.0
+
 @export_group("Model")
 ## The parts in the model (paths from the weapon root): the stake that slides out, the nose (front of
 ## the pile bunker), the drum meshes and the nose ring that glow with the stored power.
@@ -117,7 +126,7 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export var punch_reach: float = 4.9
 @export var punch_cone_deg: float = 60.0
 
-enum State { IDLE, POWER, CHARGE, WINDUP, PUNCH, HOLD, RECOVER }
+enum State { IDLE, POWER, CHARGE, WINDUP, PUNCH, HOLD, RECOVER, CLIP }
 
 var state: State = State.IDLE
 ## 0 = stake in, 1 = stake fully out.
@@ -143,6 +152,11 @@ var _aim_point := Vector3.ZERO
 var is_left: bool = false
 ## The forearm bone attachment that carries the model (on_forearm_bone).
 var _bone_attach: BoneAttachment3D
+## The melee clip player (found on the first clip) and the arm IK target the clip took away.
+var _melee: SkeletalMeleeAnimation
+var _saved_target: Node3D
+## Seconds since the stakes fired during the clip.
+var _since_fire: float = 0.0
 
 @onready var _mount: Node3D = $Mount
 @onready var _stake: Node3D = get_node(stake_path)
@@ -198,6 +212,11 @@ func cancel() -> void:
 	controller.mech.is_lunging = false
 	if not is_left:
 		controller.mech_shield.force_up = false
+	if state == State.CLIP:
+		if is_instance_valid(_melee):
+			_melee.stop_external(self)
+		_end_clip()
+		return
 	_next(State.RECOVER)
 
 
@@ -255,7 +274,8 @@ func _update(delta: float) -> void:
 			_action = _guard
 			_twist = charge_twist_deg * smoothstep(0.0, 1.0, _pose_weight)
 			if not controller.mech.is_lunging:
-				_next(State.WINDUP)
+				if not _start_clip():
+					_next(State.WINDUP)
 		State.WINDUP:
 			var t := smoothstep(0.0, 1.0, clampf(_time / windup_time, 0.0, 1.0))
 			_pose_weight = 1.0
@@ -286,6 +306,8 @@ func _update(delta: float) -> void:
 				_check_contact()
 			if _time >= hold_time:
 				_next(State.RECOVER)
+		State.CLIP:
+			_update_clip(delta)
 		State.RECOVER:
 			_pose_weight = move_toward(_pose_weight, 0.0, delta / _lower_time())
 			_twist = punch_twist_deg * smoothstep(0.0, 1.0, _pose_weight)
@@ -297,6 +319,73 @@ func _update(delta: float) -> void:
 	if not is_left:
 		controller.mech_shield.force_up = state == State.CHARGE
 	controller.torso_pose.action_twist_deg = _twist * (-1.0 if is_left else 1.0)
+
+
+## Starts the punch clip on the whole body (false: no clip, or the mech cannot play it now).
+func _start_clip() -> bool:
+	var clip := punch_clip_left if is_left else punch_clip_right
+	if clip == null:
+		return false
+	if not is_instance_valid(_melee):
+		_melee = controller.mech.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
+	if _melee == null or not _melee.play_external(clip, self):
+		return false
+	# The clip moves the arm: the arm IK lets go of the weapon's grip until the clip has faded out.
+	var ik := controller.holding_arm_ik()
+	_saved_target = ik.target
+	ik.target = null
+	_since_fire = 0.0
+	_next(State.CLIP)
+	return true
+
+
+## The punch clip plays: the guard pose and the torso turn fade (the clip moves the body), the stakes fire on
+## contact during the strike window, and the arm goes back to the weapon when the clip has faded out.
+func _update_clip(delta: float) -> void:
+	_pose_weight = move_toward(_pose_weight, 0.0, delta * guard_speed)
+	_twist = move_toward(_twist, 0.0, absf(punch_twist_deg) * delta * guard_speed)
+	var clip := punch_clip_left if is_left else punch_clip_right
+	var time := _melee.external_time(self) if is_instance_valid(_melee) else -1.0
+	if has_fired:
+		_since_fire += delta
+	elif time >= 0.0 and clip.strikes.size() > 0:
+		var window := clip.strikes[0]
+		if time >= window.x and time <= window.y:
+			_check_clip_contact()
+		elif time > window.y and controller.mech.one_leg and controller.mech.fall_control != null:
+			# One leg left: a punch into nothing throws the mech off balance.
+			cancel()
+			controller.mech.fall_control.fall()
+			return
+	if not is_instance_valid(_melee) or not _melee.is_external_busy(self):
+		_end_clip()
+
+
+## The arm takes the weapon's grip again and the weapon is idle.
+func _end_clip() -> void:
+	var ik := controller.holding_arm_ik()
+	if ik.target == null:
+		ik.target = _saved_target
+	_pose_weight = 0.0
+	state = State.IDLE
+
+
+## Grip the arm IK should hold while the punch clip has the arm (WeaponController.fist_hang_target: the arm rig
+## poses it there under the clip, so the clip fades into the rest hold), or null.
+func clip_hold_target() -> Node3D:
+	return _saved_target if state == State.CLIP else null
+
+
+## Contact during the clip: a ray along the stakes from behind the nose to contact_reach past it.
+func _check_clip_contact() -> void:
+	var forward := -_nose.global_basis.z.normalized()
+	var start := _nose.global_position - forward * clip_contact_back
+	var query := PhysicsRayQueryParameters3D.create(start, _nose.global_position + forward * contact_reach,
+			collision_mask, controller.mech.get_hit_exclude())
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return
+	_fire_stake(hit.position, hit.normal, hit.collider, forward)
 
 
 func _lower_time() -> float:
@@ -325,13 +414,15 @@ func _update_power(delta: float) -> void:
 
 
 func _update_stake(delta: float) -> void:
-	if has_fired and (state == State.PUNCH or state == State.HOLD):
+	if has_fired and (state == State.PUNCH or state == State.HOLD or (state == State.CLIP and _since_fire < hold_time)):
 		stake_out = move_toward(stake_out, 1.0, delta / stake_out_time)
 	else:
 		stake_out = move_toward(stake_out, 0.0, delta / stake_back_time)
-	var cocked := -cock_distance * power if state in [State.POWER, State.CHARGE, State.WINDUP] else 0.0
+	var cocked := -cock_distance * power if state in [State.POWER, State.CHARGE, State.WINDUP] \
+			or (state == State.CLIP and not has_fired) else 0.0
 	_stake.position = _stake_rest + Vector3(0.0, 0.0, -stake_travel * stake_out - cocked)
-	_glow.level = power if state in [State.POWER, State.CHARGE, State.WINDUP, State.PUNCH] else 0.0
+	_glow.level = power if state in [State.POWER, State.CHARGE, State.WINDUP, State.PUNCH] \
+			or (state == State.CLIP and not has_fired) else 0.0
 
 
 func _start() -> void:
@@ -447,6 +538,8 @@ func get_status_text() -> String:
 			text += "  CHARGE"
 		State.WINDUP, State.PUNCH:
 			text += "  PUNCH"
+		State.CLIP:
+			text += "  HIT" if has_fired else "  PUNCH"
 		State.HOLD:
 			text += "  HIT" if has_fired else "  MISS"
 	return text
