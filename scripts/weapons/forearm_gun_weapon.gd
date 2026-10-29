@@ -24,6 +24,18 @@ extends GunWeapon
 ## The fist's index side points this way along the handle (+1 up its +Y, toward the cannon; -1 down; 0 = the
 ## nearer of the two each frame). Set so the palm faces in (user report 2026-10-29: the right fist was palm out).
 @export var grip_axis_sign: int = 0
+## Run pose (user request 2026-10-29: "arms bent at the joint at a 90 degree angle when running"): while the mech
+## moves, the fist blends from the rest place to this place (torso space, right hand; the left hand mirrors it):
+## the elbow-90 place with the forearm straight forward.
+@export var run_fist: Vector3 = Vector3(2.18, 1.16, -2.76)
+## The run pose starts at this ground speed and is full at run_full_speed (m/s).
+@export var run_start_speed: float = 2.0
+@export var run_full_speed: float = 5.0
+## How fast the run pose blends in and out (amount per second).
+@export var run_blend_speed: float = 2.5
+
+## 0 = rest pose, 1 = run pose.
+var run_amount: float = 0.0
 
 @onready var _mount: Node3D = $Mount
 
@@ -40,6 +52,10 @@ func get_model() -> Node3D:
 
 func _update(delta: float) -> void:
 	_attach_to_forearm()
+	var velocity := controller.mech.velocity
+	var speed := Vector2(velocity.x, velocity.z).length()
+	var want := smoothstep(run_start_speed, run_full_speed, speed)
+	run_amount = move_toward(run_amount, want, run_blend_speed * delta)
 	super(delta)
 
 
@@ -82,4 +98,7 @@ func _attach_to_forearm() -> void:
 ## The arm holds it like the heavy rifle: the weapon data poses are the rifle's, and the fist goes
 ## where the rifle's grip would be.
 func get_pose(rest: Transform3D, aim: Transform3D, t: float) -> Transform3D:
-	return super(rest, aim, t) * Transform3D(Basis.IDENTITY, rifle_grip)
+	var fist := WeaponController.mirror_point(run_fist) if controller != null and controller.left_arm_view else run_fist
+	var run := Transform3D(rest.basis, fist - rest.basis * rifle_grip)
+	var base := rest.interpolate_with(run, smoothstep(0.0, 1.0, run_amount))
+	return super(base, aim, t) * Transform3D(Basis.IDENTITY, rifle_grip)

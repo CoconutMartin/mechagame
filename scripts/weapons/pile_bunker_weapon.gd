@@ -153,6 +153,8 @@ var _aim_point := Vector3.ZERO
 var is_left: bool = false
 ## The forearm bone attachment that carries the model (on_forearm_bone).
 var _bone_attach: BoneAttachment3D
+## The model's box corners in the forearm bone's frame (on_forearm_bone), for the arm rig's keep-off.
+var _bone_corners: Array[Vector3] = []
 ## The melee clip player (found on the first clip) and the arm IK target the clip took away.
 var _melee: SkeletalMeleeAnimation
 var _saved_target: Node3D
@@ -239,6 +241,7 @@ func _attach_to_forearm() -> void:
 		skeleton.add_child(_bone_attach)
 		_mount.reparent(_bone_attach, false)
 		_mount.transform = bone_mount_left if is_left else bone_mount_right
+		_bone_corners = _model_corners()
 		if model != null and (bone_mirror_left if is_left else bone_mirror_right):
 			model.transform = Transform3D(Basis.from_scale(Vector3(-1.0, 1.0, 1.0)), Vector3.ZERO) * model.transform
 		return
@@ -320,6 +323,30 @@ func _update(delta: float) -> void:
 	if not is_left:
 		controller.mech_shield.force_up = state == State.CHARGE
 	controller.torso_pose.action_twist_deg = _twist * (-1.0 if is_left else 1.0)
+
+
+## The model's box corners in the forearm bone's frame (empty when the model is not on the forearm bone). The arm
+## rig keeps them off the legs and the body like the hand (an idle Pile Bunker arm swings with the stride).
+func forearm_bone_corners() -> Array[Vector3]:
+	return _bone_corners
+
+
+## The box of the model's meshes (stakes in), as 8 corners in the bone attachment's frame.
+func _model_corners() -> Array[Vector3]:
+	var box := AABB()
+	var first := true
+	var to_attach := _bone_attach.global_transform.affine_inverse()
+	for mesh: MeshInstance3D in _mount.find_children("*", "MeshInstance3D", true, false):
+		var place := to_attach * mesh.global_transform
+		var aabb := mesh.get_aabb()
+		for i in 8:
+			var point := place * aabb.get_endpoint(i)
+			box = AABB(point, Vector3.ZERO) if first else box.expand(point)
+			first = false
+	var corners: Array[Vector3] = []
+	for i in 8:
+		corners.append(box.get_endpoint(i))
+	return corners
 
 
 ## The punch clip of clip_number for this hand, or null.

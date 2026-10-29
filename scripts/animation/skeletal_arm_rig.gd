@@ -135,6 +135,13 @@ extends SkeletonModifier3D
 ## Hinge arms: an arm that holds a Pile Bunker has its block tilted this much (degrees, the outer end down; the
 ## elbow comes in a little) so the shoulder is not quite flat (user request 2026-10-29).
 @export var pile_bunker_block_tilt_deg: float = 4.0
+## An idle Pile Bunker arm swings with the stride like an empty arm, by this share of the empty arm's swing (the
+## weapon on the forearm would hit the thigh at the full swing).
+@export_range(0.0, 1.0) var pile_bunker_swing_scale: float = 1.0
+## Distance (m) a Pile Bunker arm's weapon corners keep from the leg lines while it swings (the swing keep-off).
+@export var pile_bunker_leg_clearance: float = 1.2
+## Share of the stride swing's elbow bend for a Pile Bunker arm.
+@export_range(0.0, 1.0) var pile_bunker_elbow_swing_scale: float = 0.5
 @export_group("Moving arms")
 ## An arm that follows the animation keeps this part of the clip's raise to the side (the walk clips'
 ## shallow V) while the mech moves: 0.5 = half the angle (user rule 2026-10-18). 1 = the clip as it is.
@@ -960,8 +967,26 @@ func _guard_marker(right: bool) -> Marker3D:
 
 
 ## True when the arm's IK goes to a relaxed hang marker (a free or fist hand).
+## Share of the free arm swing for an arm: pile_bunker_swing_scale for a Pile Bunker arm, else 1.
+func _swing_share(ik: TwoBoneIK) -> float:
+	return pile_bunker_swing_scale if _holds_pile_bunker(ik) else 1.0
+
+
+func _holds_pile_bunker(ik: TwoBoneIK) -> bool:
+	if weapons == null:
+		return false
+	return (weapons.right_weapon if ik == ik_right else weapons.left_weapon) is PileBunkerWeapon
+
+
 func _is_relaxed(ik: TwoBoneIK) -> bool:
-	return weapons != null and ik.target != null and (ik.target == weapons.free_left_hand or ik.target == weapons.free_right_hand)
+	if weapons == null or ik.target == null:
+		return false
+	if ik.target == weapons.free_left_hand or ik.target == weapons.free_right_hand:
+		return true
+	# An idle Pile Bunker arm swings like an empty arm (user request 2026-10-29).
+	var held := weapons.right_weapon if ik == ik_right else weapons.left_weapon
+	return held is PileBunkerWeapon and is_instance_valid(held) and not (held as PileBunkerWeapon).is_busy() \
+			and held.is_ancestor_of(ik.target)
 
 
 ## The mech's FreeArmSwing (found on first use; Mech adds it at runtime), or null.
@@ -978,7 +1003,7 @@ func _swing_relaxed(side: Dictionary) -> void:
 	var ik := side.ik as TwoBoneIK
 	if not _is_relaxed(ik) or _arm_swing() == null:
 		return
-	var angle := _free_swing.right_angle if ik == ik_right else _free_swing.left_angle
+	var angle := (_free_swing.right_angle if ik == ik_right else _free_swing.left_angle) * _swing_share(ik)
 	if absf(angle) < 0.00001:
 		return
 	if hinge_arms and side.has("hinge"):
@@ -1006,7 +1031,13 @@ func _clip_swing(side: Dictionary, right: bool) -> void:
 	var hang := _arm_distances(side, legs)
 	var leg_limit := minf(swing_leg_clearance, hang.x)
 	var body_limit := minf(swing_body_clearance, hang.y)
-	var turns := _free_swing.swing(right)
+	if _holds_pile_bunker(ik):
+		# A Pile Bunker arm keeps its full clearance: its weapon hangs by the thigh, which swings into it.
+		leg_limit = pile_bunker_leg_clearance
+	var turns := _free_swing.swing(right) * _swing_share(ik)
+	if _holds_pile_bunker(ik):
+		# Less elbow bend: the weapon's butt sits at the elbow and meets the upper arm.
+		turns.y *= pile_bunker_elbow_swing_scale
 	_turn_about_torso_side(side.upper, turns.x)
 	_turn_about_torso_side(side.fore, turns.y)
 	_turn_upper(side, right, deg_to_rad(clip_out_deg) * _free_swing.amount)
@@ -1063,12 +1094,26 @@ func _torso_back_axis() -> Vector3:
 func _arm_distances(side: Dictionary, legs: Array) -> Vector2:
 	var skin := _skeleton.global_transform
 	var nearest := Vector2(INF, INF)
+	for point in _keep_off_points(side):
+		nearest.x = minf(nearest.x, _leg_distance(skin * point, legs))
+		nearest.y = minf(nearest.y, _body_distance(point))
+	return nearest
+
+
+## Points of an arm that keep off the legs and the body (skeleton space): the palm and the wrist, and the box
+## corners of a Pile Bunker on the forearm (user request 2026-10-29: its arm swings like an empty arm).
+func _keep_off_points(side: Dictionary) -> Array[Vector3]:
+	var points: Array[Vector3] = []
 	for bone: int in [side.grip, side.hand]:
 		if bone >= 0:
-			var point := _skeleton.get_bone_global_pose(bone).origin
-			nearest.x = minf(nearest.x, _leg_distance(skin * point, legs))
-			nearest.y = minf(nearest.y, _body_distance(point))
-	return nearest
+			points.append(_skeleton.get_bone_global_pose(bone).origin)
+	if weapons != null:
+		var held := weapons.right_weapon if side.ik == ik_right else weapons.left_weapon
+		if held is PileBunkerWeapon and is_instance_valid(held):
+			var fore := _skeleton.get_bone_global_pose(side.fore as int)
+			for corner: Vector3 in (held as PileBunkerWeapon).forearm_bone_corners():
+				points.append(fore * corner)
+	return points
 
 
 ## Distance (m) of a point (skeleton space) to the nearest armor box (below 0: that deep inside).
@@ -1091,10 +1136,7 @@ func _keep_off(side: Dictionary, right: bool, legs: Array, leg_limit: float, bod
 	var skin := _skeleton.global_transform
 	var upper_pose := _skeleton.get_bone_global_pose(side.upper as int)
 	var shoulder := upper_pose.origin
-	var points: Array[Vector3] = []
-	for bone: int in [side.grip, side.hand]:
-		if bone >= 0:
-			points.append(_skeleton.get_bone_global_pose(bone).origin)
+	var points := _keep_off_points(side)
 	var axis := _torso_back_axis()
 	var out_sign := 1.0 if right else -1.0
 	var clear := func(angle: float) -> bool:
