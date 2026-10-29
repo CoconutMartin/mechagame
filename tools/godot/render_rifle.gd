@@ -62,6 +62,13 @@ func _run() -> void:
 	for action in actions:
 		Input.action_press(action)
 	await _frames(int(_env("RIFLE_FRAMES", "90")))
+	# RIFLE_CLIP=<seconds>: plays the Pile Bunker punch clip of the right weapon and takes the pictures at that clip time.
+	if OS.has_environment("RIFLE_CLIP"):
+		var bunker := weapons.right_weapon as PileBunkerWeapon
+		var melee := player.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
+		if bunker != null and melee != null and bunker._start_clip():
+			while melee.is_playing and melee.external_time(bunker) < float(OS.get_environment("RIFLE_CLIP")) - 0.05:
+				await _frames(1)
 	var probe := Probe.new()
 	var sample := func() -> void:
 		_snap = probe.snapshot(player, skeleton, weapons)
@@ -107,6 +114,17 @@ func _run() -> void:
 				camera.projection = Camera3D.PROJECTION_PERSPECTIVE
 				camera.fov = 30.0
 				camera.look_at_from_position(arm_center + forward * 22.0 + out_dir * 1.0, arm_center, Vector3.UP)
+			"far":
+				# Whole mech from its right side, level, from the mech root (not the torso frame).
+				var center := player.global_position + Vector3.UP * 5.0
+				camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+				camera.size = 14.0
+				camera.look_at_from_position(center + player.global_basis.x * 40.0, center, Vector3.UP)
+			"far_front":
+				var center_f := player.global_position + Vector3.UP * 5.0
+				camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+				camera.size = 14.0
+				camera.look_at_from_position(center_f - player.global_basis.z * 40.0, center_f, Vector3.UP)
 			"p_back":
 				camera.projection = Camera3D.PROJECTION_PERSPECTIVE
 				camera.fov = 30.0

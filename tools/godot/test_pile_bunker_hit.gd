@@ -9,7 +9,7 @@ const MAP := "res://maps/urban_small/urban_small.tscn"
 const MECH_SCENE := "res://scenes/mech/sanggigilid.tscn"
 const BUNKER := "res://data/weapons/pile_bunker.tres"
 const POWER_FRAMES := 60
-const MAX_FRAMES := 360
+const MAX_FRAMES := 480
 
 ## Cases: name, side ("R" or "L"), target distance in m.
 const CASES := [["right_12", "R", 12.0], ["right_20", "R", 20.0], ["left_12", "L", 12.0], ["left_20", "L", 20.0]]
