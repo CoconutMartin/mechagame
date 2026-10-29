@@ -42,6 +42,10 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export var forearm_bone_left: StringName = &"forearm_L"
 @export var bone_mount_right: Transform3D = Transform3D.IDENTITY
 @export var bone_mount_left: Transform3D = Transform3D.IDENTITY
+## On the forearm bone: mirror the model (X, the mirror_path node) in that hand, so its detailed side
+## (drum, plates, lug) faces out. Both places are proper turns, so one hand needs the mirror.
+@export var bone_mirror_right: bool = false
+@export var bone_mirror_left: bool = true
 
 @export_group("Torso")
 ## Torso turn during the shield charge, in degrees. Negative = turn right (left shoulder leads).
@@ -206,7 +210,7 @@ func get_model() -> Node3D:
 func _attach_to_forearm() -> void:
 	if _bone_attach != null:
 		return
-	var model := get_node_or_null(mirror_path) as Node3D if is_left else null
+	var model := get_node_or_null(mirror_path) as Node3D
 	var skeleton := controller.mech.find_child("Skeleton3D", true, false) as Skeleton3D if on_forearm_bone else null
 	if skeleton != null:
 		_bone_attach = BoneAttachment3D.new()
@@ -215,8 +219,7 @@ func _attach_to_forearm() -> void:
 		skeleton.add_child(_bone_attach)
 		_mount.reparent(_bone_attach, false)
 		_mount.transform = bone_mount_left if is_left else bone_mount_right
-		# The left place is a proper turn too: mirror the model so the drum is on the outer side there.
-		if model != null:
+		if model != null and (bone_mirror_left if is_left else bone_mirror_right):
 			model.transform = Transform3D(Basis.from_scale(Vector3(-1.0, 1.0, 1.0)), Vector3.ZERO) * model.transform
 		return
 	var forearm := controller.holding_arm_ik().mid_joint
@@ -231,7 +234,7 @@ func _attach_to_forearm() -> void:
 		basis = Basis.from_scale(Vector3(1.0, 1.0, -1.0)) * basis * Basis.from_scale(Vector3(-1.0, 1.0, 1.0))
 		place.z = -place.z
 		# That place turns the model round (the forearm is on its +X side): mirror the model to put it back.
-		if model != null:
+		if model != null and is_left:
 			model.transform = Transform3D(Basis.from_scale(Vector3(-1.0, 1.0, 1.0)), Vector3.ZERO) * model.transform
 	_mount.transform = Transform3D(basis, place)
 
