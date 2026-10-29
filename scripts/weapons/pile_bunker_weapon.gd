@@ -85,11 +85,12 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export_flags_3d_physics var collision_mask: int = 29
 
 @export_group("Punch clip")
-## Punch clip (user upload 2026-10-29, "Punching - for pile bunker"): after the charge the whole body plays it
-## (SkeletalMeleeAnimation.play_external) instead of the coded wind-up and punch. The stakes fire when the nose
-## touches something during the clip's strike window. Null = the coded punch.
-@export var punch_clip_right: MeleeAttack = null
-@export var punch_clip_left: MeleeAttack = null
+## Punch clips (user uploads 2026-10-29, "... - for pile bunker"): after the charge the whole body plays the clip of
+## clip_number (SkeletalMeleeAnimation.play_external) instead of the coded wind-up and punch. The stakes fire when the
+## nose touches something during the clip's strike window. No clip for the number = the coded punch.
+@export var clips: PileBunkerClips = null
+## Which clip of clips this Pile Bunker plays (1 to 5). The player switches it in play with Shift + 1 to 5 (tests).
+@export_range(1, 5) var clip_number: int = 1
 ## The clip's contact ray starts this far behind the nose, along the stakes (m).
 @export var clip_contact_back: float = 2.0
 
@@ -321,9 +322,28 @@ func _update(delta: float) -> void:
 	controller.torso_pose.action_twist_deg = _twist * (-1.0 if is_left else 1.0)
 
 
+## The punch clip of clip_number for this hand, or null.
+func punch_clip() -> MeleeAttack:
+	return clips.get_clip(clip_number, is_left) if clips != null else null
+
+
+## Shift + 1 to 5: the player's Pile Bunker plays that clip from the next attack (user request 2026-10-29).
+func _unhandled_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if key == null or not key.pressed or key.echo or not key.shift_pressed or clips == null:
+		return
+	if controller == null or not controller.mech.is_in_group(&"player"):
+		return
+	var number := key.keycode - KEY_0
+	if number < 1 or number > 5:
+		return
+	clip_number = number
+	get_viewport().set_input_as_handled()
+
+
 ## Starts the punch clip on the whole body (false: no clip, or the mech cannot play it now).
 func _start_clip() -> bool:
-	var clip := punch_clip_left if is_left else punch_clip_right
+	var clip := punch_clip()
 	if clip == null:
 		return false
 	if not is_instance_valid(_melee):
@@ -344,7 +364,7 @@ func _start_clip() -> bool:
 func _update_clip(delta: float) -> void:
 	_pose_weight = move_toward(_pose_weight, 0.0, delta * guard_speed)
 	_twist = move_toward(_twist, 0.0, absf(punch_twist_deg) * delta * guard_speed)
-	var clip := punch_clip_left if is_left else punch_clip_right
+	var clip := punch_clip()
 	var time := _melee.external_time(self) if is_instance_valid(_melee) else -1.0
 	if has_fired:
 		_since_fire += delta
@@ -542,4 +562,7 @@ func get_status_text() -> String:
 			text += "  HIT" if has_fired else "  PUNCH"
 		State.HOLD:
 			text += "  HIT" if has_fired else "  MISS"
+	if clips != null:
+		var clip_name := clips.get_clip_name(clip_number)
+		text += "  [%d %s%s]" % [clip_number, clip_name, "" if punch_clip() != null else ": none"]
 	return text

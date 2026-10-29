@@ -58,6 +58,9 @@ func _play(map: Node, switcher: LoadoutSwitcher, case: Array) -> void:
 	var player := switcher.mech
 	var weapons := player.get_node("WeaponController") as WeaponController
 	var bunker := (weapons.right_weapon if side == "R" else weapons.left_weapon) as PileBunkerWeapon
+	# NUMBER: the punch clip to test (PileBunkerWeapon.clip_number).
+	if OS.has_environment("NUMBER"):
+		bunker.clip_number = int(OS.get_environment("NUMBER"))
 	# The target stands on the flat line to the blue ring (the crosshair is above the center and a little right).
 	var forward := weapons.mech_aim.aim_point - player.global_position
 	forward.y = 0.0

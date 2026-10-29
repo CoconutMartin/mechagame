@@ -28,7 +28,9 @@ func _run() -> void:
 	var weapons := mech.get_node("WeaponController") as WeaponController
 	var bunker := (weapons.right_weapon if side == "R" else weapons.left_weapon) as PileBunkerWeapon
 	var melee := mech.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
-	var clip := bunker.punch_clip_left if side == "L" else bunker.punch_clip_right
+	if OS.has_environment("NUMBER"):
+		bunker.clip_number = int(OS.get_environment("NUMBER"))
+	var clip := bunker.punch_clip()
 	if OS.has_environment("CLIP"):
 		clip = load(OS.get_environment("CLIP")) as MeleeAttack
 	if OS.has_environment("CLIP"):
@@ -44,13 +46,22 @@ func _run() -> void:
 	var forward := Basis(Vector3.UP, mech.get_aim_yaw()) * Vector3.FORWARD
 	var best := -INF
 	var best_t := 0.0
+	# Times when the stakes point forward (more than 0.6 of the aim) with the nose 3 m or more ahead: strike windows.
+	var windows: Array[Vector2] = []
+	var open := -1.0
 	while melee.is_playing:
 		await _frames(1)
 		var t := melee.external_time(bunker)
 		var nose := bunker._nose.global_position - mech.global_position
 		var ahead := nose.dot(forward)
 		var dir := (-bunker._nose.global_basis.z).normalized()
-		if ahead > best:
+		var forward_now := dir.dot(forward) > 0.6 and ahead >= 3.0
+		if forward_now and open < 0.0:
+			open = t
+		elif not forward_now and open >= 0.0:
+			windows.append(Vector2(open, t))
+			open = -1.0
+		if ahead > best and t > 0.25:
 			best = ahead
 			best_t = t
 		var skeleton := mech.find_child("Skeleton3D", true, false) as Skeleton3D
@@ -69,5 +80,5 @@ func _run() -> void:
 			print("   hands ahead R %.2f (h %.2f)  L %.2f (h %.2f)" % [hand_r.dot(forward), hand_r.y, hand_l.dot(forward), hand_l.y])
 		if int(t * 60.0) % 3 == 0:
 			print("t %.2f nose ahead %.2f m, height %.2f m, stakes point %.2f forward, %.2f up" % [t, ahead, nose.y, dir.dot(forward), dir.y])
-	print("%s farthest nose %.2f m at t %.2f" % [side, best, best_t])
+	print("%s farthest nose %.2f m at t %.2f; forward windows %s" % [side, best, best_t, windows])
 	quit()

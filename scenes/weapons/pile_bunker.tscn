@@ -2,16 +2,14 @@
 
 [ext_resource type="Script" path="res://scripts/weapons/pile_bunker_weapon.gd" id="script"]
 [ext_resource type="PackedScene" path="res://models/pile_bunker/pile_bunker.glb" id="model"]
-[ext_resource type="Resource" path="res://data/melee/pile_bunker_punch_r.tres" id="clip_r"]
-[ext_resource type="Resource" path="res://data/melee/pile_bunker_punch_l.tres" id="clip_l"]
+[ext_resource type="Resource" path="res://data/melee/pile_bunker_clips.tres" id="clips"]
 
 [node name="PileBunker" type="Node3D"]
 script = ExtResource("script")
 stake_travel = 1.3
 contact_reach = 2.4
 cock_distance = 0.15
-punch_clip_right = ExtResource("clip_r")
-punch_clip_left = ExtResource("clip_l")
+clips = ExtResource("clips")
 stake_path = NodePath("Mount/Model/Stake")
 nose_path = NodePath("Mount/Model/Nose")
 drum_paths = Array[NodePath]([NodePath("Mount/Model/Drum")])

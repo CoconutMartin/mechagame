@@ -35,6 +35,9 @@ func _mark_player(player: Mech) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Shift + a number picks the Pile Bunker clip (PileBunkerWeapon), not a loadout.
+	if event is InputEventKey and (event as InputEventKey).shift_pressed:
+		return
 	for i in loadouts.size():
 		if event.is_action_pressed("loadout_%d" % (i + 1)):
 			switch_to(loadouts[i])

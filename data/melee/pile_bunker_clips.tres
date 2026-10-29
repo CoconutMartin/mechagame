@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PileBunkerClips" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/pile_bunker_clips.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/data/melee_attack.gd" id="m"]
+[ext_resource type="Resource" path="res://data/melee/pile_bunker_punch_r.tres" id="r1"]
+[ext_resource type="Resource" path="res://data/melee/pile_bunker_punch_l.tres" id="l1"]
+[ext_resource type="Resource" path="res://data/melee/pile_bunker_knee_combo_r.tres" id="r3"]
+[ext_resource type="Resource" path="res://data/melee/pile_bunker_knee_combo_l.tres" id="l3"]
+[ext_resource type="Resource" path="res://data/melee/pile_bunker_hook_r.tres" id="r4"]
+[ext_resource type="Resource" path="res://data/melee/pile_bunker_hook_l.tres" id="l4"]
+[ext_resource type="Resource" path="res://data/melee/pile_bunker_uppercut_r.tres" id="r5"]
+[ext_resource type="Resource" path="res://data/melee/pile_bunker_uppercut_l.tres" id="l5"]
+
+[resource]
+script = ExtResource("1")
+names = PackedStringArray("Punching", "Cross Punch", "Flying Knee Punch Combo", "Hook", "Uppercut")
+right = Array[ExtResource("m")]([ExtResource("r1"), null, ExtResource("r3"), ExtResource("r4"), ExtResource("r5")])
+left = Array[ExtResource("m")]([ExtResource("l1"), null, ExtResource("l3"), ExtResource("l4"), ExtResource("l5")])
