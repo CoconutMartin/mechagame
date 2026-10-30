@@ -42,6 +42,8 @@ extends SkeletonModifier3D
 @export var limits: JointLimits = preload("res://data/mechs/sanggigilid_joint_limits.tres")
 ## Radius of the hit sphere at the strike point (m).
 @export var hit_radius: float = 2.0
+## Margin (m) around a striking part's own shape (the fist's hand box): the hit query reaches this far past it.
+@export var strike_shape_margin: float = 0.8
 ## Move key input below this (0 to 1) counts as no key.
 @export var key_dead_zone: float = 0.3
 ## Most hit boxes one strike query returns.
@@ -126,6 +128,11 @@ func _switch_ankle_pitch(on: bool) -> void:
 @export var swipe_l: MeleeAttack = preload("res://data/melee/swipe_l.tres")
 @export var hook_r: MeleeAttack = preload("res://data/melee/hook_r.tres")
 @export var hook_l: MeleeAttack = preload("res://data/melee/hook_l.tres")
+@export_group("Head")
+## The head bone and how far a clip may turn it from its rest (swing, twist; degrees; x < 0 = the joint limits):
+## the boxer clips tuck the chin, and the mech's head went into its chest.
+@export var head_bone_name: String = "head"
+@export var head_clip_limit: Vector2 = Vector2(0.0, 25.0)
 @export_group("Charge")
 ## The charging clip (user upload 2026-10-30, "Idle - pilebunker charging"), looped while a fist's button is held
 ## (hold to charge) and while a Pile Bunker powers up and charges. Right arm and left arm (mirrored).
@@ -731,11 +738,20 @@ func _strike() -> void:
 		if not _hit.has(i):
 			_hit[i] = {}
 		var point := _weapon.get_strike_point()
-		var shape := SphereShape3D.new()
-		shape.radius = hit_radius
 		var query := PhysicsShapeQueryParameters3D.new()
-		query.shape = shape
-		query.transform = Transform3D(Basis.IDENTITY, point)
+		# The striking part's own shape when it has one (the fist: the hand's box), else a sphere at the strike point.
+		var strike := _weapon.get_strike_shape()
+		if strike.size() == 2:
+			var box := (strike[0] as BoxShape3D).duplicate() as BoxShape3D
+			box.size += Vector3.ONE * strike_shape_margin * 2.0
+			query.shape = box
+			query.transform = strike[1]
+			point = (strike[1] as Transform3D).origin
+		else:
+			var shape := SphereShape3D.new()
+			shape.radius = hit_radius
+			query.shape = shape
+			query.transform = Transform3D(Basis.IDENTITY, point)
 		query.collision_mask = PartHitbox.LAYER
 		query.exclude = health.get_hitbox_rids()
 		# The closest part of each mech.
@@ -815,6 +831,10 @@ func _clip_rotation(attack: MeleeAttack, track: int, time: float, bone_name: Str
 	if track < 0:
 		return fallback
 	var rotation := attack.animation.rotation_track_interpolate(track, time)
+	if bone_name == head_bone_name and head_clip_limit.x >= 0.0:
+		# Part collisions (user report 2026-10-30: the head went into the chest when about to punch): the clip
+		# turns the head at most head_clip_limit (swing, twist; degrees) from its rest.
+		return JointLimits.clamp_with(rest, rotation, head_clip_limit)
 	if limits == null or (free_legs and bone_name in LEG_BONES):
 		return rotation
 	return limits.clamp_rotation(bone_name, rest, rotation)
@@ -873,6 +893,9 @@ func _process_modification_with_delta(_delta: float) -> void:
 	if pelvis_bone >= 0 and (_attack.air_share < 1.0 or _attack.crouch_share < 1.0):
 		_temper_height(skeleton, pelvis_bone, stand_pelvis, weight)
 	_clamp_feet(skeleton)
+	# Part collisions (user request 2026-10-30): the arms the clip drives keep off the body and the legs.
+	if arm_rig != null:
+		arm_rig.keep_clip_arms_off(not keep_right, not keep_left)
 	if arm_rig != null:
 		arm_rig.refresh_torso()
 

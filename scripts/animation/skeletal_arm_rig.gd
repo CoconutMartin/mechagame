@@ -142,6 +142,18 @@ extends SkeletonModifier3D
 @export var pile_bunker_leg_clearance: float = 1.2
 ## Share of the stride swing's elbow bend for a Pile Bunker arm.
 @export_range(0.0, 1.0) var pile_bunker_elbow_swing_scale: float = 0.5
+@export_group("Clip keep-off")
+## Melee clips (user request 2026-10-30: "add part collisions for the punching/fist/pilebunker animations"): after
+## the clip pose (SkeletalMeleeAnimation calls keep_clip_arms_off), an arm the clip drives turns out to the side
+## until its elbow, forearm, hand and held Pile Bunker keep these distances (m) from the chest and pelvis armor and
+## from the leg lines, at most clip_max_out_deg, changing at most clip_out_speed_deg per second.
+@export var clip_keep_off: bool = true
+@export var clip_body_clearance: float = 0.1
+@export var clip_leg_clearance: float = 0.9
+@export var clip_max_out_deg: float = 60.0
+@export var clip_max_forward_deg: float = 50.0
+@export var clip_out_speed_deg: float = 240.0
+@export_group("")
 @export_group("Moving arms")
 ## An arm that follows the animation keeps this part of the clip's raise to the side (the walk clips'
 ## shallow V) while the mech moves: 0.5 = half the angle (user rule 2026-10-18). 1 = the clip as it is.
@@ -1127,6 +1139,146 @@ func _body_distance(point: Vector3) -> float:
 		var outside := Vector3(maxf(away.x, 0.0), maxf(away.y, 0.0), maxf(away.z, 0.0)).length()
 		nearest = minf(nearest, outside if outside > 0.0 else maxf(away.x, maxf(away.y, away.z)))
 	return nearest
+
+
+## Melee clips: each arm the clip drives (right, left) turns out until its points keep clear of the chest, the
+## pelvis and the legs (clip_keep_off). Call after the clip pose is set (a modifier after this one).
+func keep_clip_arms_off(drive_right: bool, drive_left: bool) -> void:
+	if not clip_keep_off or _sides.size() < 2:
+		return
+	var legs := _leg_segments()
+	for i in 2:
+		var right := i == 1
+		var side := _sides[i] as Dictionary
+		if not (drive_right if right else drive_left):
+			side.clip_turn = Vector2.ZERO
+			continue
+		var points := _keep_off_points(side)
+		var fore_pose := _skeleton.get_bone_global_pose(side.fore as int)
+		points.append(fore_pose.origin)
+		for corner: Vector3 in _armor_corners(side, right, "02", side.fore as int):
+			points.append(fore_pose * corner)
+		# The upper arm armor's elbow half (its shoulder end turns in place).
+		var upper_pose := _skeleton.get_bone_global_pose(side.upper as int)
+		for corner: Vector3 in _armor_corners(side, right, "01", side.upper as int):
+			points.append(upper_pose * corner)
+		_push_clear(side, right, points, legs)
+
+
+## An arm armor's box corners in its bone's frame (from its rest vertices; cached on the side): the forearm armor
+## ("02") whole, the upper arm armor ("01") on its elbow half.
+func _armor_corners(side: Dictionary, right: bool, part: String, bone_id: int) -> Array:
+	var key := "corners_" + part
+	if side.has(key):
+		return side[key]
+	var corners: Array = []
+	var mesh := _skeleton.get_node_or_null("Arm_%s_%s" % ["R" if right else "L", part]) as MeshInstance3D
+	if mesh != null and mesh.skin != null:
+		var arrays := mesh.mesh.surface_get_arrays(0)
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
+		var per := bones.size() / maxi(vertices.size(), 1)
+		var box := AABB()
+		var first := true
+		for v in vertices.size():
+			var index := bones[v * per]
+			if _skeleton.find_bone(mesh.skin.get_bind_name(index)) != bone_id:
+				continue
+			var p := mesh.skin.get_bind_pose(index) * vertices[v]
+			box = AABB(p, Vector3.ZERO) if first else box.expand(p)
+			first = false
+		if not first:
+			# Slightly inside the box: the armor is rounded at its corners.
+			var inner := box.grow(-0.1)
+			if part == "01":
+				# The elbow half: the bone runs along its Y (to the elbow at +Y).
+				inner = AABB(inner.position + Vector3(0.0, inner.size.y * 0.5, 0.0), inner.size * Vector3(1.0, 0.5, 1.0))
+			for i in 8:
+				corners.append(inner.get_endpoint(i))
+	side[key] = corners
+	return corners
+
+
+## Melee clip keep-off: the smallest turn of the upper arm, out to the side (about the torso's forward axis, up to
+## clip_max_out_deg) and forward (about its side axis, up to clip_max_forward_deg), that keeps points clear of the body
+## boxes and the leg lines (the forward turn costs a little more); none clears: the one that gets farthest. Each part
+## changes at most clip_out_speed_deg per second.
+func _push_clear(side: Dictionary, right: bool, points: Array[Vector3], legs: Array) -> void:
+	var skin := _skeleton.global_transform
+	var shoulder := _skeleton.get_bone_global_pose(side.upper as int).origin
+	var back := _torso_back_axis()
+	var torso_basis := _skeleton.global_transform.basis.orthonormalized().inverse() * torso.global_basis.orthonormalized()
+	var across := (torso_basis * Vector3.RIGHT).normalized()
+	var out_sign := 1.0 if right else -1.0
+	var room := func(out: float, forward: float) -> float:
+		var turn := Basis(back, out * out_sign) * Basis(across, forward)
+		var nearest := INF
+		for point in points:
+			var moved := shoulder + turn * (point - shoulder)
+			nearest = minf(nearest, minf(_leg_distance(skin * moved, legs) - clip_leg_clearance,
+					_body_distance(moved) - clip_body_clearance))
+		return nearest
+	var best := Vector2.ZERO
+	if room.call(0.0, 0.0) < 0.0:
+		var best_cost := INF
+		var best_room := -INF
+		var fallback := Vector2.ZERO
+		for f in range(0, int(clip_max_forward_deg) + 1, 10):
+			for o in range(0, int(clip_max_out_deg) + 1, 5):
+				var here: float = room.call(deg_to_rad(o), deg_to_rad(f))
+				var cost := o + f * 1.5
+				if here >= 0.0 and cost < best_cost:
+					best_cost = cost
+					best = Vector2(deg_to_rad(o), deg_to_rad(f))
+				if here > best_room:
+					best_room = here
+					fallback = Vector2(deg_to_rad(o), deg_to_rad(f))
+		if best_cost == INF:
+			best = fallback
+	var step := deg_to_rad(clip_out_speed_deg) * _delta
+	var last: Vector2 = side.get("clip_turn", Vector2.ZERO)
+	var now := Vector2(clampf(best.x, last.x - step, last.x + step), clampf(best.y, last.y - step, last.y + step))
+	side.clip_turn = now
+	if now.y > 0.0:
+		_turn_about_torso_side(side.upper as int, now.y)
+	if now.x > 0.0:
+		_turn_upper(side, right, now.x)
+
+
+## Turns the upper arm out (about the torso's forward axis at the shoulder) by the smallest angle up to max_deg that
+## keeps points (skeleton space) leg_limit from the leg lines and body_limit from the body boxes, changing at most
+## speed_deg per second from the angle kept in side[key].
+func _push_out(side: Dictionary, right: bool, points: Array[Vector3], legs: Array, leg_limit: float, body_limit: float,
+		max_deg: float, speed_deg: float, key: String) -> void:
+	var skin := _skeleton.global_transform
+	var shoulder := _skeleton.get_bone_global_pose(side.upper as int).origin
+	var axis := _torso_back_axis()
+	var out_sign := 1.0 if right else -1.0
+	var clear := func(angle: float) -> bool:
+		var turn := Basis(axis, angle * out_sign)
+		for point in points:
+			var moved := shoulder + turn * (point - shoulder)
+			if _leg_distance(skin * moved, legs) < leg_limit - 0.001 or _body_distance(moved) < body_limit - 0.001:
+				return false
+		return true
+	var wanted := 0.0
+	if not clear.call(0.0):
+		var low := 0.0
+		var high := deg_to_rad(max_deg)
+		if clear.call(high):
+			for i in 10:
+				var middle := (low + high) * 0.5
+				if clear.call(middle):
+					high = middle
+				else:
+					low = middle
+		wanted = high
+	var step := deg_to_rad(speed_deg) * _delta
+	var last := float(side.get(key, 0.0))
+	var angle := clampf(wanted, last - step, last + step)
+	side[key] = angle
+	if angle > 0.0:
+		_turn_upper(side, right, angle)
 
 
 ## Where the palm or the wrist is nearer the legs than leg_limit or the body than body_limit, the upper arm

@@ -51,6 +51,32 @@ func get_strike_point() -> Vector3:
 	return point.global_position if point != null else global_position
 
 
+## The striking part's shape and place for the hit query (user request 2026-10-30: hits land on the touched part):
+## the jointed hand's box for the fist; [] = a sphere at get_strike_point().
+func get_strike_shape() -> Array:
+	if data == null or data.kind != WeaponData.Kind.FIST:
+		return []
+	var control := controller.mech.find_child("MechHandControl", true, false) as MechHandControl
+	var hand := (control.hand_left if is_left else control.hand_right) if control != null else null
+	if not is_instance_valid(hand) or not hand.visible:
+		return []
+	var box := AABB()
+	var first := true
+	var to_hand := hand.global_transform.affine_inverse()
+	for mesh: MeshInstance3D in hand.find_children("*", "MeshInstance3D", true, false):
+		var place := to_hand * mesh.global_transform
+		var aabb := mesh.get_aabb()
+		for i in 8:
+			var point := place * aabb.get_endpoint(i)
+			box = AABB(point, Vector3.ZERO) if first else box.expand(point)
+			first = false
+	if first:
+		return []
+	var shape := BoxShape3D.new()
+	shape.size = box.size
+	return [shape, hand.global_transform.orthonormalized() * Transform3D(Basis.IDENTITY, box.get_center())]
+
+
 ## Puts the model on the hand bone. Called by WeaponController after setup (is_left is known then).
 func attach_to_hand() -> void:
 	var skeleton := controller.mech.find_child("Skeleton3D", true, false) as Skeleton3D
