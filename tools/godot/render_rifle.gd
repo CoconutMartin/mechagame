@@ -64,7 +64,7 @@ func _run() -> void:
 	await _frames(int(_env("RIFLE_FRAMES", "90")))
 	# RIFLE_CLIP=<seconds>: plays the Pile Bunker punch clip of the right weapon and takes the pictures at that clip time.
 	if OS.has_environment("RIFLE_CLIP"):
-		var bunker := weapons.right_weapon as PileBunkerWeapon
+		var bunker := (weapons.left_weapon if _env("RIFLE_CLIP_SIDE", "R") == "L" else weapons.right_weapon) as PileBunkerWeapon
 		var melee := player.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
 		if bunker != null and OS.has_environment("RIFLE_CLIP_NUMBER"):
 			bunker.clip_number = int(OS.get_environment("RIFLE_CLIP_NUMBER"))
