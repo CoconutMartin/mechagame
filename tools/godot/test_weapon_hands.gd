@@ -245,7 +245,8 @@ func _fists_and_tab_drop() -> void:
 	_release("use_left_arm")
 	_check(played, "LMB: the empty left hand punches")
 	_check(free_arm, "during the punch the left arm IK lets go (the clip drives the arm)")
-	await _frames(120)
+	# The 20-frame press charges (hold to charge, 2026-10-30), so the punch starts on the release.
+	await _frames(160)
 	_check(_weapons.arm_ik_left.target == _weapons.free_left_hand, "after the punch the arm goes back to the relaxed hang")
 	# Tab then a button, Tab up first: no punch.
 	_press("weapon_hand")

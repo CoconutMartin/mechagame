@@ -126,6 +126,17 @@ func _switch_ankle_pitch(on: bool) -> void:
 @export var swipe_l: MeleeAttack = preload("res://data/melee/swipe_l.tres")
 @export var hook_r: MeleeAttack = preload("res://data/melee/hook_r.tres")
 @export var hook_l: MeleeAttack = preload("res://data/melee/hook_l.tres")
+@export_group("Charge")
+## The charging clip (user upload 2026-10-30, "Idle - pilebunker charging"), looped while a fist's button is held
+## (hold to charge) and while a Pile Bunker powers up and charges. Right arm and left arm (mirrored).
+@export var charge_r: MeleeAttack = preload("res://data/melee/pile_bunker_charging_r.tres")
+@export var charge_l: MeleeAttack = preload("res://data/melee/pile_bunker_charging_l.tres")
+## Fist hold to charge: the punch plays on the release, blended from the charging pose; its damage grows by up to
+## fist_charge_bonus (0.5 = +50%) over fist_charge_time seconds of holding. A short click punches at once.
+@export var fist_charge_time: float = 1.5
+@export var fist_charge_bonus: float = 0.5
+## A press shorter than this (s) is a click: the punch starts with no charging clip.
+@export var fist_click_time: float = 0.15
 @export_group("Hammer")
 @export var hammer_down: MeleeAttack = preload("res://data/melee/hammer_down.tres")
 @export var hammer_down_light: MeleeAttack = preload("res://data/melee/hammer_down_light.tres")
@@ -194,6 +205,14 @@ var _ankle_pitch: SkeletonModifier3D
 ## A clip played for another node (play_external: the Pile Bunker punch), or null. It has no strikes of its own,
 ## no target glide and no chain.
 var _external: Node
+## The external clip loops (the charging clip) until it is stopped or chained into another clip.
+var _loop: bool = false
+var _looped: bool = false
+## Fist hold to charge: the fist whose button is held, the seconds it has been held, and the damage factor of the
+## swing that plays (1 + charge).
+var _charge_weapon: MeleeWeapon
+var _charge_age: float = 0.0
+var _damage_scale: float = 1.0
 
 
 func _ready() -> void:
@@ -227,13 +246,32 @@ func get_combo_wait() -> float:
 ## Plays attack's clip on the whole body for owner (the Pile Bunker punch, user request 2026-10-29), with the clip's
 ## travel but no strikes, no target glide and no chain: the owner does its own hit. False when the mech cannot
 ## attack now or a swing plays.
-func play_external(attack: MeleeAttack, owner: Node) -> bool:
+func play_external(attack: MeleeAttack, owner: Node, loop: bool = false) -> bool:
 	if is_playing or not _can_attack():
 		return false
 	_external = owner
 	chain_count = 1
 	_chain_closed = true
 	_begin_swing(attack, null, false)
+	_loop = loop
+	_looped = false
+	_target = null
+	return true
+
+
+## The charging clip of an arm (right or left).
+func charge_clip(left: bool) -> MeleeAttack:
+	return charge_l if left else charge_r
+
+
+## Owner's external clip (a loop) blends into attack, which then plays once (the Pile Bunker charge into its punch).
+func chain_external(attack: MeleeAttack, owner: Node) -> bool:
+	if not is_playing or _external != owner:
+		return false
+	_begin_swing(attack, null, true)
+	_external = owner
+	_loop = false
+	_chain_closed = true
 	_target = null
 	return true
 
@@ -262,11 +300,27 @@ func request(weapon: MeleeWeapon) -> void:
 	# The hammer needs the right mouse button (user, 2026-10-15); the left button does nothing.
 	if weapon.data.kind == WeaponData.Kind.HAMMER and not mech.input.fire_held:
 		return
+	if weapon.data.kind == WeaponData.Kind.FIST and charge_clip(weapon.is_left) != null:
+		# Hold to charge (user request 2026-10-30): the charging clip loops while the button is held; the punch
+		# plays on the release (_update_charge).
+		if weapon.is_left:
+			_left_fire_was_held = mech.input.left_fire_held
+		else:
+			_fire_was_held = mech.input.fire_held
+		_charge_weapon = weapon
+		_charge_age = 0.0
+		return
+	_start_first_swing(weapon, 1.0)
+
+
+## The first swing of a chain for weapon's button and the move key now, its damage times damage_scale.
+func _start_first_swing(weapon: MeleeWeapon, damage_scale: float) -> void:
 	var direction := _input_direction()
 	var attack := _pick_attack(weapon, direction, 0)
 	var thrower := _weapon_for(attack, weapon.data.kind)
 	if thrower == null:
 		return
+	var from_charge := is_playing and _external == weapon
 	chain_count = 1
 	_chain_closed = direction == &"back"
 	# The press that starts the chain is no buffered press for its next swing.
@@ -274,7 +328,30 @@ func request(weapon: MeleeWeapon) -> void:
 		_left_fire_was_held = mech.input.left_fire_held
 	else:
 		_fire_was_held = mech.input.fire_held
-	_begin_swing(attack, thrower, false)
+	# From the charging loop the punch blends in from its pose (a chained swing).
+	_begin_swing(attack, thrower, from_charge)
+	_damage_scale = damage_scale
+
+
+## Fist hold to charge: after fist_click_time of holding the charging clip loops; on the release the punch plays
+## (stronger with the time held). A shorter press punches at once.
+func _update_charge(delta: float) -> void:
+	if _charge_weapon == null:
+		return
+	if not is_instance_valid(_charge_weapon) or not _can_attack():
+		_charge_weapon = null
+		if is_playing and _external != null and _loop:
+			_finish(true)
+		return
+	_charge_age += delta
+	var weapon := _charge_weapon
+	if not weapon.trigger_held:
+		_charge_weapon = null
+		var power := clampf(_charge_age / maxf(fist_charge_time, 0.01), 0.0, 1.0) if _charge_age >= fist_click_time else 0.0
+		_start_first_swing(weapon, 1.0 + fist_charge_bonus * power)
+		return
+	if _charge_age >= fist_click_time and not is_playing:
+		play_external(charge_clip(weapon.is_left), weapon, true)
 
 
 ## The attack for a press of weapon's button with the move key direction, as swing number place of a
@@ -399,6 +476,8 @@ func _input_direction() -> StringName:
 func _begin_swing(attack: MeleeAttack, weapon: MeleeWeapon, chained: bool) -> void:
 	if weapon != null:
 		_external = null
+	_loop = false
+	_damage_scale = 1.0
 	if chained:
 		_prev_weight = smoothstep(0.0, 1.0, _weight())
 		_prev_attack = _attack
@@ -444,6 +523,7 @@ func _clip_direction() -> Vector3:
 
 func _physics_process(delta: float) -> void:
 	_watch_combo_input()
+	_update_charge(delta)
 	if not is_playing:
 		_fade_left = maxf(_fade_left - delta, 0.0)
 		_cooldown_left = maxf(_cooldown_left - delta, 0.0)
@@ -467,7 +547,14 @@ func _physics_process(delta: float) -> void:
 	_track_target(delta)
 	var hold := _update_lunge(delta)
 	var before := _time
-	if not hold:
+	if _loop:
+		# The charging loop: wraps, and plays in place.
+		_time += delta * _attack.speed_scale
+		if _time >= _end_time:
+			_time = fmod(_time, _end_time)
+			_looped = true
+		before = _time
+	elif not hold:
 		_time = minf(_time + delta * _attack.speed_scale, _end_time)
 	var speed := maxf(_attack.get_travel_between(before, _time) / maxf(delta, 0.0001), 0.0)
 	if _target != null:
@@ -475,7 +562,9 @@ func _physics_process(delta: float) -> void:
 	mech.root_motion_active = true
 	mech.root_motion_velocity = _keep_away(_direction * speed + _lunge_direction * _lunge_velocity)
 	_strike()
-	if _time >= _end_time and not (hold_for_combo and _can_chain()):
+	if _loop:
+		pass
+	elif _time >= _end_time and not (hold_for_combo and _can_chain()):
 		_finish(true)
 	elif _time >= _end_time:
 		_hold_weight = maxf(_hold_weight - delta / _lower_time(), 0.0)
@@ -658,7 +747,7 @@ func _strike() -> void:
 			var distance := hitbox.global_position.distance_to(point)
 			if not closest.has(hitbox.health) or distance < closest[hitbox.health][1]:
 				closest[hitbox.health] = [hitbox, distance]
-		var damage: float = _attack.damage[mini(i, _attack.damage.size() - 1)]
+		var damage: float = _attack.damage[mini(i, _attack.damage.size() - 1)] * (_damage_scale if chain_count <= 1 else 1.0)
 		for target: MechHealth in closest:
 			_hit[i][target] = true
 			_landed = true
@@ -687,6 +776,8 @@ func _weight() -> float:
 		return 0.0
 	if not is_playing:
 		return _fade_left / _lower_time()
+	if _loop and _looped:
+		return 1.0
 	if _time >= _end_time:
 		return _hold_weight
 	if _chained:

@@ -215,7 +215,7 @@ func cancel() -> void:
 	controller.mech.is_lunging = false
 	if not is_left:
 		controller.mech_shield.force_up = false
-	if state == State.CLIP:
+	if state == State.CLIP or (is_instance_valid(_melee) and _melee.is_external_busy(self)):
 		if is_instance_valid(_melee):
 			_melee.stop_external(self)
 		_end_clip()
@@ -272,6 +272,7 @@ func _update(delta: float) -> void:
 					and not _other_bunker_busy():
 				power = 0.0
 				_next(State.POWER)
+				_start_charge_loop()
 		State.POWER:
 			_update_power(delta)
 		State.CHARGE:
@@ -280,6 +281,12 @@ func _update(delta: float) -> void:
 			_twist = charge_twist_deg * smoothstep(0.0, 1.0, _pose_weight)
 			if not controller.mech.is_lunging:
 				if not _start_clip():
+					# No clip: the coded punch, with the arm back on the weapon.
+					if is_instance_valid(_melee):
+						_melee.stop_external(self)
+					var ik := controller.holding_arm_ik()
+					if ik.target == null and _saved_target != null:
+						ik.target = _saved_target
 					_next(State.WINDUP)
 		State.WINDUP:
 			var t := smoothstep(0.0, 1.0, clampf(_time / windup_time, 0.0, 1.0))
@@ -386,15 +393,36 @@ func _start_clip() -> bool:
 		return false
 	if not is_instance_valid(_melee):
 		_melee = controller.mech.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
-	if _melee == null or not _melee.play_external(clip, self):
+	if _melee == null:
+		return false
+	# From the charging loop the punch blends in from its pose; else it starts on its own.
+	if not _melee.chain_external(clip, self) and not _melee.play_external(clip, self):
 		return false
 	# The clip moves the arm: the arm IK lets go of the weapon's grip until the clip has faded out.
-	var ik := controller.holding_arm_ik()
-	_saved_target = ik.target
-	ik.target = null
+	_release_arm()
 	_since_fire = 0.0
 	_next(State.CLIP)
 	return true
+
+
+## The charging clip (user upload 2026-10-30) loops on the whole body while the stake powers up and the mech
+## charges; the punch clip then blends in from it.
+func _start_charge_loop() -> void:
+	if not is_instance_valid(_melee):
+		_melee = controller.mech.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
+	if _melee == null or punch_clip() == null:
+		return
+	var loop := _melee.charge_clip(is_left)
+	if loop != null and _melee.play_external(loop, self, true):
+		_release_arm()
+
+
+## The arm IK lets go of the weapon's grip (the clip moves the arm); _end_clip gives it back.
+func _release_arm() -> void:
+	var ik := controller.holding_arm_ik()
+	if ik.target != null:
+		_saved_target = ik.target
+	ik.target = null
 
 
 ## The punch clip plays: the guard pose and the torso turn fade (the clip moves the body), the stakes fire on
@@ -431,7 +459,9 @@ func _end_clip() -> void:
 ## Grip the arm IK should hold while the punch clip has the arm (WeaponController.fist_hang_target: the arm rig
 ## poses it there under the clip, so the clip fades into the rest hold), or null.
 func clip_hold_target() -> Node3D:
-	return _saved_target if state == State.CLIP else null
+	if state == State.CLIP or (is_instance_valid(_melee) and _melee.is_external_busy(self)):
+		return _saved_target
+	return null
 
 
 ## Contact during the clip: a ray along the stakes from behind the nose to contact_reach past it.
