@@ -425,7 +425,7 @@ func holds(weapon: MechWeapon) -> bool:
 ## Keeps a fist arm free for the punch clip while a melee attack plays, and at the relaxed hang
 ## otherwise (the melee animation keeps an arm that has an IK target: SkeletalMeleeAnimation).
 func _update_fist_arms(delta: float) -> void:
-	if right_fist == null and left_fist == null:
+	if right_fist == null and left_fist == null and not _swings_like_fist(right_weapon):
 		return
 	if _melee == null or not is_instance_valid(_melee):
 		_melee = mech.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
@@ -438,9 +438,13 @@ func _update_fist_arms(delta: float) -> void:
 	var hanging := _swing_hold <= 0.0
 	for is_right: bool in [true, false]:
 		var fist := right_fist if is_right else left_fist
-		if fist == null or (right_weapon if is_right else left_weapon) != fist:
+		var held := right_weapon if is_right else left_weapon
+		if (fist == null or held != fist) and not (is_right and _swings_like_fist(held)):
 			continue
 		var ik := arm_ik_right if is_right else arm_ik_left
+		if is_right and _swings_like_fist(held) and ik.process_mode == Node.PROCESS_MODE_DISABLED:
+			# The hammer arm's IK is off for the clip; the hang needs it (a null target leaves the arm to the clip).
+			ik.process_mode = Node.PROCESS_MODE_INHERIT
 		var hang := _free_right_target() if is_right else _free_left_target()
 		var wanted: Node3D = hang if hanging else null
 		if hang != null and ik.target != wanted:
@@ -461,10 +465,19 @@ func fist_hang_target(is_right: bool) -> Node3D:
 	var held := right_weapon if is_right else left_weapon
 	if held is PileBunkerWeapon and is_instance_valid(held):
 		return (held as PileBunkerWeapon).clip_hold_target()
+	if is_right and _swings_like_fist(held):
+		return _free_right_target()
 	var fist := right_fist if is_right else left_fist
 	if fist == null or not is_instance_valid(fist) or (right_weapon if is_right else left_weapon) != fist:
 		return null
 	return _free_right_target() if is_right else _free_left_target()
+
+
+## A War Hammer or Baton in the right hand (user request 2026-10-30): when it does not swing, its arm hangs and swings
+## with the stride like a fist arm (level shoulder block); the weapon rides the hand.
+func _swings_like_fist(weapon: MechWeapon) -> bool:
+	return weapon is MeleeWeapon and is_instance_valid(weapon) and (weapon as MeleeWeapon).data != null \
+			and (weapon as MeleeWeapon).data.kind == WeaponData.Kind.HAMMER
 
 
 func _make_hand_control() -> void:

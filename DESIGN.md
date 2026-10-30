@@ -1144,6 +1144,10 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 
 - "When re-centering the crosshair from recoil, it should be smooth and not snap back to center": a mouse move against the kick took the crosshair back in the same frame. `FreeAim.kick_return_smoothing` 10 (1/s): the shown and aimed kick (`_kick_shown`) follows the kick at once on the way up (it has its own rise) and glides on the way back. Test: `test_crosshair_kick.gd` (one frame after the pull 1.77 of 2 deg, after 1 s at the new place): PASS.
 
+## War Hammer and Baton arm swing (user request 2026-10-30)
+
+- "Align shoulders and arm swings during holding war hammer and baton with shoulder and arm swings with fists": the holding arm followed the walk clip (its shoulder block rose and tilted). Now `WeaponController._swings_like_fist` (a HAMMER-kind weapon in the right hand): when it does not swing, the arm takes the fist hang target (`_update_fist_arms`, `fist_hang_target`) and its IK runs, so `SkeletalArmRig` gives it the relaxed hang and the stride swing like a fist arm (level block); the weapon rides the hand. During a swing the target is null and the clip has the arm as before. Test: test_melee_combo, test_stability, test_weapon_hands, test_hit_reactions 0 failures; renders `render_rifle.gd` RIFLE_RIGHT=hammer / baton, RIFLE_ACTIONS=move_forward, views far, far_front.
+
 ## Reminders for the user
 - Open (2026-10-25, user): replace the Pile Bunker with a better model (the current one is a placeholder; its fist also misses the grip by up to 0.6 m in the jump guard and while boosting). Needs the new model first (Blender or an upload), then the PS1 skin and the hold. Update 2026-10-26: built and in the game (see "Pile Bunker model"); play test it. The fist miss in the jump guard and while boosting is not measured again (the fist holds no grip; the model sits on the forearm).
 - Open (2026-10-25, built): play test the Auto Cannon grip in both hands (the fist on the handle).
