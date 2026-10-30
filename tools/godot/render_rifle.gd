@@ -135,6 +135,12 @@ func _run() -> void:
 				camera.projection = Camera3D.PROJECTION_PERSPECTIVE
 				camera.fov = 20.0
 				camera.look_at_from_position(arm_center + forward * 10.0 - Vector3.UP * 8.0 + out_dir * 4.0, arm_center, Vector3.UP)
+			"p_hand":
+				# The right fist from in front, a little below and outside (user picture 2026-10-30).
+				var fist := (player.find_child("MechHandControl", true, false) as MechHandControl).hand_right.global_position
+				camera.projection = Camera3D.PROJECTION_PERSPECTIVE
+				camera.fov = 25.0
+				camera.look_at_from_position(fist + forward * 9.0 - Vector3.UP * 3.0 + out_dir * 3.0, fist, Vector3.UP)
 			"p_back":
 				camera.projection = Camera3D.PROJECTION_PERSPECTIVE
 				camera.fov = 30.0
