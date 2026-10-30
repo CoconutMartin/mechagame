@@ -479,8 +479,8 @@ func _make_hand_control() -> void:
 
 
 ## True when the left hand can hold this weapon besides the shields and the fist (user rule
-## 2026-10-15): a one-hand gun, or the pile bunker when the right hand holds no pile bunker (melee
-## weapons may not be doubled, except the fist). Never beside a two-hand weapon.
+## 2026-10-15): a one-hand gun, or the pile bunker (two Pile Bunkers allowed since 2026-10-30, user request;
+## one attacks at a time). Never beside a two-hand weapon.
 static func can_hold_left(left: WeaponData, right: WeaponData) -> bool:
 	if left == null or left.scene == null or left.two_handed:
 		return false
@@ -490,7 +490,7 @@ static func can_hold_left(left: WeaponData, right: WeaponData) -> bool:
 		WeaponData.Kind.GUN:
 			return true
 		WeaponData.Kind.PILE_BUNKER:
-			return right == null or right.kind != WeaponData.Kind.PILE_BUNKER
+			return true
 	return false
 
 

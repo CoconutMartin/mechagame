@@ -5,8 +5,8 @@ extends CanvasLayer
 ## at its place (full HP), so the look and the stats show the new build.
 ##   Frame: head, core, arms, legs, booster, generator, FCS (GarageCatalog).
 ##   Weapons: right arm, left arm (shield, fist, one-hand gun, pile bunker or none; none with a
-##   two-hand weapon), back units. Melee weapons may not be doubled, except the fist: an arm's pile
-##   bunker entry is greyed out in the other arm's list while the other arm holds one.
+##   two-hand weapon), back units. Melee weapons may not be doubled, except the fist and (user request
+##   2026-10-30) the Pile Bunker: such an entry is greyed out in the other arm's list while the other arm holds one.
 ##   Mods: up to max_mods.
 ##   Test targets: spawn or remove the enemy (AI) and the dummy mech.
 ## Stats show the change from the build the garage opened with (GarageStatPanel).
@@ -209,11 +209,12 @@ func _show_loadout(loadout: Loadout) -> void:
 		_select("mod_%d" % i, loadout.mods[i] if i < loadout.mods.size() else null)
 
 
-## A melee weapon that only one arm may hold (every melee weapon but the fist).
+## A melee weapon that only one arm may hold (every melee weapon but the fist and the Pile Bunker; two Pile
+## Bunkers since 2026-10-30, user request).
 static func _is_single_melee(weapon: WeaponData) -> bool:
 	if weapon == null:
 		return false
-	return weapon.kind in [WeaponData.Kind.PILE_BUNKER, WeaponData.Kind.BLADE, WeaponData.Kind.HAMMER]
+	return weapon.kind in [WeaponData.Kind.BLADE, WeaponData.Kind.HAMMER]
 
 
 static func _same_kind(a: WeaponData, b: WeaponData) -> bool:

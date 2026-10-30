@@ -12,7 +12,8 @@ const POWER_FRAMES := 60
 const MAX_FRAMES := 480
 
 ## Cases: name, side ("R" or "L"), target distance in m.
-const CASES := [["right_12", "R", 12.0], ["right_20", "R", 20.0], ["left_12", "L", 12.0], ["left_20", "L", 20.0]]
+const CASES := [["right_12", "R", 12.0], ["right_20", "R", 20.0], ["left_12", "L", 12.0], ["left_20", "L", 20.0],
+		["both_right_12", "BR", 12.0], ["both_left_12", "BL", 12.0]]
 
 var _failures: int = 0
 
@@ -50,9 +51,12 @@ func _run() -> void:
 
 func _play(map: Node, switcher: LoadoutSwitcher, case: Array) -> void:
 	var side: String = case[1]
+	# "BR" / "BL": a Pile Bunker in both hands, the right or the left one attacks.
+	var both := side.begins_with("B")
+	side = side.right(1)
 	var loadout := switcher.current_loadout.duplicate() as Loadout
-	loadout.weapon_right = load(BUNKER) if side == "R" else null
-	loadout.weapon_left = load(BUNKER) if side == "L" else null
+	loadout.weapon_right = load(BUNKER) if side == "R" or both else null
+	loadout.weapon_left = load(BUNKER) if side == "L" or both else null
 	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
 	await _frames(40)
 	var player := switcher.mech

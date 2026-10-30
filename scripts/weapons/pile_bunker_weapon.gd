@@ -268,7 +268,8 @@ func _update(delta: float) -> void:
 		State.IDLE:
 			_pose_weight = move_toward(_pose_weight, 0.0, delta / _lower_time())
 			_twist = move_toward(_twist, 0.0, absf(punch_twist_deg) * delta / _lower_time())
-			if trigger_pressed() and can_use() and controller.mech.energy.current >= data.lunge_energy:
+			if trigger_pressed() and can_use() and controller.mech.energy.current >= data.lunge_energy \
+					and not _other_bunker_busy():
 				power = 0.0
 				_next(State.POWER)
 		State.POWER:
@@ -347,6 +348,16 @@ func _model_corners() -> Array[Vector3]:
 	for i in 8:
 		corners.append(box.get_endpoint(i))
 	return corners
+
+
+## True while a Pile Bunker in the other hand attacks (two Pile Bunkers, user request 2026-10-30): one attack at a
+## time, they share the charge and the body clip.
+func _other_bunker_busy() -> bool:
+	var weapons := controller.mech.get_node_or_null("WeaponController") as WeaponController
+	if weapons == null:
+		return false
+	var other := weapons.right_weapon if is_left else weapons.left_weapon
+	return other is PileBunkerWeapon and other != self and is_instance_valid(other) and (other as PileBunkerWeapon).is_busy()
 
 
 ## The punch clip of clip_number for this hand, or null.
