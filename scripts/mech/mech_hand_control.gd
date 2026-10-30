@@ -115,7 +115,9 @@ func _process(delta: float) -> void:
 		socket_r = _handle_socket(gun)
 	# A melee weapon or the pile bunker has no socket marker: a stand-in at its grip marker gives the hand the same
 	# reach (the wrist stays on the pin, the arm brings the fist to the weapon's grip).
-	if socket_r == null and gun != null:
+	# Not for the Pile Bunker: its model rides the forearm bone, so the fist has no grip to reach (user report
+	# 2026-10-30: the reach toward the swinging fist moved the arm target and the forearm twitched).
+	if socket_r == null and gun != null and not gun is PileBunkerWeapon:
 		socket_r = _stand_in("R", gun, ^"GripRight")
 	_move_melee_model(gun, hand_shift_right)
 	var melee_left := weapons.left_weapon if weapons.left_weapon is MeleeWeapon and is_instance_valid(weapons.left_weapon) \
