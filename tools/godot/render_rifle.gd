@@ -66,6 +66,8 @@ func _run() -> void:
 	if OS.has_environment("RIFLE_CLIP"):
 		var bunker := weapons.right_weapon as PileBunkerWeapon
 		var melee := player.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
+		if bunker != null and OS.has_environment("RIFLE_CLIP_NUMBER"):
+			bunker.clip_number = int(OS.get_environment("RIFLE_CLIP_NUMBER"))
 		if bunker != null and melee != null and bunker._start_clip():
 			while melee.is_playing and melee.external_time(bunker) < float(OS.get_environment("RIFLE_CLIP")) - 0.05:
 				await _frames(1)

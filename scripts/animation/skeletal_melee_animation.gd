@@ -735,6 +735,9 @@ func _process_modification_with_delta(_delta: float) -> void:
 	if weight <= 0.0:
 		return
 	var skeleton := get_skeleton()
+	# The standing pelvis (the pose under the clip), for the crouch share.
+	var pelvis_bone := skeleton.find_bone("pelvis")
+	var stand_pelvis := _chain_pose(skeleton, pelvis_bone).origin if pelvis_bone >= 0 else Vector3.ZERO
 	# An arm that holds a shield or a gun (IK to its grip) keeps it: the clip leaves that arm out.
 	var keep_left := weapons != null and weapons.arm_ik_left.target != null
 	var keep_right := weapons != null and weapons.arm_ik_right.target != null and weapons.arm_ik_right.can_process()
@@ -776,6 +779,8 @@ func _process_modification_with_delta(_delta: float) -> void:
 					from = under_position.lerp(_prev_attack.animation.position_track_interpolate(then[1], _prev_time), _prev_weight)
 				position = from.lerp(position, mix)
 			skeleton.set_bone_pose_position(bone, under_position.lerp(position, weight))
+	if pelvis_bone >= 0 and (_attack.air_share < 1.0 or _attack.crouch_share < 1.0):
+		_temper_height(skeleton, pelvis_bone, stand_pelvis, weight)
 	_clamp_feet(skeleton)
 	if arm_rig != null:
 		arm_rig.refresh_torso()
@@ -812,6 +817,62 @@ func _clamp_feet(skeleton: Skeleton3D) -> void:
 		for corner in [Vector3(-sole_half_width, -heel_length, -sole_depth), Vector3(sole_half_width, -heel_length, -sole_depth),
 				Vector3(-sole_half_width, toe_length, -sole_depth), Vector3(sole_half_width, toe_length, -sole_depth)]:
 			sole_after = minf(sole_after, (after * corner).y)
+
+
+## Lowest sole point of a foot above the ground (m, mech frame; below 0 = under it), from the local poses.
+func _sole_height(skeleton: Skeleton3D, foot: int) -> float:
+	var to_mech := mech.global_transform.affine_inverse() * skeleton.global_transform
+	var sole := to_mech * _chain_pose(skeleton, foot)
+	var low := INF
+	for corner in [Vector3(-sole_half_width, -heel_length, -sole_depth), Vector3(sole_half_width, -heel_length, -sole_depth),
+			Vector3(-sole_half_width, toe_length, -sole_depth), Vector3(sole_half_width, toe_length, -sole_depth)]:
+		low = minf(low, (sole * corner).y)
+	return low
+
+
+## The attack's air and crouch shares (MeleeAttack.air_share, crouch_share): with both soles off the ground the
+## pelvis comes down so they keep air_share of their height; with the pelvis lower than standing (stand_pelvis,
+## skeleton space) it rises by the part of the dip over crouch_share, and a foot on the ground keeps its place (its
+## leg is solved again). Blended in with the clip weight.
+func _temper_height(skeleton: Skeleton3D, pelvis: int, stand_pelvis: Vector3, weight: float) -> void:
+	var to_mech := mech.global_transform.affine_inverse() * skeleton.global_transform
+	var up := (to_mech.affine_inverse().basis * Vector3.UP).normalized()
+	var unit := (to_mech.basis * up).length()
+	var feet: Array[int] = [skeleton.find_bone("foot_L"), skeleton.find_bone("foot_R")]
+	if feet.has(-1):
+		return
+	var low := minf(_sole_height(skeleton, feet[0]), _sole_height(skeleton, feet[1]))
+	var move := 0.0
+	if low > 0.0:
+		move = -low * (1.0 - _attack.air_share)
+	else:
+		var now := _chain_pose(skeleton, pelvis).origin
+		var dip := (to_mech * stand_pelvis).y - (to_mech * now).y
+		if dip > 0.0:
+			move = dip * (1.0 - _attack.crouch_share)
+	move *= weight
+	if absf(move) < 0.0005:
+		return
+	# Feet on the ground keep their place when the body rises.
+	var planted: Array[bool] = []
+	for foot in feet:
+		planted.append(move > 0.0 and _sole_height(skeleton, foot) < 0.05)
+	var parent := skeleton.get_bone_parent(pelvis)
+	var parent_pose := _chain_pose(skeleton, parent) if parent >= 0 else Transform3D.IDENTITY
+	var global := _chain_pose(skeleton, pelvis)
+	global.origin += up * (move / maxf(unit, 0.0001))
+	skeleton.set_bone_pose_position(pelvis, (parent_pose.affine_inverse() * global).origin)
+	for i in feet.size():
+		if not planted[i]:
+			continue
+		var side := "L" if i == 0 else "R"
+		var thigh := skeleton.find_bone("thigh_" + side)
+		var shin := skeleton.find_bone("shin_" + side)
+		var hip_frame := _chain_pose(skeleton, skeleton.get_bone_parent(thigh))
+		var thigh_pose := hip_frame * skeleton.get_bone_pose(thigh)
+		var shin_pose := thigh_pose * skeleton.get_bone_pose(shin)
+		var foot_pose := shin_pose * skeleton.get_bone_pose(feet[i])
+		_raise_ankle(skeleton, [thigh, shin, feet[i]], hip_frame, [thigh_pose, shin_pose, foot_pose], -up * (move / maxf(unit, 0.0001)))
 
 
 ## Two-bone solve: the ankle moves by lift (skeleton space), the thigh and shin turn, the foot keeps its

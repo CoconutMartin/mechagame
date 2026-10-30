@@ -76,6 +76,12 @@ func _run() -> void:
 					(b * (g.call("hand_R") - g.call("forearm_R"))).normalized().snappedf(0.01),
 					(b * (g.call("neck") - g.call("torso"))).normalized().snappedf(0.01) if skeleton.find_bone("neck") >= 0 else Vector3.ZERO,
 					(g.call("pelvis") - mech.global_position).y, (g.call("upper_arm_R") - mech.global_position).y])
+		if OS.has_environment("FEET") and int(t * 60.0) % 6 == 0:
+			var fl := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("foot_L")).origin
+			var fr := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("foot_R")).origin
+			var pv := skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("pelvis")).origin
+			print("   feet t %.2f: L %.2f R %.2f pelvis %.2f (m above the mech root, root y %.2f)" % [t, fl.y - mech.global_position.y,
+					fr.y - mech.global_position.y, pv.y - mech.global_position.y, mech.global_position.y])
 		if int(t * 60.0) % 6 == 0:
 			print("   hands ahead R %.2f (h %.2f)  L %.2f (h %.2f)" % [hand_r.dot(forward), hand_r.y, hand_l.dot(forward), hand_l.y])
 		if int(t * 60.0) % 3 == 0:

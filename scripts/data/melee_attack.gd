@@ -35,6 +35,12 @@ extends Resource
 ## swings do not reach into it (user rule 2026-10-15: mechs collide, no clipping). 0 = only the bodies
 ## collide (about 5.2 m).
 @export var keep_away_distance: float = 6.0
+## Share of the clip's air height kept (user request 2026-10-30, Pile Bunker clip 3: "reduce liftoff by 80%"): when
+## both soles are off the ground the body comes down so they keep this share of their height. 1 = the clip as is.
+@export_range(0.0, 1.0) var air_share: float = 1.0
+## Share of the clip's crouch kept ("temper the landing by 80%"): when the body sits lower than the standing pose
+## (the pose under the clip) it rises by the rest, and the legs bend less so the feet on the ground stay there.
+@export_range(0.0, 1.0) var crouch_share: float = 1.0
 
 
 ## Play time, in seconds.

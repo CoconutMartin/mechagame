@@ -13,3 +13,5 @@ damage = PackedFloat32Array(0)
 blend_in = 0.15
 blend_out = 0.3
 left_arm = true
+air_share = 0.2
+crouch_share = 0.2
