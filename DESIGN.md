@@ -1138,6 +1138,10 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
     - Top of the jump: the fall clip comes in over `apex_blend` 0.5 s and starts at its hold pose (its own start is the step off an edge); all layer blends are eased (smoothstep). Test `tools/godot/measure_jump_apex.gd` (largest bone turn per frame inside `skeleton_updated`): at the top 7.9 deg in one frame with a hard stop 14 frames later, now at most 6.0 deg, rising and falling gently. Launch: was 49.6 deg (arm) before these fixes, 28 deg (pelvis) with the first charge fix, now 24.7 deg (the legs push straight, one frame).
     - Open: a single-frame 9 to 11 deg roll of the right upper arm (frames 42 and 99 of the test; the elbow does not move). Not from the swing limit search. Cause not found.
 
+## Crosshair return smoothing (user request 2026-10-30)
+
+- "When re-centering the crosshair from recoil, it should be smooth and not snap back to center": a mouse move against the kick took the crosshair back in the same frame. `FreeAim.kick_return_smoothing` 10 (1/s): the shown and aimed kick (`_kick_shown`) follows the kick at once on the way up (it has its own rise) and glides on the way back. Test: `test_crosshair_kick.gd` (one frame after the pull 1.77 of 2 deg, after 1 s at the new place): PASS.
+
 ## Reminders for the user
 - Open (2026-10-25, user): replace the Pile Bunker with a better model (the current one is a placeholder; its fist also misses the grip by up to 0.6 m in the jump guard and while boosting). Needs the new model first (Blender or an upload), then the PS1 skin and the hold. Update 2026-10-26: built and in the game (see "Pile Bunker model"); play test it. The fist miss in the jump guard and while boosting is not measured again (the fist holds no grip; the model sits on the forearm).
 - Open (2026-10-25, built): play test the Auto Cannon grip in both hands (the fist on the handle).

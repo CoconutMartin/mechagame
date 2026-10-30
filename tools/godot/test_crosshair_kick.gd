@@ -22,7 +22,10 @@ func _initialize() -> void:
 	aim._physics_process(dt)
 	print("mouse down 1.5, left 0.5: turn (%.3f, %.3f), crosshair %.3f" % [turn.x, turn.y, aim.aim_offset.y])
 	_check(absf(turn.y) < 0.001 and absf(turn.x - 0.5) < 0.001, "pull against the kick does not turn the camera")
-	_check(absf(aim.aim_offset.y - 0.5) < 0.01, "crosshair back by the pull (0.5 deg of kick remain)")
+	_check(aim.aim_offset.y > 1.5, "the crosshair glides back, no snap (one frame after the pull: %.3f deg)" % aim.aim_offset.y)
+	for i in 60:
+		aim._physics_process(dt)
+	_check(absf(aim.aim_offset.y - 0.5) < 0.01, "crosshair back by the pull (0.5 deg of kick remain, %.3f after 1 s)" % aim.aim_offset.y)
 	turn = aim.take_motion(Vector2(0.0, -1.0))
 	_check(absf(turn.y + 0.5) < 0.001, "the move past the center turns the camera")
 	aim.kick(20.0, 0.0)

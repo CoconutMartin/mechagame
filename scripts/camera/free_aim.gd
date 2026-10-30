@@ -54,6 +54,10 @@ extends Node
 ## With no box: largest crosshair kick from the screen center, in degrees. A kick past it turns the camera,
 ## so a long burst cannot push the crosshair off the screen.
 @export var max_kick_offset_deg: float = 8.0
+## With no box: how fast the shown crosshair kick follows the kick when it gets smaller (1 / seconds), so a mouse
+## move against the kick brings the crosshair back smoothly, not at once (user request 2026-10-30). The kick up
+## follows at once (it has its own rise). 0 = at once.
+@export var kick_return_smoothing: float = 10.0
 ## Jitter added by each shot, in degrees. It fades out.
 @export var jitter_per_shot_deg: float = 0.0
 ## Largest jitter, in degrees.
@@ -128,6 +132,8 @@ var _drag_time: float = 0.0
 var _camera_kick: Vector2 = Vector2.ZERO
 ## Recoil shown on the crosshair (no box), degrees. The mouse (take_motion) and crosshair_return_speed take it back.
 var _kick_offset: Vector2 = Vector2.ZERO
+## The kick on the crosshair as shown (and aimed): follows _kick_offset, smoothed on the way back.
+var _kick_shown: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -160,8 +166,13 @@ func _physics_process(delta: float) -> void:
 	var sway_factor := class_tuning.get_sway_factor(mech) if class_tuning != null else 1.0
 	shake *= sway_factor
 	_smoothed = _smoothed.lerp(offset, 1.0 - exp(-follow_speed * delta))
-	# The kick on the crosshair is not smoothed (it has its own rise).
-	var kicked := _smoothed + _kick_offset
+	# The kick on the crosshair rises with its own rise; on the way back it glides (kick_return_smoothing).
+	for axis in 2:
+		if absf(_kick_offset[axis]) >= absf(_kick_shown[axis]) or kick_return_smoothing <= 0.0:
+			_kick_shown[axis] = _kick_offset[axis]
+		else:
+			_kick_shown[axis] = lerpf(_kick_shown[axis], _kick_offset[axis], 1.0 - exp(-kick_return_smoothing * delta))
+	var kicked := _smoothed + _kick_shown
 	if unsteady <= 0.0:
 		_spring_x = AimSpring.new(_smoothed.x)
 		_spring_y = AimSpring.new(_smoothed.y)
@@ -174,7 +185,7 @@ func _physics_process(delta: float) -> void:
 	_sway_time += delta * unsteady_sway_speed
 	var sway := Vector2(_noise.get_noise_2d(_sway_time, 100.0), _noise.get_noise_2d(_sway_time, 150.0)) * 2.0 * unsteady_sway_deg * sway_factor
 	var swing := Vector2(rad_to_deg(_spring_x.value), rad_to_deg(_spring_y.value))
-	aim_offset = _smoothed.lerp(swing + sway, unsteady) + _kick_offset + shake
+	aim_offset = _smoothed.lerp(swing + sway, unsteady) + _kick_shown + shake
 
 
 ## Moves the mech aim by a mouse movement (degrees, same signs as offset).
