@@ -16,13 +16,18 @@ modifier and full weight (1.0) on its bones; fingers may use several bones, othe
 no tearing). The bones keep the standard names and rest places (SGG-101, the joint standard).
 
 Run headless (Blender 5.2, or pip bpy 5.2.2):
-  python tools/blender/export_mech_parts.py -- models/new_mech/new_mech_exploded.blend sgg models/mechs/sgg
-Without arguments after "--" it uses the open file, prefix "sgg" and <blend folder>/parts.
+  python tools/blender/export_mech_parts.py -- models/new_mech/new_mech_exploded.blend sgg models/mechs/sgg [all|rig|parts]
+Without arguments after "--" it uses the open file, prefix "sgg", <blend folder>/parts and "all".
+"rig" writes only the rig file, "parts" only the part files. The rig gets the accessory bones of the joint standard
+(mech_rig_standard.py) before the export; the .blend is not saved.
 """
 import os
 import sys
 
 import bpy
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mech_rig_standard  # noqa: E402
 
 RIG = "MechRig"
 ## Part collection -> file suffix.
@@ -82,19 +87,27 @@ def main():
         bpy.ops.wm.open_mainfile(filepath=os.path.abspath(argv[0]))
     prefix = argv[1] if len(argv) > 1 else "sgg"
     folder = os.path.abspath(argv[2]) if len(argv) > 2 else os.path.join(os.path.dirname(bpy.data.filepath), "parts")
+    mode = argv[3] if len(argv) > 3 else "all"
     os.makedirs(folder, exist_ok=True)
     if bpy.context.object and bpy.context.object.mode != "OBJECT":
         bpy.ops.object.mode_set(mode="OBJECT")
     rig = bpy.data.objects[RIG]
+    added = mech_rig_standard.ensure_accessory_bones(rig)
+    if added:
+        print("accessory bones added for the export:", added)
     saved = _rest_pose(rig)
 
-    for collection, suffix in PARTS.items():
+    for collection, suffix in PARTS.items() if mode in ("all", "parts") else []:
         meshes = [o for o in bpy.data.collections[collection].objects if o.type == "MESH" and o.parent == rig]
         path = os.path.join(folder, "%s_%s.glb" % (prefix, suffix))
         _select([rig] + meshes)
         bpy.ops.export_scene.gltf(filepath=path, export_animations=False, **GLTF_COMMON)
         print("part", path, len(meshes), "meshes", round(os.path.getsize(path) / 1e6, 1), "MB")
 
+    if mode == "parts":
+        if saved:
+            rig.animation_data.action, rig.animation_data.use_nla = saved
+        return
     # The rig: every action, sampled per frame (IK and constraints baked), as in export_new_mech_glb.py.
     anchor = _anchor(rig)
     path = os.path.join(folder, "%s_rig.glb" % prefix)

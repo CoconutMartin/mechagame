@@ -35,19 +35,19 @@ max_x = -0.65
 script = ExtResource("2")
 key = "Arm L"
 max_hp = 600.0
-bones = Array[StringName]([&"upper_arm_L", &"forearm_L", &"hand_L"])
+bones = Array[StringName]([&"upper_arm_L", &"forearm_L", &"hand_L", &"sleeve_L"])
 
 [sub_resource type="Resource" id="arm_r"]
 script = ExtResource("2")
 key = "Arm R"
 max_hp = 600.0
-bones = Array[StringName]([&"upper_arm_R", &"forearm_R", &"hand_R"])
+bones = Array[StringName]([&"upper_arm_R", &"forearm_R", &"hand_R", &"sleeve_R"])
 
 [sub_resource type="Resource" id="groin"]
 script = ExtResource("2")
 key = "Groin"
 max_hp = 560.0
-bones = Array[StringName]([&"pelvis"])
+bones = Array[StringName]([&"pelvis", &"skirt_front_L", &"skirt_front_R", &"skirt_side_L", &"skirt_side_R", &"skirt_back_L", &"skirt_back_R"])
 
 [sub_resource type="Resource" id="leg_l"]
 script = ExtResource("2")

@@ -261,6 +261,13 @@ func _initialize() -> void:
 	mech_aim.aim_origin = aim
 	mech_aim.body_visual = visual
 
+	# Skirt panels and sleeves (accessory bones) turn off the legs and with the arms; added last so it runs
+	# after every other skeleton modifier (each moves itself onto the skeleton in this order).
+	var accessories := AccessoryBoneFollow.new()
+	accessories.name = "AccessoryFollow"
+	visual.add_child(accessories)
+	accessories.owner = root
+	accessories.model = model
 	part_models.loadout_holder = root.get_node("WeaponMount")
 	# First child: it builds the part meshes before Visual enters the tree.
 	root.move_child(part_models, 0)

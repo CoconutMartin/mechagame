@@ -40,6 +40,7 @@
 [ext_resource type="PackedScene" path="res://scenes/mech/sanggigilid.tscn" id="r38"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="r39"]
 [ext_resource type="Resource" path="res://data/loadouts/sanggigilid_beam_rifle.tres" id="r40"]
+[ext_resource type="Resource" path="res://data/loadouts/haliya_beam_rifle.tres" id="r_haliya"]
 [ext_resource type="Script" path="res://scripts/world/mech_spawner.gd" id="r41"]
 [ext_resource type="Script" path="res://scripts/core/mouse_capture.gd" id="r42"]
 [ext_resource type="Script" path="res://scripts/core/loadout_switcher.gd" id="r43"]
@@ -1411,7 +1412,7 @@ mech_aim = NodePath("../PlayerMech/MechAim")
 [node name="LoadoutSwitcher" type="Node" parent="." node_paths=PackedStringArray("mech", "hud")]
 script = ExtResource("r43")
 mech_scene = ExtResource("r38")
-loadouts = Array[Resource]([ExtResource("r40")])
+loadouts = Array[Resource]([ExtResource("r40"), ExtResource("r_haliya")])
 mech = NodePath("../PlayerMech")
 hud = NodePath("../DebugHud")
 

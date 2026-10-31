@@ -3,14 +3,16 @@ extends SceneTree
 ##   every slot (head, core, arms, legs) has its part meshes on the mech skeleton;
 ##   every skin bind names a bone of the mech skeleton (the part fits the standard rig);
 ##   each part mesh, posed by the skeleton, is where the rest pose puts it (no tearing at rest);
-##   every hit part has hitboxes.
+##   every hit part has hitboxes;
+##   the skirt panels and sleeves (AccessoryBoneFollow) turn when the mech walks (LOADOUT=2, Haliya).
 ## OLD_SCENE=res://... compares the hitbox boxes and the mesh boxes with an older mech scene (one-file model).
 ## Prints "RESULT: <n> failures"; exit code 1 on a failure. Headless:
 ##   godot --headless --path . --script res://tools/godot/test_part_models.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
-## Meshes per slot for SGG-101.
+## Meshes per slot for SGG-101 (key 1) and Haliya HLY-101 (key 2, LOADOUT=2).
 const SGG_MESHES := {&"head": 2, &"core": 2, &"arm_left": 5, &"arm_right": 5, &"legs": 13}
+const HLY_MESHES := {&"head": 8, &"core": 13, &"arm_left": 27, &"arm_right": 27, &"legs": 36}
 
 var _failures := 0
 
@@ -35,13 +37,18 @@ func _run() -> void:
 	change_scene_to_file(MAP)
 	await _frames(30)
 	var switcher := current_scene.get_node("LoadoutSwitcher") as LoadoutSwitcher
+	var loadout_key := int(OS.get_environment("LOADOUT")) if OS.has_environment("LOADOUT") else 1
+	if loadout_key > 1:
+		switcher.switch_to(switcher.loadouts[loadout_key - 1])
+		await _frames(30)
+	var want: Dictionary = HLY_MESHES if loadout_key == 2 else SGG_MESHES
 	var mech := switcher.mech
 	var models := mech.get_node("PartModels") as SkeletalPartModels
 	var hitboxes := mech.get_node("SkeletalHitboxes") as SkeletalHitboxes
 	var skeleton := hitboxes.skeleton
-	for slot: StringName in SGG_MESHES:
+	for slot: StringName in want:
 		var meshes: Array = models.meshes_by_slot.get(slot, [])
-		_check(meshes.size() == SGG_MESHES[slot], "%s: %d meshes (want %d)" % [slot, meshes.size(), SGG_MESHES[slot]])
+		_check(meshes.size() == want[slot], "%s: %d meshes (want %d)" % [slot, meshes.size(), want[slot]])
 		for mesh: MeshInstance3D in meshes:
 			_check(mesh.get_parent() == skeleton and mesh.get_node_or_null(mesh.skeleton) == skeleton,
 					"%s %s on the mech skeleton" % [slot, mesh.name])
@@ -51,9 +58,11 @@ func _run() -> void:
 					missing += 1
 			_check(missing == 0, "%s %s: all %d skin binds name a bone" % [slot, mesh.name, mesh.skin.get_bind_count()])
 	var rest_skeleton := skeleton.get_children().size()
-	_check(rest_skeleton >= 27, "skeleton holds the part meshes (%d children)" % rest_skeleton)
+	_check(rest_skeleton >= want.values().reduce(func(a, b): return a + b, 0), "skeleton holds the part meshes (%d children)" % rest_skeleton)
 	for key: String in hitboxes.part_meshes:
 		_check(not (hitboxes.part_meshes[key] as Array).is_empty(), "hit part %s has meshes" % key)
+	if loadout_key == 2:
+		await _check_accessories(mech, skeleton)
 	if OS.has_environment("OLD_SCENE"):
 		await _compare(mech, OS.get_environment("OLD_SCENE"))
 	print("RESULT: %d failures" % _failures)
@@ -90,3 +99,25 @@ func _boxes(mech: Mech) -> Dictionary:
 		var key := "hitbox %s on %s" % [hitbox.part_key, hitbox.get_parent().name]
 		out[key] = AABB(hitbox.transform * shape.position - size / 2.0, size)
 	return out
+
+
+## Walks 2 s and records the largest turn of each skirt panel and sleeve away from its rest.
+func _check_accessories(mech: Mech, skeleton: Skeleton3D) -> void:
+	var bones := [&"skirt_front_L", &"skirt_front_R", &"skirt_back_L", &"skirt_back_R", &"skirt_side_L", &"skirt_side_R"]
+	var most := {}
+	# Modifier poses exist only inside the skeleton update.
+	var measure := func() -> void:
+		for bone_name: StringName in bones:
+			var bone := skeleton.find_bone(bone_name)
+			var angle := skeleton.get_bone_pose_rotation(bone).angle_to(skeleton.get_bone_rest(bone).basis.get_rotation_quaternion())
+			most[bone_name] = maxf(most.get(bone_name, 0.0), rad_to_deg(angle))
+	skeleton.skeleton_updated.connect(measure)
+	Input.action_press(&"move_forward")
+	for i in 120:
+		await physics_frame
+		await process_frame
+	skeleton.skeleton_updated.disconnect(measure)
+	Input.action_release(&"move_forward")
+	for bone_name: StringName in [&"skirt_front_L", &"skirt_front_R", &"skirt_back_L", &"skirt_back_R"]:
+		_check(most[bone_name] > 3.0, "%s turns in the walk (largest %.1f deg)" % [bone_name, most[bone_name]])
+	print("skirt turns (deg): ", most)

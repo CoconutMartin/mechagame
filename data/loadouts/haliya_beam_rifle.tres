@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Loadout" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/loadout.gd" id="script"]
+[ext_resource type="Resource" path="res://data/parts/haliya/haliya_head.tres" id="head"]
+[ext_resource type="Resource" path="res://data/parts/haliya/haliya_core.tres" id="core"]
+[ext_resource type="Resource" path="res://data/parts/haliya/haliya_arm_l.tres" id="arm_left"]
+[ext_resource type="Resource" path="res://data/parts/haliya/haliya_arm_r.tres" id="arm_right"]
+[ext_resource type="Resource" path="res://data/parts/haliya/haliya_legs.tres" id="legs"]
+[ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_booster.tres" id="booster"]
+[ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_generator.tres" id="generator"]
+[ext_resource type="Resource" path="res://data/weapons/beam_rifle.tres" id="beam_rifle"]
+[ext_resource type="Resource" path="res://data/parts/backpacks/backpack_medium.tres" id="back_pack"]
+[ext_resource type="Resource" path="res://data/equipment/pulse_scan_g2.tres" id="pulse_scan"]
+
+[resource]
+script = ExtResource("script")
+display_name = "HLY-101 Haliya Beam Rifle"
+head = ExtResource("head")
+core = ExtResource("core")
+arm_left = ExtResource("arm_left")
+arm_right = ExtResource("arm_right")
+legs = ExtResource("legs")
+booster = ExtResource("booster")
+generator = ExtResource("generator")
+weapon_right = ExtResource("beam_rifle")
+back_pack = ExtResource("back_pack")
+aux = Array[Resource]([ExtResource("pulse_scan")])

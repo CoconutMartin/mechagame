@@ -2,6 +2,7 @@ extends SceneTree
 ## Pictures of the player mech built from its part files (DESIGN "Swappable mech parts"): front, three-quarter,
 ## side and back at rest, then the same four views in a walk. Other mechs are hidden. Each part slot can get a
 ## tint (TINT=1) to show where one part ends and the next starts. The map's objects are hidden; a plain ground is added. xvfb:
+## LOADOUT=2 shows the loadout of key 2 (Haliya).
 ##   RENDER_OUT=/tmp/x xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 \
 ##     --resolution 1280x720 --fixed-fps 60 --script res://tools/godot/render_part_models.gd
 
@@ -29,6 +30,11 @@ func _run() -> void:
 	change_scene_to_file(MAP)
 	await _frames(30)
 	var switcher := current_scene.get_node("LoadoutSwitcher") as LoadoutSwitcher
+	# LOADOUT=<n>: the loadout of key n (2 = Haliya HLY-101).
+	var key := int(OS.get_environment("LOADOUT")) if OS.has_environment("LOADOUT") else 1
+	if key > 1:
+		switcher.switch_to(switcher.loadouts[key - 1])
+		await _frames(30)
 	for node in get_nodes_in_group(&"lockable"):
 		if node is Mech and node != switcher.mech:
 			node.process_mode = Node.PROCESS_MODE_DISABLED
@@ -82,6 +88,6 @@ func _shoot_views(mech: Mech, camera: Camera3D, out: String, tag: String) -> voi
 		camera.global_position = center + dir * 24.0 + Vector3.UP * 1.5
 		camera.look_at(center, Vector3.UP)
 		await _frames(2)
-		var path := "%s/sgg_%s_%s.png" % [out, tag, view]
+		var path := "%s/%s_%s_%s.png" % [out, OS.get_environment("PREFIX") if OS.has_environment("PREFIX") else "mech", tag, view]
 		get_root().get_texture().get_image().save_png(path)
 		print("RENDER ", path)

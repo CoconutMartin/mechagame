@@ -699,6 +699,31 @@ Phases:
 3. Part kit: a Blender template with the standard rig, a check script (bone names, rest places within 1 cm,
    rigid weights, joint pieces) and a short guide (next).
 
+Haliya HLY-101 (built 2026-10-31, user picture `models/guides/haliya_ref.png`; user answers 2026-10-31: a second mech
+on the same joints, its parts swap with SGG parts; the skirt and sleeves move with follow scripts):
+- Model: `tools/blender/haliya_build.py` opens the SGG file for the rig and its actions, removes the SGG meshes, builds
+  Haliya in the part collections and saves `models/haliya/haliya.blend` (about 4,700 faces), then exports
+  `models/mechs/hly/hly_<part>.glb`. Faceted convex hulls with chamfers, gunmetal and sand, black ball joints at the
+  neck, waist, shoulders, elbows, wrists, hips, knees and ankles (the child part owns the ball). Head: round sand
+  face disc, one black eye, two tall horns. Core: slim waist rings, sand V on the chest, a back block whose back face
+  is at the SGG back (the backpacks fit). Arms: sand forearms, a sleeve over each shoulder (a cap and a long wing plate
+  outside the arm). Legs: pelvis, a skirt belt, six long skirt panels (front, side, back per side), sand thigh plates,
+  high-heel feet with a heel post. The hands (palm and finger segments) are hidden in play like SGG's: the jointed
+  hand scenes show.
+- Accessory bones (joint standard, `tools/blender/mech_rig_standard.py`): `skirt_front/side/back_L/R` (parent pelvis)
+  and `sleeve_L/R` (parent torso). `export_mech_parts.py` adds them to a rig that has none; `sgg_rig.glb` has them
+  (64 bones; the 168 old animation tracks unchanged). SGG has no meshes on them.
+- `AccessoryBoneFollow` (node `Visual/AccessoryFollow`, the last skeleton modifier): each plate turns about its pivot
+  by `follow` (0.35) of its limb's swing plus `push_follow` (1.0) of the part toward the plate, at most
+  `max_turn_deg` (70). Skirt panels follow their thigh, sleeves their upper arm. In a walk the front panels turn up to
+  about 40 degrees, the back and side panels about 12 to 14 (test_part_models LOADOUT=2).
+- Hit parts: the sleeves belong to Arm L / R, the skirt panels to the Groin (`sanggigilid_hit_parts.tres`), so they
+  get hitboxes and fall with their part.
+- Data: `data/parts/haliya/` (head 2.5 t 300 HP, core 14 t 1250 HP, arms 4 t 480 HP, legs 13 t 1150 HP, faster and
+  higher jump than SGG), loadout `data/loadouts/haliya_beam_rifle.tres` on key 2 of the test map (key 1 = SGG).
+- Not yet: the mech name and code on the scene stay SGG-101 for any loadout; the jointed hands and wrist pins are
+  SGG's; garage part pickers (phase 2).
+
 Open points for later parts: the wrist pin (measured from the SGG forearm mesh `Arm_<side>_02` at build time) and
 the jointed hand scenes (`mech_hand_r/l.tscn`) are SGG values; an arm part of another mech needs its own (ArmPart
 fields, phase 2 or 3). The hit part data (`sanggigilid_hit_parts.tres`) names bones, so it fits every part on the
@@ -1287,6 +1312,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - "Align shoulders and arm swings during holding war hammer and baton with shoulder and arm swings with fists": the holding arm followed the walk clip (its shoulder block rose and tilted). Now `WeaponController._swings_like_fist` (a HAMMER-kind weapon in the right hand): when it does not swing, the arm takes the fist hang target (`_update_fist_arms`, `fist_hang_target`) and its IK runs, so `SkeletalArmRig` gives it the relaxed hang and the stride swing like a fist arm (level block); the weapon rides the hand. During a swing the target is null and the clip has the arm as before. Test: test_melee_combo, test_stability, test_weapon_hands, test_hit_reactions 0 failures; renders `render_rifle.gd` RIFLE_RIGHT=hammer / baton, RIFLE_ACTIONS=move_forward, views far, far_front.
 
 ## Reminders for the user
+- Open (2026-10-31, built): play test Haliya HLY-101 (key 2 on the test map; key 1 = SGG): the look against the picture, the skirt panels and sleeves while walking, running, boosting, jumping and aiming (no legs or arms through them), the ball joints (no gaps), part breaks. Tune `Visual/AccessoryFollow` (follow, push_follow, max_turn_deg) and the stats in `data/parts/haliya/`.
 - Open (2026-10-31, built, phase 1 of "Swappable mech parts"): play test SGG after the split into part files: it should look and move exactly as before (walk, run, boost, jump, aim, melee, part breaks, the PS1 / Basic skins, the HP indicators). Report any part that looks wrong or sits in the wrong place.
 - Open (2026-10-31, built, phase B): play test the drone aux mods (garage "Aux" picker under Backpack, with the Drone Pack): Drone Swarm (one T release sends all 6) and Drone Recall (each drone comes back after its attack and launches once more). Say if the values should change (2 flights per drone, 10 s to come back).
 - Open (2026-10-31, built): play test the Drone Pack (garage Backpack picker): the stacked drones on the back (no clipping with the arms while walking, boosting and aiming), 2.2 t, 1 aux slot, and the attack drones (see "Attack drones"): hold T on an enemy (the garage test buttons) or a dummy, release; the flight around buildings, the seek when the target hides, the stop at the first shot, the 20 m range, the 12.5 m height, the way around tall buildings, the HUD line. Give the AI enemy the Drone Pack ("Enemy pack" in the garage) and try a heavy rifle, an SMG and a beam rifle on it (it hits drones 3 times in 4 with one hit and charged shots). Tune `data/equipment/attack_drone.tres` and `data/weapons/drone_gun.tres`; the drone HP is for later balance (user).
@@ -1355,6 +1381,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 
 ## Decisions log
 
+- 2026-10-31 (user): Haliya HLY-101 (user picture) is a second mech on the SGG joints, its parts swap with SGG parts; skirt and sleeves move with follow scripts (accessory bones); the current split SGG is saved as git tag `sggv2`.
 - 2026-10-31 (user): swappable parts: head, core, arms, legs, from every mech (1 variant each), on the SGG-101 joint standard; rigid parenting, the child part owns the joint piece; simple collision shapes as now; a test part to try the swap. Phase 1 (split SGG into a rig file and 5 part files) built.
 - 2026-10-31 (user, round 5): drone cool down 10 s (from when the last drone is gone or back); no launch while drones are active.
 - 2026-10-31 (user, phase B): drone aux mods in the aux slot: Recall (drones come back, 2 flights each) and Swarm (all drones at once, destroyed after); the garage gets an Aux picker.
