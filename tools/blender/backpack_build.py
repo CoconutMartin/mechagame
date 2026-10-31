@@ -8,7 +8,8 @@ Writes models/backpacks/backpack_<type>.blend and .glb for each type in TYPES (l
 ammo: build_ammo_pack, six canisters the game removes one by one; missile: build_missile_pack, four upright
 missile canisters; boost: build_boost_pack, four winged grilles, the boost outlets; quad: build_quad_pack, four thruster pods with
 big nozzles; belt: build_belt_pack, an ammo belt for guns; power: build_power_pack,
-battery cells and power cables).
+battery cells and power cables; field: build_field_pack, a box between two handled pods; jet: build_jet_pack, a
+box with two big nozzles).
 The script starts from an empty file, so hand edits in the .blend are lost when it runs again.
 
 Axes: Blender +Y = forward (Godot -Z), +Z = up. Origin: the Mount, the center of the pack's front face (it lies on
@@ -75,6 +76,16 @@ TYPES = {
     # block), tall towers on the upper sides, battery cells with terminals on the lower sides, orange power cables
     # from the towers down to the stack and out to the cell terminals. Built by build_power_pack. Sizes in m:
     # body_w: half width of the stack; tower_x / cell_x: inner and outer x; cable_r: cable radius.
+    # Field Pack (user picture models/guides/backpack_field_ref.png, 2026-10-31; "build, beautify, add a bit more
+    # body"): a sand center box with a recessed grille between two tall octagonal side pods with carry handles over
+    # their tops and down their outer sides, dark feet. Built by build_field_pack. box_w: half width of the box;
+    # pod_x: inner and outer x of a pod; h: half height of a pod; d: depth.
+    "field": dict(kind="field", box_w=0.42, pod_x=(0.44, 1.0), h=0.82, d=0.92),
+    # Jet Pack (user picture models/guides/backpack_jet_ref.png, 2026-10-31): a sand box of three columns (raised
+    # blocks with sensor windows on the side columns' tops), two big nozzles under it pointing down and back. Built
+    # by build_jet_pack. col_x: x where the side columns start and end; h: half height; d: depth; noz: (x, radius,
+    # length, tilt back from straight down in degrees).
+    "jet": dict(kind="jet", col_x=(0.38, 0.98), h=0.68, d=0.9, noz=(0.55, 0.26, 0.4, 35.0)),
     "power": dict(kind="power", body_w=0.32, tower_x=(0.36, 0.68), cell_x=(0.48, 0.9), d=0.95, cable_r=0.045),
 }
 
@@ -101,6 +112,9 @@ MATERIALS = {
     # Power Pack: orange cables, copper bolts.
     "bp_cable": ((0.88, 0.3, 0.12), 0.45, 0.1, None),
     "bp_copper": ((0.72, 0.43, 0.2), 0.35, 0.9, None),
+    # Field Pack and Jet Pack: sand armor from their pictures, a darker sand for insets.
+    "bp_sand": ((0.62, 0.57, 0.44), 0.6, 0.3, None),
+    "bp_sand_dark": ((0.5, 0.46, 0.35), 0.6, 0.3, None),
 }
 
 
@@ -1310,6 +1324,193 @@ def build_power_pack(t):
     return parts
 
 
+def build_field_pack(t):
+    """The Field Pack: a sand center box (octagonal from the back) with a raised panel, a grille cut into it inside a
+    dark ring, bolts, a dark top latch with two hardpoints beside it and a dark skid; two tall octagonal side pods
+    with raised back panels, a seam, a dark slot bar, a dark latch with a sand plate, bolts, a carry handle over the
+    top that runs down the outer side, a raised side plate with dark brackets, dark feet."""
+    Sd, SD, F, K, S = "bp_sand", "bp_sand_dark", "bp_frame", "bp_dark", "bp_steel"
+    bw, h, d = t["box_w"], t["h"], t["d"]
+    px0, px1 = t["pod_x"]
+    pc = (px0 + px1) / 2
+    parts = []
+
+    def bolt(name, x, y, z):
+        obj = prism(name, S, y - 0.012, y + 0.012, 0.02, 0.02, z=z, sides=6, bevel=0.0)
+        obj.location.x = x
+        return obj
+
+    # Mount plate and the center box with its raised panel, grille, bolts, latch, hardpoints and skid.
+    parts.append(block("MountPlate", K, -bw * 0.9, bw * 0.9, -0.08, 0.0, -h * 0.85, h * 0.85, chamfer=0.05))
+    parts.append(block("Box", Sd, -bw, bw, -d + 0.04, -0.06, -h + 0.04, h - 0.1, chamfer=0.1, bevel=0.015))
+    panel = block("BoxPanel", Sd, -bw + 0.05, bw - 0.05, -d - 0.01, -d + 0.08, -h + 0.12, h - 0.2, chamfer=0.07,
+                  bevel=0.01)
+    parts.append(panel)
+    grille_pts = [(-0.18, -0.52), (0.18, -0.52), (0.18, 0.3), (-0.18, 0.3)]
+    for i, (x0, x1, z0, z1) in enumerate(((-0.23, 0.23, 0.3, 0.35), (-0.23, 0.23, -0.57, -0.52),
+                                          (-0.23, -0.18, -0.52, 0.3), (0.18, 0.23, -0.52, 0.3))):
+        parts.append(block(f"GrilleRing{i}", F, x0, x1, -d - 0.035, -d, z0, z1, bevel=0.0))
+    parts += grille("BoxGrille", grille_pts, lambda z: -d - 0.01, pitch=0.055, inset=0.012, cut=panel, depth=0.07)
+    for i, (x, z) in enumerate(((-bw + 0.11, h - 0.28), (bw - 0.11, h - 0.28), (-bw + 0.11, -h + 0.2),
+                                (bw - 0.11, -h + 0.2), (-bw + 0.11, -0.1), (bw - 0.11, -0.1))):
+        parts.append(bolt(f"BoxBolt{i}", x, -d - 0.02, z))
+    parts.append(block("Latch", K, -0.22, 0.22, -0.72, -0.24, h - 0.14, h - 0.02, chamfer=0.03, bevel=0.0))
+    parts.append(block("LatchSlot", F, -0.14, 0.14, -0.735, -0.72, h - 0.1, h - 0.06, bevel=0.0))
+    for i, sx in enumerate((-1.0, 1.0)):
+        x = sx * 0.17
+        parts.append(block(f"LatchEar{i}", K, x - 0.035, x + 0.035, -0.76, -0.62, h - 0.16, h + 0.0, chamfer=0.015,
+                           bevel=0.0))
+        x = sx * 0.33
+        parts.append(block(f"Hardpoint{i + 1}", F, x - 0.07, x + 0.07, -0.62, -0.32, h - 0.1, h - 0.06, bevel=0.0))
+        parts.append(empty(f"Aux{i + 1}", (x, -0.47, h - 0.06)))
+    parts.append(block("Skid", K, -bw + 0.08, bw - 0.08, -d + 0.12, -0.14, -h - 0.04, -h + 0.06, chamfer=0.04,
+                       bevel=0.0))
+    for side, sx in (("L", -1.0), ("R", 1.0)):
+        x0, x1 = sorted((sx * px0, sx * px1))
+        c = sx * pc
+        # Pod: octagonal block, raised back panel, seam, slot bar, latch with a plate, bolts.
+        parts.append(block(f"Pod{side}", Sd, x0, x1, -d, -0.08, -h, h, chamfer=0.14, bevel=0.015))
+        xa, xb = sorted((sx * (px0 + 0.05), sx * (px1 - 0.05)))
+        parts.append(block(f"PodPanel{side}", Sd, xa, xb, -d - 0.04, -d + 0.03, -h + 0.1, h - 0.1, chamfer=0.09,
+                           bevel=0.01))
+        parts.append(block(f"PodSeam{side}", F, xa, xb, -d - 0.045, -d, 0.06, 0.08, bevel=0.0))
+        parts.append(block(f"PodSlot{side}", K, c - 0.15, c + 0.15, -d - 0.07, -d - 0.03, -0.04, 0.05, chamfer=0.01,
+                           bevel=0.0))
+        parts.append(block(f"PodLatch{side}", K, c - 0.16, c + 0.16, -d - 0.09, -d - 0.02, -h + 0.12, -h + 0.38,
+                           chamfer=0.03, bevel=0.0))
+        parts.append(block(f"PodLatchPlate{side}", Sd, c - 0.12, c + 0.12, -d - 0.105, -d - 0.08, -h + 0.15,
+                           -h + 0.32, chamfer=0.02, bevel=0.0))
+        for j, (bx, bz) in enumerate(((-0.17, h - 0.2), (0.17, h - 0.2), (-0.17, 0.2), (0.17, 0.2))):
+            parts.append(bolt(f"PodBolt{side}{j}", c + bx, -d - 0.05, bz))
+        # Carry handle: two posts and a bar over the top (near the mount side), and a bar down the outer side.
+        for j, x in enumerate((c - sx * 0.2, c + sx * 0.2)):
+            parts.append(block(f"HandlePost{side}{j}", K, x - 0.035, x + 0.035, -0.4, -0.3, h - 0.06, h + 0.16,
+                               chamfer=0.012, bevel=0.0))
+        xa, xb = sorted((c - sx * 0.235, sx * (px1 + 0.04)))
+        parts.append(block(f"HandleBar{side}", K, xa, xb, -0.4, -0.3, h + 0.12, h + 0.2, chamfer=0.025, bevel=0.0))
+        xa, xb = sorted((sx * (px1 - 0.005), sx * (px1 + 0.07)))
+        parts.append(block(f"HandleSide{side}", K, xa, xb, -0.4, -0.3, -h + 0.2, h + 0.2, chamfer=0.02, bevel=0.0))
+        # Raised side plate with dark brackets on the outer side, behind the handle.
+        xa, xb = sorted((sx * (px1 - 0.01), sx * (px1 + 0.035)))
+        parts.append(block(f"SidePlate{side}", Sd, xa, xb, -d + 0.08, -0.45, -h + 0.25, h - 0.25, chamfer=0.05,
+                           bevel=0.008))
+        for j, z in enumerate((h - 0.35, -h + 0.35)):
+            xa, xb = sorted((sx * (px1 + 0.03), sx * (px1 + 0.065)))
+            parts.append(block(f"SideBracket{side}{j}", K, xa, xb, -d + 0.2, -0.52, z - 0.05, z + 0.05,
+                               chamfer=0.01, bevel=0.0))
+        # Feet under the pod (inner half).
+        xa, xb = sorted((sx * (px0 + 0.05), sx * (pc + 0.08)))
+        parts.append(block(f"Foot{side}", K, xa, xb, -d + 0.1, -0.3, -h - 0.16, -h + 0.04, chamfer=0.05, bevel=0.0))
+    parts.append(empty("Mount", (0.0, 0.0, 0.0)))
+    return parts
+
+
+def build_jet_pack(t):
+    """The Jet Pack: a sand box of three columns (dark grooves between them), a raised center panel with bolts,
+    slots and an L seam, side columns with raised outer plates and side vents, raised blocks with dark sensor windows
+    and lenses on the side columns' tops, a dark top latch with clips and the hardpoint, a tapered bottom, and two
+    big nozzles under it pointing down and back (housing, bell with the opening cut in it, OutletGlow1..2 disc,
+    inner ring, Outlet1..2 empties past the exits, +Z out of the nozzle)."""
+    Sd, SD, F, K, S = "bp_sand", "bp_sand_dark", "bp_frame", "bp_dark", "bp_steel"
+    cx0, cx1 = t["col_x"]
+    h, d = t["h"], t["d"]
+    nx, nr, nl, ntilt = t["noz"]
+    parts = []
+
+    def bolt(name, x, y, z):
+        obj = prism(name, S, y - 0.012, y + 0.012, 0.018, 0.018, z=z, sides=6, bevel=0.0)
+        obj.location.x = x
+        return obj
+
+    parts.append(block("MountPlate", K, -0.34, 0.34, -0.08, 0.0, -h * 0.85, h * 0.85, chamfer=0.05))
+    parts.append(block("Center", Sd, -cx0, cx0, -d, -0.06, -h + 0.04, h, chamfer=0.06, bevel=0.015))
+    parts.append(block("CenterPanel", Sd, -cx0 + 0.05, cx0 - 0.05, -d - 0.04, -d + 0.03, -h + 0.14, h - 0.12,
+                       chamfer=0.05, bevel=0.01))
+    for i, (x, z) in enumerate(((-cx0 + 0.11, h - 0.2), (cx0 - 0.11, h - 0.2), (-cx0 + 0.11, -h + 0.24),
+                                (cx0 - 0.11, -h + 0.24))):
+        parts.append(bolt(f"CenterBolt{i}", x, -d - 0.05, z))
+    for i, (x, z) in enumerate(((-0.1, h - 0.36), (0.12, h - 0.36), (-0.1, -h + 0.34))):
+        parts.append(block(f"CenterSlot{i}", F, x - 0.025, x + 0.025, -d - 0.055, -d - 0.035, z - 0.05, z + 0.05,
+                           bevel=0.0))
+    parts.append(block("CenterSeamH", F, -0.12, 0.2, -d - 0.05, -d - 0.035, -h + 0.28, -h + 0.3, bevel=0.0))
+    parts.append(block("CenterSeamV", F, 0.18, 0.2, -d - 0.05, -d - 0.035, -h + 0.28, -h + 0.38, bevel=0.0))
+    parts.append(block("Latch", K, -0.2, 0.2, -0.66, -0.22, h - 0.04, h + 0.1, chamfer=0.03, bevel=0.0))
+    for i, sx in enumerate((-1.0, 1.0)):
+        x = sx * 0.17
+        parts.append(block(f"LatchClip{i}", K, x - 0.04, x + 0.04, -0.72, -0.6, h - 0.06, h + 0.14, chamfer=0.015,
+                           bevel=0.0))
+    parts.append(block("Hardpoint1", F, -0.1, 0.1, -0.2, -0.1, h - 0.01, h + 0.04, bevel=0.0))
+    parts.append(empty("Aux1", (0.0, -0.15, h + 0.04)))
+    parts.append(loft("Taper", Sd, [
+        (-h - 0.12, -h - 0.12, -cx0 + 0.1, cx0 - 0.1, -0.2, -d + 0.12),
+        (-h + 0.06, -h + 0.06, -cx0 + 0.02, cx0 - 0.02, -0.1, -d + 0.02)], bevel=0.012))
+    for side, sx in (("L", -1.0), ("R", 1.0)):
+        x0, x1 = sorted((sx * (cx0 + 0.015), sx * cx1))
+        parts.append(block(f"Column{side}", Sd, x0, x1, -d + 0.02, -0.06, -h, h - 0.02, chamfer=0.1, bevel=0.015))
+        xa, xb = sorted((sx * cx0, sx * (cx0 + 0.02)))
+        parts.append(block(f"Groove{side}", K, xa, xb, -d - 0.02, -0.1, -h + 0.06, h - 0.06, bevel=0.0))
+        # Raised plate on the back face and on the outer side, side vents low on the outer side.
+        xa, xb = sorted((sx * (cx0 + 0.06), sx * (cx1 - 0.06)))
+        parts.append(block(f"ColumnPanel{side}", Sd, xa, xb, -d - 0.02, -d + 0.05, -h + 0.12, h - 0.16, chamfer=0.07,
+                           bevel=0.01))
+        parts.append(bolt(f"ColumnBolt{side}", sx * (cx1 - 0.14), -d - 0.035, -h + 0.22))
+        parts.append(block(f"ColumnSlot{side}", F, sx * (cx1 - 0.2) - 0.05, sx * (cx1 - 0.2) + 0.05, -d - 0.035,
+                           -d - 0.02, -h + 0.3, -h + 0.34, bevel=0.0))
+        xa, xb = sorted((sx * (cx1 - 0.01), sx * (cx1 + 0.03)))
+        parts.append(block(f"SidePlate{side}", Sd, xa, xb, -d + 0.14, -0.2, -h + 0.38, h - 0.14, chamfer=0.05,
+                           bevel=0.008))
+        parts.append(block(f"SidePlateLow{side}", SD, xa, xb, -d + 0.14, -0.5, -h + 0.08, -h + 0.34, chamfer=0.04,
+                           bevel=0.0))
+        for j in range(2):
+            for k in range(3):
+                y = -d + 0.22 + k * 0.08
+                z = -h + 0.14 + j * 0.1
+                xa, xb = sorted((sx * (cx1 + 0.025), sx * (cx1 + 0.04)))
+                parts.append(block(f"SideVent{side}{j}{k}", K, xa, xb, y - 0.03, y + 0.03, z - 0.03, z + 0.03,
+                                   bevel=0.0))
+        # Top block with a dark sensor window and a steel lens, facing back.
+        xa, xb = sorted((sx * (cx0 + 0.05), sx * (cx1 - 0.08)))
+        parts.append(block(f"TopBlock{side}", Sd, xa, xb, -d + 0.04, -0.3, h - 0.06, h + 0.26, chamfer=0.07,
+                           bevel=0.012))
+        wc = sx * (cx0 + cx1) / 2 - sx * 0.02
+        parts.append(block(f"SensorWindow{side}", K, wc - 0.12, wc + 0.12, -d + 0.02, -d + 0.06, h + 0.04, h + 0.2,
+                           chamfer=0.02, bevel=0.0))
+        parts.append(block(f"SensorLens{side}", S, wc - 0.07, wc + 0.07, -d + 0.01, -d + 0.03, h + 0.08, h + 0.16,
+                           bevel=0.0))
+    # Nozzles: down and back from housings under the side columns.
+    a = math.radians(ntilt)
+    direction = Vector((0.0, -math.sin(a), -math.cos(a)))
+    theta = math.atan2(-math.cos(a), -math.sin(a))  # Turns a prism's +Y onto direction.
+    for n, sx in ((1, -1.0), (2, 1.0)):
+        root = Vector((sx * nx, -0.55, -h + 0.02))
+        parts.append(block(f"NozzleHousing{n}", K, sx * nx - 0.3, sx * nx + 0.3, -0.82, -0.26, -h - 0.12, -h + 0.08,
+                           chamfer=0.07, bevel=0.01))
+        pieces = []
+        ring = prism(f"NozzleRing{n}", F, 0.0, 0.1, nr * 0.95, nr * 0.95, sides=16, bevel=0.0)
+        bell = prism(f"Nozzle{n}", K, 0.08, nl, nr * 0.85, nr, sides=16)
+        cutter = prism(f"Nozzle{n}Cutter", F, nl - 0.12, nl + 0.05, nr * 0.8, nr * 0.8, sides=16, bevel=0.0)
+        glow = prism(f"OutletGlow{n}", K, nl - 0.13, nl - 0.115, nr * 0.8, nr * 0.8, sides=16, bevel=0.0)
+        inner = prism(f"NozzleInner{n}", F, nl - 0.15, nl - 0.12, nr * 0.45, nr * 0.45, sides=16, bevel=0.0)
+        lip = prism(f"NozzleLip{n}", S, nl - 0.02, nl + 0.005, nr + 0.01, nr + 0.01, sides=16, bevel=0.0)
+        for obj in (ring, bell, cutter, glow, inner, lip):
+            obj.rotation_euler = (theta, 0.0, 0.0)
+            obj.location = root
+        cutter.hide_render = True
+        cutter.display_type = "WIRE"
+        mod = bell.modifiers.new("Opening", "BOOLEAN")
+        mod.operation = "DIFFERENCE"
+        mod.solver = "EXACT"
+        mod.object = cutter
+        bell.modifiers.move(len(bell.modifiers) - 1, 0)
+        parts += [ring, bell, glow, inner, lip]
+        exit_point = root + direction * (nl + 0.03)
+        outlet = empty(f"Outlet{n}", tuple(exit_point))
+        outlet.rotation_euler = (math.pi - a, 0.0, 0.0)
+        parts.append(outlet)
+    parts.append(empty("Mount", (0.0, 0.0, 0.0)))
+    return parts
+
+
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -1317,7 +1518,9 @@ def main():
         if args and name not in args:
             continue
         bpy.ops.wm.read_factory_settings(use_empty=True)
-        builders = {"ammo": build_ammo_pack, "missile": build_missile_pack, "boost": build_boost_pack, "quad": build_quad_pack, "belt": build_belt_pack, "power": build_power_pack}
+        builders = {"ammo": build_ammo_pack, "missile": build_missile_pack, "boost": build_boost_pack,
+                    "quad": build_quad_pack, "belt": build_belt_pack, "power": build_power_pack,
+                    "field": build_field_pack, "jet": build_jet_pack}
         objects = builders.get(t.get("kind"), build_pack)(t)
         # Radiator fins and handles stay on the heavy and the other packs; a pack with a radiator has no handles.
         if t.get("vent") == "radiator":

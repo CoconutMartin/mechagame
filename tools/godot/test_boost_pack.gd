@@ -11,6 +11,8 @@ const PACK := "res://data/parts/backpacks/backpack_boost.tres"
 const OTHER_PACK := "res://data/parts/backpacks/backpack_medium.tres"
 const QUAD_PACK := "res://data/parts/backpacks/backpack_quad.tres"
 const POWER_PACK := "res://data/parts/backpacks/backpack_power.tres"
+const FIELD_PACK := "res://data/parts/backpacks/backpack_field.tres"
+const JET_PACK := "res://data/parts/backpacks/backpack_jet.tres"
 
 var _failures: int = 0
 
@@ -211,6 +213,45 @@ func _run() -> void:
 				energy.current = energy.capacity * e
 				await _frames(2)
 				root.get_viewport().get_texture().get_image().save_png(power_shot.replace(".png", "_%d.png" % int(e * 100)))
+	# The Field Pack: 2 aux slots (Aux1, Aux2 in the model), part HP bonus, no outlets.
+	var field := load(FIELD_PACK) as BackPackPart
+	_check(field in catalog.back_packs and field.get_mod_stat() == ModData.Stat.PART_HP and field.aux_slots == 2,
+			"the Field Pack is in the catalog (2 aux slots, part HP bonus)")
+	loadout.back_pack = field
+	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
+	await _frames(30)
+	holder = switcher.mech.get_node_or_null(^"BackPackMount") as BackPackMount
+	_check(holder != null and holder.model.find_child("Aux2", true, false) != null
+			and switcher.mech.get_node_or_null(^"BackPackOutlets") == null, "the Field Pack model has 2 hardpoints")
+	# The Jet Pack: two nozzle outlets pointing down and back, glow and wind while boosting.
+	var jet := load(JET_PACK) as BackPackPart
+	_check(jet in catalog.back_packs and jet.get_mod_stat() == ModData.Stat.BOOST_THRUST,
+			"the Jet Pack is in the catalog (boost bonus)")
+	loadout.back_pack = jet
+	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
+	await _frames(30)
+	mech = switcher.mech
+	outlets = mech.get_node_or_null(^"BackPackOutlets") as BackPackOutlets
+	_check(outlets != null and outlets._winds.size() == 2, "2 nozzle outlets on the Jet Pack")
+	if outlets != null:
+		var ok_dir := true
+		for i in 2:
+			var outlet := outlets._model.find_child("Outlet%d" % (i + 1), true, false) as Node3D
+			var out := outlet.global_basis.y.normalized()
+			ok_dir = ok_dir and out.dot(mech.global_basis.z) > 0.4 and out.y < -0.6
+		_check(ok_dir, "the Jet Pack nozzles blow down and back")
+		Input.action_press("boost")
+		Input.action_press("move_forward")
+		for i in 240:
+			await _frames(1)
+			if mech.is_boosting and outlets.amount > 0.95:
+				break
+		_check(outlets.amount > 0.95 and outlets._winds[1].emitting, "Jet Pack boosting: glow and wind")
+		var jet_shot := OS.get_environment("JET_SHOT")
+		if jet_shot != "":
+			root.get_viewport().get_texture().get_image().save_png(jet_shot)
+		Input.action_release("boost")
+		Input.action_release("move_forward")
 	_finish()
 
 

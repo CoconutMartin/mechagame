@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BackPackPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/back_pack_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/backpacks/backpack_field.glb" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Field Pack"
+weight_t = 1.6
+hp = 340.0
+aux_slots = 2
+bonus = 2
+bonus_percent = 6.0
+scene = ExtResource("scene")

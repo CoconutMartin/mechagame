@@ -41,7 +41,9 @@ carries the aux equipment (pulse scan now) and gives one bonus stat (boost, ener
 | Boost Pack | 2.0 x 2.2 x 1.1 | 1 | boost +12% | center box, four wings with louvered grilles (boost outlets), gunmetal (user picture) |
 | Quad Booster | 2.06 x 2.1 x 1.14 | 1 | boost +18% | four octagonal thruster pods with big nozzles, tan spine (user picture) |
 | Belt Pack | 1.64 x 2.0 x 1.07 | 1 | none; 8 gun refills | frame box with a handle, an ammo belt down the back (user picture) |
-| Power Pack | 1.68 x 2.1 x 0.93 | 1 | energy +25% | center stack with a radiator, towers, battery cells, orange cables (user picture) |
+| Power Pack | 1.88 x 2.18 x 0.98 | 1 | energy +25% | center stack with a radiator, towers, battery cells, glowing cables (user picture) |
+| Field Pack | 2.14 x 1.84 x 0.92 | 2 | part HP +6% | grille box between two handled pods (user picture) |
+| Jet Pack | 1.96 x 2.0 x 1.0 | 1 | boost +10% | three column box, two big nozzles down and back (user picture) |
 
 ## Colors
 

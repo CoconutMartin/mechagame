@@ -46,6 +46,10 @@ BACK_PACKS = [
     ("backpack_belt", "Belt Pack", 2.6, 300.0, 1, 0, 0.0),
     # Power Pack (user picture 2026-10-31, "energy support"): battery cells, 1 aux slot, energy capacity +25%.
     ("backpack_power", "Power Pack", 1.8, 260.0, 1, 1, 25.0),
+    # Field Pack (user picture 2026-10-31): a box between two handled pods, 2 aux slots, part HP +6%.
+    ("backpack_field", "Field Pack", 1.6, 340.0, 2, 2, 6.0),
+    # Jet Pack (user picture 2026-10-31): a light booster with two big nozzles, 1 aux slot, boost +10%.
+    ("backpack_jet", "Jet Pack", 1.0, 200.0, 1, 3, 10.0),
 ]
 ## Ammo canisters per pack (BackPackPart.ammo_canisters); packs not listed carry none.
 AMMO_CANISTERS = {"backpack_ammo": 6, "backpack_missile": 4, "backpack_belt": 8}
