@@ -890,6 +890,12 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
 - Skeleton modifiers (found 2026-10-27): the arm, hip and aim modifiers (SkeletonModifier3D) change the bones only during the skeleton update, and Godot undoes it after; a tool that reads `get_bone_global_pose` outside `skeleton_updated` sees the pose without them. The skin and BoneAttachment3D use the pose with them. The new tools read the poses after `await skeleton.skeleton_updated`.
 - Test: `tools/godot/test_pile_bunker_clip.gd` (new): Pile Bunker face points against a convex hull per armor mesh and bone, right and left hand, at rest, walk, power-up, a full attack on a target and boost: 0 points inside in every phase (before: up to 0.48 m into the forearm). test_pile_bunker_hit, test_stability, test_weapon_hands, test_hit_reactions, test_melee_combo, test_beam_arm_break: 0 failures.
 
+## Pile Bunker 2 model (user design 2026-10-31, Blender model, not in the game yet)
+- User picture `models/guides/pilebunker_2_ref.png` (3/4, front, side, top). Script `tools/blender/pilebunker_2_build.py` writes `models/pilebunker_2/pilebunker_2.blend` and `.glb` (2,734 triangles). Preview: `models/pilebunker_2/pilebunker_2_preview.png`.
+- Shape: black end cap and side pads, olive grip housing with a slanted front, black foot, carry handle on top (black posts, tan sleeve), tan body in two panels with a top seam, black octagonal collar, stepped steel drill (7 rings on a dark core, pointed tip). Colors from the picture: olive, tan, black, steel, dark core.
+- Sizes: back to collar front (Nose) 2.7 m, the same as the first Pile Bunker (elbow to the front of the fist); drill 1.65 m past the collar; body about 0.9 m wide and 1.1 m high with the handle.
+- The same node names as `pile_bunker.glb` (Stake empty with the drill, Nose, Mount, Drum glow lamp, NoseRing glow), so `PileBunkerWeapon` can use it. Not wired yet: needs a scene, weapon data, the PS1 skin and its own forearm mount (user decision).
+
 ## Beam Rifle (user design, Blender model, in the game since 2026-10-11)
 
 - Picture: `models/guides/beam_rifle_ref.png` (side, front and 3/4 views). Script: `tools/blender/beam_rifle_build.py` (run `blender -b --python tools/blender/beam_rifle_build.py`; it starts from an empty file, so hand edits are lost). Output: `models/beam_rifle/beam_rifle.blend` and `beam_rifle.glb`.
