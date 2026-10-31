@@ -70,8 +70,9 @@ func _attach_model(skeleton: Skeleton3D, pack_data: BackPackPart) -> void:
 		var canister := model.find_child("Canister%d" % (i + 1), true, false) as Node3D
 		if canister != null:
 			_canisters.append(canister)
-	# Boost outlets (Boost Pack): glow and wind while boosting.
+	# Boost outlets (Boost Pack): glow, wind and louver flaps that open while boosting.
 	BackPackOutlets.attach(mech, model)
+	BackPackFlaps.attach(mech, model)
 	if mech.health != null:
 		var nodes: Array[Node3D] = [model]
 		mech.health.attach_weapon_part(HIT_KEY, pack_data.hp, pack_data.hp, nodes)

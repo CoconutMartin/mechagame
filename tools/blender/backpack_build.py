@@ -486,12 +486,46 @@ def poly_x_range(pts, z):
     return (min(xs), max(xs)) if xs else None
 
 
-def grille(name, pts, face_y, sx=1.0, pitch=0.07, inset=0.03, back_name="", cut=None, depth=0.0):
+def grille_flaps(name, pts, face_y, depth, sx, pitch, inset, z_from=-99.0):
+    """Louver flaps across a recessed grille (user request 2026-10-31: "turn the grilles into flaps that open when
+    boosting and close when not boosting"). Each flap is its own object <name><i>, origin on its hinge (the flap's
+    middle line, depth * 0.4 inside the face), local X = the hinge along the fin's width, local Z = up along the
+    face, local -Y = out of the face. Closed (as built) the flaps lie in the face plane and overlap a little, so
+    they cover the recess; the game turns them about local X to open them (BackPackFlaps)."""
+    height, thick = pitch + 0.012, 0.014
+    z_low = max(min(z for _, z in pts) + 0.01, z_from)
+    z_top = max(z for _, z in pts) - 0.01
+    parts = []
+    i = 0
+    z = z_low + height / 2
+    while z + height / 2 <= z_top + 0.005:
+        lo = poly_x_range(pts, z - height / 2)
+        hi = poly_x_range(pts, z + height / 2)
+        if lo and hi:
+            x0, x1 = max(lo[0], hi[0]) + 0.01, min(lo[1], hi[1]) - 0.01
+            if x1 - x0 > 0.04:
+                i += 1
+                dy = face_y(z + 0.05) - face_y(z - 0.05)
+                tilt = math.atan2(-dy, 0.1)
+                bm = bmesh.new()
+                bmesh.ops.create_cube(bm, size=1.0)
+                bmesh.ops.scale(bm, vec=(x1 - x0, thick, height), verts=bm.verts)
+                obj = new_object(f"{name}{i}", bm)
+                obj.location = (sx * (x0 + x1) / 2, face_y(z) + depth * 0.4, z)
+                obj.rotation_euler = (tilt, 0.0, 0.0)
+                parts.append(finish(obj, "bp_slat", 0.004))
+        z += pitch
+    return parts
+
+
+def grille(name, pts, face_y, sx=1.0, pitch=0.07, inset=0.03, back_name="", cut=None, depth=0.0, flaps="", flaps_from=-99.0):
     """A louvered grille on a face: a black back plate (named back_name, or name + "Back") in the outline pts and
     light gray slats across it. With cut (the part the face belongs to) and depth, the grille sits in a recess:
     a Boolean cuts the outline depth meters into the part (user request 2026-10-31: "push the grills into the fins
-    a bit more"), and the plate and slats sit at the bottom of the recess."""
+    a bit more"), and the plate and slats sit at the bottom of the recess. flaps (a name prefix, needs a recess):
+    louver flaps that the game opens (grille_flaps) take the place of the fixed slats."""
     F, S = "bp_frame", "bp_slat"
+    bottom = face_y
     if cut is not None and depth > 0.0:
         cutter = face_plate(name + "Cutter", F, pts, face_y, 0.1, back=depth, sx=sx)
         cutter.display_type = "WIRE"
@@ -501,9 +535,10 @@ def grille(name, pts, face_y, sx=1.0, pitch=0.07, inset=0.03, back_name="", cut=
         mod.solver = "EXACT"
         mod.object = cutter
         cut.modifiers.move(len(cut.modifiers) - 1, 0)  # Cut before the bevel, so the recess edges are beveled.
-        bottom = face_y
         face_y = lambda z: bottom(z) + depth
     parts = [face_plate(back_name or name + "Back", F, pts, face_y, 0.015, sx=sx)]
+    if flaps:
+        return parts + grille_flaps(flaps, pts, bottom, depth, sx, pitch, inset, flaps_from)
     z_low = min(z for _, z in pts) + inset + 0.01
     z_top = max(z for _, z in pts) - inset
     i = 0
@@ -621,7 +656,8 @@ def build_boost_pack(t):
         up_pts = [(wx0 + 0.08, 0.06), (wx0 + 0.21, 0.06), (wx1 - 0.08, 0.64), (wx1 - 0.08, up_top_out - 0.12),
                   (wx0 + 0.08, up_top_out - 0.12)]
         parts += grille(f"GrilleUp{side}", up_pts, up_face, sx=sx, back_name=f"OutletGlow{n + 1}",
-                        cut=bpy.data.objects[f"WingUpper{side}"], depth=t["recess"])
+                        cut=bpy.data.objects[f"WingUpper{side}"], depth=t["recess"],
+                        flaps=f"OutletFlap{n + 1}_", flaps_from=0.29)  # The dark block fills the bottom.
         x0, x1 = sorted((sx * (wx0 + 0.1), sx * (wx0 + 0.27)))
         yb = up_face(0.185)
         parts.append(block(f"GrilleBlock{side}", K, x0, x1, yb - 0.03, yb + t["recess"], 0.1, 0.27, chamfer=0.045,
@@ -629,7 +665,8 @@ def build_boost_pack(t):
         low_pts = [(wx0 + 0.08, lw_z_bot + 0.06), (wx1 - 0.1, lw_z_bot + 0.06), (wx0 + 0.24, lw_z_top - 0.08),
                    (wx0 + 0.08, lw_z_top - 0.08)]
         parts += grille(f"GrilleLow{side}", low_pts, low_face, sx=sx, back_name=f"OutletGlow{n + 3}",
-                        cut=bpy.data.objects[f"WingLower{side}"], depth=t["recess"])
+                        cut=bpy.data.objects[f"WingLower{side}"], depth=t["recess"],
+                        flaps=f"OutletFlap{n + 3}_")
         # Black connectors between the box and the fins.
         for j, (z0, z1) in enumerate(((0.08, 0.32), (-0.44, -0.22))):
             x0, x1 = sorted((sx * (bw - 0.03), sx * (wx0 + 0.03)))
