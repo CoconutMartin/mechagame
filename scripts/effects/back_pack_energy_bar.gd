@@ -3,7 +3,8 @@ extends Node
 ## Boost energy light on a back pack (Boost Pack, user request 2026-10-31: "a third bar for the boost energy
 ## indicator. Full energy = bright light blue light, then color and brightness fade as energy approaches empty").
 ## The pack model has an EnergyBar mesh; this node colors it each frame from the mech's energy fraction.
-## BackPackMount adds this node when the model has an EnergyBar mesh.
+## When the energy runs empty the bar blinks twice (user request 2026-10-31), then it follows the energy again and
+## slowly gets brighter as the energy recharges. BackPackMount adds this node when the model has an EnergyBar mesh.
 
 ## Bar color at full energy (bright light blue).
 @export var full_color: Color = Color(0.3, 0.8, 1.0)
@@ -11,6 +12,12 @@ extends Node
 @export var empty_color: Color = Color(0.1, 0.12, 0.15)
 ## Shape of the fade (1 = even; above 1 = stays bright longer, then drops faster near empty).
 @export var fade_curve: float = 0.6
+## Bar color in the "on" part of a blink when the energy runs empty.
+@export var blink_color: Color = Color(0.3, 0.8, 1.0)
+## Blinks when the energy runs empty.
+@export var blink_count: int = 2
+## Time of one blink, on and off (s).
+@export var blink_period: float = 0.36
 
 var mech: Mech
 ## The shown energy fraction (0 to 1).
@@ -18,6 +25,8 @@ var fraction: float = 1.0
 
 var _bar: MeshInstance3D
 var _material: StandardMaterial3D
+## Time since the energy ran empty (s); the bar blinks while it is under blink_count * blink_period.
+var _blink_time: float = INF
 
 
 ## Adds the energy light for a pack model (null when the model has no EnergyBar mesh).
@@ -38,10 +47,22 @@ static func attach(target: Mech, pack_model: Node3D) -> BackPackEnergyBar:
 func _ready() -> void:
 	_material = StandardMaterial3D.new()
 	_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	if mech != null and mech.energy != null:
+		mech.energy.depleted.connect(_on_depleted)
 	_apply()
 
 
-func _process(_delta: float) -> void:
+func _on_depleted() -> void:
+	_blink_time = 0.0
+
+
+## True while the empty-energy blink plays.
+func is_blinking() -> bool:
+	return _blink_time < blink_count * blink_period
+
+
+func _process(delta: float) -> void:
+	_blink_time += delta
 	_apply()
 
 
@@ -51,6 +72,9 @@ func _apply() -> void:
 	fraction = mech.energy.get_fraction() if mech != null and mech.energy != null else 1.0
 	var t := pow(clampf(fraction, 0.0, 1.0), fade_curve)
 	_material.albedo_color = empty_color.lerp(full_color, t)
+	if is_blinking():
+		var on := fmod(_blink_time, blink_period) < blink_period * 0.5
+		_material.albedo_color = blink_color if on else empty_color
 	# The bar's own material (unshaded, so the PS1 skin leaves it as it is); set again if something replaced it.
 	if _bar.material_override != _material:
 		_bar.material_override = _material

@@ -82,6 +82,26 @@ func _run() -> void:
 	_check(half.get_luminance() < full.get_luminance() and empty.get_luminance() < half.get_luminance()
 			and empty.is_equal_approx(bar.empty_color), "the bar dims toward empty (%.2f, %.2f, %.2f)" %
 			[full.get_luminance(), half.get_luminance(), empty.get_luminance()])
+	# Empty: two blinks (on, off, on, off), then the bar follows the energy again and brightens as it recharges.
+	mech.energy.depleted.emit()
+	var seen: Array[bool] = []
+	var step := bar.blink_period * 0.5
+	for i in bar.blink_count * 2:
+		await create_timer(step * 0.5).timeout
+		seen.append(bar.get_color().is_equal_approx(bar.blink_color))
+		await create_timer(step * 0.5).timeout
+	_check(seen == [true, false, true, false], "empty: the bar blinks twice %s" % [seen])
+	await create_timer(0.2).timeout
+	var after := bar.get_color()
+	var follows := bar.empty_color.lerp(bar.full_color, pow(bar.fraction, bar.fade_curve))
+	_check(not bar.is_blinking() and after.is_equal_approx(follows),
+			"after the blinks: the bar follows the energy again (energy %.2f)" % bar.fraction)
+	mech.energy.current = mech.energy.capacity * 0.3
+	await _frames(1)
+	var low := bar.get_color().get_luminance()
+	mech.energy.current = mech.energy.capacity * 0.7
+	await _frames(1)
+	_check(bar.get_color().get_luminance() > low, "recharging: the bar gets brighter")
 	mech.energy.current = saved
 	var shot := OS.get_environment("BOOST_SHOT")
 	if shot != "":
