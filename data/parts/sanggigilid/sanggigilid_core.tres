@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="CorePart" format=3]
+[gd_resource type="Resource" script_class="CorePart" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/core_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/mechs/sgg/sgg_core.glb" id="model"]
 
 [resource]
 script = ExtResource("script")
@@ -9,3 +10,4 @@ weight_t = 18.0
 hp = 1600.0
 energy_capacity = 100.0
 torso_turn_speed_deg = 145.1
+scene = ExtResource("model")

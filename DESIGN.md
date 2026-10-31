@@ -667,6 +667,40 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
 - No quick side switches (user report 2026-10-12: W + D with the aim to the left flicked the body left and right): `SkeletalHipTurn` keeps forward or backward stepping at least 0.5 s after a switch (`back_step_hold_time`), the waist twist moves at most 300 deg/s (`twist_speed_deg`) and keeps its side near 180 deg (the wrap flipped it from +90 to -90 in one frame). Test (move direction swinging +/-15 deg around 100, 135 and 170 deg from the aim): largest change per frame 5.6 deg (hips and waist), one forward/back switch in 6 s.
 - Next phases: run start / stop and the Akira slide on the game's boost exit and skid, footstep markers to camera shake, sound and dust, jump / air / kneel / dodge poses, aim layer.
 
+## Swappable mech parts (user request 2026-10-31)
+
+User: "Make it so that parts are swappable, no tearing, parts with collision." User answers (2026-10-31):
+- Slots: head, torso (core), left arm, right arm, legs. Parts come from every mech; each mech has 1 variant.
+- Every mech uses the same joints: the SGG-101 rig `MechRig` (56 bones, their names and rest places) is the
+  joint standard, so every animation plays on every mech.
+- Each part is separate objects with rigid parenting (one bone per mesh at full weight; the hands use the finger
+  bones). The child part owns the joint piece between two parts: the head brings the neck joint, the core the
+  waist joint, each arm its shoulder ball, elbow and hand, the legs the pelvis, hip balls and knees.
+- Collision: simple shapes as now (one box per bone around the part's meshes, SkeletalHitboxes).
+- A simple test part to try the swap before the next mech (phase 2).
+
+Phases:
+1. Split (built 2026-10-31): `tools/blender/export_mech_parts.py` writes, from the .blend's part collections
+   (Head, Core, Arm_L, Arm_R, Legs), `models/mechs/sgg/sgg_rig.glb` (the rig and every action, a 1-triangle
+   `RigAnchor` mesh so Godot makes the Skeleton3D) and `sgg_head/core/arm_l/arm_r/legs.glb` (the rig at rest and
+   the part's meshes). `PartData.scene` of each SGG part points at its file. In the game `SkeletalPartModels`
+   (node `PartModels`, the mech's first child) moves each part's meshes onto the mech skeleton in `_enter_tree`,
+   before the other nodes read the meshes in `_ready`; the skin binds by bone name. A slot that the loadout leaves
+   empty uses the SGG part. `build_sanggigilid.gd` uses the rig file and adds `PartModels`; it puts the parts on
+   only to measure the wrist pins and takes them off before it saves the scene. `test_part_models.gd` checks the
+   slots, the skin binds and the hitboxes (`OLD_SCENE=` compares with an older one-file scene: all 27 mesh boxes
+   and 18 hitboxes matched to 0 mm on 2026-10-31; bind poses and vertices match the old file exactly).
+   `models/new_mech/new_mech_exploded.glb` stays for the tools that read only its skeleton and animations
+   (`mirror_clip`, `retarget_mixamo`, `make_*`); it has the same rig.
+2. Garage pickers for the 5 slots and a test part (next).
+3. Part kit: a Blender template with the standard rig, a check script (bone names, rest places within 1 cm,
+   rigid weights, joint pieces) and a short guide (next).
+
+Open points for later parts: the wrist pin (measured from the SGG forearm mesh `Arm_<side>_02` at build time) and
+the jointed hand scenes (`mech_hand_r/l.tscn`) are SGG values; an arm part of another mech needs its own (ArmPart
+fields, phase 2 or 3). The hit part data (`sanggigilid_hit_parts.tres`) names bones, so it fits every part on the
+standard rig.
+
 ## New mech hand (user request 2026-10-13; user drawings: right hand palm, back, closed underside, closed back, open back)
 
 - User answers: 4 fingers and a thumb, 3 joints each; the look from the drawings; auto fit grip.
@@ -1250,6 +1284,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - "Align shoulders and arm swings during holding war hammer and baton with shoulder and arm swings with fists": the holding arm followed the walk clip (its shoulder block rose and tilted). Now `WeaponController._swings_like_fist` (a HAMMER-kind weapon in the right hand): when it does not swing, the arm takes the fist hang target (`_update_fist_arms`, `fist_hang_target`) and its IK runs, so `SkeletalArmRig` gives it the relaxed hang and the stride swing like a fist arm (level block); the weapon rides the hand. During a swing the target is null and the clip has the arm as before. Test: test_melee_combo, test_stability, test_weapon_hands, test_hit_reactions 0 failures; renders `render_rifle.gd` RIFLE_RIGHT=hammer / baton, RIFLE_ACTIONS=move_forward, views far, far_front.
 
 ## Reminders for the user
+- Open (2026-10-31, built, phase 1 of "Swappable mech parts"): play test SGG after the split into part files: it should look and move exactly as before (walk, run, boost, jump, aim, melee, part breaks, the PS1 / Basic skins, the HP indicators). Report any part that looks wrong or sits in the wrong place.
 - Open (2026-10-31, built, phase B): play test the drone aux mods (garage "Aux" picker under Backpack, with the Drone Pack): Drone Swarm (one T release sends all 6) and Drone Recall (each drone comes back after its attack and launches once more). Say if the values should change (2 flights per drone, 10 s to come back).
 - Open (2026-10-31, built): play test the Drone Pack (garage Backpack picker): the stacked drones on the back (no clipping with the arms while walking, boosting and aiming), 2.2 t, 1 aux slot, and the attack drones (see "Attack drones"): hold T on an enemy (the garage test buttons) or a dummy, release; the flight around buildings, the seek when the target hides, the stop at the first shot, the 20 m range, the 12.5 m height, the way around tall buildings, the HUD line. Give the AI enemy the Drone Pack ("Enemy pack" in the garage) and try a heavy rifle, an SMG and a beam rifle on it (it hits drones 3 times in 4 with one hit and charged shots). Tune `data/equipment/attack_drone.tres` and `data/weapons/drone_gun.tres`; the drone HP is for later balance (user).
 - Open (2026-10-31, user: "lift the PS1 graphics for now"): the PS1 look is off (`data/skins/ps1_skin.tres` `enabled = false`: a mech set to PS1 shows Basic, the environment PS1 look stays off; the garage picker still lists PS1). Set `enabled = true` to bring it back.
@@ -1317,6 +1352,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 
 ## Decisions log
 
+- 2026-10-31 (user): swappable parts: head, core, arms, legs, from every mech (1 variant each), on the SGG-101 joint standard; rigid parenting, the child part owns the joint piece; simple collision shapes as now; a test part to try the swap. Phase 1 (split SGG into a rig file and 5 part files) built.
 - 2026-10-31 (user, round 5): drone cool down 10 s (from when the last drone is gone or back); no launch while drones are active.
 - 2026-10-31 (user, phase B): drone aux mods in the aux slot: Recall (drones come back, 2 flights each) and Swarm (all drones at once, destroyed after); the garage gets an Aux picker.
 - 2026-10-31 (user, round 4): drones tilt up to 45 degrees and attack mechs above the 12.5 m ceiling when within range and in sight; back packs keep 1 aux slot.

@@ -1,6 +1,7 @@
 extends SceneTree
 ## Builds scenes/mech/sanggigilid.tscn: Sanggigilid, the game's mech (named "new mech" before 2026-10-11; rigged model
-## models/new_mech/new_mech_exploded.glb) as a playable mech that plays its own animations.
+## models/mechs/sgg/sgg_rig.glb with the part models of the loadout, SkeletalPartModels) as a playable mech that
+## plays its own animations.
 ## Run from the project root:
 ##   godot --headless --path . --script res://tools/godot/build_sanggigilid.gd
 ##
@@ -12,7 +13,17 @@ extends SceneTree
 
 ## Node template (the old part-built player mech scene, kept only as the source of these nodes).
 const SOURCE := "res://scenes/mech/mech_template.tscn"
-const MODEL := "res://models/new_mech/new_mech_exploded.glb"
+## The standard rig with the animations (tools/blender/export_mech_parts.py). The part meshes come from the
+## loadout's parts at run time (SkeletalPartModels, DESIGN "Swappable mech parts").
+const MODEL := "res://models/mechs/sgg/sgg_rig.glb"
+## Default parts (SGG-101) for the slots a loadout leaves empty.
+const DEFAULT_PARTS := {
+	"head": "res://data/parts/sanggigilid/sanggigilid_head.tres",
+	"core": "res://data/parts/sanggigilid/sanggigilid_core.tres",
+	"arm_left": "res://data/parts/sanggigilid/sanggigilid_arm_l.tres",
+	"arm_right": "res://data/parts/sanggigilid/sanggigilid_arm_r.tres",
+	"legs": "res://data/parts/sanggigilid/sanggigilid_legs.tres",
+}
 const OUT_SCENE := "res://scenes/mech/sanggigilid.tscn"
 ## Part HP and the bones of each part.
 const HIT_PARTS := "res://data/mechs/sanggigilid_hit_parts.tres"
@@ -101,6 +112,16 @@ func _initialize() -> void:
 	model.add_child(tree)
 	tree.owner = root
 	tree.anim_player = NodePath("../AnimationPlayer")
+	# Part meshes: put on now so the build can measure them (wrist pins), and taken off again before the
+	# scene is saved; in the game SkeletalPartModels adds them from the loadout.
+	var part_models := SkeletalPartModels.new()
+	part_models.name = "PartModels"
+	root.add_child(part_models)
+	part_models.owner = root
+	part_models.model = model
+	for slot: String in DEFAULT_PARTS:
+		part_models.set("default_" + slot, load(DEFAULT_PARTS[slot]))
+	part_models.build()
 
 	var skeleton := model.find_child("Skeleton3D", true, false) as Skeleton3D
 	var shoulder := Marker3D.new()
@@ -240,6 +261,14 @@ func _initialize() -> void:
 	mech_aim.aim_origin = aim
 	mech_aim.body_visual = visual
 
+	part_models.loadout_holder = root.get_node("WeaponMount")
+	# First child: it builds the part meshes before Visual enters the tree.
+	root.move_child(part_models, 0)
+	for meshes: Array in part_models.meshes_by_slot.values():
+		for mesh: MeshInstance3D in meshes:
+			mesh.get_parent().remove_child(mesh)
+			mesh.free()
+	part_models.meshes_by_slot.clear()
 	for node in [root] + root.find_children("*", "", true, false):
 		if node != root and node.owner == null:
 			node.owner = root

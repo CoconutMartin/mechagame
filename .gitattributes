@@ -5,3 +5,5 @@
 *.blend filter=lfs diff=lfs merge=lfs -text
 models/new_mech/*.glb filter=lfs diff=lfs merge=lfs -text
 *.fbx binary
+models/mechs/**/*.glb filter=lfs diff=lfs merge=lfs -text
+models/mechs/**/*.png filter=lfs diff=lfs merge=lfs -text
