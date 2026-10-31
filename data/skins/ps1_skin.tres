@@ -4,6 +4,7 @@
 
 [resource]
 script = ExtResource("script")
+enabled = false
 uv_pixels = 256.0
 texels_per_meter = 16.0
 detail_strength = 0.8

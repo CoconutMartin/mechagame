@@ -28,6 +28,7 @@ func _ready() -> void:
 
 ## Puts the look on (every mesh now and later) or takes it off (the original materials come back).
 func set_active(value: bool) -> void:
+	value = value and MechSkinChoice.ps1_enabled()  # Off while the PS1 look is lifted (2026-10-31).
 	if value == active:
 		return
 	active = value

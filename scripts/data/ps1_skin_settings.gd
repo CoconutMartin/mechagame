@@ -3,6 +3,9 @@ extends Resource
 ## Tuning values of the PS1 skin (shaders/ps1_skin.gdshader), shared by the mech body and every weapon
 ## and equipment on it, and by the environment (PS1WorldLook) (data/skins/ps1_skin.tres).
 
+## PS1 look allowed (user 2026-10-31: "lift the PS1 graphics for now"). Off: a mech set to PS1 in the garage
+## shows the Basic skin (the model's own materials), and the environment PS1 look stays off. On: as before.
+@export var enabled: bool = true
 ## Chunky pixels across the whole model texture (smaller = bigger pixels).
 @export var uv_pixels: float = 256.0
 ## Detail texture (seams, rivets, vents, dirt) pixels per meter, and how strong it shows (0 = off).

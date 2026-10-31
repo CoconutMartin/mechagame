@@ -240,6 +240,10 @@ func _run() -> void:
 			var out := outlet.global_basis.y.normalized()
 			ok_dir = ok_dir and out.dot(mech.global_basis.z) > 0.4 and out.y < -0.6
 		_check(ok_dir, "the Jet Pack nozzles blow down and back")
+		var jet_petals := mech.get_node_or_null(^"BackPackFlaps") as BackPackFlaps
+		_check(jet_petals != null and jet_petals.get_flaps().size() == 20, "20 jet nozzle petals on the Jet Pack")
+		var jet_bar := mech.get_node_or_null(^"BackPackEnergyBar") as BackPackEnergyBar
+		_check(jet_bar != null, "the Jet Pack has an energy bar")
 		Input.action_press("boost")
 		Input.action_press("move_forward")
 		for i in 240:
@@ -252,6 +256,9 @@ func _run() -> void:
 			root.get_viewport().get_texture().get_image().save_png(jet_shot)
 		Input.action_release("boost")
 		Input.action_release("move_forward")
+	# The PS1 look is lifted for now (data/skins/ps1_skin.tres enabled = false): no mech shows the PS1 skin.
+	_check(MechSkinChoice.style() != MechSkinChoice.Style.PS1, "the PS1 look is off (style %s)" %
+			MechSkinChoice.NAMES[MechSkinChoice.style()])
 	_finish()
 
 

@@ -85,7 +85,8 @@ TYPES = {
     # blocks with sensor windows on the side columns' tops), two big nozzles under it pointing down and back. Built
     # by build_jet_pack. col_x: x where the side columns start and end; h: half height; d: depth; noz: (x, radius,
     # length, tilt back from straight down in degrees).
-    "jet": dict(kind="jet", col_x=(0.38, 0.98), h=0.68, d=0.9, noz=(0.55, 0.26, 0.4, 45.0)),
+    "jet": dict(kind="jet", col_x=(0.38, 0.98), h=0.68, d=0.9, noz=(0.55, 0.26, 0.34, 45.0),
+                petals=(10, 0.14, 22.0)),
     "power": dict(kind="power", body_w=0.32, tower_x=(0.36, 0.68), cell_x=(0.48, 0.9), d=0.95, cable_r=0.045),
 }
 
@@ -865,13 +866,18 @@ def build_boost_pack(t):
     return parts
 
 
-def nozzle_petal(name, mat, center, y_hinge, phi, r_hinge, length, tilt, count, thick=0.02):
+def nozzle_petal(name, mat, center, y_hinge, phi, r_hinge, length, tilt, count, thick=0.02, axis=None):
     """One jet nozzle petal: a plate hinged on the nozzle rim (radius r_hinge round center = (x, z), at y_hinge)
     that points back (-Y) and tilts in toward the axis by tilt (closed). Origin on the hinge; local X = the hinge
     (along the rim), local Z = along the petal to its tip, local -Y = out from the axis, so a turn about local X
-    swings the tip out (BackPackFlaps opens it). The petals overlap a little when open."""
-    axis = Vector((0.0, -1.0, 0.0))
-    out = Vector((math.cos(phi), 0.0, math.sin(phi)))
+    swings the tip out (BackPackFlaps opens it). The petals overlap a little when open. axis (a unit vector, the
+    exhaust direction) tilts the nozzle; center is then the exit center as (x, y, z) and y_hinge is unused."""
+    if axis is None:
+        axis = Vector((0.0, -1.0, 0.0))
+        center = (center[0], y_hinge, center[1])
+    u = Vector((1.0, 0.0, 0.0))
+    v = axis.cross(u).normalized()
+    out = u * math.cos(phi) + v * math.sin(phi)
     along = axis * math.cos(tilt) - out * math.sin(tilt)
     normal = out * math.cos(tilt) + axis * math.sin(tilt)
     y_axis = -normal
@@ -886,7 +892,7 @@ def nozzle_petal(name, mat, center, y_hinge, phi, r_hinge, length, tilt, count, 
         bm.faces.new([vs[i] for i in f])
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     obj = new_object(name, bm)
-    hinge = Vector((center[0], y_hinge, center[1])) + out * r_hinge
+    hinge = Vector(center) + out * r_hinge
     m = Matrix((x_axis, y_axis, along)).transposed().to_4x4()
     m.translation = hinge
     obj.matrix_world = m
@@ -1438,6 +1444,23 @@ def build_jet_pack(t):
                            bevel=0.0))
         for j, sx in enumerate((-1.0, 1.0)):
             parts.append(bolt(f"ShingleBolt{i}{j}", sx * (hw - 0.07), -d - 0.145, z0 + 0.11))
+    # Energy gauge on the top shingle's sloped face (user 2026-10-31: "add an energy indicator similar to the
+    # others"): a dark bezel, a steel trim and the EnergyBar light (BackPackEnergyBar).
+    z0, z1 = 0.29, h + 0.02
+
+    def shingle_face(z, z0=z0, z1=z1):
+        return -d - 0.14 + (0.12) * (z - z0) / (z1 - z0)
+
+    gz0, gz1 = 0.36, 0.5
+    parts.append(face_plate("GaugeBezel", K, [(-0.2, gz0), (0.2, gz0), (0.2, gz1), (-0.2, gz1)], shingle_face, 0.03,
+                            back=0.02))
+    parts.append(face_plate("GaugeTrim", S, [(-0.17, gz0 + 0.025), (0.17, gz0 + 0.025), (0.17, gz1 - 0.025),
+                                             (-0.17, gz1 - 0.025)], shingle_face, 0.035, back=0.0))
+    parts.append(face_plate("GaugeWell", F, [(-0.155, gz0 + 0.035), (0.155, gz0 + 0.035), (0.155, gz1 - 0.035),
+                                             (-0.155, gz1 - 0.035)], shingle_face, 0.04, back=0.0))
+    parts.append(face_plate("EnergyBar", "bp_energy", [(-0.14, gz0 + 0.045), (0.14, gz0 + 0.045),
+                                                       (0.14, gz1 - 0.045), (-0.14, gz1 - 0.045)], shingle_face,
+                            0.045, back=0.0))
     parts.append(block("Latch", K, -0.18, 0.18, -0.5, -0.2, h - 0.02, h + 0.1, chamfer=0.03, bevel=0.0))
     parts.append(block("Hardpoint1", F, -0.1, 0.1, -0.44, -0.26, h + 0.1, h + 0.14, bevel=0.0))
     parts.append(empty("Aux1", (0.0, -0.35, h + 0.14)))
@@ -1519,7 +1542,14 @@ def build_jet_pack(t):
         mod.object = cutter
         bell.modifiers.move(len(bell.modifiers) - 1, 0)
         parts += pieces + [ring, bell, glow, inner, lip]
-        exit_point = root + direction * (nl + 0.03)
+        # Jet nozzle petals on the exit rim (user 2026-10-31: "like the other one, fully opens when boosting, semi
+        # closed when not"), the same as the Quad Booster's; BackPackFlaps opens them.
+        count, p_len, p_tilt = t["petals"]
+        rim = root + direction * nl
+        for k in range(count):
+            parts.append(nozzle_petal(f"NozzlePetal{n}_{k + 1}", K, tuple(rim), 0.0, 2.0 * math.pi * k / count,
+                                      nr * 0.93, p_len, math.radians(p_tilt), count, axis=direction))
+        exit_point = root + direction * (nl + p_len + 0.02)
         outlet = empty(f"Outlet{n}", tuple(exit_point))
         outlet.rotation_euler = (math.pi - a, 0.0, 0.0)
         parts.append(outlet)
