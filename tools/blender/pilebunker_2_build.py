@@ -11,7 +11,7 @@ are estimated from the side view, about 0.00635 m per pixel). All sizes below ar
 Axes: Blender +Y = forward (Godot -Z), +Z = up. Origin: the back face, on the drill axis. Same length as
 the first Pile Bunker from the back to the nose (2.7 m: elbow to the front of the fist), so the same mount
 works. Named pieces the weapon script uses (same names as pile_bunker.glb): Stake (empty, parent of the
-drill; it moves along +Y), Drum (top lamp glow), NoseRing (collar ring glow). Empties: Nose (front of the
+drill; it moves along +Y and spins about Y), Drum (top lamp glow), NoseRing (collar ring glow). Empties: Nose (front of the
 collar), Mount.
 """
 import math, os
@@ -30,7 +30,7 @@ DRILL_LENGTH = 1.65
 DRILL_RADIUS = 0.32
 ## Steps on the drill (steel rings with the dark core between them), then the pointed tip.
 DRILL_STEPS = 7
-DRILL_TIP = 0.35
+DRILL_TIP = 0.45
 ## How far the drill core goes back into the collar (it shows when the drill fires).
 DRILL_BACK = 0.6
 ## Half width of the body.
@@ -234,7 +234,9 @@ def build_drill():
         ring_len = step * 0.78
         parts.append(prism(f"DrillRing{i}", S, y0, y0 + ring_len * 0.7, r, r, bevel=0.008))
         parts.append(prism(f"DrillRingFront{i}", S, y0 + ring_len * 0.7, y0 + ring_len, r, r * 0.82, bevel=0.0))
-    parts.append(prism("DrillTip", S, body - 0.02, DRILL_LENGTH, tip_r + 0.02, 0.0, bevel=0.0))
+    # Pointed tip (user request 2026-10-31): a cone from the last ring's size to a sharp point.
+    last_r = DRILL_RADIUS + (tip_r + 0.05 - DRILL_RADIUS) * (DRILL_STEPS - 1) / DRILL_STEPS
+    parts.append(prism("DrillTip", S, body - 0.02, DRILL_LENGTH, last_r * 0.85, 0.0, bevel=0.0))
     for obj in parts:
         obj.parent = stake
     return [stake] + parts

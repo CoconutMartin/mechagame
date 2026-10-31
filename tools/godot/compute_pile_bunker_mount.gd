@@ -7,14 +7,20 @@ extends SceneTree
 ## level with the armor's bottom and its butt is on the elbow. The model is mirrored in the right hand (bone_mirror_right)
 ## so its detailed side faces out on both arms. Prints PileBunkerWeapon.bone_mount_right / bone_mount_left. Run:
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/compute_pile_bunker_mount.gd
+## Another model (Pile Bunker 2, 2026-10-31): MODEL=res://models/pilebunker_2/pilebunker_2.glb MIRROR=none
+## (MIRROR: R, L, both or none; default R).
 
-const MODEL := "res://models/pile_bunker/pile_bunker.glb"
+var MODEL := OS.get_environment("MODEL") if OS.has_environment("MODEL") else "res://models/pile_bunker/pile_bunker.glb"
 ## Gap between the armor's outer face and the model's plain side (m).
 const GAP := 0.03
 ## The torso-space fist place with the elbow at 90 degrees (the guard place).
 const FIST_90 := Vector3(2.18, 1.16, -2.76)
 ## Mirror per hand: the same values as bone_mirror_right / bone_mirror_left in the scene.
-const MIRROR := {"R": true, "L": false}
+var MIRROR := {"R": _mirror_env() in ["R", "both"], "L": _mirror_env() in ["L", "both"]}
+
+
+static func _mirror_env() -> String:
+	return OS.get_environment("MIRROR") if OS.has_environment("MIRROR") else "R"
 
 
 func _initialize() -> void:

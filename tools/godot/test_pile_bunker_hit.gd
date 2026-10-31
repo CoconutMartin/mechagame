@@ -2,12 +2,13 @@ extends SceneTree
 ## Pile Bunker hit test (2026-10-26, new twin-stake model). The player holds the Pile Bunker in the right or the left
 ## hand, powers up (the button held POWER_FRAMES), releases, charges at a target mech in the crosshair and punches. Each
 ## case must hit the target once, fire the stakes out by stake_travel and bring them back in. Exits with code 1 on a
-## failure. Headless:
+## failure. A drill stake (spin_speed_deg > 0, Pile Bunker 2) must spin at full speed at the release and stop after the
+## hit. BUNKER=res://data/weapons/pile_bunker_2.tres tests another Pile Bunker. Headless:
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/test_pile_bunker_hit.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
 const MECH_SCENE := "res://scenes/mech/sanggigilid.tscn"
-const BUNKER := "res://data/weapons/pile_bunker.tres"
+var BUNKER := OS.get_environment("BUNKER") if OS.has_environment("BUNKER") else "res://data/weapons/pile_bunker.tres"
 const POWER_FRAMES := 60
 const MAX_FRAMES := 480
 
@@ -83,11 +84,19 @@ func _play(map: Node, switcher: LoadoutSwitcher, case: Array) -> void:
 	if OS.get_environment("PB_TRACE") != "":
 		var input := player.find_child("MechInput", true, false)
 		print("  state=%d held=%s fire=%s cam_free=%s may=%s" % [bunker.state, bunker.trigger_held, input.fire_held, input.camera_rig.free_camera_on if input.camera_rig else null, weapons._may_fire(bunker)])
+	var spin_at_release := bunker._spin
+	var angle_at_release := bunker._spin_angle
 	Input.action_release(button)
 	var most_out := 0.0
+	var spin_after_hit := -1.0
+	var fired_frame := -1
 	for frame in MAX_FRAMES:
 		await _frames(1)
 		most_out = maxf(most_out, rest.z - stake.position.z)
+		if bunker.has_fired and fired_frame < 0:
+			fired_frame = frame
+		if fired_frame >= 0 and frame == fired_frame + int(bunker.spin_down_time * 60.0) + 2:
+			spin_after_hit = bunker._spin
 		if OS.get_environment("PB_TRACE") != "" and frame % 4 == 0 and bunker.state != PileBunkerWeapon.State.IDLE:
 			print("  f=%d state=%d nose=%s aim=%s target=%s player=%s" % [frame, bunker.state, bunker._nose.global_position.snappedf(0.01), bunker._aim_point.snappedf(0.01), target.global_position.snappedf(0.01), player.global_position.snappedf(0.01)])
 		if frame > 60 and bunker.state == PileBunkerWeapon.State.IDLE and bunker.stake_out == 0.0:
@@ -95,6 +104,10 @@ func _play(map: Node, switcher: LoadoutSwitcher, case: Array) -> void:
 	_check(hits.size() == 1, "%s: one hit on the target, hits=%s" % [case[0], hits])
 	_check(absf(most_out - bunker.stake_travel) < 0.05, "%s: stakes out %.2f m (stake_travel %.2f)" % [case[0], most_out, bunker.stake_travel])
 	_check(stake.position.distance_to(rest) < 0.001, "%s: stakes back in" % case[0])
+	if bunker.spin_speed_deg > 0.0:
+		_check(spin_at_release > 0.99 and angle_at_release != 0.0, "%s: drill spins at the release (%.2f)" % [case[0],
+				spin_at_release])
+		_check(spin_after_hit == 0.0, "%s: drill stopped after the hit (%.2f)" % [case[0], spin_after_hit])
 	target.queue_free()
 	await _frames(5)
 

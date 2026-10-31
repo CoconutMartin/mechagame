@@ -105,6 +105,15 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 ## side there too. Empty = no mirror (a model that looks the same from both sides).
 @export var mirror_path: NodePath = ^""
 
+@export_group("Drill spin")
+## Spin of the stake about its own axis (a drill stake, Pile Bunker 2, user request 2026-10-31): it spins from
+## the start of the charge until the stake hits or the punch misses. Degrees per second; 0 = no spin.
+@export var spin_speed_deg: float = 0.0
+## Seconds to reach the full spin.
+@export var spin_up_time: float = 0.4
+## Seconds to stop after a hit or a miss.
+@export var spin_down_time: float = 0.25
+
 @export_group("Power")
 ## Hold RMB to power up the stake: seconds to full power, and energy use per second while holding.
 ## Release RMB (or run out of energy) to attack. More power = more damage, push and shake.
@@ -160,6 +169,12 @@ var _melee: SkeletalMeleeAnimation
 var _saved_target: Node3D
 ## Seconds since the stakes fired during the clip.
 var _since_fire: float = 0.0
+## True when the clip's strike window ended with no hit.
+var _clip_missed: bool = false
+## Drill spin now (0 to 1 of spin_speed_deg) and its angle (radians).
+var _spin: float = 0.0
+var _spin_angle: float = 0.0
+var _stake_basis := Basis.IDENTITY
 
 @onready var _mount: Node3D = $Mount
 @onready var _stake: Node3D = get_node(stake_path)
@@ -170,6 +185,7 @@ var _since_fire: float = 0.0
 func _ready() -> void:
 	_make_poses()
 	_stake_rest = _stake.position
+	_stake_basis = _stake.basis
 	# The drum and the nose ring glow with the stored power.
 	_glow.color = Color(1.0, 0.55, 0.2)
 	add_child(_glow)
@@ -401,6 +417,7 @@ func _start_clip() -> bool:
 	# The clip moves the arm: the arm IK lets go of the weapon's grip until the clip has faded out.
 	_release_arm()
 	_since_fire = 0.0
+	_clip_missed = false
 	_next(State.CLIP)
 	return true
 
@@ -438,7 +455,9 @@ func _update_clip(delta: float) -> void:
 		var window := clip.strikes[0]
 		if time >= window.x and time <= window.y:
 			_check_clip_contact()
-		elif time > window.y and controller.mech.one_leg and controller.mech.fall_control != null:
+		elif time > window.y:
+			_clip_missed = true
+		if time > window.y and controller.mech.one_leg and controller.mech.fall_control != null:
 			# One leg left: a punch into nothing throws the mech off balance.
 			cancel()
 			controller.mech.fall_control.fall()
@@ -511,6 +530,21 @@ func _update_stake(delta: float) -> void:
 	_stake.position = _stake_rest + Vector3(0.0, 0.0, -stake_travel * stake_out - cocked)
 	_glow.level = power if state in [State.POWER, State.CHARGE, State.WINDUP, State.PUNCH] \
 			or (state == State.CLIP and not has_fired) else 0.0
+	_update_spin(delta)
+
+
+## The drill spins from the charge until the stake hits or the punch misses.
+func _update_spin(delta: float) -> void:
+	if spin_speed_deg == 0.0:
+		return
+	var spinning := not has_fired and (state in [State.POWER, State.CHARGE, State.WINDUP, State.PUNCH, State.HOLD]
+			or (state == State.CLIP and not _clip_missed))
+	if spinning:
+		_spin = move_toward(_spin, 1.0, delta / maxf(spin_up_time, 0.01))
+	else:
+		_spin = move_toward(_spin, 0.0, delta / maxf(spin_down_time, 0.01))
+	_spin_angle = fmod(_spin_angle + deg_to_rad(spin_speed_deg) * _spin * delta, TAU)
+	_stake.basis = _stake_basis * Basis(Vector3.BACK, _spin_angle)
 
 
 func _start() -> void:
