@@ -149,8 +149,13 @@ func _run() -> void:
 	mech = switcher.mech
 	outlets = mech.get_node_or_null(^"BackPackOutlets") as BackPackOutlets
 	_check(outlets != null and outlets._winds.size() == 4, "4 nozzle outlets on the Quad Booster")
-	_check(mech.get_node_or_null(^"BackPackFlaps") == null and mech.get_node_or_null(^"BackPackEnergyBar") == null,
-			"the Quad Booster has no flaps or energy bar")
+	var petals := mech.get_node_or_null(^"BackPackFlaps") as BackPackFlaps
+	_check(petals != null and petals.get_flaps().size() == 40, "40 jet nozzle petals (%d)" %
+			(petals.get_flaps().size() if petals != null else 0))
+	var quad_bar := mech.get_node_or_null(^"BackPackEnergyBar") as BackPackEnergyBar
+	_check(quad_bar != null, "the Quad Booster's horizontal bar is the energy bar")
+	var petal: Node3D = petals.get_flaps()[0] if petals != null else null
+	var petal_closed := petal.basis if petal != null else Basis()
 	if outlets != null:
 		var all_back := true
 		for i in 4:
@@ -164,12 +169,18 @@ func _run() -> void:
 			if mech.is_boosting and outlets.amount > 0.95:
 				break
 		_check(outlets.amount > 0.95 and outlets._winds[3].emitting, "Quad Booster boosting: glow and wind")
+		if petal != null:
+			await _frames(20)
+			var opened := rad_to_deg(petal_closed.y.angle_to(petal.basis.y))
+			_check(absf(opened - petals.get_open_angle(0)) < 2.0, "boosting: the nozzles open (%.0f degrees)" % opened)
 		var quad_shot := OS.get_environment("QUAD_SHOT")
 		if quad_shot != "":
-			await _frames(20)
 			root.get_viewport().get_texture().get_image().save_png(quad_shot)
 		Input.action_release("boost")
 		Input.action_release("move_forward")
+		await _frames(90)
+		if petal != null:
+			_check(petal.basis.is_equal_approx(petal_closed), "after the boost: the nozzles close")
 	_finish()
 
 

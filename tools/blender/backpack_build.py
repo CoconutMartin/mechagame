@@ -58,9 +58,11 @@ TYPES = {
     # between the columns with dark blocks above and below it, a dark core on the torso side. Built by
     # build_quad_pack. pod_x: inner and outer x of a pod column; pod_z: (bottom, top) of the upper pod (the lower
     # pod mirrors it); pod_y: front and back y of a pod body; noz_r / noz_len: nozzle radius and length behind the
-    # pod; noz_hole: radius and depth of the nozzle opening. Depth is about 75% of the picture's.
+    # pod; noz_hole: radius and depth of the nozzle opening; petals: (count, length, closed tilt in degrees) of the
+    # jet nozzle petals on each nozzle's rim (user request 2026-10-31: "the nozzles open and close when boosting and
+    # when not, like in jet fighters"). Depth is about 75% of the picture's.
     "quad": dict(kind="quad", pod_x=(0.25, 1.03), pod_z=(0.04, 1.06), pod_y=(-0.08, -0.8), noz_r=0.32,
-                 noz_len=0.32, noz_hole=(0.25, 0.16)),
+                 noz_len=0.2, noz_hole=(0.25, 0.1), petals=(10, 0.16, 22.0)),
 }
 
 MATERIALS = {
@@ -706,11 +708,39 @@ def build_boost_pack(t):
     return parts
 
 
+def nozzle_petal(name, mat, center, y_hinge, phi, r_hinge, length, tilt, count, thick=0.02):
+    """One jet nozzle petal: a plate hinged on the nozzle rim (radius r_hinge round center = (x, z), at y_hinge)
+    that points back (-Y) and tilts in toward the axis by tilt (closed). Origin on the hinge; local X = the hinge
+    (along the rim), local Z = along the petal to its tip, local -Y = out from the axis, so a turn about local X
+    swings the tip out (BackPackFlaps opens it). The petals overlap a little when open."""
+    axis = Vector((0.0, -1.0, 0.0))
+    out = Vector((math.cos(phi), 0.0, math.sin(phi)))
+    along = axis * math.cos(tilt) - out * math.sin(tilt)
+    normal = out * math.cos(tilt) + axis * math.sin(tilt)
+    y_axis = -normal
+    x_axis = y_axis.cross(along)
+    w0 = 2.0 * math.pi * r_hinge / count * 1.06
+    w1 = 2.0 * math.pi * (r_hinge + 0.03) / count * 1.02
+    bm = bmesh.new()
+    vs = [bm.verts.new(v) for v in ((-w0 / 2, 0.0, 0.0), (w0 / 2, 0.0, 0.0), (w1 / 2, 0.0, length),
+                                    (-w1 / 2, 0.0, length), (-w0 / 2, thick, 0.0), (w0 / 2, thick, 0.0),
+                                    (w1 / 2, thick, length), (-w1 / 2, thick, length))]
+    for f in ((0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)):
+        bm.faces.new([vs[i] for i in f])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    obj = new_object(name, bm)
+    hinge = Vector((center[0], y_hinge, center[1])) + out * r_hinge
+    m = Matrix((x_axis, y_axis, along)).transposed().to_4x4()
+    m.translation = hinge
+    obj.matrix_world = m
+    return finish(obj, mat, 0.0)
+
+
 def build_quad_pack(t):
     """The Quad Booster: four octagonal thruster pods (chamfered boxes along Y) with dark bands, a big nozzle on
-    each pod's back end (a ring with an opening cut in it, the OutletGlow<n> disc at the bottom, an inner ring and
-    an Outlet<n> empty at the exit, +Z out of the nozzle), a tan spine plate on the back between the columns with
-    dark blocks above and below, a dark core and mount plate on the torso side, and one hardpoint on the spine's
+    each pod's back end (a ring with an opening cut in it, the OutletGlow<n> disc at the bottom, an inner ring, ten
+    jet nozzle petals NozzlePetal<n>_<k> on the rim and an Outlet<n> empty past them, +Z out of the nozzle), a tan spine plate on the back between the columns with
+    dark blocks above and below and the EnergyBar light near its foot, a dark core and mount plate on the torso side, and one hardpoint on the spine's
     top block."""
     A, AD, F, K, T, S = "bp_armor", "bp_armor_dark", "bp_frame", "bp_dark", "bp_tan", "bp_steel"
     px0, px1 = t["pod_x"]
@@ -733,7 +763,8 @@ def build_quad_pack(t):
                                 (0.13, -0.48))):
         parts.append(block(f"SpineSlot{i}", F, x - 0.015, x + 0.015, sy1 - 0.012, sy1 + 0.01, z - 0.05, z + 0.05,
                            bevel=0.0))
-    parts.append(block("SpineLatch", F, -0.12, 0.12, sy1 - 0.015, sy1 + 0.01, -0.62, -0.56, bevel=0.0))
+    # The horizontal bar near the spine's foot is the boost energy light (user request 2026-10-31; BackPackEnergyBar).
+    parts.append(block("EnergyBar", "bp_energy", -0.14, 0.14, sy1 - 0.02, sy1 + 0.01, -0.64, -0.56, bevel=0.0))
     parts.append(block("SpineTop", K, -0.18, 0.18, sy1 + 0.04, sy0 + 0.04, 0.56, 0.78, chamfer=0.05))
     parts.append(block("SpineLow", K, -0.2, 0.2, sy1 + 0.02, sy0 + 0.06, -1.04, -0.68, chamfer=0.06))
     parts.append(block("Hardpoint1", F, -0.13, 0.13, -0.68, -0.4, 0.78, 0.82, bevel=0.0))
@@ -779,7 +810,12 @@ def build_quad_pack(t):
             for obj in (housing, bell, cutter, glow, throat):
                 obj.location.x = sx * cx
             parts += [housing, bell, glow, throat]
-            outlet = empty(f"Outlet{n}", (sx * cx, ny1 - 0.02, zc))
+            # Jet nozzle petals round the exit rim, closed (tilted in) as built; BackPackFlaps opens them.
+            count, p_len, tilt = t["petals"]
+            for k in range(count):
+                parts.append(nozzle_petal(f"NozzlePetal{n}_{k + 1}", K, (sx * cx, zc), ny1, 2.0 * math.pi * k / count,
+                                          r * 0.93, p_len, math.radians(tilt), count))
+            outlet = empty(f"Outlet{n}", (sx * cx, ny1 - p_len - 0.02, zc))
             outlet.rotation_euler = (math.pi / 2, 0.0, 0.0)
             parts.append(outlet)
             # Dark connector from the pod to the core.
