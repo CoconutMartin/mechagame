@@ -730,7 +730,7 @@ User: "Add skin to SGGv2": a new paint skin, "Black armor, red accents, dark gre
   color, dark grey and black to the frame color, saturated orange to the lamp color with a glow. The texel's
   brightness against its class keeps the panel lines and shading (`detail` 0.8); the normal map stays.
 - On SGG the red shows on the panel edges and the darker panel lines (the texture has few dark olive areas), and the
-  SGG body texture has no orange lamp area (0 orange texels): the lamp color shows only on parts that have orange.
+  SGG body texture has almost no orange (267 of about 1 million sampled texels): the lamp color shows only on parts that have orange.
 - `render_part_models.gd SKIN=3` renders it.
 
 ## New mech hand (user request 2026-10-13; user drawings: right hand palm, back, closed underside, closed back, open back)
@@ -1316,7 +1316,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - "Align shoulders and arm swings during holding war hammer and baton with shoulder and arm swings with fists": the holding arm followed the walk clip (its shoulder block rose and tilted). Now `WeaponController._swings_like_fist` (a HAMMER-kind weapon in the right hand): when it does not swing, the arm takes the fist hang target (`_update_fist_arms`, `fist_hang_target`) and its IK runs, so `SkeletalArmRig` gives it the relaxed hang and the stride swing like a fist arm (level block); the weapon rides the hand. During a swing the target is null and the clip has the arm as before. Test: test_melee_combo, test_stability, test_weapon_hands, test_hit_reactions 0 failures; renders `render_rifle.gd` RIFLE_RIGHT=hammer / baton, RIFLE_ACTIONS=move_forward, views far, far_front.
 
 ## Reminders for the user
-- Open (2026-10-31, built): play test the "Black Red" paint skin (garage skin picker): the colors, the amount of red, the frame grey. Say if SGG needs a real lamp (its texture has no orange area) or bigger red panels. Tune `data/skins/paint_black_red.tres`.
+- Open (2026-10-31, built): play test the "Black Red" paint skin (garage skin picker): the colors, the amount of red, the frame grey. Say if SGG needs a real lamp (its texture has almost no orange) or bigger red panels. Tune `data/skins/paint_black_red.tres`.
 - Open (2026-10-31, user): upload the Haliya HLY-101 model (parts on the SGG rig `MechRig`, collections Head, Core, Arm_L, Arm_R, Legs; skirt and sleeve meshes on the accessory bones). Claude then exports the parts and adds Haliya on key 2.
 - Open (2026-10-31, built, phase 1 of "Swappable mech parts"): play test SGG after the split into part files: it should look and move exactly as before (walk, run, boost, jump, aim, melee, part breaks, the PS1 / Basic skins, the HP indicators). Report any part that looks wrong or sits in the wrong place.
 - Open (2026-10-31, built, phase B): play test the drone aux mods (garage "Aux" picker under Backpack, with the Drone Pack): Drone Swarm (one T release sends all 6) and Drone Recall (each drone comes back after its attack and launches once more). Say if the values should change (2 flights per drone, 10 s to come back).
