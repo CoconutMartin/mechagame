@@ -6,7 +6,7 @@ Run (from the project root):
     blender -b --python tools/blender/backpack_build.py -- heavy      (one type)
 Writes models/backpacks/backpack_<type>.blend and .glb for each type in TYPES (light, medium, heavy: build_pack;
 ammo: build_ammo_pack, six canisters the game removes one by one; missile: build_missile_pack, four upright
-missile canisters).
+missile canisters; boost: build_boost_pack, four winged grilles, the boost outlets).
 The script starts from an empty file, so hand edits in the .blend are lost when it runs again.
 
 Axes: Blender +Y = forward (Godot -Z), +Z = up. Origin: the Mount, the center of the pack's front face (it lies on
@@ -42,6 +42,14 @@ TYPES = {
     # (two rows of two) either side of a tan spine, tan straps with black buckles. Built by build_missile_pack.
     # can_r / can_h: canister radius and height; row_y: the two canister rows (y of their centers).
     "missile": dict(kind="missile", can_r=0.3, can_h=1.7, spine_w=0.2, row_y=(-0.45, -1.12)),
+    # Boost Pack (user picture models/guides/backpack_boost_ref.png, 2026-10-31): a gunmetal center box with a
+    # lower box, and two wings each side (an upper wing wide at the top, a lower wing that flares out at the
+    # bottom), each with a louvered grille on the back face (the boost outlets, flames later). Built by
+    # build_boost_pack. body_w / body_h / body_d: half width, half height and depth of the center box; wing_x:
+    # inner and outer x of the wings; wing_y: front and back y of the wings; top: top of the upper wings.
+    # Depth is about 60% of the picture's, so the pack stays close to the torso.
+    "boost": dict(kind="boost", body_w=0.43, body_h=0.55, body_d=0.85, wing_x=(0.55, 1.0), wing_y=(-0.15, -1.0),
+                  top=1.07),
 }
 
 MATERIALS = {
@@ -56,6 +64,10 @@ MATERIALS = {
     "bp_tan": ((0.72, 0.66, 0.53), 0.6, 0.3, None),
     "bp_can": ((0.33, 0.37, 0.22), 0.5, 0.4, None),
     "bp_can_dark": ((0.22, 0.25, 0.15), 0.5, 0.4, None),
+    # Boost Pack colors from its picture: gunmetal armor, a darker gunmetal and light gray louvers.
+    "bp_gun": ((0.33, 0.35, 0.39), 0.55, 0.5, None),
+    "bp_gun_dark": ((0.22, 0.23, 0.26), 0.55, 0.5, None),
+    "bp_slat": ((0.44, 0.44, 0.45), 0.45, 0.6, None),
 }
 
 
@@ -427,6 +439,174 @@ def build_missile_pack(t):
     return parts
 
 
+def loft(name, mat, levels, sx=1.0, bevel=0.012):
+    """Solid through cross sections, bottom to top. Each level is (z_in, z_out, x0, x1, y_in, y_out): a quad with
+    its mount side edge (y_in) at z_in and its outer edge (y_out) at z_out, so a level can tilt. sx = -1 mirrors."""
+    bm = bmesh.new()
+    rings = []
+    for z_in, z_out, x0, x1, y_in, y_out in levels:
+        rings.append([bm.verts.new((sx * x0, y_in, z_in)), bm.verts.new((sx * x1, y_in, z_in)),
+                      bm.verts.new((sx * x1, y_out, z_out)), bm.verts.new((sx * x0, y_out, z_out))])
+    bm.faces.new(rings[0])
+    bm.faces.new(list(reversed(rings[-1])))
+    for a, b in zip(rings, rings[1:]):
+        for i in range(4):
+            j = (i + 1) % 4
+            bm.faces.new([a[i], a[j], b[j], b[i]])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return finish(new_object(name, bm), mat, bevel)
+
+
+def face_plate(name, mat, pts, face_y, out, back=0.01, sx=1.0, bevel=0.0):
+    """Flat plate on a face y = face_y(z): outline pts = [(x, z), ...] seen from behind, from back (into the face)
+    to out (out of the face, toward -Y). Follows a tilted face."""
+    bm = bmesh.new()
+    inner = [bm.verts.new((sx * x, face_y(z) + back, z)) for x, z in pts]
+    outer = [bm.verts.new((sx * x, face_y(z) - out, z)) for x, z in pts]
+    n = len(pts)
+    bm.faces.new(inner)
+    bm.faces.new(list(reversed(outer)))
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new([inner[i], inner[j], outer[j], outer[i]])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return finish(new_object(name, bm), mat, bevel)
+
+
+def poly_x_range(pts, z):
+    """Smallest and largest x where the outline pts crosses the height z."""
+    xs = []
+    n = len(pts)
+    for i in range(n):
+        (xa, za), (xb, zb) = pts[i], pts[(i + 1) % n]
+        if za != zb and min(za, zb) <= z <= max(za, zb):
+            xs.append(xa + (xb - xa) * (z - za) / (zb - za))
+    return (min(xs), max(xs)) if xs else None
+
+
+def grille(name, pts, face_y, sx=1.0, pitch=0.07, inset=0.03):
+    """A louvered grille on a face: a black recess plate in the outline pts and light gray slats across it."""
+    F, S = "bp_frame", "bp_slat"
+    parts = [face_plate(name + "Back", F, pts, face_y, 0.015, sx=sx)]
+    z_low = min(z for _, z in pts) + inset + 0.01
+    z_top = max(z for _, z in pts) - inset
+    i = 0
+    z = z_low
+    while z + 0.035 <= z_top:
+        lo = poly_x_range(pts, z)
+        hi = poly_x_range(pts, z + 0.035)
+        if lo and hi:
+            x0, x1 = max(lo[0], hi[0]) + inset, min(lo[1], hi[1]) - inset
+            if x1 - x0 > 0.04:
+                parts.append(face_plate(f"{name}Slat{i}", S, [(x0, z), (x1, z), (x1, z + 0.035), (x0, z + 0.035)],
+                                        face_y, 0.035, back=0.0, sx=sx))
+                i += 1
+        z += pitch
+    return parts
+
+
+def build_boost_pack(t):
+    """The Boost Pack: a center box with a lower box, two wings each side (upper wings wide at the top, lower
+    wings flaring out to the back at the bottom), black connectors, louvered grilles on the back faces (the boost
+    outlets: Thruster1..5 empties, +Z out of the grille), one hardpoint on the box top, orange lamps on the lower
+    wings' sides."""
+    A, AD, F, K, S = "bp_gun", "bp_gun_dark", "bp_frame", "bp_dark", "bp_steel"
+    bw, bh, bd = t["body_w"], t["body_h"], t["body_d"]
+    wx0, wx1 = t["wing_x"]
+    wy0, wy1 = t["wing_y"]
+    top = t["top"]
+    parts = []
+    # Mount plate on the torso back, the center box and its details on the back face.
+    parts.append(block("MountPlate", F, -bw * 0.78, bw * 0.78, -0.08, 0.0, -bh * 0.78, bh * 0.78, chamfer=0.06))
+    parts.append(block("Body", A, -bw, bw, -bd, -0.06, -bh, bh, chamfer=0.08, bevel=0.02))
+    parts.append(block("BodyPanel", A, -bw + 0.06, bw - 0.06, -bd - 0.025, -bd + 0.01, -bh + 0.16, bh - 0.06,
+                       chamfer=0.05, bevel=0.01))
+    vent = [(-0.25, bh - 0.27), (0.25, bh - 0.27), (0.25, bh - 0.08), (-0.25, bh - 0.08)]
+    parts.append(block("VentFrame", F, -0.28, 0.28, -bd - 0.06, -bd, bh - 0.3, bh - 0.05, chamfer=0.03))
+    parts += grille("Vent", vent, lambda z: -bd - 0.05, pitch=0.06, inset=0.02)
+    for i, sx in enumerate((-1.0, 1.0)):
+        x = sx * 0.16
+        parts.append(block(f"Notch{i}", F, x - 0.03, x + 0.03, -bd - 0.04, -bd, -bh + 0.17, -bh + 0.27, bevel=0.0))
+        for j, z in enumerate((bh - 0.12, -bh + 0.32)):
+            x = sx * (bw - 0.12)
+            parts.append(block(f"Bolt{i}{j}", K, x - 0.025, x + 0.025, -bd - 0.04, -bd, z - 0.025, z + 0.025,
+                               bevel=0.0))
+    # Hardpoint on the box top (aux slot 1).
+    parts.append(block("Hardpoint1", F, -0.18, 0.18, -0.62, -0.28, bh - 0.01, bh + 0.06, chamfer=0.03))
+    parts.append(block("HardpointRail1", S, -0.12, 0.12, -0.58, -0.32, bh + 0.06, bh + 0.08, bevel=0.0))
+    parts.append(empty("Aux1", (0.0, -0.45, bh + 0.08)))
+    # Lower box under the center box, a grille on its back face and a seam.
+    lb_z0, lb_z1, lb_y = -bh - 0.5, -bh + 0.05, -bd - 0.05
+    parts.append(block("LowerBox", A, -0.28, 0.28, lb_y, -0.12, lb_z0, lb_z1, chamfer=0.05, bevel=0.015))
+    low_vent = [(-0.2, lb_z1 - 0.3), (0.2, lb_z1 - 0.3), (0.2, lb_z1 - 0.08), (-0.2, lb_z1 - 0.08)]
+    parts.append(block("LowerVentFrame", F, -0.23, 0.23, lb_y - 0.04, lb_y, lb_z1 - 0.33, lb_z1 - 0.05, chamfer=0.03))
+    parts += grille("LowerVent", low_vent, lambda z: lb_y - 0.03, pitch=0.06, inset=0.02)
+    parts.append(block("LowerSeam", F, -0.285, 0.285, lb_y - 0.005, -0.12, lb_z1 - 0.4, lb_z1 - 0.37, bevel=0.0))
+    th = empty("Thruster5", (0.0, lb_y - 0.07, lb_z1 - 0.19))
+    th.rotation_euler = (math.pi / 2, 0.0, 0.0)
+    parts.append(th)
+    # Wings, mirrored. Upper wing: wide at the top, its outer edge slants in toward the bottom; the top slopes down
+    # to the back. Lower wing: narrow at the top, its outer edge and back face flare out toward the bottom.
+    up_top_in, up_top_out = top, top - 0.08
+    low_bottom = -bh - 0.52
+    lw_y_top, lw_y_bot = wy1 + 0.04, wy1 - 0.1
+    lw_z_top, lw_z_bot = -0.18, low_bottom + 0.12
+
+    def low_face(z):
+        f = (lw_z_top - z) / (lw_z_top - lw_z_bot)
+        return lw_y_top + (lw_y_bot - lw_y_top) * f
+
+    for side, sx, n in (("L", -1.0, 0), ("R", 1.0, 1)):
+        parts.append(loft(f"WingUpper{side}", A, [
+            (-0.06, -0.12, wx0 + 0.03, wx0 + 0.23, wy0 - 0.04, wy1 + 0.04),
+            (0.0, -0.06, wx0, wx0 + 0.27, wy0, wy1),
+            (0.62, 0.56, wx0, wx1, wy0, wy1),
+            (up_top_in - 0.05, up_top_out - 0.05, wx0, wx1, wy0, wy1),
+            (up_top_in, up_top_out, wx0 + 0.03, wx1 - 0.03, wy0 - 0.04, wy1 + 0.04)], sx=sx, bevel=0.02))
+        parts.append(loft(f"WingLower{side}", A, [
+            (low_bottom, low_bottom, wx0 + 0.03, wx1 - 0.1, wy0 - 0.05, lw_y_bot + 0.03),
+            (lw_z_bot, lw_z_bot, wx0, wx1, wy0, lw_y_bot),
+            (lw_z_top, lw_z_top, wx0, wx0 + 0.27, wy0, lw_y_top),
+            (lw_z_top + 0.04, lw_z_top + 0.04, wx0 + 0.03, wx0 + 0.23, wy0 - 0.04, lw_y_top + 0.03)], sx=sx,
+            bevel=0.02))
+        # A dark panel line on the upper wing's outer side.
+        x0, x1 = sorted((sx * (wx1 - 0.004), sx * (wx1 + 0.008)))
+        parts.append(block(f"WingSeam{side}", AD, x0, x1, wy1 + 0.3, wy1 + 0.33, 0.68, up_top_out - 0.15, bevel=0.0))
+        # Grilles: the upper one tapers to the bottom with a dark octagonal block, the lower one widens.
+        up_pts = [(wx0 + 0.08, 0.06), (wx0 + 0.21, 0.06), (wx1 - 0.08, 0.64), (wx1 - 0.08, up_top_out - 0.12),
+                  (wx0 + 0.08, up_top_out - 0.12)]
+        parts += grille(f"GrilleUp{side}", up_pts, lambda z: wy1, sx=sx)
+        x0, x1 = sorted((sx * (wx0 + 0.1), sx * (wx0 + 0.27)))
+        parts.append(block(f"GrilleBlock{side}", K, x0, x1, wy1 - 0.08, wy1, 0.1, 0.27, chamfer=0.045, bevel=0.01))
+        low_pts = [(wx0 + 0.08, lw_z_bot + 0.06), (wx1 - 0.1, lw_z_bot + 0.06), (wx0 + 0.24, lw_z_top - 0.08),
+                   (wx0 + 0.08, lw_z_top - 0.08)]
+        parts += grille(f"GrilleLow{side}", low_pts, low_face, sx=sx)
+        # Black connectors between the box and the wings.
+        for j, (z0, z1) in enumerate(((0.08, 0.32), (-0.44, -0.22))):
+            x0, x1 = sorted((sx * (bw - 0.03), sx * (wx0 + 0.03)))
+            parts.append(block(f"Connector{side}{j}", F, x0, x1, -0.75, -0.25, z0, z1, chamfer=0.03))
+        # Boost outlets: Thruster1..2 on the upper grilles (+Z to the back), 3..4 on the lower ones (along the
+        # tilted face's normal).
+        th = empty(f"Thruster{n + 1}", (sx * (wx0 + 0.2), wy1 - 0.02, 0.55))
+        th.rotation_euler = (math.pi / 2, 0.0, 0.0)
+        parts.append(th)
+        z = (lw_z_top + lw_z_bot) / 2
+        tilt = math.atan2(lw_y_top - lw_y_bot, lw_z_top - lw_z_bot)
+        th = empty(f"Thruster{n + 3}", (sx * (wx0 + 0.2), low_face(z) - 0.02, z))
+        th.rotation_euler = (math.pi / 2 - tilt, 0.0, 0.0)
+        parts.append(th)
+    # Orange lamps on the lower wings' outer sides near the top (one object, Lamp).
+    lamps = []
+    for sx in (-1.0, 1.0):
+        x0, x1 = sorted((sx * (wx0 + 0.27), sx * (wx0 + 0.33)))
+        lamps.append(block("Lamp" if sx > 0 else "LampL", "bp_glow", x0, x1, -0.62, -0.46, -0.42, -0.3, bevel=0.0))
+    with bpy.context.temp_override(active_object=lamps[1], selected_editable_objects=lamps):
+        bpy.ops.object.join()
+    parts.append(lamps[1])
+    parts.append(empty("Mount", (0.0, 0.0, 0.0)))
+    return parts
+
+
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -434,7 +614,7 @@ def main():
         if args and name not in args:
             continue
         bpy.ops.wm.read_factory_settings(use_empty=True)
-        builders = {"ammo": build_ammo_pack, "missile": build_missile_pack}
+        builders = {"ammo": build_ammo_pack, "missile": build_missile_pack, "boost": build_boost_pack}
         objects = builders.get(t.get("kind"), build_pack)(t)
         # Radiator fins and handles stay on the heavy and the other packs; a pack with a radiator has no handles.
         if t.get("vent") == "radiator":

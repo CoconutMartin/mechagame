@@ -38,6 +38,7 @@ carries the aux equipment (pulse scan now) and gives one bonus stat (boost, ener
 | Light Pack | 1.1 x 1.5 x 0.6 | 1 | boost +6% | narrow tapered body, two small nozzles, slim tanks, one tall mast |
 | Aux Pack (medium) | 1.6 x 1.7 x 0.85 | 2 | energy +10% | box with side tanks, two nozzles, a vent grille, two short antennas |
 | Heavy Pack | 2.3 x 1.9 x 1.15 | 3 | HP +5% | wide armored block, radiator stack on top, two big tanks, two big nozzles |
+| Boost Pack | 2.0 x 2.2 x 1.1 | 1 | boost +12% | center box, four wings with louvered grilles (boost outlets), gunmetal (user picture) |
 
 ## Colors
 
