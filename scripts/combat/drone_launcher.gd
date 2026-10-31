@@ -3,8 +3,9 @@ extends Node
 ## Launches the attack drones of a drone back pack (user design 2026-10-31). The player holds T (action
 ## drone_launch) to lock a target: the "lockable" target nearest the mech aim inside the lock box, in range and in
 ## sight, locks after lock_time. Release T with a lock: drones_per_launch drones leave the pack, taken left and right
-## in turn (a pair holds opposite flanks of the target, a pincer; AttackDrone). Release without a lock: nothing.
-## Drones do not come back. BackPackMount adds it when the pack has DroneData and Drone<n> nodes.
+## in turn, outer first (a pair holds opposite flanks of the target, a pincer; AttackDrone). Release without a
+## lock: nothing. Drones do not come back. BackPackMount adds it when the pack has DroneData and Drone<n> nodes.
+## An AI pilot calls launch itself (AIDroneTactics).
 
 signal launched(count: int)
 
@@ -54,6 +55,15 @@ static func attach(target: Mech, model: Node3D, pack: BackPackPart) -> DroneLaun
 		return null
 	target.add_child(launcher)
 	return launcher
+
+
+## Collision objects of the drones in the air (the mech's own weapons do not hit them).
+func get_drone_rids() -> Array[RID]:
+	var rids: Array[RID] = []
+	for drone in flying:
+		if is_instance_valid(drone):
+			rids.append(drone.get_rid())
+	return rids
 
 
 ## Drones still on the pack.

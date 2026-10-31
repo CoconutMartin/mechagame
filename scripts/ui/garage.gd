@@ -289,6 +289,7 @@ func _build_ui() -> void:
 		toggle.toggled.connect(spawner.set_active)
 		targets.add_child(toggle)
 		_add_target_weapon_picker(targets, spawner)
+		_add_target_pack_picker(targets, spawner)
 
 	# The right column scrolls: stats, graphics and the PS1 look do not fit a short screen.
 	var right_scroll := ScrollContainer.new()
@@ -340,6 +341,26 @@ func _add_target_weapon_picker(parent: Control, spawner: MechSpawner) -> void:
 		picker.add_item(weapon.display_name)
 	picker.select(maxi(choices.find(spawner.get_right_weapon()), 0))
 	picker.item_selected.connect(func(index: int) -> void: spawner.set_right_weapon(choices[index]))
+	row.add_child(picker)
+
+
+## A test target's back pack (an AI enemy with the Drone Pack launches drones). "None" first.
+func _add_target_pack_picker(parent: Control, spawner: MechSpawner) -> void:
+	var choices: Array = [null]
+	choices.append_array(catalog.back_packs)
+	var row := HBoxContainer.new()
+	parent.add_child(row)
+	var label := Label.new()
+	label.text = "Enemy pack" if spawner.pilot == MechSpawner.Pilot.AI else "Dummy pack"
+	label.custom_minimum_size = Vector2(90, 0)
+	row.add_child(label)
+	var picker := OptionButton.new()
+	picker.clip_text = true
+	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for pack in choices:
+		picker.add_item("None" if pack == null else (pack as BackPackPart).display_name)
+	picker.select(maxi(choices.find(spawner.get_back_pack()), 0))
+	picker.item_selected.connect(func(index: int) -> void: spawner.set_back_pack(choices[index]))
 	row.add_child(picker)
 
 

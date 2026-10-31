@@ -85,6 +85,24 @@ func set_right_weapon(weapon: WeaponData) -> void:
 		_reset()
 
 
+## The back pack the mech is built with (the loadout's, or the mech scene's own).
+func get_back_pack() -> BackPackPart:
+	var base := loadout if loadout != null else _scene_loadout(mech_scene)
+	return base.back_pack if base != null else null
+
+
+## Gives the mech another back pack (garage test targets: an AI with the Drone Pack launches drones) and builds it
+## again.
+func set_back_pack(pack: BackPackPart) -> void:
+	var base := loadout if loadout != null else _scene_loadout(mech_scene)
+	if base == null:
+		return
+	loadout = base.duplicate() as Loadout
+	loadout.back_pack = pack
+	if active:
+		_reset()
+
+
 ## The loadout saved in a mech scene (its WeaponMount or MechAssembler), or null.
 static func _scene_loadout(scene: PackedScene) -> Loadout:
 	if scene == null:

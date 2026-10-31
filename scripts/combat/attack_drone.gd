@@ -1,22 +1,25 @@
 class_name AttackDrone
 extends AnimatableBody3D
 ## One flying attack drone (user design 2026-10-31; values in DroneData). DroneLauncher takes a drone model node
-## (Drone<n>) off the back pack and gives it to launch. The drone pops out of its dock, flies to a place on its
-## flank of the target (flank -1 or 1: a launched pair takes both flanks, a pincer), then fires bursts at the
-## target's lock point from its hub (DroneMuzzle<n>), moving to a new semi-random place on the same flank after
-## each burst. At max_flight_s, or when the target is gone after the approach, it explodes. Shot down at 0 HP
+## (Drone<n>) off the back pack and gives it to launch. The drone pops out of its dock and flies to a firing place
+## on its flank of the target (flank -1 or 1: a launched pair takes both flanks, a pincer). A firing place is
+## within the gun range of the target's lock point and sees it; when the target goes behind cover, the drone seeks
+## a new place (the other flank only when its own has none). It flies around buildings: over them when the way is
+## blocked, and it never passes through them (DroneNavigator). At the place it stops and fires its bursts from its
+## hub (DroneMuzzle<n>); from the first shot it does not move again (user rule). It fires only while it sees the
+## target. At max_flight_s, after its last burst, or when the target is gone, it explodes. Shot down at 0 HP
 ## (layer 4, "hitboxes": weapons call on_hit).
 
 signal finished(drone: AttackDrone)
 
-enum Phase { LAUNCH, APPROACH, ATTACK }
+enum Phase { LAUNCH, APPROACH, FIRE }
 
 const BULLET := preload("res://scenes/weapons/bullet.tscn")
 const EXPLOSION := preload("res://scenes/effects/explosion.tscn")
 
 var data: DroneData
 var target: Node3D
-## The mech that launched it (its bullets do not hit that mech).
+## The mech that launched it (its weapons do not hit that mech or its drones).
 var launcher_mech: Mech
 ## -1 = the left flank of the target (seen from the launching mech), 1 = the right flank.
 var flank: float = 1.0
@@ -24,27 +27,29 @@ var hp: float = 0.0
 var phase: Phase = Phase.LAUNCH
 ## Seconds since the launch.
 var age: float = 0.0
-## Bursts fired so far.
+## Age at the first shot (-1 = not yet).
+var fire_start_age: float = -1.0
+## Bursts started so far.
 var bursts_fired: int = 0
-## The place the drone flies to now.
+## The firing place the drone flies to (relative places follow the target until the fire starts).
 var goal: Vector3 = Vector3.ZERO
+## True when goal is a firing place that sees the target.
+var has_place: bool = false
 var velocity: Vector3 = Vector3.ZERO
 ## Bullets fired so far.
 var shots_fired: int = 0
 ## True when weapons destroyed it (false: its flight ended).
 var shot_down: bool = false
 
-var _model: Node3D
 var _spin: Node3D
 var _muzzle: Node3D
 var _phase_time: float = 0.0
 var _shot_wait: float = 0.0
-var _last_target_point: Vector3 = Vector3.ZERO
-var _exclude: Array[RID] = []
-## The burst whose move has started (a new place once per burst).
-var _moved_cycle: int = 0
-## The target point the goal was last moved with.
-var _follow_from: Vector3 = Vector3.INF
+var _target_point: Vector3 = Vector3.ZERO
+## Goal minus the target point (the place moves with the target until the fire starts).
+var _goal_offset: Vector3 = Vector3.ZERO
+var _recheck_left: float = 0.0
+var _nav: DroneNavigator
 
 
 ## Makes a flying drone from model (a Drone<n> node on the pack) in world. side: -1 = the model's outer face
@@ -76,16 +81,24 @@ static func launch(world: Node, model: Node3D, side: float, mech: Mech, aim_targ
 	drone.add_child(drone._spin)
 	model.reparent(drone._spin, false)
 	model.transform = Transform3D(Basis(Vector3.UP, side * PI / 2.0), Vector3.ZERO)
-	drone._model = model
 	drone._muzzle = model.find_child("DroneMuzzle*", true, false) as Node3D
-	drone.global_basis = Basis.looking_at(start.basis.x.normalized() * side, Vector3.UP)
-	drone.velocity = start.basis.x.normalized() * side * drone_data.launch_speed + Vector3.UP * 4.0
+	var out := start.basis.x.normalized() * side
+	drone.global_basis = Basis.looking_at(out, Vector3.UP)
+	drone.velocity = out * drone_data.launch_speed + Vector3.UP * 4.0
 	if mech != null:
 		drone.velocity += mech.velocity
-		drone._exclude = mech.get_hit_exclude()
-	drone._exclude.append(drone.get_rid())
-	drone._last_target_point = drone._target_point()
+	drone._nav = DroneNavigator.new(drone, drone_data)
+	drone._target_point = drone._read_target_point()
 	return drone
+
+
+## Collision objects this drone's bullets must not hit: the launching mech, its hitboxes and its drones.
+func _exclude() -> Array[RID]:
+	var rids: Array[RID] = []
+	if is_instance_valid(launcher_mech):
+		rids = launcher_mech.get_hit_exclude()
+	rids.append(get_rid())
+	return rids
 
 
 func _physics_process(delta: float) -> void:
@@ -94,9 +107,9 @@ func _physics_process(delta: float) -> void:
 	if age >= data.max_flight_s:
 		_explode()
 		return
-	if is_instance_valid(target) and target.is_inside_tree():
-		_last_target_point = _target_point()
-	elif phase == Phase.ATTACK:
+	if is_instance_valid(target) and target.is_inside_tree() and target.is_in_group(&"lockable"):
+		_target_point = _read_target_point()
+	elif phase != Phase.LAUNCH:
 		_explode()
 		return
 	match phase:
@@ -104,19 +117,49 @@ func _physics_process(delta: float) -> void:
 			velocity = velocity.lerp(Vector3.ZERO, clampf(delta * 2.0, 0.0, 1.0))
 			if _phase_time >= data.launch_time:
 				_set_phase(Phase.APPROACH)
-				goal = _flank_place(Vector3.INF)
+				_pick_place()
+				_recheck_left = data.recheck_time
 		Phase.APPROACH:
-			goal = _follow(goal)
-			_steer_to(goal, maxf(data.approach_time - age, 0.15), delta)
-			if age >= data.approach_time:
-				_set_phase(Phase.ATTACK)
-		Phase.ATTACK:
-			_attack(delta)
-	global_position += velocity * delta
+			_approach(delta)
+		Phase.FIRE:
+			_fire_phase(delta)
+	if phase != Phase.FIRE:
+		_nav.move(delta)
 	_face(delta)
 
 
-func _attack(delta: float) -> void:
+func _approach(delta: float) -> void:
+	goal = _target_point + _goal_offset
+	# The target may go behind cover: check the place now and then, and seek a new one when it is lost.
+	_recheck_left -= delta
+	if _recheck_left <= 0.0:
+		_recheck_left = data.recheck_time
+		if not has_place or not DroneNavigator.sees(self, goal, _target_point):
+			_pick_place()
+			goal = _target_point + _goal_offset
+	var time_left := maxf(data.approach_time - age, 0.15)
+	_nav.steer_to(goal, time_left, delta)
+	# Fire from here when the place is reached (or the drone is already in range and sees the target).
+	var close := global_position.distance_to(goal) < data.arrive_distance
+	if (close or age >= data.approach_time) and _can_shoot_from(global_position):
+		_start_fire()
+
+
+## A firing place: within the gun range and in sight of the target point (DroneData).
+func _can_shoot_from(place: Vector3) -> bool:
+	return place.distance_to(_target_point) <= data.gun.range_m - 0.5 and DroneNavigator.sees(self, place, _target_point)
+
+
+func _start_fire() -> void:
+	_set_phase(Phase.FIRE)
+	velocity = Vector3.ZERO
+	fire_start_age = age
+	bursts_fired = 0
+
+
+## From the first shot the drone holds its place (user rule): a burst every cycle_time, rounds only while it sees
+## the target in range.
+func _fire_phase(delta: float) -> void:
 	var cycle := int(_phase_time / maxf(data.cycle_time, 0.05))
 	if cycle >= data.bursts:
 		_explode()
@@ -124,21 +167,13 @@ func _attack(delta: float) -> void:
 	if cycle + 1 > bursts_fired:
 		bursts_fired = cycle + 1
 		_shot_wait = 0.0
-	var in_cycle := fmod(_phase_time, data.cycle_time)
-	goal = _follow(goal)
-	if in_cycle < data.burst_time:
-		# Fire and hold the place.
-		_steer_to(goal, 0.3, delta)
-		_shot_wait -= delta
-		while _shot_wait <= 0.0:
-			_fire()
-			_shot_wait += 1.0 / maxf(data.gun.fire_rate, 0.1)
+	if fmod(_phase_time, data.cycle_time) >= data.burst_time:
 		return
-	# Then move to a new place on the same flank.
-	if _moved_cycle != bursts_fired:
-		_moved_cycle = bursts_fired
-		goal = _flank_place(goal)
-	_steer_to(goal, maxf(data.cycle_time - in_cycle, 0.15), delta)
+	_shot_wait -= delta
+	while _shot_wait <= 0.0:
+		_shot_wait += 1.0 / maxf(data.gun.fire_rate, 0.1)
+		if _can_shoot_from(global_position):
+			_fire()
 
 
 func _set_phase(next: Phase) -> void:
@@ -146,53 +181,28 @@ func _set_phase(next: Phase) -> void:
 	_phase_time = 0.0
 
 
-## Moves the goal with the target (the place is kept relative to the target).
-func _follow(place: Vector3) -> Vector3:
-	if not is_instance_valid(target):
-		return place
-	var now := _target_point()
-	var moved := now - _follow_from
-	_follow_from = now
-	return place + moved
-
-
-
-## Speed toward place so the drone gets there in about seconds (no faster than max_speed).
-func _steer_to(place: Vector3, seconds: float, delta: float) -> void:
-	var wanted := (place - global_position) / maxf(seconds, 0.05)
-	wanted = wanted.limit_length(data.max_speed)
-	velocity = velocity.lerp(wanted, clampf(delta * data.steer, 0.0, 1.0))
-
-
-## A semi-random place on the drone's flank of the target, at least min_move_m from last (Vector3.INF = none).
-func _flank_place(last: Vector3) -> Vector3:
-	var center := _last_target_point
-	_follow_from = center
+## Picks a firing place on the drone's flank (or the other flank when its own has none). Keeps the old goal when
+## no place is found (it looks again at the next check).
+func _pick_place() -> void:
 	var from := launcher_mech.global_position if is_instance_valid(launcher_mech) else global_position
-	var back := from - center
-	back.y = 0.0
-	back = back.normalized() if back.length() > 0.1 else Vector3.BACK
-	var best := center
-	for i in 6:
-		# Turning back (target -> mech) about up by a positive angle goes to the mech's right: flank 1 = right.
-		var angle := deg_to_rad(randf_range(data.flank_angle_min, data.flank_angle_max)) * flank
-		var place := center + back.rotated(Vector3.UP, angle) * randf_range(data.attack_distance_min,
-				data.attack_distance_max) + Vector3.UP * randf_range(data.height_min, data.height_max)
-		best = place
-		if not last.is_finite() or place.distance_to(last) >= data.min_move_m:
-			break
-	return best
+	var place := DroneNavigator.find_place(self, data, _target_point, from, flank, global_position)
+	has_place = place.is_finite()
+	if has_place:
+		_goal_offset = place - _target_point
+	elif _goal_offset == Vector3.ZERO:
+		_goal_offset = (global_position - _target_point).normalized() * data.attack_distance_max
 
 
-func _target_point() -> Vector3:
+func _read_target_point() -> Vector3:
 	return target.get_lock_point() if target.has_method(&"get_lock_point") else target.global_position
 
 
 ## The hub faces the target (the flight direction during the launch); the disc spins about its axis.
 func _face(delta: float) -> void:
-	var look := (_last_target_point - global_position) if phase != Phase.LAUNCH else velocity
+	var look := (_target_point - global_position) if phase != Phase.LAUNCH else velocity
 	if look.length() > 0.1:
-		var wanted := Basis.looking_at(look.normalized(), Vector3.UP if absf(look.normalized().y) < 0.99 else Vector3.BACK)
+		var dir := look.normalized()
+		var wanted := Basis.looking_at(dir, Vector3.UP if absf(dir.y) < 0.99 else Vector3.BACK)
 		global_basis = global_basis.slerp(wanted, clampf(delta * 10.0, 0.0, 1.0)).orthonormalized()
 	_spin.rotate_object_local(Vector3.FORWARD, deg_to_rad(data.spin_deg_per_s) * delta)
 
@@ -200,11 +210,11 @@ func _face(delta: float) -> void:
 func _fire() -> void:
 	var gun := data.gun
 	var origin := _muzzle.global_position if _muzzle != null else global_position
-	var aim := (_last_target_point - origin).normalized()
+	var aim := (_target_point - origin).normalized()
 	var direction := MechWeapon.spread_direction(aim, gun.spread_deg)
 	var bullet := BULLET.instantiate() as Bullet
 	bullet.velocity = direction * gun.projectile_speed
-	bullet.exclude = _exclude
+	bullet.exclude = _exclude()
 	bullet.damage = gun.damage
 	bullet.weapon_data = gun
 	bullet.shot_id = MechStability.new_shot_id()
@@ -215,7 +225,6 @@ func _fire() -> void:
 	shots_fired += 1
 
 
-
 ## A hit from any weapon (bullets, beams, blasts, melee).
 func on_hit(damage: float, _from: Vector3 = Vector3.INF, _kind: StringName = &"") -> void:
 	if hp <= 0.0:
@@ -224,7 +233,6 @@ func on_hit(damage: float, _from: Vector3 = Vector3.INF, _kind: StringName = &""
 	if hp <= 0.0:
 		shot_down = true
 		_explode()
-
 
 
 func _explode() -> void:

@@ -38,6 +38,9 @@ var damage: float = 150.0
 
 var _age: float = 0.0
 var _exclude: Array[RID] = []
+## The mech that fired it (optional). Its exclude list is read again each step, so drones it launched after the
+## missile left still are not hit (user rule 2026-10-31: own weapons never hit own drones).
+var shooter_mech: Mech
 
 
 func launch(start_velocity: Vector3, homing_target: Node3D, point: Vector3, speed: float, turn_deg: float, shooter: Array[RID]) -> void:
@@ -73,6 +76,8 @@ func _physics_process(delta: float) -> void:
 		velocity = current * minf(velocity.length() + acceleration * delta, top_speed)
 	else:
 		velocity.y -= 9.8 * delta
+	if is_instance_valid(shooter_mech):
+		_exclude = shooter_mech.get_hit_exclude()
 	var from := global_position
 	var to := from + velocity * delta
 	var query := PhysicsRayQueryParameters3D.create(from, to, collision_mask, _exclude)

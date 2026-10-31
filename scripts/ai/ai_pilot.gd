@@ -16,6 +16,8 @@ extends Node
 ##   Search (user request): when it cannot see the target, it walks to where it last saw it (the
 ##   target's place at that time), then on toward the target. It boosts when that is far. When it is
 ##   stuck on a wall it steps sideways for a moment. It does not fire while searching.
+##   Drones (user rule 2026-10-31): AIDroneTactics launches its own attack drones, and when enemy drones fly at
+##   it, it shoots them (when its gun kills them fast) or takes cover; that comes before everything else.
 
 @export var mech: Mech
 @export var input: MechInput
@@ -88,6 +90,8 @@ var _weapons: WeaponController
 var _charge_goal: float = -1.0
 ## The melee part (made when the right weapon is a Fist, War Hammer or Pile Bunker).
 var _melee: AIMelee
+## Attack drones: its own launches, and what it does about enemy drones (shoot them or take cover).
+var _drones: AIDroneTactics
 
 
 func _ready() -> void:
@@ -97,6 +101,10 @@ func _ready() -> void:
 	mech_aim.use_ai_target = true
 	_weapons = mech.get_node_or_null("WeaponController") as WeaponController
 	_strafe_side = 1.0 if randf() < 0.5 else -1.0
+	_drones = AIDroneTactics.new()
+	_drones.name = "AIDroneTactics"
+	_drones.setup(mech, input, mech_aim, _weapons)
+	add_child(_drones)
 
 
 func _physics_process(delta: float) -> void:
@@ -119,6 +127,10 @@ func _physics_process(delta: float) -> void:
 	# Turn the torso (and so the legs) toward the target.
 	input.aim_yaw = atan2(-flat.x, -flat.z)
 	_update_aim(delta)
+	# Attack drones (user rule 2026-10-31): launch its own; enemy drones come first (shoot them or take cover).
+	_drones.update_launch(target, sees and _seen_time >= reaction_time, delta)
+	if _drones.drive(delta):
+		return
 	_hold_left = maxf(_hold_left - delta, 0.0)
 	if _seen_time < reaction_time:
 		if not sees:

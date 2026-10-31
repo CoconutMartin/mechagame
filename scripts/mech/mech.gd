@@ -308,11 +308,15 @@ func get_lock_point() -> Vector3:
 	return global_position + Vector3.UP * lock_point_height
 
 
-## Bodies this mech's own weapons and aim must not hit: its body and its hitboxes.
+## Bodies this mech's own weapons and aim must not hit: its body, its hitboxes and its flying drones.
 func get_hit_exclude() -> Array[RID]:
 	var rids: Array[RID] = [get_rid()]
 	if health != null:
 		rids.append_array(health.get_hitbox_rids())
+	# Its own attack drones (user rule 2026-10-31: own bullets cannot hit own drones).
+	var drones := get_node_or_null(^"DroneLauncher") as DroneLauncher
+	if drones != null:
+		rids.append_array(drones.get_drone_rids())
 	return rids
 
 

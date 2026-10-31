@@ -131,6 +131,7 @@ func _update_launches(delta: float) -> void:
 	missile.launch(-tube.global_basis.z * 30.0 + Vector3.UP * 10.0, target if is_instance_valid(target) else null,
 			aim_point, data.projectile_speed, data.missile_turn_deg, controller.mech.get_hit_exclude())
 	missile.damage = data.damage
+	missile.shooter_mech = controller.mech
 	missile.stagger = data.stagger_points
 	missile.shot_id = _volley_shot
 	missile.stagger_cap = data.stagger_cap_per_shot

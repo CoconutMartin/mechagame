@@ -90,12 +90,13 @@ TYPES = {
     "power": dict(kind="power", body_w=0.32, tower_x=(0.36, 0.68), cell_x=(0.48, 0.9), d=0.95, cable_r=0.045),
     # Drone Pack (user picture models/guides/backpack_drone_ref.png, 2026-10-31: "the circle thing on the side should
     # be detachable, we'll make it to an attack drone"; then "3 drones each side"): a gunmetal box with an armored
-    # back, two side columns with carry handles over the top, three drone discs per side on axle stubs. Built by
-    # build_drone_pack. box_w: half width of the armored box; col_x: inner and outer x of a column; h: half height;
-    # d: depth; disc: (radius, thickness) of a drone; drones: (y, z) of each disc center on a side (top, middle,
-    # bottom); axle: stub length out of the column.
-    "drone": dict(kind="drone", box_w=0.42, col_x=(0.42, 0.6), h=0.7, d=1.0, disc=(0.28, 0.2),
-                  drones=((-0.36, 0.5), (-0.7, 0.0), (-0.36, -0.5)), axle=0.08),
+    # back, two side columns with carry handles over the top; then "make the drones stack while in the backpack":
+    # three drone discs stacked on one axle per side. Built by build_drone_pack. box_w: half width of the armored
+    # box; col_x: inner and outer x of a column; h: half height; d: depth; disc: (radius, thickness) of a drone;
+    # stack: drones per side; gap: space between two drones; axle_yz: (y, z) of the axle; axle: axle length from
+    # the column to the inner drone.
+    "drone": dict(kind="drone", box_w=0.42, col_x=(0.42, 0.6), h=0.7, d=1.0, disc=(0.45, 0.1), stack=3, gap=0.07,
+                  axle_yz=(-0.55, -0.05), axle=0.08),
 }
 
 MATERIALS = {
@@ -1605,14 +1606,14 @@ def build_drone(n, sx, t, cx, cy, cz):
     def x(v):
         return sx * v
 
-    parts.append(cyl_x(f"DroneRim{n}", G, x(-hx), x(hx), r, sides=16, bevel=0.022))
-    parts.append(cyl_x(f"DroneBand{n}", GD, x(-hx + 0.06), x(hx - 0.06), r + 0.012, sides=16, bevel=0.0))
-    for j, v in enumerate((-hx + 0.05, hx - 0.05)):
+    parts.append(cyl_x(f"DroneRim{n}", G, x(-hx), x(hx), r, sides=16, bevel=0.018))
+    parts.append(cyl_x(f"DroneBand{n}", GD, x(-hx + 0.03), x(hx - 0.03), r + 0.012, sides=16, bevel=0.0))
+    for j, v in enumerate((-hx + 0.024, hx - 0.024)):
         parts.append(cyl_x(f"DroneGroove{n}_{j}", F, x(v - 0.008), x(v + 0.008), r + 0.016, sides=16))
     # Amber marks on the band, every 90 degrees from 45.
     for j in range(4):
         a = math.radians(45 + 90 * j)
-        m = block(f"DroneMark{n}_{j}", A, -0.03, 0.03, -0.04, 0.04, -0.008, 0.008, bevel=0.0)
+        m = block(f"DroneMark{n}_{j}", A, -0.016, 0.016, -0.05, 0.05, -0.008, 0.008, bevel=0.0)
         m.rotation_euler = (a, 0.0, 0.0)
         m.location = (0.0, -math.sin(a) * (r + 0.016), math.cos(a) * (r + 0.016))
         parts.append(m)
@@ -1631,16 +1632,16 @@ def build_drone(n, sx, t, cx, cy, cz):
         line.rotation_euler = (math.radians(ang), 0.0, 0.0)
         line.location = (x(hx + 0.036), 0.0, 0.0)
         parts.append(line)
-    parts.append(cyl_x(f"DroneHubRing{n}", K, x(hx + 0.03), x(hx + 0.055), 0.055, sides=16))
-    parts.append(cyl_x(f"DroneHub{n}", S, x(hx + 0.045), x(hx + 0.075), 0.03, sides=12))
-    parts.append(cyl_x(f"DroneBore{n}", F, x(hx + 0.07), x(hx + 0.078), 0.016, sides=8))
-    parts.append(empty(f"DroneMuzzle{n}", (x(hx + 0.08), 0.0, 0.0)))
+    parts.append(cyl_x(f"DroneHubRing{n}", K, x(hx + 0.03), x(hx + 0.045), 0.06, sides=16))
+    parts.append(cyl_x(f"DroneHub{n}", S, x(hx + 0.04), x(hx + 0.055), 0.034, sides=12))
+    parts.append(cyl_x(f"DroneBore{n}", F, x(hx + 0.052), x(hx + 0.058), 0.018, sides=8))
+    parts.append(empty(f"DroneMuzzle{n}", (x(hx + 0.06), 0.0, 0.0)))
     # Sensor window on the back of the rim (toward -Y), with a steel lens.
-    parts.append(block(f"DroneSensor{n}", K, -0.05, 0.05, -r - 0.03, -r + 0.03, -0.05, 0.05, chamfer=0.012,
+    parts.append(block(f"DroneSensor{n}", K, -0.035, 0.035, -r - 0.03, -r + 0.03, -0.05, 0.05, chamfer=0.01,
                        bevel=0.0))
-    parts.append(block(f"DroneLens{n}", S, -0.024, 0.024, -r - 0.04, -r - 0.02, -0.024, 0.024, bevel=0.0))
-    # Inner hub plate on the axle side.
-    parts.append(cyl_x(f"DroneInner{n}", K, x(-hx + 0.01), x(-hx - 0.025), r * 0.45, sides=16, bevel=0.0))
+    parts.append(block(f"DroneLens{n}", S, -0.018, 0.018, -r - 0.04, -r - 0.02, -0.024, 0.024, bevel=0.0))
+    # Inner hub plate on the axle side (thin: the next drone of the stack sits close).
+    parts.append(cyl_x(f"DroneInner{n}", K, x(-hx + 0.01), x(-hx - 0.01), r * 0.42, sides=16, bevel=0.0))
     for obj in parts:
         obj.parent = root
     root.location = (cx, cy, cz)
@@ -1652,9 +1653,9 @@ def build_drone_pack(t):
     on each side for a total of 3 drones each side"): a gunmetal core box (mount side, taller, a sloped top cap)
     and an armored box on its back: an upper and a lower armor plate (octagonal outline, seams, amber lights, bolts)
     with a dark vent band of louvers between them and a center spine. Two side columns with ribs, bolts, a sloped
-    top cap, front and back feet and a thick carry handle over the top. Three drone discs per side in a staggered
-    column (top and bottom forward, middle back), each on its own axle stub with a collar: Drone1..3 left (top,
-    middle, bottom), Drone4..6 right, see build_drone, with DroneDock1..6 empties where they sit. A dark top latch
+    top cap, front and back feet and a thick carry handle over the top. Three drone discs per side in a
+    stack on one axle (user: "make the drones stack while in the backpack"), outer first: Drone1..3 left,
+    Drone4..6 right, see build_drone, with DroneDock1..6 empties where they sit. A dark top latch
     with the hardpoint (Aux1), a dark skid with two vents."""
     G, GD, F, K, S, A = "bp_gun", "bp_gun_dark", "bp_frame", "bp_dark", "bp_steel", "bp_amber"
     bw, h, d = t["box_w"], t["h"], t["d"]
@@ -1747,13 +1748,18 @@ def build_drone_pack(t):
                            chamfer=0.04, bevel=0.0))
         parts.append(block(f"HandleGrip{side}", K, cc - 0.065, cc + 0.065, -0.7, -0.45, h + 0.255, h + 0.385,
                            chamfer=0.04, bevel=0.0))
-        # Three drones in a staggered column, each on an axle stub with a collar out of the column.
-        for cy, cz in t["drones"]:
+        # Three drones stacked on one axle (user 2026-10-31: "make the drones stack while in the backpack"):
+        # outer first in the launch order (Drone1 left outer .. Drone3 left inner, Drone4 right outer ..).
+        cy, cz = t["axle_yz"]
+        count = t["stack"]
+        x_in = cx1 + t["axle"]
+        x_out = x_in + count * th + (count - 1) * t["gap"]
+        parts.append(cyl_x(f"Axle{side}", F, sx * cx1, sx * (x_out - th / 2), 0.07, y=cy, z=cz, sides=12))
+        parts.append(cyl_x(f"AxleCollar{side}", G, sx * cx1, sx * (cx1 + 0.05), 0.16, y=cy, z=cz, sides=12, bevel=0.0))
+        parts.append(cyl_x(f"AxleFlange{side}", F, sx * (cx1 + 0.05), sx * x_in, 0.11, y=cy, z=cz, sides=12))
+        for k in range(count):
             n += 1
-            parts.append(cyl_x(f"Axle{n}", F, sx * cx1, sx * (cx1 + t["axle"]), 0.09, y=cy, z=cz, sides=12))
-            parts.append(cyl_x(f"AxleCollar{n}", G, sx * cx1, sx * (cx1 + 0.04), 0.13, y=cy, z=cz, sides=12,
-                               bevel=0.0))
-            cx = sx * (cx1 + t["axle"] + th / 2)
+            cx = sx * (x_out - th / 2 - k * (th + t["gap"]))
             parts.append(empty(f"DroneDock{n}", (cx, cy, cz)))
             parts += build_drone(n, sx, t, cx, cy, cz)
     parts.append(empty("Mount", (0.0, 0.0, 0.0)))
