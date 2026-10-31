@@ -755,21 +755,55 @@ def build_quad_pack(t):
     parts.append(block("Core", K, -0.3, 0.3, -0.42, -0.06, -0.92, 0.92, chamfer=0.08, bevel=0.015))
     for i, z in enumerate((0.6, -0.6)):
         parts.append(block(f"CoreBolt{i}", F, -0.04, 0.04, -0.09, -0.07, z - 0.04, z + 0.04, bevel=0.0))
-    # Spine: a tan plate between the nozzles, dark blocks above (with the hardpoint) and below, slots and a latch.
-    sy0, sy1 = -0.34, py1 - 0.2
-    parts.append(block("Spine", T, -0.22, 0.22, sy1, sy0, -0.68, 0.56, chamfer=0.06, bevel=0.015))
-    parts.append(block("SpineSeam", F, -0.225, 0.225, sy1 - 0.005, sy0, 0.3, 0.32, bevel=0.0))
-    for i, (x, z) in enumerate(((-0.13, 0.42), (0.13, 0.42), (-0.13, 0.12), (0.13, 0.12), (-0.13, -0.48),
-                                (0.13, -0.48))):
-        parts.append(block(f"SpineSlot{i}", F, x - 0.015, x + 0.015, sy1 - 0.012, sy1 + 0.01, z - 0.05, z + 0.05,
+    # Spine (user request 2026-10-31: "add a bit more body to the center part, as well as the energy indicator;
+    # make it beautiful"): a tan keel between the columns, octagonal from the back and as deep as the pods; a raised
+    # armor plate on its back face with a center seam and bolts; louvered side vents; dark caps above (with the
+    # hardpoint) and below; the energy gauge in a dark bezel near its foot.
+    sy0, sy1 = -0.34, py1 - 0.26
+    parts.append(loft("Spine", T, [
+        (-0.86, -0.86, -0.17, 0.17, sy0 - 0.02, sy1 + 0.08),
+        (-0.78, -0.78, -0.24, 0.24, sy0, sy1),
+        (0.5, 0.5, -0.24, 0.24, sy0, sy1),
+        (0.62, 0.62, -0.17, 0.17, sy0 - 0.02, sy1 + 0.08)], bevel=0.02))
+    parts.append(block("SpineArmor", T, -0.17, 0.17, sy1 - 0.05, sy1 + 0.02, -0.5, 0.4, chamfer=0.06, bevel=0.012))
+    parts.append(block("SpineArmorTop", T, -0.12, 0.12, sy1 - 0.08, sy1 - 0.03, 0.08, 0.34, chamfer=0.04,
+                       bevel=0.01))
+    parts.append(block("SpineSeam", F, -0.006, 0.006, sy1 - 0.055, sy1 - 0.04, -0.46, 0.04, bevel=0.0))
+    parts.append(block("SpineBand", F, -0.175, 0.175, sy1 - 0.055, sy1 + 0.01, 0.04, 0.07, bevel=0.0))
+    for i, (x, z) in enumerate(((-0.12, 0.36), (0.12, 0.36), (-0.12, -0.44), (0.12, -0.44))):
+        parts.append(prism(f"SpineBolt{i}", S, sy1 - 0.065, sy1 - 0.04, 0.018, 0.018, z=z, sides=6, bevel=0.0))
+        parts[-1].location.x = x
+    for side, sx in (("L", -1.0), ("R", 1.0)):
+        for j in range(4):
+            z = 0.28 - j * 0.09
+            xa, xb = sorted((sx * 0.235, sx * 0.255))
+            parts.append(block(f"SpineVent{side}{j}", F, xa, xb, sy1 + 0.12, sy0 - 0.12, z - 0.025, z + 0.025,
+                               bevel=0.0))
+    parts.append(block("SpineTop", K, -0.2, 0.2, sy1 + 0.06, sy0 + 0.02, 0.6, 0.8, chamfer=0.06, bevel=0.012))
+    parts.append(block("SpineLow", K, -0.21, 0.21, sy1 + 0.04, sy0 + 0.04, -1.04, -0.84, chamfer=0.06, bevel=0.012))
+    parts.append(block("Hardpoint1", F, -0.13, 0.13, -0.68, -0.4, 0.8, 0.84, bevel=0.0))
+    parts.append(block("HardpointRail1", S, -0.09, 0.09, -0.65, -0.43, 0.84, 0.86, bevel=0.0))
+    parts.append(empty("Aux1", (0.0, -0.54, 0.86)))
+    # Energy gauge: a dark bezel proud of the spine, a steel trim, end caps, and the EnergyBar light inside it: five
+    # segments in one mesh (BackPackEnergyBar colors it).
+    gz0, gz1 = -0.76, -0.58
+    parts.append(block("GaugeBezel", F, -0.19, 0.19, sy1 - 0.07, sy1 + 0.02, gz0, gz1, chamfer=0.04, bevel=0.01))
+    parts.append(block("GaugeTrim", S, -0.155, 0.155, sy1 - 0.075, sy1 - 0.06, gz0 + 0.03, gz1 - 0.03, chamfer=0.02,
+                       bevel=0.0))
+    parts.append(block("GaugeWell", F, -0.145, 0.145, sy1 - 0.08, sy1 - 0.06, gz0 + 0.04, gz1 - 0.04, bevel=0.0))
+    for i, sx in enumerate((-1.0, 1.0)):
+        xa, xb = sorted((sx * 0.155, sx * 0.185))
+        parts.append(block(f"GaugeCap{i}", K, xa, xb, sy1 - 0.09, sy1 - 0.06, gz0 + 0.02, gz1 - 0.02, chamfer=0.01,
                            bevel=0.0))
-    # The horizontal bar near the spine's foot is the boost energy light (user request 2026-10-31; BackPackEnergyBar).
-    parts.append(block("EnergyBar", "bp_energy", -0.14, 0.14, sy1 - 0.02, sy1 + 0.01, -0.64, -0.56, bevel=0.0))
-    parts.append(block("SpineTop", K, -0.18, 0.18, sy1 + 0.04, sy0 + 0.04, 0.56, 0.78, chamfer=0.05))
-    parts.append(block("SpineLow", K, -0.2, 0.2, sy1 + 0.02, sy0 + 0.06, -1.04, -0.68, chamfer=0.06))
-    parts.append(block("Hardpoint1", F, -0.13, 0.13, -0.68, -0.4, 0.78, 0.82, bevel=0.0))
-    parts.append(block("HardpointRail1", S, -0.09, 0.09, -0.65, -0.43, 0.82, 0.84, bevel=0.0))
-    parts.append(empty("Aux1", (0.0, -0.54, 0.84)))
+    segments = []
+    seg_w, gap = 0.05, 0.008
+    for i in range(5):
+        x = (i - 2) * (seg_w + gap)
+        segments.append(block("EnergyBar" if i == 0 else f"EnergySeg{i}", "bp_energy", x - seg_w / 2, x + seg_w / 2,
+                              sy1 - 0.085, sy1 - 0.07, gz0 + 0.055, gz1 - 0.055, bevel=0.0))
+    with bpy.context.temp_override(active_object=segments[0], selected_editable_objects=segments):
+        bpy.ops.object.join()
+    parts.append(segments[0])
     n = 0
     for row, (z0, z1) in (("U", (pz0, pz1)), ("L", (-pz1, -pz0))):
         zc = (z0 + z1) / 2
