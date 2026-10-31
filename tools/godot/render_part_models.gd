@@ -2,6 +2,7 @@ extends SceneTree
 ## Pictures of the player mech built from its part files (DESIGN "Swappable mech parts"): front, three-quarter,
 ## side and back at rest, then the same four views in a walk. Other mechs are hidden. Each part slot can get a
 ## tint (TINT=1) to show where one part ends and the next starts. The map's objects are hidden; a plain ground is added. xvfb:
+## SKIN=<n> picks the skin first (MechSkinChoice: 0 Basic, 1 PS1, 2 Realistic, 3 Black Red).
 ## LOADOUT=<n> shows the loadout of key n (PREFIX names the pictures).
 ##   RENDER_OUT=/tmp/x xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 \
 ##     --resolution 1280x720 --fixed-fps 60 --script res://tools/godot/render_part_models.gd
@@ -29,6 +30,9 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(out)
 	change_scene_to_file(MAP)
 	await _frames(30)
+	if OS.has_environment("SKIN"):
+		MechSkinChoice.set_style(self, int(OS.get_environment("SKIN")) as MechSkinChoice.Style)
+		await _frames(5)
 	var switcher := current_scene.get_node("LoadoutSwitcher") as LoadoutSwitcher
 	# LOADOUT=<n>: the loadout of key n.
 	var key := int(OS.get_environment("LOADOUT")) if OS.has_environment("LOADOUT") else 1

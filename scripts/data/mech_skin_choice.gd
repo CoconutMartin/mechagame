@@ -1,12 +1,13 @@
 class_name MechSkinChoice
 extends RefCounted
 ## The mech texture the player picked in the garage (user request 2026-10-13): Basic (the model's own
-## materials), PS1 (PS1Skin) or Realistic (RealisticSkin). It is for every mech, weapon and equipment,
+## materials), PS1 (PS1Skin), Realistic (RealisticSkin) or Black Red (MechPaintSkin: a paint scheme on the
+## mech body, data/skins/paint_black_red.tres; weapons and equipment keep their own materials; 2026-10-31). It is for every mech, weapon and equipment,
 ## kept in user://mech_skin.cfg so it stays after a restart. PS1 at first.
 
-enum Style { BASIC, PS1, REALISTIC }
+enum Style { BASIC, PS1, REALISTIC, PAINT }
 
-const NAMES: Array[String] = ["Basic", "PS1", "Realistic"]
+const NAMES: Array[String] = ["Basic", "PS1", "Realistic", "Black Red"]
 const SAVE_PATH := "user://mech_skin.cfg"
 ## Group of the nodes that put the skin on a mech (PS1SkinLook).
 const GROUP := &"mech_skin_look"

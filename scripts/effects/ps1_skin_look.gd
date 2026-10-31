@@ -7,6 +7,7 @@ extends Node
 ##   PS1 (user request 2026-10-11): PS1Skin (chunky pixels, seams / rivets / vents / dirt detail,
 ##   15-bit color with a dither, a light vertex wobble).
 ##   Realistic: RealisticSkin (painted metal with a worn metal plate texture, normal and roughness maps).
+##   Black Red (paint, 2026-10-31): MechPaintSkin on the body and the jointed hands; weapons keep theirs.
 ## Weapons added later (loadout change, garage) are skinned when they enter the tree.
 ## Body detail sits on each part's rest position (to_rest each frame, like CharDamageLook), so it
 ## stays on the part; weapon meshes are rigid, so theirs is in their own mesh space.
@@ -18,6 +19,8 @@ const SKIP_GROUP := &"skin_skip"
 ## The mech root: weapon and equipment meshes under it get the skin too.
 @export var mech: Node3D
 @export var settings: PS1SkinSettings = preload("res://data/skins/ps1_skin.tres")
+## Paint scheme of the "Black Red" skin (body and hands only).
+@export var paint: MechPaint = preload("res://data/skins/paint_black_red.tres")
 
 ## One entry per skinned mesh: {mesh, joint, body, index, overrides (the mesh's own surface
 ## overrides), override (its own material_override), made (the skin materials in use)}.
@@ -73,6 +76,8 @@ func _apply(entry: Dictionary) -> void:
 			entry.made = PS1Skin.apply(mesh, settings, entry.joint, entry.index)
 		MechSkinChoice.Style.REALISTIC:
 			entry.made = RealisticSkin.apply(mesh, entry.joint, entry.body, entry.index)
+		MechSkinChoice.Style.PAINT:
+			entry.made = MechPaintSkin.apply(mesh, paint) if entry.body or _is_hand(mesh) else [] as Array[ShaderMaterial]
 		_:
 			entry.made = [] as Array[ShaderMaterial]
 
@@ -99,7 +104,19 @@ func _on_node_added(node: Node) -> void:
 		_skin_equipment.call_deferred(node)
 
 
+## A mesh of a jointed hand (MechHand): painted like the body.
+func _is_hand(mesh: Node) -> bool:
+	var node := mesh.get_parent()
+	while node != null and node != mech:
+		if node is MechHand:
+			return true
+		node = node.get_parent()
+	return false
+
+
 func _follow_bones() -> void:
+	if _style == MechSkinChoice.Style.PAINT:
+		return  # the paint has no detail on the rest position
 	for entry in _entries:
 		# Check before the cast: casting a freed mesh (a part that broke off) is an error.
 		if not entry.body or (entry.made as Array).is_empty() or not is_instance_valid(entry.mesh):

@@ -719,6 +719,20 @@ the jointed hand scenes (`mech_hand_r/l.tscn`) are SGG values; an arm part of an
 fields, phase 2 or 3). The hit part data (`sanggigilid_hit_parts.tres`) names bones, so it fits every part on the
 standard rig.
 
+## Paint skin "Black Red" (user request 2026-10-31, SGGv2)
+
+User: "Add skin to SGGv2": a new paint skin, "Black armor, red accents, dark grey frame, orange lamp".
+- Garage skin picker: a fourth style "Black Red" (`MechSkinChoice.Style.PAINT`). It paints the mech body and the
+  jointed hands; weapons, equipment and the backpack keep their own materials.
+- `MechPaint` resource `data/skins/paint_black_red.tres` (colors, glow, metal, roughness, detail, texel class
+  limits), `MechPaintSkin` makes the materials, `shaders/mech_paint.gdshader` recolors the model's own texture per
+  texel: light olive and light grey to the armor color, darker olive panels (below `accent_split` 0.56) to the accent
+  color, dark grey and black to the frame color, saturated orange to the lamp color with a glow. The texel's
+  brightness against its class keeps the panel lines and shading (`detail` 0.8); the normal map stays.
+- On SGG the red shows on the panel edges and the darker panel lines (the texture has few dark olive areas), and the
+  SGG body texture has no orange lamp area (0 orange texels): the lamp color shows only on parts that have orange.
+- `render_part_models.gd SKIN=3` renders it.
+
 ## New mech hand (user request 2026-10-13; user drawings: right hand palm, back, closed underside, closed back, open back)
 
 - User answers: 4 fingers and a thumb, 3 joints each; the look from the drawings; auto fit grip.
@@ -1302,6 +1316,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - "Align shoulders and arm swings during holding war hammer and baton with shoulder and arm swings with fists": the holding arm followed the walk clip (its shoulder block rose and tilted). Now `WeaponController._swings_like_fist` (a HAMMER-kind weapon in the right hand): when it does not swing, the arm takes the fist hang target (`_update_fist_arms`, `fist_hang_target`) and its IK runs, so `SkeletalArmRig` gives it the relaxed hang and the stride swing like a fist arm (level block); the weapon rides the hand. During a swing the target is null and the clip has the arm as before. Test: test_melee_combo, test_stability, test_weapon_hands, test_hit_reactions 0 failures; renders `render_rifle.gd` RIFLE_RIGHT=hammer / baton, RIFLE_ACTIONS=move_forward, views far, far_front.
 
 ## Reminders for the user
+- Open (2026-10-31, built): play test the "Black Red" paint skin (garage skin picker): the colors, the amount of red, the frame grey. Say if SGG needs a real lamp (its texture has no orange area) or bigger red panels. Tune `data/skins/paint_black_red.tres`.
 - Open (2026-10-31, user): upload the Haliya HLY-101 model (parts on the SGG rig `MechRig`, collections Head, Core, Arm_L, Arm_R, Legs; skirt and sleeve meshes on the accessory bones). Claude then exports the parts and adds Haliya on key 2.
 - Open (2026-10-31, built, phase 1 of "Swappable mech parts"): play test SGG after the split into part files: it should look and move exactly as before (walk, run, boost, jump, aim, melee, part breaks, the PS1 / Basic skins, the HP indicators). Report any part that looks wrong or sits in the wrong place.
 - Open (2026-10-31, built, phase B): play test the drone aux mods (garage "Aux" picker under Backpack, with the Drone Pack): Drone Swarm (one T release sends all 6) and Drone Recall (each drone comes back after its attack and launches once more). Say if the values should change (2 flights per drone, 10 s to come back).
@@ -1371,6 +1386,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 
 ## Decisions log
 
+- 2026-10-31 (user): SGGv2 paint skin "Black Red": black armor, red accents, dark grey frame, orange lamp; a garage skin option for the body.
 - 2026-10-31 (user): remove the Claude-built Haliya from the game; the user uploads the Haliya model.
 - 2026-10-31 (user): Haliya HLY-101 (user picture) is a second mech on the SGG joints, its parts swap with SGG parts; skirt and sleeves move with follow scripts (accessory bones); the current split SGG is saved as git tag `sggv2`.
 - 2026-10-31 (user): swappable parts: head, core, arms, legs, from every mech (1 variant each), on the SGG-101 joint standard; rigid parenting, the child part owns the joint piece; simple collision shapes as now; a test part to try the swap. Phase 1 (split SGG into a rig file and 5 part files) built.
