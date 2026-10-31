@@ -6,7 +6,8 @@ extends SceneTree
 ##   Swarm: with the swarm mod in the aux slot (no pulse scan then), one launch sends all 6 drones; none comes back.
 ##   Recall: a pair attacks a dummy 100 m ahead, flies back and docks (the drone model on the pack at its dock again,
 ##   6 on the pack); a drone on its second flight explodes after its attack; a returning drone shot down is gone.
-##   The HUD line names the mod. No drone step passes through a wall or building.
+##   The HUD line names the mod. Cool down (user rule): no launch while drones fly, then 10 s from when the last one
+##   is back, with the HUD showing ACTIVE and the seconds. No drone step passes through a wall or building.
 ## Exits with code 1 on a failure.
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/test_drone_mods.gd
 
@@ -29,6 +30,13 @@ func _frames(count: int) -> void:
 		await physics_frame
 		await process_frame
 		_track()
+
+
+## The launcher ready for the next test launch: the cool down skipped (its own check is in the cool down part).
+func _armed(launcher: DroneLauncher) -> DroneLauncher:
+	if launcher != null:
+		launcher.cooldown_left = 0.0
+	return launcher
 
 
 func _check(ok: bool, text: String) -> void:
@@ -120,7 +128,7 @@ func _swarm_test(swarm: DroneModData) -> void:
 	var dummy := _dummy(mech.global_position + flat * 100.0)
 	await _frames(5)
 	var hp_before := dummy.hp
-	var count := launcher.launch(dummy)
+	var count := _armed(launcher).launch(dummy)
 	_check(count == 6 and launcher.docked_count() == 0, "swarm: one launch sends all 6 drones (%d)" % count)
 	var drones: Array[AttackDrone] = launcher.flying.duplicate()
 	var back := [0]
@@ -149,8 +157,12 @@ func _recall_test(recall: DroneModData) -> void:
 	var models: Array[Node3D] = [launcher.docked_left[0], launcher.docked_right[0]]
 	var homes: Array[Transform3D] = [models[0].transform, models[1].transform]
 	var parents: Array[Node] = [models[0].get_parent(), models[1].get_parent()]
-	_check(launcher.launch(dummy) == 2, "recall: a pair launches")
+	_check(_armed(launcher).launch(dummy) == 2, "recall: a pair launches")
 	var drones: Array[AttackDrone] = launcher.flying.duplicate()
+	# One launch at a time (user rule): no second launch while these fly.
+	await _frames(2)
+	_check(launcher.launch(dummy) == 0 and launcher.flying.size() == 2, "cool down: no launch while drones are active")
+	_check(status.text.contains("ACTIVE"), "cool down: HUD line %s" % status.text)
 	var returned := [false, false]
 	var waited := 0
 	for i in 900:
@@ -174,6 +186,13 @@ func _recall_test(recall: DroneModData) -> void:
 	launcher.docked_left.push_front(models[0])
 	launcher.docked_right.erase(models[1])
 	launcher.docked_right.push_front(models[1])
+	# The 10 s cool down from the docking: no launch at once, a launch after 10 s.
+	await _frames(2)
+	print("cool down after the docking: %.2f s, HUD %s" % [launcher.cooldown_left, status.text])
+	_check(launcher.cooldown_left > 9.5 and launcher.launch(dummy) == 0, "cool down: no launch just after the drones are back")
+	_check(status.text.contains("10 s"), "cool down: HUD line shows the seconds")
+	await _frames(int(launcher.cooldown_left * 60.0) + 3)
+	_check(launcher.can_launch(), "cool down: ready 10 s after the drones are back")
 	_check(launcher.launch(dummy) == 2, "recall: the same pair launches again")
 	drones = launcher.flying.duplicate()
 	_check(not drones[0].return_home and not drones[1].return_home, "recall: on the second flight they will not return")
@@ -182,7 +201,7 @@ func _recall_test(recall: DroneModData) -> void:
 	_check(launcher.docked_count() == 4, "recall: after the second flight they are gone (%d on the pack)"
 			% launcher.docked_count())
 	# 3. A returning drone shot down is gone.
-	_check(launcher.launch(dummy) == 2, "recall: a fresh pair launches")
+	_check(_armed(launcher).launch(dummy) == 2, "recall: a fresh pair launches")
 	drones = launcher.flying.duplicate()
 	var hit := false
 	for i in 600:

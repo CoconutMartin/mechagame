@@ -4,7 +4,8 @@ extends Node
 ## drone_launch) to lock a target: the "lockable" target nearest the mech aim inside the lock box, in range and in
 ## sight, locks after lock_time. Release T with a lock: drones_per_launch drones leave the pack, taken left and right
 ## in turn, outer first (a pair holds opposite flanks of the target, a pincer; AttackDrone). Release without a
-## lock: nothing. Drones do not come back, unless the back pack's aux slot holds a drone mod (DroneModData, read at
+## lock: nothing. One launch at a time (user rule 2026-10-31): no launch while this mech's drones are in the air,
+## then a cool down (DroneData.cooldown_s, 10 s) from when the last one is gone or docked. Drones do not come back, unless the back pack's aux slot holds a drone mod (DroneModData, read at
 ## each launch): RECALL: each drone flies back to its dock after its attack and can launch again (flights_per_drone
 ## in all); SWARM: one launch sends every drone on the pack. BackPackMount adds it when the pack has DroneData and
 ## Drone<n> nodes. An AI pilot calls launch itself (AIDroneTactics).
@@ -29,6 +30,8 @@ var locking: Node3D = null
 var lock_progress: float = 0.0
 ## Total drones the pack had.
 var total: int = 0
+## Seconds left of the cool down (it starts when the last drone in the air is gone or docked).
+var cooldown_left: float = 0.0
 
 var _next_left: bool = true
 ## Per drone model (instance id): its dock node and the attack flights it has left (recall mod).
@@ -95,10 +98,14 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var had_flying := not flying.is_empty()
 	for i in range(flying.size() - 1, -1, -1):
 		if not is_instance_valid(flying[i]) or flying[i].is_queued_for_deletion():
 			flying.remove_at(i)
-	if held and docked_count() > 0:
+	if had_flying and flying.is_empty():
+		_start_cooldown()
+	cooldown_left = maxf(cooldown_left - delta, 0.0)
+	if held and can_launch():
 		_update_lock(delta)
 	elif not held:
 		_clear_lock()
@@ -132,10 +139,25 @@ func get_mod() -> DroneModData:
 	return DroneMod.find_data(mech)
 
 
-## Launches drones_per_launch drones (every drone on the pack with the swarm mod) at target. Returns the number
-## launched.
+## True when a launch can go now: drones on the pack, none of this mech's drones in the air (user rule: no launch
+## while other drones are active) and the cool down over.
+func can_launch() -> bool:
+	return docked_count() > 0 and flying.is_empty() and cooldown_left <= 0.0
+
+
+## True while this mech's drones are in the air (attacking or flying back).
+func is_active() -> bool:
+	return not flying.is_empty()
+
+
+func _start_cooldown() -> void:
+	cooldown_left = data.cooldown_s
+
+
+## Launches drones_per_launch drones (every drone on the pack with the swarm mod) at target, when can_launch.
+## Returns the number launched.
 func launch(target: Node3D) -> int:
-	if not is_instance_valid(target) or not mech.is_inside_tree():
+	if not is_instance_valid(target) or not mech.is_inside_tree() or not can_launch():
 		return 0
 	var mod := get_mod()
 	var swarm := mod != null and mod.kind == DroneModData.Kind.SWARM
@@ -174,6 +196,8 @@ func launch(target: Node3D) -> int:
 ## A drone exploded, was shot down or docked: it is no longer in the air.
 func _on_finished(drone: AttackDrone) -> void:
 	flying.erase(drone)
+	if flying.is_empty():
+		_start_cooldown()
 
 
 ## A drone is back on its dock (recall mod): it can launch again.

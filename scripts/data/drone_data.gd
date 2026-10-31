@@ -13,6 +13,9 @@ extends Resource
 @export var lock_box_deg: float = 8.0
 ## Seconds to lock a target.
 @export var lock_time: float = 0.5
+## Seconds after the last drone of a launch is gone or back on its dock before the next launch (user rule
+## 2026-10-31: 10 s; no launch while drones of the mech are in the air).
+@export var cooldown_s: float = 10.0
 ## Drones per launch (taken left and right in turn). 2 = one pair.
 @export_range(1, 12) var drones_per_launch: int = 2
 

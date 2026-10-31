@@ -43,6 +43,13 @@ func _frames(count: int) -> void:
 		_track_drones()
 
 
+## The launcher ready for the next test launch: the cool down skipped (its own check is in the cool down part).
+func _armed(launcher: DroneLauncher) -> DroneLauncher:
+	if launcher != null:
+		launcher.cooldown_left = 0.0
+	return launcher
+
+
 func _check(ok: bool, text: String) -> void:
 	print(("ok   " if ok else "FAIL ") + text)
 	if not ok:
@@ -298,7 +305,7 @@ func _flight_tests(mech: Mech) -> void:
 			await _refill(mech)
 		mech = (current_scene.get_node("LoadoutSwitcher") as LoadoutSwitcher).mech
 		launcher = DroneLauncher.find(mech)
-		_check(launcher.launch(dummy) == 2, "%s: a pair launches" % case[0])
+		_check(_armed(launcher).launch(dummy) == 2, "%s: a pair launches" % case[0])
 		drones = launcher.flying.duplicate()
 		result = await _watch(drones, dummy, right)
 		print("%s: fires at %.2f s and %.2f s, dummy damage %.0f" % [case[0], result[0][0], result[1][0],
@@ -315,7 +322,7 @@ func _flight_tests(mech: Mech) -> void:
 		await _refill(mech)
 		mech = (current_scene.get_node("LoadoutSwitcher") as LoadoutSwitcher).mech
 		launcher = DroneLauncher.find(mech)
-	_check(launcher.launch(dummy) == 2, "cover: a pair launches")
+	_check(_armed(launcher).launch(dummy) == 2, "cover: a pair launches")
 	drones = launcher.flying.duplicate()
 	await _frames(60)
 	var hide := start + flat * 85.0
@@ -338,7 +345,7 @@ func _flight_tests(mech: Mech) -> void:
 		await _refill(mech)
 		mech = (current_scene.get_node("LoadoutSwitcher") as LoadoutSwitcher).mech
 		launcher = DroneLauncher.find(mech)
-	_check(launcher.launch(dummy) == 2, "roof: a pair launches")
+	_check(_armed(launcher).launch(dummy) == 2, "roof: a pair launches")
 	drones = launcher.flying.duplicate()
 	result = await _watch(drones, dummy, right)
 	print("roof: fires at %.2f s and %.2f s, tilt %.1f and %.1f degrees up, dummy damage %.0f" % [result[0][0],
@@ -429,7 +436,7 @@ func _ai_tests(player: Mech) -> void:
 	var rounds_fired := 0
 	var covered := false
 	var last_ammo := enemy_gun.ammo
-	_check(mine != null and mine.launch(enemy) == 2, "the player's pair flies at the AI (heavy rifle)")
+	_check(mine != null and _armed(mine).launch(enemy) == 2, "the player's pair flies at the AI (heavy rifle)")
 	var mine_drones: Array[AttackDrone] = mine.flying.duplicate()
 	var downed: Array[int] = [0]
 	for d in mine_drones:
@@ -483,7 +490,7 @@ func _ai_tests(player: Mech) -> void:
 	tactics = enemy.find_child("AIDroneTactics", true, false) as AIDroneTactics
 	player.global_position = enemy.global_position - enemy.global_basis.z * 80.0
 	await _frames(5)
-	_check(mine.launch(enemy) == 2, "the player's pair flies at the AI (SMG)")
+	_check(_armed(mine).launch(enemy) == 2, "the player's pair flies at the AI (SMG)")
 	var took_cover := false
 	var start := enemy.global_position
 	for i in 300:
@@ -525,7 +532,7 @@ func _ai_tests(player: Mech) -> void:
 	var rifle := (enemy.get_node("WeaponController") as WeaponController).right_weapon as BeamRifleWeapon
 	player.global_position = enemy.global_position - enemy.global_basis.z * 80.0
 	await _frames(5)
-	_check(rifle != null and mine.launch(enemy) == 2, "the player's pair flies at the AI (beam rifle)")
+	_check(rifle != null and _armed(mine).launch(enemy) == 2, "the player's pair flies at the AI (beam rifle)")
 	var beamed := false
 	var charged := 0.0
 	var beam_drones: Array[AttackDrone] = mine.flying.duplicate()
