@@ -7,7 +7,8 @@ Run (from the project root):
 Writes models/backpacks/backpack_<type>.blend and .glb for each type in TYPES (light, medium, heavy: build_pack;
 ammo: build_ammo_pack, six canisters the game removes one by one; missile: build_missile_pack, four upright
 missile canisters; boost: build_boost_pack, four winged grilles, the boost outlets; quad: build_quad_pack, four thruster pods with
-big nozzles; belt: build_belt_pack, an ammo belt for guns).
+big nozzles; belt: build_belt_pack, an ammo belt for guns; power: build_power_pack,
+battery cells and power cables).
 The script starts from an empty file, so hand edits in the .blend are lost when it runs again.
 
 Axes: Blender +Y = forward (Godot -Z), +Z = up. Origin: the Mount, the center of the pack's front face (it lies on
@@ -69,6 +70,12 @@ TYPES = {
     # with a yellow stripe). Built by build_belt_pack. w / h / d: half width, half height and depth of the frame
     # box; rounds: rounds on the belt; per_canister: rounds per canister (Canister1..N, the top pair first).
     "belt": dict(kind="belt", w=0.46, h=0.92, d=0.86, rounds=16, per_canister=2),
+    # Power Pack (user picture models/guides/backpack_power_ref.png, 2026-10-31: "another backpack for energy
+    # support"): a gunmetal center stack (top box, a radiator block with a louvered grille in a recess, a bottom
+    # block), tall towers on the upper sides, battery cells with terminals on the lower sides, orange power cables
+    # from the towers down to the stack and out to the cell terminals. Built by build_power_pack. Sizes in m:
+    # body_w: half width of the stack; tower_x / cell_x: inner and outer x; cable_r: cable radius.
+    "power": dict(kind="power", body_w=0.3, tower_x=(0.36, 0.66), cell_x=(0.47, 0.84), d=0.9, cable_r=0.04),
 }
 
 MATERIALS = {
@@ -91,6 +98,9 @@ MATERIALS = {
     # Belt Pack: brass round tips and bands, a yellow stripe.
     "bp_brass": ((0.85, 0.62, 0.22), 0.35, 0.9, None),
     "bp_yellow": ((0.92, 0.68, 0.12), 0.5, 0.1, None),
+    # Power Pack: orange cables, copper bolts.
+    "bp_cable": ((0.88, 0.3, 0.12), 0.45, 0.1, None),
+    "bp_copper": ((0.72, 0.43, 0.2), 0.35, 0.9, None),
 }
 
 
@@ -1003,6 +1013,125 @@ def build_belt_pack(t):
     return parts
 
 
+def tube(name, mat, points, radius, order=3):
+    """A round tube (a cable) along a smooth curve through points [(x, y, z), ...], as a mesh."""
+    curve = bpy.data.curves.new(name + "Curve", "CURVE")
+    curve.dimensions = "3D"
+    curve.bevel_depth = radius
+    curve.bevel_resolution = 2
+    curve.use_fill_caps = True
+    spline = curve.splines.new("NURBS")
+    spline.points.add(len(points) - 1)
+    for p, co in zip(spline.points, points):
+        p.co = (*co, 1.0)
+    spline.order_u = order
+    spline.use_endpoint_u = True
+    spline.resolution_u = 6
+    tmp = bpy.data.objects.new(name + "Tmp", curve)
+    bpy.context.collection.objects.link(tmp)
+    mesh = bpy.data.meshes.new_from_object(tmp.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    bpy.data.objects.remove(tmp)
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    return finish(obj, mat, 0.0)
+
+
+def build_power_pack(t):
+    """The Power Pack: a gunmetal center stack (a top box with seams, a radiator block with a louvered grille cut
+    into its back face, a bottom block), tall towers on the upper sides with hatches, battery cells on the lower sides
+    with copper bolts and terminals (the terminal windows are the Lamp), orange power cables (each tower feeds the
+    stack through a ribbed sleeve and a cell terminal), a dark mount plate, one hardpoint on the top box."""
+    A, AD, F, K, C, Cu = "bp_gun", "bp_gun_dark", "bp_frame", "bp_dark", "bp_cable", "bp_copper"
+    bw, d, cr = t["body_w"], t["d"], t["cable_r"]
+    tx0, tx1 = t["tower_x"]
+    cx0, cx1 = t["cell_x"]
+    parts = []
+
+    def bolt(name, x, y, z, along="y"):
+        if along == "y":
+            obj = prism(name, Cu, y - 0.012, y + 0.012, 0.022, 0.022, z=z, sides=8, bevel=0.0)
+            obj.location.x = x
+        else:
+            obj = cyl_z(name, Cu, 0.0, 0.0, -0.012, 0.012, 0.022, sides=8)
+            obj.rotation_euler = (0.0, math.pi / 2, 0.0)
+            obj.location = (x, y, z)
+        return obj
+
+    # Mount plate and the center stack.
+    parts.append(block("MountPlate", F, -bw * 0.9, bw * 0.9, -0.08, 0.0, -0.85, 0.8, chamfer=0.05))
+    parts.append(block("TopBox", A, -bw + 0.03, bw - 0.03, -d + 0.12, -0.08, 0.44, 0.88, chamfer=0.07, bevel=0.015))
+    parts.append(block("TopSeam", F, -bw + 0.025, bw - 0.025, -d + 0.115, -0.08, 0.64, 0.66, bevel=0.0))
+    radiator = block("Radiator", A, -bw, bw, -d, -0.06, -0.6, 0.44, chamfer=0.09, bevel=0.015)
+    parts.append(radiator)
+    grille_pts = [(-0.18, -0.52), (0.18, -0.52), (0.18, 0.2), (-0.18, 0.2)]
+    # A raised dark ring round the grille recess.
+    for i, (x0, x1, z0, z1) in enumerate(((-0.23, 0.23, 0.2, 0.25), (-0.23, 0.23, -0.57, -0.52),
+                                          (-0.23, -0.18, -0.52, 0.2), (0.18, 0.23, -0.52, 0.2))):
+        parts.append(block(f"RadiatorRing{i}", AD, x0, x1, -d - 0.03, -d + 0.01, z0, z1, bevel=0.0))
+    parts += grille("RadiatorGrille", grille_pts, lambda z: -d, pitch=0.06, inset=0.015, cut=radiator, depth=0.08)
+    parts.append(block("BottomBox", A, -bw + 0.04, bw - 0.04, -d + 0.1, -0.1, -1.03, -0.58, chamfer=0.07,
+                       bevel=0.015))
+    parts.append(block("BottomSeam", F, -bw + 0.035, bw - 0.035, -d + 0.095, -0.1, -0.82, -0.8, bevel=0.0))
+    for i, (x, z) in enumerate(((-0.22, 0.8), (0.22, 0.8), (-0.24, 0.36), (0.24, 0.36), (-0.24, -0.5),
+                                (0.24, -0.5), (-0.2, -0.95), (0.2, -0.95))):
+        y = -d + 0.11 if abs(z) > 0.7 else -d - 0.005
+        parts.append(bolt(f"StackBolt{i}", x, y, z))
+    parts.append(block("Hardpoint1", F, -0.12, 0.12, -0.6, -0.3, 0.88, 0.92, bevel=0.0))
+    parts.append(empty("Aux1", (0.0, -0.45, 0.92)))
+    lamps = []
+    for side, sx in (("L", -1.0), ("R", 1.0)):
+        # Tower: a tall box whose top slopes down to the back, a hatch on top, a dark collar at its foot.
+        parts.append(loft(f"Tower{side}", A, [
+            (0.22, 0.22, tx0, tx1, -0.06, -d + 0.06),
+            (0.92, 0.84, tx0, tx1, -0.06, -d + 0.06),
+            (1.06, 0.96, tx0 + 0.03, tx1 - 0.03, -0.1, -d + 0.1)], sx=sx, bevel=0.02))
+        xa, xb = sorted((sx * (tx0 + 0.09), sx * (tx1 - 0.09)))
+        parts.append(block(f"TowerHatch{side}", F, xa, xb, -0.36, -0.18, 1.0, 1.06, chamfer=0.02, bevel=0.0))
+        xa, xb = sorted((sx * (tx0 - 0.01), sx * (tx1 + 0.01)))
+        parts.append(block(f"TowerCollar{side}", AD, xa, xb, -d + 0.04, -0.04, 0.2, 0.3, chamfer=0.03, bevel=0.0))
+        xa, xb = sorted((sx * tx1, sx * (tx1 + 0.012)))
+        parts.append(block(f"TowerSlot{side}", F, xa, xb, -0.5, -0.3, 0.7, 0.78, bevel=0.0))
+        # Connector arms from the stack to the tower and to the cell.
+        xa, xb = sorted((sx * (bw - 0.04), sx * (tx0 + 0.04)))
+        parts.append(block(f"TowerArm{side}", F, xa, xb, -0.6, -0.2, 0.5, 0.7, chamfer=0.03))
+        xa, xb = sorted((sx * (bw - 0.04), sx * (cx0 + 0.04)))
+        parts.append(block(f"CellArm{side}", F, xa, xb, -0.65, -0.25, -0.35, -0.1, chamfer=0.03))
+        # Battery cell: an octagonal box, a raised panel with copper bolts, a seam, a terminal with a lamp window.
+        xa, xb = sorted((sx * cx0, sx * cx1))
+        parts.append(block(f"Cell{side}", A, xa, xb, -d + 0.08, -0.16, -0.74, 0.22, chamfer=0.09, bevel=0.015))
+        xa, xb = sorted((sx * (cx0 + 0.05), sx * (cx1 - 0.05)))
+        parts.append(block(f"CellPanel{side}", A, xa, xb, -d + 0.04, -d + 0.1, -0.64, 0.12, chamfer=0.05,
+                           bevel=0.01))
+        parts.append(block(f"CellSeam{side}", F, xa, xb, -d + 0.035, -d + 0.06, -0.27, -0.25, bevel=0.0))
+        for j, (bx, bz) in enumerate(((cx0 + 0.1, 0.06), (cx1 - 0.1, 0.06), (cx0 + 0.1, -0.58),
+                                      (cx1 - 0.1, -0.58))):
+            parts.append(bolt(f"CellBolt{side}{j}", sx * bx, -d + 0.03, bz))
+        for j, z in enumerate((0.08, -0.6)):
+            parts.append(bolt(f"CellSideBolt{side}{j}", sx * (cx1 + 0.012), -0.5, z, along="x"))
+        tcx = sx * (cx0 + cx1) / 2
+        parts.append(block(f"Terminal{side}", F, tcx - 0.08, tcx + 0.08, -d + 0.22, -d + 0.42, 0.2, 0.34,
+                           chamfer=0.025, bevel=0.0))
+        lamps.append(block("Lamp" if sx < 0 else f"Lamp{side}", "bp_glow", tcx - 0.04, tcx + 0.04, -d + 0.205,
+                           -d + 0.22, 0.24, 0.3, bevel=0.0))
+        # Cables: tower foot to the stack's lower side through a ribbed sleeve, and tower side to the terminal.
+        x_c = sx * (tx0 + 0.22)
+        y_c = -d + 0.02
+        for k in range(5):
+            z = 0.18 - k * 0.045
+            parts.append(cyl_z(f"Sleeve{side}{k}", K, x_c, y_c, z - 0.02, z + 0.02, cr + 0.012, sides=10))
+        parts.append(tube(f"CableMain{side}", C, [
+            (x_c, y_c, 0.2), (x_c, y_c, -0.1), (x_c, y_c - 0.02, -0.55), (x_c, y_c - 0.02, -0.72),
+            (sx * (bw + 0.02), y_c, -0.72), (sx * (bw - 0.04), y_c + 0.1, -0.7)], cr))
+        parts.append(tube(f"CableCell{side}", C, [
+            (sx * (tx1 - 0.02), -0.55, 0.42), (sx * (tx1 + 0.1), -0.55, 0.42), (sx * (tx1 + 0.12), -0.55, 0.36),
+            (tcx + sx * 0.05, -d + 0.32, 0.4), (tcx, -d + 0.32, 0.34)], cr * 0.85))
+    with bpy.context.temp_override(active_object=lamps[0], selected_editable_objects=lamps):
+        bpy.ops.object.join()
+    parts.append(lamps[0])
+    parts.append(empty("Mount", (0.0, 0.0, 0.0)))
+    return parts
+
+
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -1010,7 +1139,7 @@ def main():
         if args and name not in args:
             continue
         bpy.ops.wm.read_factory_settings(use_empty=True)
-        builders = {"ammo": build_ammo_pack, "missile": build_missile_pack, "boost": build_boost_pack, "quad": build_quad_pack, "belt": build_belt_pack}
+        builders = {"ammo": build_ammo_pack, "missile": build_missile_pack, "boost": build_boost_pack, "quad": build_quad_pack, "belt": build_belt_pack, "power": build_power_pack}
         objects = builders.get(t.get("kind"), build_pack)(t)
         # Radiator fins and handles stay on the heavy and the other packs; a pack with a radiator has no handles.
         if t.get("vent") == "radiator":

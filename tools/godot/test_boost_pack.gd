@@ -10,6 +10,7 @@ const MAP := "res://maps/urban_small/urban_small.tscn"
 const PACK := "res://data/parts/backpacks/backpack_boost.tres"
 const OTHER_PACK := "res://data/parts/backpacks/backpack_medium.tres"
 const QUAD_PACK := "res://data/parts/backpacks/backpack_quad.tres"
+const POWER_PACK := "res://data/parts/backpacks/backpack_power.tres"
 
 var _failures: int = 0
 
@@ -181,6 +182,16 @@ func _run() -> void:
 		await _frames(90)
 		if petal != null:
 			_check(petal.basis.is_equal_approx(petal_closed), "after the boost: the nozzles close")
+	# The Power Pack (energy support): energy capacity bonus, its model on the mech, no boost outlets.
+	var power := load(POWER_PACK) as BackPackPart
+	_check(power in catalog.back_packs and power.get_mod_stat() == ModData.Stat.ENERGY_CAPACITY
+			and power.aux_slots == 1, "the Power Pack is in the catalog (1 aux slot, energy bonus)")
+	loadout.back_pack = power
+	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
+	await _frames(30)
+	var holder := switcher.mech.get_node_or_null(^"BackPackMount") as BackPackMount
+	_check(holder != null and is_instance_valid(holder.model)
+			and switcher.mech.get_node_or_null(^"BackPackOutlets") == null, "the Power Pack model is on the mech")
 	_finish()
 
 

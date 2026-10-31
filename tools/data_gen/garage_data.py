@@ -44,6 +44,8 @@ BACK_PACKS = [
     ("backpack_quad", "Quad Booster", 2.0, 280.0, 1, 3, 18.0),
     # Belt Pack (user picture 2026-10-31, "ballistic support"): an ammo belt, 8 canisters for guns only, 1 aux slot.
     ("backpack_belt", "Belt Pack", 2.6, 300.0, 1, 0, 0.0),
+    # Power Pack (user picture 2026-10-31, "energy support"): battery cells, 1 aux slot, energy capacity +25%.
+    ("backpack_power", "Power Pack", 1.8, 260.0, 1, 1, 25.0),
 ]
 ## Ammo canisters per pack (BackPackPart.ammo_canisters); packs not listed carry none.
 AMMO_CANISTERS = {"backpack_ammo": 6, "backpack_missile": 4, "backpack_belt": 8}
