@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="DroneData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/drone_data.gd" id="script"]
+[ext_resource type="Resource" path="res://data/weapons/drone_gun.tres" id="gun"]
+
+[resource]
+script = ExtResource("script")
+gun = ExtResource("gun")

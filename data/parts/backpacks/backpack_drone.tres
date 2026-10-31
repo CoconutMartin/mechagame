@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/data/back_pack_part.gd" id="script"]
 [ext_resource type="PackedScene" path="res://models/backpacks/backpack_drone.glb" id="scene"]
+[ext_resource type="Resource" path="res://data/equipment/attack_drone.tres" id="drone"]
 
 [resource]
 script = ExtResource("script")
@@ -9,4 +10,5 @@ display_name = "Drone Pack"
 weight_t = 2.2
 hp = 300.0
 aux_slots = 1
+drone = ExtResource("drone")
 scene = ExtResource("scene")

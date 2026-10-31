@@ -177,6 +177,16 @@ func _draw_locks() -> void:
 		if pod.locking != null:
 			var closing := lerpf(70.0, 26.0, pod.lock_progress)
 			_draw_target(camera, pod.locking, closing, locking_color, 2.0)
+	# Attack drones (T held): the same lock box and brackets.
+	var launcher := DroneLauncher.find(weapons.mech)
+	if launcher != null and launcher.held and launcher.docked_count() > 0:
+		var focal_d := get_viewport_rect().size.y * 0.5 / tan(deg_to_rad(camera.fov) * 0.5)
+		_draw_corners(_screen_position, tan(deg_to_rad(launcher.data.lock_box_deg)) * focal_d,
+				Color(lock_color, 0.6), 2.0)
+		if launcher.locked != null:
+			_draw_target(camera, launcher.locked, 26.0, lock_color, 3.0)
+		elif launcher.locking != null:
+			_draw_target(camera, launcher.locking, lerpf(70.0, 26.0, launcher.lock_progress), locking_color, 2.0)
 
 
 func _draw_target(camera: Camera3D, target: Node3D, half: float, tint: Color, width: float) -> void:

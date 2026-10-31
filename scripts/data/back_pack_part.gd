@@ -14,6 +14,9 @@ enum Bonus { NONE, ENERGY, HP, BOOST }
 ## Weapon kinds the canisters fit (the Missile Pack, user request 2026-10-31: missile pods only). Empty = every
 ## ammo weapon.
 @export var canister_kinds: Array[WeaponData.Kind] = []
+## Attack drones (a drone pack, user design 2026-10-31): the model's Drone1..N nodes fly off with key T
+## (DroneLauncher). Null = no drones.
+@export var drone: DroneData
 
 
 ## True when this pack's canisters fit a weapon of this data (null = any).

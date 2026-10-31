@@ -74,6 +74,8 @@ func _attach_model(skeleton: Skeleton3D, pack_data: BackPackPart) -> void:
 	BackPackOutlets.attach(mech, model)
 	BackPackFlaps.attach(mech, model)
 	BackPackEnergyBar.attach(mech, model)
+	# Attack drones (Drone Pack): T locks, release launches.
+	DroneLauncher.attach(mech, model, pack_data)
 	if mech.health != null:
 		var nodes: Array[Node3D] = [model]
 		mech.health.attach_weapon_part(HIT_KEY, pack_data.hp, pack_data.hp, nodes)
@@ -87,6 +89,9 @@ func _on_part_destroyed(key: String) -> void:
 	_canisters.clear()
 	if is_instance_valid(model):
 		model.visible = false
+	var launcher := DroneLauncher.find(mech)
+	if launcher != null:
+		launcher.lose_docked()
 	# The aux equipment goes with the pack.
 	var aux := mech.get_node_or_null(^"AuxMount")
 	if aux != null:
@@ -145,5 +150,8 @@ func _drop(canister: Node3D) -> void:
 
 
 func _exit_tree() -> void:
+	var launcher := DroneLauncher.find(mech)
+	if launcher != null:
+		launcher.queue_free()
 	if is_instance_valid(_attach):
 		_attach.queue_free()

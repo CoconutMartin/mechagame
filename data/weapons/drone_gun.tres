@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Drone Gun"
+weight_t = 0.0
+hp = 0.0
+kind = 0
+slot = 0
+fire_rate = 10.0
+damage = 10.0
+stagger_points = 0.6
+stagger_cap_per_shot = 4.0
+projectile_speed = 420.0
+spread_deg = 1.5
+range_m = 120.0
+effective_range_m = 60.0
+magazine = 0
+reserve_magazines = 0

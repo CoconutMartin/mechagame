@@ -9,7 +9,7 @@ ammo: build_ammo_pack, six canisters the game removes one by one; missile: build
 missile canisters; boost: build_boost_pack, four winged grilles, the boost outlets; quad: build_quad_pack, four thruster pods with
 big nozzles; belt: build_belt_pack, an ammo belt for guns; power: build_power_pack,
 battery cells and power cables; field: build_field_pack, a box between two handled pods; jet: build_jet_pack, a
-box with two big nozzles; drone: build_drone_pack, a box with a detachable drone disc on each side).
+box with two big nozzles; drone: build_drone_pack, a box with three detachable drone discs on each side).
 The script starts from an empty file, so hand edits in the .blend are lost when it runs again.
 
 Axes: Blender +Y = forward (Godot -Z), +Z = up. Origin: the Mount, the center of the pack's front face (it lies on
@@ -89,11 +89,13 @@ TYPES = {
                 petals=(10, 0.14, 22.0)),
     "power": dict(kind="power", body_w=0.32, tower_x=(0.36, 0.68), cell_x=(0.48, 0.9), d=0.95, cable_r=0.045),
     # Drone Pack (user picture models/guides/backpack_drone_ref.png, 2026-10-31: "the circle thing on the side should
-    # be detachable, we'll make it to an attack drone"): a gunmetal box with an armored back face, two side columns
-    # with carry handles over the top, an axle each side and a big disc on it (the drone). Built by
+    # be detachable, we'll make it to an attack drone"; then "3 drones each side"): a gunmetal box with an armored
+    # back, two side columns with carry handles over the top, three drone discs per side on axle stubs. Built by
     # build_drone_pack. box_w: half width of the armored box; col_x: inner and outer x of a column; h: half height;
-    # d: depth; disc: (radius, thickness, y, z) of a drone disc.
-    "drone": dict(kind="drone", box_w=0.42, col_x=(0.42, 0.6), h=0.62, d=1.0, disc=(0.52, 0.34, -0.56, -0.05)),
+    # d: depth; disc: (radius, thickness) of a drone; drones: (y, z) of each disc center on a side (top, middle,
+    # bottom); axle: stub length out of the column.
+    "drone": dict(kind="drone", box_w=0.42, col_x=(0.42, 0.6), h=0.7, d=1.0, disc=(0.28, 0.2),
+                  drones=((-0.36, 0.5), (-0.7, 0.0), (-0.36, -0.5)), axle=0.08),
 }
 
 MATERIALS = {
@@ -1587,15 +1589,15 @@ def seam(name, mat, a, b, y0, y1, width=0.022):
     return obj
 
 
-def build_drone(n, sx, t):
+def build_drone(n, sx, t, cx, cy, cz):
     """One drone disc (user 2026-10-31: "the circle thing on the side should be detachable, we'll make it to an
     attack drone"): the empty Drone<n> at the disc center is the parent of every disc part, so the game can take the
-    whole drone off the pack. Parts: a 16 sided rim with dark grooves and amber edge marks, an outer face with a
-    raised dark ring, amber ring lights, a gunmetal center plate with a seam line and a hub, a sensor window on the
-    back of the rim, an inner hub plate on the axle side. sx = -1 (left) or 1 (right): the outer face is at +sx."""
+    whole drone off the pack (AttackDrone flies it). Its X axis is the disc axis; the outer face (the hub is the gun
+    muzzle, empty DroneMuzzle<n>) is at +sx. Parts: a 16 sided rim with dark grooves and amber edge marks, a steel
+    band, an outer face with a raised dark ring, amber ring lights, a gunmetal plate with two seam lines and a hub,
+    a sensor window on the back of the rim, an inner hub plate on the axle side. sx = -1 (left) or 1 (right)."""
     G, GD, F, K, S, A = "bp_gun", "bp_gun_dark", "bp_frame", "bp_dark", "bp_steel", "bp_amber"
-    r, th, y, z = t["disc"]
-    cx = sx * (t["col_x"][1] + 0.12 + th / 2)
+    r, th = t["disc"]
     root = empty(f"Drone{n}", (0.0, 0.0, 0.0))
     hx = th / 2
     parts = []
@@ -1603,58 +1605,61 @@ def build_drone(n, sx, t):
     def x(v):
         return sx * v
 
-    parts.append(cyl_x(f"DroneRim{n}", G, x(-hx), x(hx), r, sides=16, bevel=0.03))
-    for j, v in enumerate((-hx + 0.07, hx - 0.07)):
-        parts.append(cyl_x(f"DroneGroove{n}_{j}", F, x(v - 0.012), x(v + 0.012), r + 0.006, sides=16))
-    # Amber marks on the rim edge (on the groove next to the outer face), every 90 degrees from 45.
+    parts.append(cyl_x(f"DroneRim{n}", G, x(-hx), x(hx), r, sides=16, bevel=0.022))
+    parts.append(cyl_x(f"DroneBand{n}", GD, x(-hx + 0.06), x(hx - 0.06), r + 0.012, sides=16, bevel=0.0))
+    for j, v in enumerate((-hx + 0.05, hx - 0.05)):
+        parts.append(cyl_x(f"DroneGroove{n}_{j}", F, x(v - 0.008), x(v + 0.008), r + 0.016, sides=16))
+    # Amber marks on the band, every 90 degrees from 45.
     for j in range(4):
         a = math.radians(45 + 90 * j)
-        m = block(f"DroneMark{n}_{j}", A, -0.012, 0.012, -0.1, 0.1, -0.012, 0.012, bevel=0.0)
+        m = block(f"DroneMark{n}_{j}", A, -0.03, 0.03, -0.04, 0.04, -0.008, 0.008, bevel=0.0)
         m.rotation_euler = (a, 0.0, 0.0)
-        m.location = (x(hx - 0.07), -math.sin(a) * (r + 0.008), math.cos(a) * (r + 0.008))
+        m.location = (0.0, -math.sin(a) * (r + 0.016), math.cos(a) * (r + 0.016))
         parts.append(m)
-    # Outer face: raised dark ring, amber ring lights, a gunmetal center plate with a seam line and a hub.
-    parts.append(cyl_x(f"DroneRing{n}", K, x(hx - 0.01), x(hx + 0.025), r * 0.86, sides=24, bevel=0.0))
-    parts.append(cyl_x(f"DroneRingWell{n}", F, x(hx + 0.02), x(hx + 0.03), r * 0.8, sides=24))
-    parts.append(cyl_x(f"DronePlate{n}", G, x(hx), x(hx + 0.04), r * 0.66, sides=24, bevel=0.008))
-    for j in range(6):
-        a = math.radians(20 + 60 * j)
-        light = block(f"DroneLight{n}_{j}", A, -0.008, 0.008, -0.06, 0.06, -0.02, 0.02, bevel=0.0)
+    # Outer face: raised dark ring, amber ring lights, a gunmetal plate with seams and a hub (the gun).
+    parts.append(cyl_x(f"DroneRing{n}", K, x(hx - 0.01), x(hx + 0.022), r * 0.88, sides=24, bevel=0.0))
+    parts.append(cyl_x(f"DroneRingWell{n}", F, x(hx + 0.018), x(hx + 0.026), r * 0.8, sides=24))
+    parts.append(cyl_x(f"DronePlate{n}", G, x(hx), x(hx + 0.036), r * 0.64, sides=24, bevel=0.006))
+    for j in range(4):
+        a = math.radians(45 + 90 * j)
+        light = block(f"DroneLight{n}_{j}", A, -0.006, 0.006, -0.045, 0.045, -0.014, 0.014, bevel=0.0)
         light.rotation_euler = (a, 0.0, 0.0)
-        light.location = (x(hx + 0.027), -math.sin(a) * r * 0.73, math.cos(a) * r * 0.73)
+        light.location = (x(hx + 0.025), -math.sin(a) * r * 0.72, math.cos(a) * r * 0.72)
         parts.append(light)
-    line = block(f"DroneSeam{n}", F, -0.006, 0.006, -0.008, 0.008, 0.06, r * 0.65, bevel=0.0)
-    line.rotation_euler = (math.radians(-35), 0.0, 0.0)
-    line.location = (x(hx + 0.04), 0.0, 0.0)
-    parts.append(line)
-    line2 = block(f"DroneSeamB{n}", F, -0.006, 0.006, -0.008, 0.008, 0.06, r * 0.65, bevel=0.0)
-    line2.rotation_euler = (math.radians(145), 0.0, 0.0)
-    line2.location = (x(hx + 0.04), 0.0, 0.0)
-    parts.append(line2)
-    parts.append(cyl_x(f"DroneHubRing{n}", K, x(hx + 0.035), x(hx + 0.06), 0.065, sides=16))
-    parts.append(cyl_x(f"DroneHub{n}", S, x(hx + 0.05), x(hx + 0.07), 0.035, sides=12))
-    # Sensor window on the back of the rim (toward -Y), with a steel frame.
-    parts.append(block(f"DroneSensor{n}", K, -0.07, 0.07, -r - 0.03, -r + 0.03, -0.07, 0.07, chamfer=0.015,
+    for j, ang in enumerate((-35, 145)):
+        line = block(f"DroneSeam{n}_{j}", F, -0.005, 0.005, -0.006, 0.006, 0.05, r * 0.63, bevel=0.0)
+        line.rotation_euler = (math.radians(ang), 0.0, 0.0)
+        line.location = (x(hx + 0.036), 0.0, 0.0)
+        parts.append(line)
+    parts.append(cyl_x(f"DroneHubRing{n}", K, x(hx + 0.03), x(hx + 0.055), 0.055, sides=16))
+    parts.append(cyl_x(f"DroneHub{n}", S, x(hx + 0.045), x(hx + 0.075), 0.03, sides=12))
+    parts.append(cyl_x(f"DroneBore{n}", F, x(hx + 0.07), x(hx + 0.078), 0.016, sides=8))
+    parts.append(empty(f"DroneMuzzle{n}", (x(hx + 0.08), 0.0, 0.0)))
+    # Sensor window on the back of the rim (toward -Y), with a steel lens.
+    parts.append(block(f"DroneSensor{n}", K, -0.05, 0.05, -r - 0.03, -r + 0.03, -0.05, 0.05, chamfer=0.012,
                        bevel=0.0))
-    parts.append(block(f"DroneLens{n}", S, -0.035, 0.035, -r - 0.04, -r - 0.02, -0.035, 0.035, bevel=0.0))
+    parts.append(block(f"DroneLens{n}", S, -0.024, 0.024, -r - 0.04, -r - 0.02, -0.024, 0.024, bevel=0.0))
     # Inner hub plate on the axle side.
-    parts.append(cyl_x(f"DroneInner{n}", K, x(-hx + 0.01), x(-hx - 0.03), r * 0.42, sides=16, bevel=0.0))
+    parts.append(cyl_x(f"DroneInner{n}", K, x(-hx + 0.01), x(-hx - 0.025), r * 0.45, sides=16, bevel=0.0))
     for obj in parts:
         obj.parent = root
-    root.location = (cx, y, z)
+    root.location = (cx, cy, cz)
     return [root] + parts
 
 
 def build_drone_pack(t):
-    """The Drone Pack (user picture 2026-10-31): a gunmetal core box (mount side, taller), an armored box on its
-    back (octagonal from behind) with a raised panel, seams, amber lights and two latches; two side columns with a
-    window, front and back feet and a carry handle (two posts and a bar over the top, front to back); an axle out of
-    each column and a big disc on it: the drones (Drone1 left, Drone2 right, see build_drone), with DroneDock1..2
-    empties where they sit. A dark top latch with the hardpoint (Aux1), a dark skid."""
+    """The Drone Pack (user picture 2026-10-31; "make it more beautiful and add a bit more body, then 2 more drones
+    on each side for a total of 3 drones each side"): a gunmetal core box (mount side, taller, a sloped top cap)
+    and an armored box on its back: an upper and a lower armor plate (octagonal outline, seams, amber lights, bolts)
+    with a dark vent band of louvers between them and a center spine. Two side columns with ribs, bolts, a sloped
+    top cap, front and back feet and a thick carry handle over the top. Three drone discs per side in a staggered
+    column (top and bottom forward, middle back), each on its own axle stub with a collar: Drone1..3 left (top,
+    middle, bottom), Drone4..6 right, see build_drone, with DroneDock1..6 empties where they sit. A dark top latch
+    with the hardpoint (Aux1), a dark skid with two vents."""
     G, GD, F, K, S, A = "bp_gun", "bp_gun_dark", "bp_frame", "bp_dark", "bp_steel", "bp_amber"
     bw, h, d = t["box_w"], t["h"], t["d"]
     cx0, cx1 = t["col_x"]
-    r, th, dy, dz = t["disc"]
+    r, th = t["disc"]
     parts = []
 
     def bolt(name, x, y, z):
@@ -1663,71 +1668,94 @@ def build_drone_pack(t):
         return obj
 
     parts.append(block("MountPlate", K, -0.3, 0.3, -0.08, 0.0, -h * 0.8, h * 0.8, chamfer=0.05))
-    # Core box (taller, on the mount side) with amber lights and latch hooks on its exposed upper back.
-    parts.append(block("Core", G, -bw + 0.06, bw - 0.06, -0.62, -0.06, -h + 0.1, h + 0.12, chamfer=0.08,
+    # Core box (taller, on the mount side) with a sloped top cap, amber lights and latch hooks on its upper back.
+    parts.append(block("Core", G, -bw + 0.06, bw - 0.06, -0.62, -0.06, -h + 0.1, h + 0.1, chamfer=0.08,
                        bevel=0.015))
+    parts.append(loft("CoreCap", GD, [
+        (h + 0.08, h + 0.08, -bw + 0.04, bw - 0.04, -0.04, -0.66),
+        (h + 0.16, h + 0.12, -bw + 0.08, bw - 0.08, -0.08, -0.6)], bevel=0.012))
     for j, sx in enumerate((-1.0, 1.0)):
-        parts.append(block(f"CoreLight{j}", A, sx * 0.24 - 0.018, sx * 0.24 + 0.018, -0.635, -0.615, h - 0.04,
-                           h + 0.06, bevel=0.0))
-        parts.append(block(f"CoreHook{j}", K, sx * 0.14 - 0.03, sx * 0.14 + 0.03, -0.66, -0.6, h - 0.05, h + 0.0,
+        parts.append(block(f"CoreLight{j}", A, sx * 0.25 - 0.016, sx * 0.25 + 0.016, -0.635, -0.615, h - 0.06,
+                           h + 0.04, bevel=0.0))
+        parts.append(block(f"CoreHook{j}", K, sx * 0.14 - 0.03, sx * 0.14 + 0.03, -0.67, -0.6, h - 0.06, h + 0.0,
                            chamfer=0.01, bevel=0.0))
-    # Armored box on the back with a raised panel.
-    parts.append(block("Armor", G, -bw, bw, -d + 0.04, -0.4, -h, h - 0.06, chamfer=0.12, bevel=0.015))
-    yp0, yp1 = -d - 0.01, -d + 0.08
-    parts.append(block("ArmorPanel", G, -bw + 0.05, bw - 0.05, yp0, yp1, -h + 0.06, h - 0.12, chamfer=0.09,
-                       bevel=0.01))
-    # Seams on the panel: a splayed H (user picture).
-    pts = {"A": (-0.34, 0.42), "B": (-0.2, 0.28), "C": (0.2, 0.28), "D": (0.34, 0.42), "E": (-0.2, -0.16),
-           "F": (0.2, -0.16), "G": (-0.34, -0.3), "H": (0.34, -0.3)}
-    for i, (p, q) in enumerate((("A", "B"), ("B", "C"), ("C", "D"), ("B", "E"), ("C", "F"), ("E", "F"),
-                                ("E", "G"), ("F", "H"))):
-        parts.append(seam(f"ArmorSeam{i}", F, pts[p], pts[q], yp0 - 0.008, yp0 + 0.02))
-    for i, (x, z) in enumerate(((-0.3, 0.2), (0.3, 0.2), (-0.3, -0.46), (0.3, -0.46))):
-        parts.append(block(f"ArmorLight{i}", A, x - 0.018, x + 0.018, yp0 - 0.012, yp0 + 0.01, z - 0.05, z + 0.05,
+    # Armored box on the back: an upper and a lower armor plate with a vent band and a spine between them.
+    parts.append(block("Armor", G, -bw, bw, -d + 0.06, -0.4, -h, h - 0.08, chamfer=0.12, bevel=0.015))
+    yb = -d + 0.06
+    for i, (z0, z1) in enumerate(((0.06, h - 0.12), (-h + 0.04, -0.14))):
+        top = i == 0
+        parts.append(loft(f"ArmorPlate{i}", G, [
+            (z0, z0, -bw + 0.04, bw - 0.04, yb + 0.02, yb - (0.06 if top else 0.11)),
+            (z1, z1, -bw + 0.04, bw - 0.04, yb + 0.02, yb - (0.11 if top else 0.06))], bevel=0.014))
+        for j, sx in enumerate((-1.0, 1.0)):
+            zl = z1 - 0.1 if top else z0 + 0.1
+            parts.append(block(f"ArmorLight{i}{j}", A, sx * 0.3 - 0.016, sx * 0.3 + 0.016, yb - 0.12, yb - 0.04,
+                               zl - 0.05, zl + 0.05, bevel=0.0))
+            parts.append(bolt(f"ArmorBolt{i}{j}", sx * 0.12, yb - (0.115 if top else 0.115), z0 + 0.06 if top else
+                              z1 - 0.06))
+    # Seams: a splayed H across the two plates (user picture).
+    ys = yb - 0.1
+    pts = {"A": (-0.34, 0.5), "B": (-0.2, 0.38), "C": (0.2, 0.38), "D": (0.34, 0.5), "E": (-0.2, -0.26),
+           "F": (0.2, -0.26), "G": (-0.34, -0.4), "H": (0.34, -0.4)}
+    for i, (p, q) in enumerate((("A", "B"), ("B", "C"), ("C", "D"), ("E", "F"), ("E", "G"), ("F", "H"))):
+        parts.append(seam(f"ArmorSeam{i}", F, pts[p], pts[q], ys - 0.02, ys + 0.03))
+    parts.append(block("VentBand", F, -bw + 0.06, bw - 0.06, yb - 0.06, yb + 0.02, -0.13, 0.05, bevel=0.0))
+    for j in range(4):
+        z = -0.1 + j * 0.045
+        parts.append(block(f"VentLouver{j}", K, -bw + 0.08, bw - 0.08, yb - 0.075, yb - 0.04, z - 0.012, z + 0.012,
                            bevel=0.0))
-    for i, (x, z) in enumerate(((-0.1, -0.44), (0.1, -0.44), (-0.1, 0.42), (0.1, 0.42))):
-        parts.append(bolt(f"ArmorBolt{i}", x, yp0 - 0.01, z))
-    parts.append(block("TopLatch", K, -0.16, 0.16, -0.5, -0.18, h + 0.12, h + 0.2, chamfer=0.02, bevel=0.0))
+    parts.append(block("Spine", GD, -0.07, 0.07, yb - 0.13, yb - 0.02, -0.2, 0.12, chamfer=0.03, bevel=0.008))
+    parts.append(block("SpineLight", A, -0.02, 0.02, yb - 0.14, yb - 0.12, -0.14, 0.06, bevel=0.0))
+    parts.append(block("TopLatch", K, -0.16, 0.16, -0.5, -0.18, h + 0.13, h + 0.2, chamfer=0.02, bevel=0.0))
     parts.append(block("Hardpoint1", F, -0.1, 0.1, -0.44, -0.24, h + 0.2, h + 0.23, bevel=0.0))
     parts.append(empty("Aux1", (0.0, -0.34, h + 0.23)))
-    parts.append(block("Skid", K, -bw + 0.08, bw - 0.08, -d + 0.12, -0.14, -h - 0.1, -h + 0.04, chamfer=0.04,
+    parts.append(block("Skid", K, -bw + 0.06, bw - 0.06, -d + 0.1, -0.12, -h - 0.1, -h + 0.04, chamfer=0.04,
                        bevel=0.0))
-    for n, (side, sx) in enumerate((("L", -1.0), ("R", 1.0)), start=1):
+    for j, sx in enumerate((-1.0, 1.0)):
+        parts.append(block(f"SkidVent{j}", F, sx * 0.2 - 0.1, sx * 0.2 + 0.1, -0.75, -0.35, -h - 0.11, -h - 0.09,
+                           bevel=0.0))
+    n = 0
+    for side, sx in (("L", -1.0), ("R", 1.0)):
         x0, x1 = sorted((sx * cx0, sx * cx1))
         cc = sx * (cx0 + cx1) / 2
-        # Side column with a window on its back face and a lower block.
-        parts.append(block(f"Column{side}", GD, x0, x1, -d + 0.02, -0.1, -h - 0.06, h - 0.1, chamfer=0.05,
+        # Side column with ribs and bolts on its back face, a sloped top cap.
+        parts.append(block(f"Column{side}", GD, x0, x1, -d + 0.02, -0.1, -h - 0.06, h - 0.04, chamfer=0.05,
                            bevel=0.012))
-        parts.append(block(f"ColumnWindow{side}", F, cc - 0.05, cc + 0.05, -d + 0.0, -d + 0.03, 0.22, 0.34,
+        for j, z in enumerate((h - 0.3, -0.05, -h + 0.25)):
+            parts.append(block(f"ColumnRib{side}{j}", G, x0 + 0.02, x1 - 0.02, -d - 0.02, -d + 0.1, z - 0.11, z + 0.11,
+                               chamfer=0.03, bevel=0.008))
+            parts.append(bolt(f"ColumnBolt{side}{j}", cc, -d - 0.03, z))
+        parts.append(block(f"ColumnWindow{side}", F, cc - 0.045, cc + 0.045, -d - 0.035, -d - 0.015, h - 0.36, h - 0.24,
                            chamfer=0.01, bevel=0.0))
-        parts.append(block(f"ColumnLens{side}", S, cc - 0.025, cc + 0.025, -d - 0.005, -d + 0.01, 0.25, 0.31,
+        parts.append(block(f"ColumnLens{side}", S, cc - 0.022, cc + 0.022, -d - 0.04, -d - 0.03, h - 0.33, h - 0.27,
                            bevel=0.0))
-        parts.append(block(f"ColumnSlot{side}", F, cc - 0.012, cc + 0.012, -d - 0.0, -d + 0.03, -0.3, -0.16,
-                           bevel=0.0))
-        # Feet: front and back, under the column.
+        parts.append(loft(f"ColumnCap{side}", G, [
+            (h - 0.06, h - 0.06, x0 - 0.01, x1 + 0.01, -0.08, -d),
+            (h + 0.08, h + 0.0, x0 + 0.01, x1 - 0.01, -0.12, -d + 0.06)], bevel=0.012))
+        # Feet: front and back, under the column, with dark pads.
         for j, (y0, y1) in enumerate(((-d - 0.02, -d + 0.32), (-0.42, -0.1))):
             parts.append(block(f"Foot{side}{j}", GD, x0 - 0.02, x1 + 0.02, y0, y1, -h - 0.3, -h + 0.02,
                                chamfer=0.05, bevel=0.012))
-            parts.append(bolt(f"FootBolt{side}{j}", cc, y0 - 0.005, -h - 0.16) if j == 0 else
-                         block(f"FootPad{side}{j}", K, x0, x1, y0 + 0.04, y1 - 0.04, -h - 0.34, -h - 0.29,
+            parts.append(block(f"FootPad{side}{j}", K, x0, x1, y0 + 0.04, y1 - 0.04, -h - 0.34, -h - 0.29,
                                bevel=0.0))
-        parts.append(block(f"FootPad{side}0", K, x0, x1, -d + 0.02, -d + 0.28, -h - 0.34, -h - 0.29, bevel=0.0))
-        # Carry handle: two thick posts from the column top and a bar over them, front to back; a seam band
-        # across the column.
+        parts.append(bolt(f"FootBolt{side}", cc, -d - 0.025, -h - 0.16))
+        # Carry handle: two thick posts from the column cap and a bar over them, front to back.
         for j, y in enumerate((-d + 0.15, -0.23)):
-            parts.append(block(f"HandlePost{side}{j}", GD, cc - 0.065, cc + 0.065, y - 0.065, y + 0.065, h - 0.14,
-                               h + 0.3, chamfer=0.025, bevel=0.0))
-        parts.append(block(f"HandleBar{side}", GD, cc - 0.065, cc + 0.065, -d + 0.07, -0.15, h + 0.22, h + 0.36,
+            parts.append(block(f"HandlePost{side}{j}", GD, cc - 0.06, cc + 0.06, y - 0.06, y + 0.06, h - 0.02,
+                               h + 0.34, chamfer=0.022, bevel=0.0))
+        parts.append(block(f"HandleBar{side}", GD, cc - 0.06, cc + 0.06, -d + 0.08, -0.16, h + 0.26, h + 0.38,
                            chamfer=0.04, bevel=0.0))
-        parts.append(block(f"ColumnBand{side}", F, x0 - 0.005, x1 + 0.005, -d + 0.01, -0.12, 0.04, 0.07, bevel=0.0))
-        # Axle out of the column, with a collar, and the dock where the drone sits.
-        xa = sx * cx1
-        xb = sx * (cx1 + 0.12)
-        parts.append(cyl_x(f"Axle{side}", F, xa, xb, 0.15, y=dy, z=dz, sides=16))
-        parts.append(cyl_x(f"AxleCollar{side}", GD, xa, sx * (cx1 + 0.05), 0.2, y=dy, z=dz, sides=16, bevel=0.0))
-        cx = sx * (cx1 + 0.12 + th / 2)
-        parts.append(empty(f"DroneDock{n}", (cx, dy, dz)))
-        parts += build_drone(n, sx, t)
+        parts.append(block(f"HandleGrip{side}", K, cc - 0.065, cc + 0.065, -0.7, -0.45, h + 0.255, h + 0.385,
+                           chamfer=0.04, bevel=0.0))
+        # Three drones in a staggered column, each on an axle stub with a collar out of the column.
+        for cy, cz in t["drones"]:
+            n += 1
+            parts.append(cyl_x(f"Axle{n}", F, sx * cx1, sx * (cx1 + t["axle"]), 0.09, y=cy, z=cz, sides=12))
+            parts.append(cyl_x(f"AxleCollar{n}", G, sx * cx1, sx * (cx1 + 0.04), 0.13, y=cy, z=cz, sides=12,
+                               bevel=0.0))
+            cx = sx * (cx1 + t["axle"] + th / 2)
+            parts.append(empty(f"DroneDock{n}", (cx, cy, cz)))
+            parts += build_drone(n, sx, t, cx, cy, cz)
     parts.append(empty("Mount", (0.0, 0.0, 0.0)))
     return parts
 
