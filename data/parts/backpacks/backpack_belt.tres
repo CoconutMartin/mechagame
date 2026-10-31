@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BackPackPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/back_pack_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/backpacks/backpack_belt.glb" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Belt Pack"
+weight_t = 2.6
+hp = 300.0
+aux_slots = 1
+ammo_canisters = 8
+canister_kinds = Array[int]([0])
+scene = ExtResource("scene")

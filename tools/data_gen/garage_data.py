@@ -42,11 +42,13 @@ BACK_PACKS = [
     ("backpack_boost", "Boost Pack", 1.4, 240.0, 1, 3, 12.0),
     # Quad Booster (user picture 2026-10-31): four thruster pods with big nozzles, one aux slot, boost +18%.
     ("backpack_quad", "Quad Booster", 2.0, 280.0, 1, 3, 18.0),
+    # Belt Pack (user picture 2026-10-31, "ballistic support"): an ammo belt, 8 canisters for guns only, 1 aux slot.
+    ("backpack_belt", "Belt Pack", 2.6, 300.0, 1, 0, 0.0),
 ]
 ## Ammo canisters per pack (BackPackPart.ammo_canisters); packs not listed carry none.
-AMMO_CANISTERS = {"backpack_ammo": 6, "backpack_missile": 4}
+AMMO_CANISTERS = {"backpack_ammo": 6, "backpack_missile": 4, "backpack_belt": 8}
 ## Weapon kinds a pack's canisters fit (WeaponData.Kind; 3 = missile pod); packs not listed fit every ammo weapon.
-CANISTER_KINDS = {"backpack_missile": [3]}
+CANISTER_KINDS = {"backpack_missile": [3], "backpack_belt": [0]}
 
 # Mods: file, name, stat (ModData.Stat), percent.
 # Stat: 0 weight, 1 speed, 2 boost thrust, 3 energy capacity, 4 energy output, 5 turn speed,

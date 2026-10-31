@@ -40,6 +40,7 @@ carries the aux equipment (pulse scan now) and gives one bonus stat (boost, ener
 | Heavy Pack | 2.3 x 1.9 x 1.15 | 3 | HP +5% | wide armored block, radiator stack on top, two big tanks, two big nozzles |
 | Boost Pack | 2.0 x 2.2 x 1.1 | 1 | boost +12% | center box, four wings with louvered grilles (boost outlets), gunmetal (user picture) |
 | Quad Booster | 2.06 x 2.1 x 1.14 | 1 | boost +18% | four octagonal thruster pods with big nozzles, tan spine (user picture) |
+| Belt Pack | 1.5 x 2.0 x 1.0 | 1 | none; 8 gun refills | frame box with a handle, an ammo belt down the back (user picture) |
 
 ## Colors
 

@@ -7,7 +7,7 @@ Run (from the project root):
 Writes models/backpacks/backpack_<type>.blend and .glb for each type in TYPES (light, medium, heavy: build_pack;
 ammo: build_ammo_pack, six canisters the game removes one by one; missile: build_missile_pack, four upright
 missile canisters; boost: build_boost_pack, four winged grilles, the boost outlets; quad: build_quad_pack, four thruster pods with
-big nozzles).
+big nozzles; belt: build_belt_pack, an ammo belt for guns).
 The script starts from an empty file, so hand edits in the .blend are lost when it runs again.
 
 Axes: Blender +Y = forward (Godot -Z), +Z = up. Origin: the Mount, the center of the pack's front face (it lies on
@@ -63,6 +63,12 @@ TYPES = {
     # when not, like in jet fighters"). Depth is about 75% of the picture's.
     "quad": dict(kind="quad", pod_x=(0.25, 1.03), pod_z=(0.04, 1.06), pod_y=(-0.08, -0.8), noz_r=0.32,
                  noz_len=0.2, noz_hole=(0.25, 0.1), petals=(10, 0.16, 22.0)),
+    # Belt Pack (user picture models/guides/backpack_belt_ref.png, 2026-10-31: "make the next backpack primarily as
+    # ballistic support"): a dark frame box with a carry handle, an ammo belt of 16 rounds down the middle of its
+    # back face between two dark rails, olive armor blocks either side of the belt, olive side boxes (the lower one
+    # with a yellow stripe). Built by build_belt_pack. w / h / d: half width, half height and depth of the frame
+    # box; rounds: rounds on the belt; per_canister: rounds per canister (Canister1..N, the top pair first).
+    "belt": dict(kind="belt", w=0.42, h=0.92, d=0.82, rounds=16, per_canister=2),
 }
 
 MATERIALS = {
@@ -82,6 +88,9 @@ MATERIALS = {
     "bp_gun_dark": ((0.22, 0.23, 0.26), 0.55, 0.5, None),
     "bp_slat": ((0.44, 0.44, 0.45), 0.45, 0.6, None),
     "bp_energy": ((0.45, 0.8, 1.0), 0.5, 0.0, (0.45, 0.8, 1.0)),
+    # Belt Pack: brass round tips and bands, a yellow stripe.
+    "bp_brass": ((0.85, 0.62, 0.22), 0.35, 0.9, None),
+    "bp_yellow": ((0.92, 0.68, 0.12), 0.5, 0.1, None),
 }
 
 
@@ -784,8 +793,8 @@ def build_quad_pack(t):
     parts.append(block("Hardpoint1", F, -0.13, 0.13, -0.68, -0.4, 0.8, 0.84, bevel=0.0))
     parts.append(block("HardpointRail1", S, -0.09, 0.09, -0.65, -0.43, 0.84, 0.86, bevel=0.0))
     parts.append(empty("Aux1", (0.0, -0.54, 0.86)))
-    # Energy gauge: a dark bezel proud of the spine, a steel trim, end caps, and the EnergyBar light inside it: five
-    # segments in one mesh (BackPackEnergyBar colors it).
+    # Energy gauge: a dark bezel proud of the spine, a steel trim, end caps, and the EnergyBar light inside it, one
+    # solid bar (user 2026-10-31: "remove the segments"; BackPackEnergyBar colors it).
     gz0, gz1 = -0.76, -0.58
     parts.append(block("GaugeBezel", F, -0.19, 0.19, sy1 - 0.07, sy1 + 0.02, gz0, gz1, chamfer=0.04, bevel=0.01))
     parts.append(block("GaugeTrim", S, -0.155, 0.155, sy1 - 0.075, sy1 - 0.06, gz0 + 0.03, gz1 - 0.03, chamfer=0.02,
@@ -795,15 +804,8 @@ def build_quad_pack(t):
         xa, xb = sorted((sx * 0.155, sx * 0.185))
         parts.append(block(f"GaugeCap{i}", K, xa, xb, sy1 - 0.09, sy1 - 0.06, gz0 + 0.02, gz1 - 0.02, chamfer=0.01,
                            bevel=0.0))
-    segments = []
-    seg_w, gap = 0.05, 0.008
-    for i in range(5):
-        x = (i - 2) * (seg_w + gap)
-        segments.append(block("EnergyBar" if i == 0 else f"EnergySeg{i}", "bp_energy", x - seg_w / 2, x + seg_w / 2,
-                              sy1 - 0.085, sy1 - 0.07, gz0 + 0.055, gz1 - 0.055, bevel=0.0))
-    with bpy.context.temp_override(active_object=segments[0], selected_editable_objects=segments):
-        bpy.ops.object.join()
-    parts.append(segments[0])
+    parts.append(block("EnergyBar", "bp_energy", -0.135, 0.135, sy1 - 0.085, sy1 - 0.07, gz0 + 0.055, gz1 - 0.055,
+                       chamfer=0.012, bevel=0.0))
     n = 0
     for row, (z0, z1) in (("U", (pz0, pz1)), ("L", (-pz1, -pz0))):
         zc = (z0 + z1) / 2
@@ -859,6 +861,100 @@ def build_quad_pack(t):
     return parts
 
 
+def build_belt_pack(t):
+    """The Belt Pack: a dark frame box (mount plate and back posts on the torso side), a carry handle on top, a
+    recessed belt channel down the back face between two dark rails, 16 rounds on a gentle arc in the channel (each a
+    dark case lying across, a brass tip to +X, a brass band and a dark link; Canister1..8 empties hold two rounds
+    each, the top pair first), four olive armor blocks either side of the belt, olive side boxes with a dark slot
+    panel (upper) and a yellow stripe (lower), dark feet, an orange lamp low on each side, one hardpoint on top."""
+    A, AD, F, K, S, B, Y = "bp_armor", "bp_armor_dark", "bp_frame", "bp_dark", "bp_steel", "bp_brass", "bp_yellow"
+    w, h, d = t["w"], t["h"], t["d"]
+    parts = []
+    # Frame box, mount plate, back posts and plates on the torso side.
+    parts.append(block("Frame", F, -w, w, -d, -0.08, -h, h * 0.92, chamfer=0.07, bevel=0.015))
+    parts.append(block("MountPlate", K, -w * 0.7, w * 0.7, -0.08, 0.0, -h * 0.8, h * 0.8, chamfer=0.05))
+    for i, (z0, z1) in enumerate(((0.02, h * 0.75), (-h * 0.75, -0.04))):
+        parts.append(block(f"MountPanel{i}", K, -w * 0.5, w * 0.5, -0.1, -0.06, z0, z1, chamfer=0.04, bevel=0.0))
+    # Belt channel (dark well) and the two rails either side of it, up to the handle.
+    cw = 0.19
+    parts.append(block("BeltWell", K, -cw, cw, -d - 0.02, -d + 0.1, -h + 0.08, h * 0.92 - 0.06, bevel=0.0))
+    for side, sx in (("L", -1.0), ("R", 1.0)):
+        xa, xb = sorted((sx * cw, sx * (cw + 0.08)))
+        parts.append(block(f"Rail{side}", F, xa, xb, -d - 0.12, -d + 0.05, -h - 0.04, h * 0.92 + 0.02, chamfer=0.025,
+                           bevel=0.01))
+        # Handle post on the rail top.
+        xa, xb = sorted((sx * (cw + 0.04), sx * (cw + 0.12)))
+        parts.append(block(f"HandlePost{side}", F, xa, xb, -0.62, -0.3, h * 0.92 - 0.02, h + 0.16, chamfer=0.025))
+        # Olive armor blocks on the back face beside the belt: upper and lower, sloped to the side.
+        for j, (z0, z1) in enumerate(((0.22, 0.66), (-0.6, -0.14))):
+            xa, xb = sorted((sx * (cw + 0.08), sx * (w + 0.03)))
+            parts.append(block(f"Armor{side}{j}", A, xa, xb, -d - 0.1, -d + 0.04, z0, z1, chamfer=0.06, bevel=0.012))
+            xa, xb = sorted((sx * (cw + 0.13), sx * (w - 0.06)))
+            parts.append(block(f"ArmorPlate{side}{j}", AD, xa, xb, -d - 0.115, -d - 0.09, z0 + 0.05, z0 + 0.14,
+                               bevel=0.0))
+        # Side boxes: upper with a dark slot panel, lower (taller) with a seam and a yellow stripe.
+        xa, xb = sorted((sx * (w - 0.02), sx * (w + 0.3)))
+        parts.append(block(f"SideBoxUp{side}", A, xa, xb, -d + 0.04, -0.14, 0.42, h * 0.92, chamfer=0.07, bevel=0.012))
+        xa2, xb2 = sorted((sx * (w + 0.29), sx * (w + 0.31)))
+        parts.append(block(f"SideSlot{side}", K, xa2, xb2, -d + 0.2, -0.3, 0.62, 0.72, bevel=0.0))
+        parts.append(block(f"SideBoxLow{side}", A, xa, xb, -d + 0.02, -0.16, -0.66, 0.36, chamfer=0.07, bevel=0.012))
+        parts.append(block(f"SideSeam{side}", F, xa2, xb2, -d + 0.04, -0.18, -0.16, -0.14, bevel=0.0))
+        xa3, xb3 = sorted((sx * (w + 0.3), sx * (w + 0.312)))
+        y = (-d - 0.14) / 2
+        parts.append(block(f"Stripe{side}", Y, xa3, xb3, y - 0.035, y + 0.035, -0.6, 0.3, bevel=0.0))
+        # Dark foot under the side box with the lamp, and a dark block under the armor.
+        xa, xb = sorted((sx * (w - 0.04), sx * (w + 0.24)))
+        parts.append(block(f"Foot{side}", F, xa, xb, -d + 0.06, -0.18, -h - 0.04, -0.64, chamfer=0.05))
+        xa, xb = sorted((sx * (cw + 0.09), sx * (w - 0.02)))
+        parts.append(block(f"FootBack{side}", F, xa, xb, -d - 0.06, -d + 0.2, -h - 0.04, -h + 0.22, chamfer=0.04))
+    parts.append(block("HandleBar", F, -cw - 0.12, cw + 0.12, -0.62, -0.3, h + 0.06, h + 0.16, chamfer=0.03))
+    parts.append(block("HandleGrip", K, -cw, cw, -0.6, -0.32, h + 0.155, h + 0.17, bevel=0.0))
+    parts.append(block("Hardpoint1", F, -0.12, 0.12, -0.26, -0.14, h * 0.92 - 0.02, h * 0.92 + 0.04, bevel=0.0))
+    parts.append(empty("Aux1", (0.0, -0.2, h * 0.92 + 0.04)))
+    lamps = []
+    for sx in (-1.0, 1.0):
+        xa, xb = sorted((sx * (w + 0.23), sx * (w + 0.25)))
+        lamps.append(block("Lamp" if sx < 0 else "LampR", "bp_glow", xa, xb, -0.5, -0.42, -h + 0.08, -h + 0.14,
+                           bevel=0.0))
+    with bpy.context.temp_override(active_object=lamps[0], selected_editable_objects=lamps):
+        bpy.ops.object.join()
+    parts.append(lamps[0])
+    # Rounds: evenly down the channel, the top first, on a gentle arc out of the back face.
+    n_rounds, per = t["rounds"], t["per_canister"]
+    z_top, z_low = h * 0.92 - 0.12, -h + 0.14
+    step = (z_top - z_low) / (n_rounds - 1)
+    case_r, case_len, tip_len = 0.052, 0.27, 0.1
+    for c in range(n_rounds // per):
+        zs = [z_top - (c * per + k) * step for k in range(per)]
+        zc = sum(zs) / per
+        arc = lambda z: -d - 0.08 - 0.07 * math.cos(math.pi * (z - (z_top + z_low) / 2) / (z_top - z_low))
+        pivot = empty(f"Canister{c + 1}", (0.0, arc(zc), zc))
+        pieces = []
+        for k, z in enumerate(zs):
+            i = c * per + k
+            y = arc(z) - arc(zc)
+            dz = z - zc
+            x0 = -(case_len + tip_len) / 2
+            case = cyl_z(f"RoundCase{i}", K, 0.0, 0.0, x0, x0 + case_len, case_r, sides=10)
+            band = cyl_z(f"RoundBand{i}", B, 0.0, 0.0, x0 + case_len - 0.04, x0 + case_len, case_r + 0.004, sides=10)
+            tip = cyl_z(f"RoundTip{i}", B, 0.0, 0.0, x0 + case_len, x0 + case_len + tip_len, case_r, case_r * 0.25,
+                        sides=10)
+            base = cyl_z(f"RoundBase{i}", B, 0.0, 0.0, x0 - 0.01, x0 + 0.01, case_r * 0.9, sides=10)
+            for obj in (case, band, tip, base):
+                # Built along Z, turned to lie along +X (the tip to the right, as in the picture).
+                obj.rotation_euler = (0.0, math.pi / 2, 0.0)
+                obj.location = (0.0, y, dz)
+            link = block(f"RoundLink{i}", F, -0.05, 0.05, y + 0.01, y + case_r + 0.02, dz - 0.03, dz + 0.03,
+                         bevel=0.0)
+            pieces += [case, band, tip, base, link]
+        for piece in pieces:
+            piece.parent = pivot
+        parts.append(pivot)
+        parts += pieces
+    parts.append(empty("Mount", (0.0, 0.0, 0.0)))
+    return parts
+
+
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -866,7 +962,7 @@ def main():
         if args and name not in args:
             continue
         bpy.ops.wm.read_factory_settings(use_empty=True)
-        builders = {"ammo": build_ammo_pack, "missile": build_missile_pack, "boost": build_boost_pack, "quad": build_quad_pack}
+        builders = {"ammo": build_ammo_pack, "missile": build_missile_pack, "boost": build_boost_pack, "quad": build_quad_pack, "belt": build_belt_pack}
         objects = builders.get(t.get("kind"), build_pack)(t)
         # Radiator fins and handles stay on the heavy and the other packs; a pack with a radiator has no handles.
         if t.get("vent") == "radiator":

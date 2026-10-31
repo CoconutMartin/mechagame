@@ -9,6 +9,7 @@ extends SceneTree
 const MAP := "res://maps/urban_small/urban_small.tscn"
 const PACK := "res://data/parts/backpacks/backpack_ammo.tres"
 const MISSILE_PACK := "res://data/parts/backpacks/backpack_missile.tres"
+const BELT_PACK := "res://data/parts/backpacks/backpack_belt.tres"
 
 var _failures: int = 0
 
@@ -84,6 +85,25 @@ func _run() -> void:
 			"Missile Pack: no canister for a gun")
 	_check(BackPackMount.take_canister(mech, load("res://data/weapons/missile_pod_l.tres"))
 			and BackPackMount.canisters_left(mech) == 3, "Missile Pack: a canister for a missile pod, 3 left")
+	# The Belt Pack (ballistic support): 8 canisters (two rounds of the belt each, the top pair first), guns only.
+	loadout.back_pack = load(BELT_PACK) as BackPackPart
+	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
+	await _frames(60)
+	mech = switcher.mech
+	holder = mech.get_node_or_null(^"BackPackMount") as BackPackMount
+	_check(BackPackMount.canisters_left(mech) == 8, "Belt Pack: 8 canisters (%d)" % BackPackMount.canisters_left(mech))
+	_check(not BackPackMount.take_canister(mech, load("res://data/weapons/missile_pod_l.tres")),
+			"Belt Pack: no canister for a missile pod")
+	var first := holder._canisters[0] if not holder._canisters.is_empty() else null
+	var second := holder._canisters[1] if holder._canisters.size() > 1 else null
+	_check(first != null and second != null and first.name == "Canister1"
+			and first.global_position.y > second.global_position.y, "Belt Pack: the top pair goes first")
+	var top_y := first.global_position.y if first != null else 0.0
+	_check(BackPackMount.take_canister(mech, load("res://data/weapons/heavy_rifle.tres"))
+			and BackPackMount.canisters_left(mech) == 7, "Belt Pack: a canister for a gun, 7 left")
+	await _frames(60)
+	_check(first != null and is_instance_valid(first) and not holder.model.is_ancestor_of(first)
+			and first.global_position.y < top_y - 1.0, "Belt Pack: the used rounds left the belt and fell")
 	await _reload_cases(switcher, loadout)
 	_finish()
 
