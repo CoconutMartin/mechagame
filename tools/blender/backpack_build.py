@@ -6,7 +6,8 @@ Run (from the project root):
     blender -b --python tools/blender/backpack_build.py -- heavy      (one type)
 Writes models/backpacks/backpack_<type>.blend and .glb for each type in TYPES (light, medium, heavy: build_pack;
 ammo: build_ammo_pack, six canisters the game removes one by one; missile: build_missile_pack, four upright
-missile canisters; boost: build_boost_pack, four winged grilles, the boost outlets).
+missile canisters; boost: build_boost_pack, four winged grilles, the boost outlets; quad: build_quad_pack, four thruster pods with
+big nozzles).
 The script starts from an empty file, so hand edits in the .blend are lost when it runs again.
 
 Axes: Blender +Y = forward (Godot -Z), +Z = up. Origin: the Mount, the center of the pack's front face (it lies on
@@ -52,6 +53,14 @@ TYPES = {
     # Depth is about 60% of the picture's, so the pack stays close to the torso.
     "boost": dict(kind="boost", body_w=0.43, body_h=0.55, body_d=0.85, wing_x=(0.55, 1.0), wing_y=(-0.15, -1.0),
                   top=1.07, recess=0.09),
+    # Quad Booster (user picture models/guides/backpack_quad_ref.png, 2026-10-31: "another booster back pack"): four
+    # olive octagonal thruster pods in a 2 x 2 block, each with a big dark nozzle on its back end, a tan spine plate
+    # between the columns with dark blocks above and below it, a dark core on the torso side. Built by
+    # build_quad_pack. pod_x: inner and outer x of a pod column; pod_z: (bottom, top) of the upper pod (the lower
+    # pod mirrors it); pod_y: front and back y of a pod body; noz_r / noz_len: nozzle radius and length behind the
+    # pod; noz_hole: radius and depth of the nozzle opening. Depth is about 75% of the picture's.
+    "quad": dict(kind="quad", pod_x=(0.25, 1.03), pod_z=(0.04, 1.06), pod_y=(-0.08, -0.8), noz_r=0.32,
+                 noz_len=0.32, noz_hole=(0.25, 0.16)),
 }
 
 MATERIALS = {
@@ -697,6 +706,89 @@ def build_boost_pack(t):
     return parts
 
 
+def build_quad_pack(t):
+    """The Quad Booster: four octagonal thruster pods (chamfered boxes along Y) with dark bands, a big nozzle on
+    each pod's back end (a ring with an opening cut in it, the OutletGlow<n> disc at the bottom, an inner ring and
+    an Outlet<n> empty at the exit, +Z out of the nozzle), a tan spine plate on the back between the columns with
+    dark blocks above and below, a dark core and mount plate on the torso side, and one hardpoint on the spine's
+    top block."""
+    A, AD, F, K, T, S = "bp_armor", "bp_armor_dark", "bp_frame", "bp_dark", "bp_tan", "bp_steel"
+    px0, px1 = t["pod_x"]
+    pz0, pz1 = t["pod_z"]
+    py0, py1 = t["pod_y"]
+    r, length = t["noz_r"], t["noz_len"]
+    hole_r, hole_d = t["noz_hole"]
+    cx = (px0 + px1) / 2
+    parts = []
+    # Torso side: mount plate and the dark core between the columns.
+    parts.append(block("MountPlate", F, -0.36, 0.36, -0.08, 0.0, -0.8, 0.8, chamfer=0.06))
+    parts.append(block("Core", K, -0.3, 0.3, -0.42, -0.06, -0.92, 0.92, chamfer=0.08, bevel=0.015))
+    for i, z in enumerate((0.6, -0.6)):
+        parts.append(block(f"CoreBolt{i}", F, -0.04, 0.04, -0.09, -0.07, z - 0.04, z + 0.04, bevel=0.0))
+    # Spine: a tan plate between the nozzles, dark blocks above (with the hardpoint) and below, slots and a latch.
+    sy0, sy1 = -0.34, py1 - 0.2
+    parts.append(block("Spine", T, -0.22, 0.22, sy1, sy0, -0.68, 0.56, chamfer=0.06, bevel=0.015))
+    parts.append(block("SpineSeam", F, -0.225, 0.225, sy1 - 0.005, sy0, 0.3, 0.32, bevel=0.0))
+    for i, (x, z) in enumerate(((-0.13, 0.42), (0.13, 0.42), (-0.13, 0.12), (0.13, 0.12), (-0.13, -0.48),
+                                (0.13, -0.48))):
+        parts.append(block(f"SpineSlot{i}", F, x - 0.015, x + 0.015, sy1 - 0.012, sy1 + 0.01, z - 0.05, z + 0.05,
+                           bevel=0.0))
+    parts.append(block("SpineLatch", F, -0.12, 0.12, sy1 - 0.015, sy1 + 0.01, -0.62, -0.56, bevel=0.0))
+    parts.append(block("SpineTop", K, -0.18, 0.18, sy1 + 0.04, sy0 + 0.04, 0.56, 0.78, chamfer=0.05))
+    parts.append(block("SpineLow", K, -0.2, 0.2, sy1 + 0.02, sy0 + 0.06, -1.04, -0.68, chamfer=0.06))
+    parts.append(block("Hardpoint1", F, -0.13, 0.13, -0.68, -0.4, 0.78, 0.82, bevel=0.0))
+    parts.append(block("HardpointRail1", S, -0.09, 0.09, -0.65, -0.43, 0.82, 0.84, bevel=0.0))
+    parts.append(empty("Aux1", (0.0, -0.54, 0.84)))
+    n = 0
+    for row, (z0, z1) in (("U", (pz0, pz1)), ("L", (-pz1, -pz0))):
+        zc = (z0 + z1) / 2
+        for side, sx in (("L", -1.0), ("R", 1.0)):
+            n += 1
+            x0, x1 = sorted((sx * px0, sx * px1))
+            name = f"{row}{side}"
+            # Pod body (octagonal: the chamfer cuts the four edges along Y), a dark band round its middle, a
+            # raised panel on its outer side and a dark clamp on its top or bottom.
+            parts.append(block(f"Pod{name}", A, x0, x1, py1, py0, z0, z1, chamfer=0.17, bevel=0.02))
+            parts.append(block(f"PodBand{name}", AD, x0 - 0.015, x1 + 0.015, py1 * 0.62, py1 * 0.48, z0 - 0.015,
+                               z1 + 0.015, chamfer=0.18, bevel=0.01))
+            xa, xb = sorted((sx * (px1 - 0.01), sx * (px1 + 0.02)))
+            parts.append(block(f"PodPanel{name}", A, xa, xb, py1 * 0.9, py1 * 0.55, zc - 0.22, zc + 0.15,
+                               chamfer=0.03, bevel=0.008))
+            zc_clamp = z1 if row == "U" else z0
+            za, zb = (zc_clamp - 0.01, zc_clamp + 0.05) if row == "U" else (zc_clamp - 0.05, zc_clamp + 0.01)
+            parts.append(block(f"PodClamp{name}", K, sx * cx - 0.2, sx * cx + 0.2, py1 * 0.66, py1 * 0.42, za, zb,
+                               chamfer=0.02, bevel=0.0))
+            # Nozzle: a dark housing ring on the pod's back end, the bell with its opening cut in it, a dark disc
+            # at the bottom of the opening (OutletGlow<n>, lit while boosting) and a smaller ring disc on it.
+            ny0, ny1 = py1 + 0.04, py1 - length
+            housing = prism(f"NozzleHousing{name}", K, py1 - 0.1, ny0, r + 0.03, r + 0.03, z=zc, sides=16)
+            bell = prism(f"Nozzle{name}", F, ny1, py1 - 0.08, r, r * 0.95, z=zc, sides=16)
+            cutter = prism(f"Nozzle{name}Cutter", F, ny1 - 0.05, ny1 + hole_d, hole_r, hole_r, z=zc, sides=16,
+                           bevel=0.0)
+            cutter.hide_render = True
+            cutter.display_type = "WIRE"
+            mod = bell.modifiers.new("Opening", "BOOLEAN")
+            mod.operation = "DIFFERENCE"
+            mod.solver = "EXACT"
+            mod.object = cutter
+            bell.modifiers.move(len(bell.modifiers) - 1, 0)
+            glow = prism(f"OutletGlow{n}", K, ny1 + hole_d - 0.01, ny1 + hole_d + 0.005, hole_r, hole_r, z=zc,
+                         sides=16, bevel=0.0)
+            throat = prism(f"NozzleThroat{name}", F, ny1 + hole_d - 0.04, ny1 + hole_d - 0.005, hole_r * 0.6,
+                           hole_r * 0.6, z=zc, sides=16, bevel=0.0)
+            for obj in (housing, bell, cutter, glow, throat):
+                obj.location.x = sx * cx
+            parts += [housing, bell, glow, throat]
+            outlet = empty(f"Outlet{n}", (sx * cx, ny1 - 0.02, zc))
+            outlet.rotation_euler = (math.pi / 2, 0.0, 0.0)
+            parts.append(outlet)
+            # Dark connector from the pod to the core.
+            xa, xb = sorted((sx * 0.28, sx * (px0 + 0.03)))
+            parts.append(block(f"PodArm{name}", F, xa, xb, -0.36, -0.12, zc - 0.14, zc + 0.14, chamfer=0.03))
+    parts.append(empty("Mount", (0.0, 0.0, 0.0)))
+    return parts
+
+
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -704,7 +796,7 @@ def main():
         if args and name not in args:
             continue
         bpy.ops.wm.read_factory_settings(use_empty=True)
-        builders = {"ammo": build_ammo_pack, "missile": build_missile_pack, "boost": build_boost_pack}
+        builders = {"ammo": build_ammo_pack, "missile": build_missile_pack, "boost": build_boost_pack, "quad": build_quad_pack}
         objects = builders.get(t.get("kind"), build_pack)(t)
         # Radiator fins and handles stay on the heavy and the other packs; a pack with a radiator has no handles.
         if t.get("vent") == "radiator":

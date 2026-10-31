@@ -9,6 +9,7 @@ extends SceneTree
 const MAP := "res://maps/urban_small/urban_small.tscn"
 const PACK := "res://data/parts/backpacks/backpack_boost.tres"
 const OTHER_PACK := "res://data/parts/backpacks/backpack_medium.tres"
+const QUAD_PACK := "res://data/parts/backpacks/backpack_quad.tres"
 
 var _failures: int = 0
 
@@ -138,6 +139,37 @@ func _run() -> void:
 			and switcher.mech.get_node_or_null(^"BackPackFlaps") == null
 			and switcher.mech.get_node_or_null(^"BackPackEnergyBar") == null,
 			"the Aux Pack has no outlets, flaps or energy bar")
+	# The Quad Booster: four nozzle outlets that point backward, glow and wind while boosting, no flaps, no bar.
+	var quad := load(QUAD_PACK) as BackPackPart
+	_check(quad in catalog.back_packs and quad.get_mod_stat() == ModData.Stat.BOOST_THRUST and quad.aux_slots == 1,
+			"the Quad Booster is in the catalog (1 aux slot, boost bonus)")
+	loadout.back_pack = quad
+	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
+	await _frames(30)
+	mech = switcher.mech
+	outlets = mech.get_node_or_null(^"BackPackOutlets") as BackPackOutlets
+	_check(outlets != null and outlets._winds.size() == 4, "4 nozzle outlets on the Quad Booster")
+	_check(mech.get_node_or_null(^"BackPackFlaps") == null and mech.get_node_or_null(^"BackPackEnergyBar") == null,
+			"the Quad Booster has no flaps or energy bar")
+	if outlets != null:
+		var all_back := true
+		for i in 4:
+			var outlet := outlets._model.find_child("Outlet%d" % (i + 1), true, false) as Node3D
+			all_back = all_back and outlet.global_basis.y.normalized().dot(mech.global_basis.z.normalized()) > 0.99
+		_check(all_back, "the nozzles blow straight backward")
+		Input.action_press("boost")
+		Input.action_press("move_forward")
+		for i in 240:
+			await _frames(1)
+			if mech.is_boosting and outlets.amount > 0.95:
+				break
+		_check(outlets.amount > 0.95 and outlets._winds[3].emitting, "Quad Booster boosting: glow and wind")
+		var quad_shot := OS.get_environment("QUAD_SHOT")
+		if quad_shot != "":
+			await _frames(20)
+			root.get_viewport().get_texture().get_image().save_png(quad_shot)
+		Input.action_release("boost")
+		Input.action_release("move_forward")
 	_finish()
 
 

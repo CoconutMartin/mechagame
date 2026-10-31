@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BackPackPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/back_pack_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/backpacks/backpack_quad.glb" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Quad Booster"
+weight_t = 2.0
+hp = 280.0
+aux_slots = 1
+bonus = 3
+bonus_percent = 18.0
+scene = ExtResource("scene")

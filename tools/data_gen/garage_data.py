@@ -40,6 +40,8 @@ BACK_PACKS = [
     ("backpack_missile", "Missile Pack", 2.2, 240.0, 0, 0, 0.0),
     # Boost Pack (user picture 2026-10-31): four winged grilles (the boost outlets), one aux slot, boost +12%.
     ("backpack_boost", "Boost Pack", 1.4, 240.0, 1, 3, 12.0),
+    # Quad Booster (user picture 2026-10-31): four thruster pods with big nozzles, one aux slot, boost +18%.
+    ("backpack_quad", "Quad Booster", 2.0, 280.0, 1, 3, 18.0),
 ]
 ## Ammo canisters per pack (BackPackPart.ammo_canisters); packs not listed carry none.
 AMMO_CANISTERS = {"backpack_ammo": 6, "backpack_missile": 4}
