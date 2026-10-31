@@ -85,7 +85,7 @@ TYPES = {
     # blocks with sensor windows on the side columns' tops), two big nozzles under it pointing down and back. Built
     # by build_jet_pack. col_x: x where the side columns start and end; h: half height; d: depth; noz: (x, radius,
     # length, tilt back from straight down in degrees).
-    "jet": dict(kind="jet", col_x=(0.38, 0.98), h=0.68, d=0.9, noz=(0.55, 0.26, 0.4, 35.0)),
+    "jet": dict(kind="jet", col_x=(0.38, 0.98), h=0.68, d=0.9, noz=(0.55, 0.26, 0.4, 45.0)),
     "power": dict(kind="power", body_w=0.32, tower_x=(0.36, 0.68), cell_x=(0.48, 0.9), d=0.95, cable_r=0.045),
 }
 
@@ -1406,11 +1406,13 @@ def build_field_pack(t):
 
 
 def build_jet_pack(t):
-    """The Jet Pack: a sand box of three columns (dark grooves between them), a raised center panel with bolts,
-    slots and an L seam, side columns with raised outer plates and side vents, raised blocks with dark sensor windows
-    and lenses on the side columns' tops, a dark top latch with clips and the hardpoint, a tapered bottom, and two
-    big nozzles under it pointing down and back (housing, bell with the opening cut in it, OutletGlow1..2 disc,
-    inner ring, Outlet1..2 empties past the exits, +Z out of the nozzle)."""
+    """The Jet Pack, redesigned (user 2026-10-31: "second backpack looks bad, looks like a smiley face; mock up a
+    better design, add more heft and body"): a sand center under three overlapping armor shingles (dark lower edges,
+    bolts on their lower corners), side columns with thick tapered armor
+    (thicker at the inner edge), angled air intakes on their tops (a sloped dark louvered face), heavy outer bolsters
+    with vents, a dark top latch with the hardpoint, a dark skid, and two big nozzles under the side columns pointing
+    down and back inside heavy armored shrouds (sand collar, dark shroud, ring, bell with the opening cut in it,
+    OutletGlow1..2 disc, inner ring, steel lip, Outlet1..2 empties past the exits, +Z out of the nozzle)."""
     Sd, SD, F, K, S = "bp_sand", "bp_sand_dark", "bp_frame", "bp_dark", "bp_steel"
     cx0, cx1 = t["col_x"]
     h, d = t["h"], t["d"]
@@ -1418,81 +1420,95 @@ def build_jet_pack(t):
     parts = []
 
     def bolt(name, x, y, z):
-        obj = prism(name, S, y - 0.012, y + 0.012, 0.018, 0.018, z=z, sides=6, bevel=0.0)
+        obj = prism(name, S, y - 0.012, y + 0.012, 0.02, 0.02, z=z, sides=6, bevel=0.0)
         obj.location.x = x
         return obj
 
     parts.append(block("MountPlate", K, -0.34, 0.34, -0.08, 0.0, -h * 0.85, h * 0.85, chamfer=0.05))
-    parts.append(block("Center", Sd, -cx0, cx0, -d, -0.06, -h + 0.04, h, chamfer=0.06, bevel=0.015))
-    parts.append(block("CenterPanel", Sd, -cx0 + 0.05, cx0 - 0.05, -d - 0.04, -d + 0.03, -h + 0.14, h - 0.12,
-                       chamfer=0.05, bevel=0.01))
-    for i, (x, z) in enumerate(((-cx0 + 0.11, h - 0.2), (cx0 - 0.11, h - 0.2), (-cx0 + 0.11, -h + 0.24),
-                                (cx0 - 0.11, -h + 0.24))):
-        parts.append(bolt(f"CenterBolt{i}", x, -d - 0.05, z))
-    for i, (x, z) in enumerate(((-0.1, h - 0.36), (0.12, h - 0.36), (-0.1, -h + 0.34))):
-        parts.append(block(f"CenterSlot{i}", F, x - 0.025, x + 0.025, -d - 0.055, -d - 0.035, z - 0.05, z + 0.05,
+    # Center: a sand core under three overlapping armor shingles, each thickest at its lower edge (it stands out
+    # further back) and sloping in to the top, the next one tucked under it, with bolts on the lower corners.
+    parts.append(block("Center", Sd, -cx0, cx0, -d + 0.06, -0.06, -h + 0.02, h - 0.02, chamfer=0.05, bevel=0.01))
+    hw = cx0 - 0.03
+    for i, (z0, z1) in enumerate(((-h - 0.02, -0.18), (-0.24, 0.3), (0.24, h + 0.02))):
+        parts.append(loft(f"Shingle{i}", Sd, [
+            (z0, z0, -hw + 0.03, hw - 0.03, -d + 0.1, -d - 0.1),
+            (z0 + 0.05, z0 + 0.05, -hw, hw, -d + 0.1, -d - 0.14),
+            (z1, z1, -hw + 0.02, hw - 0.02, -d + 0.1, -d - 0.02)], bevel=0.015))
+        parts.append(block(f"ShingleEdge{i}", K, -hw + 0.04, hw - 0.04, -d - 0.15, -d - 0.12, z0 + 0.02, z0 + 0.05,
                            bevel=0.0))
-    parts.append(block("CenterSeamH", F, -0.12, 0.2, -d - 0.05, -d - 0.035, -h + 0.28, -h + 0.3, bevel=0.0))
-    parts.append(block("CenterSeamV", F, 0.18, 0.2, -d - 0.05, -d - 0.035, -h + 0.28, -h + 0.38, bevel=0.0))
-    parts.append(block("Latch", K, -0.2, 0.2, -0.66, -0.22, h - 0.04, h + 0.1, chamfer=0.03, bevel=0.0))
-    for i, sx in enumerate((-1.0, 1.0)):
-        x = sx * 0.17
-        parts.append(block(f"LatchClip{i}", K, x - 0.04, x + 0.04, -0.72, -0.6, h - 0.06, h + 0.14, chamfer=0.015,
-                           bevel=0.0))
-    parts.append(block("Hardpoint1", F, -0.1, 0.1, -0.2, -0.1, h - 0.01, h + 0.04, bevel=0.0))
-    parts.append(empty("Aux1", (0.0, -0.15, h + 0.04)))
-    parts.append(loft("Taper", Sd, [
-        (-h - 0.12, -h - 0.12, -cx0 + 0.1, cx0 - 0.1, -0.2, -d + 0.12),
-        (-h + 0.06, -h + 0.06, -cx0 + 0.02, cx0 - 0.02, -0.1, -d + 0.02)], bevel=0.012))
+        for j, sx in enumerate((-1.0, 1.0)):
+            parts.append(bolt(f"ShingleBolt{i}{j}", sx * (hw - 0.07), -d - 0.145, z0 + 0.11))
+    parts.append(block("Latch", K, -0.18, 0.18, -0.5, -0.2, h - 0.02, h + 0.1, chamfer=0.03, bevel=0.0))
+    parts.append(block("Hardpoint1", F, -0.1, 0.1, -0.44, -0.26, h + 0.1, h + 0.14, bevel=0.0))
+    parts.append(empty("Aux1", (0.0, -0.35, h + 0.14)))
+    parts.append(block("Skid", K, -cx0 + 0.04, cx0 - 0.04, -d + 0.1, -0.12, -h - 0.12, -h + 0.02, chamfer=0.05,
+                       bevel=0.0))
     for side, sx in (("L", -1.0), ("R", 1.0)):
-        x0, x1 = sorted((sx * (cx0 + 0.015), sx * cx1))
-        parts.append(block(f"Column{side}", Sd, x0, x1, -d + 0.02, -0.06, -h, h - 0.02, chamfer=0.1, bevel=0.015))
-        xa, xb = sorted((sx * cx0, sx * (cx0 + 0.02)))
-        parts.append(block(f"Groove{side}", K, xa, xb, -d - 0.02, -0.1, -h + 0.06, h - 0.06, bevel=0.0))
-        # Raised plate on the back face and on the outer side, side vents low on the outer side.
-        xa, xb = sorted((sx * (cx0 + 0.06), sx * (cx1 - 0.06)))
-        parts.append(block(f"ColumnPanel{side}", Sd, xa, xb, -d - 0.02, -d + 0.05, -h + 0.12, h - 0.16, chamfer=0.07,
-                           bevel=0.01))
-        parts.append(bolt(f"ColumnBolt{side}", sx * (cx1 - 0.14), -d - 0.035, -h + 0.22))
-        parts.append(block(f"ColumnSlot{side}", F, sx * (cx1 - 0.2) - 0.05, sx * (cx1 - 0.2) + 0.05, -d - 0.035,
-                           -d - 0.02, -h + 0.3, -h + 0.34, bevel=0.0))
-        xa, xb = sorted((sx * (cx1 - 0.01), sx * (cx1 + 0.03)))
-        parts.append(block(f"SidePlate{side}", Sd, xa, xb, -d + 0.14, -0.2, -h + 0.38, h - 0.14, chamfer=0.05,
-                           bevel=0.008))
-        parts.append(block(f"SidePlateLow{side}", SD, xa, xb, -d + 0.14, -0.5, -h + 0.08, -h + 0.34, chamfer=0.04,
+        x0, x1 = sorted((sx * cx0, sx * cx1))
+        parts.append(block(f"Column{side}", Sd, x0, x1, -d + 0.02, -0.06, -h, h - 0.04, chamfer=0.1, bevel=0.015))
+        # Thick tapered armor on the back face (thicker at the inner edge), a seam and bolts.
+        parts.append(loft(f"ColumnArmor{side}", Sd, [
+            (-h + 0.08, -h + 0.08, cx0 + 0.04, cx1 - 0.05, -d + 0.04, -d - 0.06),
+            (h - 0.12, h - 0.12, cx0 + 0.04, cx1 - 0.05, -d + 0.04, -d - 0.06)], sx=sx, bevel=0.015))
+        xa, xb = sorted((sx * (cx0 + 0.035), sx * (cx0 + 0.07)))
+        parts.append(block(f"ColumnEdge{side}", SD, xa, xb, -d - 0.1, -d - 0.02, -h + 0.06, h - 0.1, chamfer=0.012,
                            bevel=0.0))
-        for j in range(2):
-            for k in range(3):
-                y = -d + 0.22 + k * 0.08
-                z = -h + 0.14 + j * 0.1
-                xa, xb = sorted((sx * (cx1 + 0.025), sx * (cx1 + 0.04)))
-                parts.append(block(f"SideVent{side}{j}{k}", K, xa, xb, y - 0.03, y + 0.03, z - 0.03, z + 0.03,
-                                   bevel=0.0))
-        # Top block with a dark sensor window and a steel lens, facing back.
-        xa, xb = sorted((sx * (cx0 + 0.05), sx * (cx1 - 0.08)))
-        parts.append(block(f"TopBlock{side}", Sd, xa, xb, -d + 0.04, -0.3, h - 0.06, h + 0.26, chamfer=0.07,
+        xa, xb = sorted((sx * (cx0 + 0.07), sx * (cx1 - 0.05)))
+        parts.append(block(f"ColumnSeam{side}", F, xa, xb, -d - 0.065, -d - 0.04, -0.1, -0.08, bevel=0.0))
+        for j, (bx, bz) in enumerate(((cx0 + 0.15, h - 0.2), (cx1 - 0.13, h - 0.2), (cx0 + 0.15, -h + 0.2),
+                                      (cx1 - 0.13, -h + 0.2))):
+            parts.append(bolt(f"ColumnBolt{side}{j}", sx * bx, -d - 0.07, bz))
+        # Angled air intake on the column top: a housing whose top slopes down to the back, a dark louvered face.
+        xi0, xi1 = cx0 + 0.06, cx1 - 0.08
+        parts.append(loft(f"Intake{side}", Sd, [
+            (h - 0.08, h - 0.08, xi0, xi1, -0.12, -d + 0.02),
+            (h + 0.26, h + 0.06, xi0, xi1, -0.12, -d + 0.02),
+            (h + 0.3, h + 0.09, xi0 + 0.03, xi1 - 0.03, -0.16, -d + 0.06)], sx=sx, bevel=0.015))
+        y_in, y_out = -0.12, -d + 0.02
+        z_in, z_out = h + 0.26, h + 0.06
+
+        def slope_y(z, y_in=y_in, y_out=y_out, z_in=z_in, z_out=z_out):
+            return y_in + (y_out - y_in) * (z_in - z) / (z_in - z_out)
+
+        for j in range(5):
+            f0 = 0.15 + j * 0.15
+            z0 = z_in + (z_out - z_in) * f0
+            y0 = slope_y(z0)
+            xa, xb = sorted((sx * (xi0 + 0.06), sx * (xi1 - 0.06)))
+            vane = block(f"IntakeVane{side}{j}", K, xa, xb, y0 - 0.05, y0 + 0.05, z0 - 0.01, z0 + 0.035, bevel=0.0)
+            parts.append(vane)
+        xa, xb = sorted((sx * (xi0 + 0.04), sx * (xi1 - 0.04)))
+        parts.append(block(f"IntakeWell{side}", F, xa, xb, (y_in + y_out) / 2 - 0.3, (y_in + y_out) / 2 + 0.3,
+                           h + 0.05, h + 0.12, bevel=0.0))
+        # Heavy outer bolster with vents.
+        xa, xb = sorted((sx * (cx1 - 0.02), sx * (cx1 + 0.06)))
+        parts.append(block(f"Bolster{side}", Sd, xa, xb, -d + 0.1, -0.16, -h + 0.12, h - 0.16, chamfer=0.06,
                            bevel=0.012))
-        wc = sx * (cx0 + cx1) / 2 - sx * 0.02
-        parts.append(block(f"SensorWindow{side}", K, wc - 0.12, wc + 0.12, -d + 0.02, -d + 0.06, h + 0.04, h + 0.2,
-                           chamfer=0.02, bevel=0.0))
-        parts.append(block(f"SensorLens{side}", S, wc - 0.07, wc + 0.07, -d + 0.01, -d + 0.03, h + 0.08, h + 0.16,
-                           bevel=0.0))
+        for j in range(4):
+            z = 0.25 - j * 0.09
+            xa, xb = sorted((sx * (cx1 + 0.055), sx * (cx1 + 0.07)))
+            parts.append(block(f"BolsterVent{side}{j}", K, xa, xb, -d + 0.2, -0.3, z - 0.025, z + 0.025, bevel=0.0))
     # Nozzles: down and back from housings under the side columns.
     a = math.radians(ntilt)
     direction = Vector((0.0, -math.sin(a), -math.cos(a)))
     theta = math.atan2(-math.cos(a), -math.sin(a))  # Turns a prism's +Y onto direction.
     for n, sx in ((1, -1.0), (2, 1.0)):
-        root = Vector((sx * nx, -0.55, -h + 0.02))
-        parts.append(block(f"NozzleHousing{n}", K, sx * nx - 0.3, sx * nx + 0.3, -0.82, -0.26, -h - 0.12, -h + 0.08,
-                           chamfer=0.07, bevel=0.01))
+        root = Vector((sx * nx, -0.6, -h - 0.02))
+        parts.append(block(f"NozzleHousing{n}", Sd, sx * nx - 0.34, sx * nx + 0.34, -0.9, -0.2, -h - 0.16,
+                           -h + 0.08, chamfer=0.1, bevel=0.015))
+        parts.append(block(f"HousingBand{n}", K, sx * nx - 0.345, sx * nx + 0.345, -0.62, -0.5, -h - 0.165,
+                           -h + 0.085, chamfer=0.1, bevel=0.0))
         pieces = []
+        collar = prism(f"NozzleCollar{n}", Sd, -0.06, 0.06, nr + 0.12, nr + 0.12, sides=8, bevel=0.012)
+        shroud = prism(f"NozzleShroud{n}", K, 0.04, 0.2, nr + 0.07, nr + 0.05, sides=8, bevel=0.01)
+        pieces += [collar, shroud]
         ring = prism(f"NozzleRing{n}", F, 0.0, 0.1, nr * 0.95, nr * 0.95, sides=16, bevel=0.0)
         bell = prism(f"Nozzle{n}", K, 0.08, nl, nr * 0.85, nr, sides=16)
         cutter = prism(f"Nozzle{n}Cutter", F, nl - 0.12, nl + 0.05, nr * 0.8, nr * 0.8, sides=16, bevel=0.0)
         glow = prism(f"OutletGlow{n}", K, nl - 0.13, nl - 0.115, nr * 0.8, nr * 0.8, sides=16, bevel=0.0)
         inner = prism(f"NozzleInner{n}", F, nl - 0.15, nl - 0.12, nr * 0.45, nr * 0.45, sides=16, bevel=0.0)
         lip = prism(f"NozzleLip{n}", S, nl - 0.02, nl + 0.005, nr + 0.01, nr + 0.01, sides=16, bevel=0.0)
-        for obj in (ring, bell, cutter, glow, inner, lip):
+        for obj in pieces + [ring, bell, cutter, glow, inner, lip]:
             obj.rotation_euler = (theta, 0.0, 0.0)
             obj.location = root
         cutter.hide_render = True
@@ -1502,7 +1518,7 @@ def build_jet_pack(t):
         mod.solver = "EXACT"
         mod.object = cutter
         bell.modifiers.move(len(bell.modifiers) - 1, 0)
-        parts += [ring, bell, glow, inner, lip]
+        parts += pieces + [ring, bell, glow, inner, lip]
         exit_point = root + direction * (nl + 0.03)
         outlet = empty(f"Outlet{n}", tuple(exit_point))
         outlet.rotation_euler = (math.pi - a, 0.0, 0.0)
