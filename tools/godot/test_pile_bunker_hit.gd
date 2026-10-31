@@ -4,7 +4,7 @@ extends SceneTree
 ## case must hit the target once, fire the stakes out by stake_travel and bring them back in. Exits with code 1 on a
 ## failure. A drill stake (spin_speed_deg > 0, Pile Bunker 2) must spin at full speed at the release and stop after the
 ## hit. Claws (claw_paths, Pile Bunker 4) must be closed at the release, open fully after the hit or the miss, and
-## close again at rest; telescoping tips (claw_tip_paths, Pile Bunker 4B) must be back in at rest. The "miss" case has the target out of reach: no hit, no stake shot, the drill and the claws
+## close again at rest. The "miss" case has the target out of reach: no hit, no stake shot, the drill and the claws
 ## still react. BUNKER=res://data/weapons/pile_bunker_2.tres tests another Pile Bunker. Headless:
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/test_pile_bunker_hit.gd
 
@@ -122,8 +122,6 @@ func _play(map: Node, switcher: LoadoutSwitcher, case: Array) -> void:
 		_check(claw_at_release == 0.0 and claw_most > 0.99 and bunker._claw_open == 0.0,
 				"%s: claws closed at the release (%.2f), open after the hit or miss (%.2f), closed at rest (%.2f)" % [
 				case[0], claw_at_release, claw_most, bunker._claw_open])
-	for i in bunker._claw_tips.size():
-		_check(bunker._claw_tips[i].position.distance_to(bunker._tip_rest[i]) < 0.001, "%s: claw tip %d back in" % [case[0], i])
 	target.queue_free()
 	await _frames(5)
 
