@@ -3,7 +3,9 @@ extends SceneTree
 ## hand, powers up (the button held POWER_FRAMES), releases, charges at a target mech in the crosshair and punches. Each
 ## case must hit the target once, fire the stakes out by stake_travel and bring them back in. Exits with code 1 on a
 ## failure. A drill stake (spin_speed_deg > 0, Pile Bunker 2) must spin at full speed at the release and stop after the
-## hit. BUNKER=res://data/weapons/pile_bunker_2.tres tests another Pile Bunker. Headless:
+## hit. Claws (claw_paths, Pile Bunker 4) must be closed at the release, open fully after the hit or the miss, and
+## close again at rest. The "miss" case has the target out of reach: no hit, no stake shot, the drill and the claws
+## still react. BUNKER=res://data/weapons/pile_bunker_2.tres tests another Pile Bunker. Headless:
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/test_pile_bunker_hit.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
@@ -14,7 +16,7 @@ const MAX_FRAMES := 480
 
 ## Cases: name, side ("R" or "L"), target distance in m.
 const CASES := [["right_12", "R", 12.0], ["right_20", "R", 20.0], ["left_12", "L", 12.0], ["left_20", "L", 20.0],
-		["both_right_12", "BR", 12.0], ["both_left_12", "BL", 12.0]]
+		["both_right_12", "BR", 12.0], ["both_left_12", "BL", 12.0], ["right_miss", "R", 45.0]]
 
 var _failures: int = 0
 
@@ -89,11 +91,15 @@ func _play(map: Node, switcher: LoadoutSwitcher, case: Array) -> void:
 	Input.action_release(button)
 	var most_out := 0.0
 	var spin_after_hit := -1.0
+	var claw_at_release := bunker._claw_open
+	var claw_most := 0.0
+	var miss: bool = String(case[0]).ends_with("miss")
 	var fired_frame := -1
 	for frame in MAX_FRAMES:
 		await _frames(1)
 		most_out = maxf(most_out, rest.z - stake.position.z)
-		if bunker.has_fired and fired_frame < 0:
+		claw_most = maxf(claw_most, bunker._claw_open)
+		if (bunker.has_fired or (miss and (bunker._clip_missed or bunker.state == PileBunkerWeapon.State.RECOVER))) and fired_frame < 0:
 			fired_frame = frame
 		if fired_frame >= 0 and frame == fired_frame + int(bunker.spin_down_time * 60.0) + 2:
 			spin_after_hit = bunker._spin
@@ -101,13 +107,21 @@ func _play(map: Node, switcher: LoadoutSwitcher, case: Array) -> void:
 			print("  f=%d state=%d nose=%s aim=%s target=%s player=%s" % [frame, bunker.state, bunker._nose.global_position.snappedf(0.01), bunker._aim_point.snappedf(0.01), target.global_position.snappedf(0.01), player.global_position.snappedf(0.01)])
 		if frame > 60 and bunker.state == PileBunkerWeapon.State.IDLE and bunker.stake_out == 0.0:
 			break
-	_check(hits.size() == 1, "%s: one hit on the target, hits=%s" % [case[0], hits])
-	_check(absf(most_out - bunker.stake_travel) < 0.05, "%s: stakes out %.2f m (stake_travel %.2f)" % [case[0], most_out, bunker.stake_travel])
+	await _frames(40)
+	if miss:
+		_check(hits.is_empty() and most_out == 0.0, "%s: no hit and no stake shot, hits=%s" % [case[0], hits])
+	else:
+		_check(hits.size() == 1, "%s: one hit on the target, hits=%s" % [case[0], hits])
+		_check(absf(most_out - bunker.stake_travel) < 0.05, "%s: stakes out %.2f m (stake_travel %.2f)" % [case[0], most_out, bunker.stake_travel])
 	_check(stake.position.distance_to(rest) < 0.001, "%s: stakes back in" % case[0])
 	if bunker.spin_speed_deg > 0.0:
 		_check(spin_at_release > 0.99 and angle_at_release != 0.0, "%s: drill spins at the release (%.2f)" % [case[0],
 				spin_at_release])
-		_check(spin_after_hit == 0.0, "%s: drill stopped after the hit (%.2f)" % [case[0], spin_after_hit])
+		_check(spin_after_hit == 0.0, "%s: drill stopped after the hit or miss (%.2f)" % [case[0], spin_after_hit])
+	if not bunker.claw_paths.is_empty():
+		_check(claw_at_release == 0.0 and claw_most > 0.99 and bunker._claw_open == 0.0,
+				"%s: claws closed at the release (%.2f), open after the hit or miss (%.2f), closed at rest (%.2f)" % [
+				case[0], claw_at_release, claw_most, bunker._claw_open])
 	target.queue_free()
 	await _frames(5)
 

@@ -114,6 +114,17 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 ## Seconds to stop after a hit or a miss.
 @export var spin_down_time: float = 0.25
 
+@export_group("Claws")
+## Claw hinge nodes in the model (Pile Bunker 4, user request 2026-10-31): closed round the stake at rest, they
+## open when the stake hits or the punch misses, and close again when the arm is back at rest. Each one turns
+## out from the stake axis (the model's -Z) about its own hinge. Empty = no claws.
+@export var claw_paths: Array[NodePath] = []
+## How far a claw opens (degrees).
+@export var claw_open_deg: float = 35.0
+## Seconds to open and to close.
+@export var claw_open_time: float = 0.12
+@export var claw_close_time: float = 0.5
+
 @export_group("Power")
 ## Hold RMB to power up the stake: seconds to full power, and energy use per second while holding.
 ## Release RMB (or run out of energy) to attack. More power = more damage, push and shake.
@@ -175,6 +186,11 @@ var _clip_missed: bool = false
 var _spin: float = 0.0
 var _spin_angle: float = 0.0
 var _stake_basis := Basis.IDENTITY
+## Claw nodes, their rest turn and their open axis (in the model's space); 0 = closed, 1 = open.
+var _claws: Array[Node3D] = []
+var _claw_rest: Array[Basis] = []
+var _claw_axes: Array[Vector3] = []
+var _claw_open: float = 0.0
 
 @onready var _mount: Node3D = $Mount
 @onready var _stake: Node3D = get_node(stake_path)
@@ -186,6 +202,13 @@ func _ready() -> void:
 	_make_poses()
 	_stake_rest = _stake.position
 	_stake_basis = _stake.basis
+	for path in claw_paths:
+		var claw := get_node(path) as Node3D
+		var radial := Vector3(claw.position.x, claw.position.y, 0.0).normalized()
+		_claws.append(claw)
+		_claw_rest.append(claw.basis)
+		# Turning the stake direction (-Z) toward the radial: the claw tip moves out.
+		_claw_axes.append(Vector3.FORWARD.cross(radial).normalized())
 	# The drum and the nose ring glow with the stored power.
 	_glow.color = Color(1.0, 0.55, 0.2)
 	add_child(_glow)
@@ -531,6 +554,23 @@ func _update_stake(delta: float) -> void:
 	_glow.level = power if state in [State.POWER, State.CHARGE, State.WINDUP, State.PUNCH] \
 			or (state == State.CLIP and not has_fired) else 0.0
 	_update_spin(delta)
+	_update_claws(delta)
+
+
+## The claws open when the stake hits or the punch misses (the clip's strike window or the punch hold ended) and
+## close when the weapon is idle again.
+func _update_claws(delta: float) -> void:
+	if _claws.is_empty():
+		return
+	var open := state == State.RECOVER or (state in [State.PUNCH, State.HOLD, State.CLIP]
+			and (has_fired or _clip_missed))
+	if open:
+		_claw_open = move_toward(_claw_open, 1.0, delta / maxf(claw_open_time, 0.01))
+	else:
+		_claw_open = move_toward(_claw_open, 0.0, delta / maxf(claw_close_time, 0.01))
+	var angle := deg_to_rad(claw_open_deg) * smoothstep(0.0, 1.0, _claw_open)
+	for i in _claws.size():
+		_claws[i].basis = Basis(_claw_axes[i], angle) * _claw_rest[i]
 
 
 ## The drill spins from the charge until the stake hits or the punch misses.
