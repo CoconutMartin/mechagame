@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BackPackPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/back_pack_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/backpacks/backpack_ammo.glb" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Ammo Pack"
+weight_t = 2.4
+hp = 260.0
+aux_slots = 0
+ammo_canisters = 6
+scene = ExtResource("scene")

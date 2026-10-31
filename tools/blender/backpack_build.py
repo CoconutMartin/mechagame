@@ -4,7 +4,8 @@ backpacks in blender"; 3 types from one script, user choice). Research notes: do
 Run (from the project root):
     blender -b --python tools/blender/backpack_build.py               (all types)
     blender -b --python tools/blender/backpack_build.py -- heavy      (one type)
-Writes models/backpacks/backpack_<type>.blend and .glb for each type in TYPES.
+Writes models/backpacks/backpack_<type>.blend and .glb for each type in TYPES (light, medium, heavy: build_pack;
+ammo: build_ammo_pack, six canisters the game removes one by one).
 The script starts from an empty file, so hand edits in the .blend are lost when it runs again.
 
 Axes: Blender +Y = forward (Godot -Z), +Z = up. Origin: the Mount, the center of the pack's front face (it lies on
@@ -31,6 +32,11 @@ TYPES = {
                    antennas=(2, 0.6), vent="grille", taper=0.12),
     "heavy": dict(w=2.3, h=1.9, d=1.15, slots=3, tank_r=0.24, tank_h=1.3, tanks_on="side", nozzle_r=0.24,
                   antennas=(0, 0.0), vent="radiator", taper=0.05),
+    # Ammo Pack (user picture models/guides/backpack_ammo_ref.png, 2026-10-31): six canisters in two columns of
+    # three either side of a tan spine; their lids face back, so a used canister slides out backward. Built by
+    # build_ammo_pack. can_r / can_len: canister radius and length; can_gap: space between stacked canisters;
+    # spine_w: half width of the spine; mount_d: depth of the mount frame in front of the canisters.
+    "ammo": dict(kind="ammo", can_r=0.28, can_len=1.05, can_gap=0.03, spine_w=0.27, mount_d=0.4),
 }
 
 MATERIALS = {
@@ -41,6 +47,10 @@ MATERIALS = {
     "bp_dark": ((0.22, 0.23, 0.24), 0.55, 0.5, None),
     "bp_steel": ((0.55, 0.55, 0.56), 0.3, 0.9, None),
     "bp_glow": ((0.6, 0.35, 0.05), 0.5, 0.0, (1.0, 0.55, 0.1)),
+    # Ammo Pack colors from its picture: tan plates, canister olive, dark lids.
+    "bp_tan": ((0.72, 0.66, 0.53), 0.6, 0.3, None),
+    "bp_can": ((0.33, 0.37, 0.22), 0.5, 0.4, None),
+    "bp_can_dark": ((0.22, 0.25, 0.15), 0.5, 0.4, None),
 }
 
 
@@ -296,6 +306,65 @@ def export(path, objects):
     print("backpack: %s, %d objects, %d triangles" % (os.path.basename(path), len(objects), tris))
 
 
+def build_ammo_pack(t):
+    """The Ammo Pack: a mount frame (dark center panel, tan side blocks), black clamp frames, a tan spine down the
+    middle, feet, and six canisters (Canister1..6 empties at their centers: used top row first, left before right).
+    """
+    T, F, K, C, CD, L = "bp_tan", "bp_frame", "bp_dark", "bp_can", "bp_can_dark", "bp_glow"
+    r, length, gap, sw, md = t["can_r"], t["can_len"], t["can_gap"], t["spine_w"], t["mount_d"]
+    col_x = sw + 0.05 + r
+    rows = [2 * r + gap, 0.0, -(2 * r + gap)]
+    top, low = rows[0] + r + 0.04, rows[2] - r - 0.04
+    y0, y1 = -md, -md - length
+    parts = []
+    # Mount side: dark center panel with an inset plate, tan blocks in two columns (three each), black backing.
+    parts.append(block("MountPanel", F, -sw - 0.04, sw + 0.04, -md + 0.02, 0.0, low, top, chamfer=0.06))
+    parts.append(block("MountPlate", K, -sw * 0.6, sw * 0.6, 0.0, 0.02, low * 0.5, top * 0.5, bevel=0.0))
+    for side, sx in (("L", -1.0), ("R", 1.0)):
+        x0, x1 = sorted((sx * (sw + 0.06), sx * (col_x + r * 0.55)))
+        parts.append(block(f"MountBacking{side}", F, x0, x1, -md + 0.04, -0.06, low, top, chamfer=0.05))
+        for i, z in enumerate(rows):
+            x0, x1 = sorted((sx * (col_x - r * 0.45), sx * (col_x + r * 0.45)))
+            parts.append(block(f"MountBlock{side}{i}", T, x0, x1, -0.12, 0.0, z - r + 0.02, z + r - 0.02, chamfer=0.04,
+                               bevel=0.01))
+        # Black clamp frames round the canisters' inner ends, and a second one near their middle.
+        for j, (ya, yb) in enumerate(((-md + 0.05, -md - 0.16), (y0 - length * 0.55, y0 - length * 0.55 - 0.12))):
+            x0, x1 = sorted((sx * (sw + 0.03), sx * (col_x + r + 0.06)))
+            parts.append(block(f"Clamp{side}{j}", F, x0, x1, yb, ya, low - 0.02, top + 0.02, chamfer=0.05))
+        # Tan cap on the column top and a black foot under it.
+        x0, x1 = sorted((sx * (col_x - r * 0.6), sx * (col_x + r * 0.6)))
+        parts.append(block(f"TopCap{side}", T, x0, x1, -md - 0.42, -md - 0.02, top + 0.02, top + 0.16, chamfer=0.04,
+                           bevel=0.01))
+        parts.append(block(f"Foot{side}", F, x0, x1, -md - 0.6, -0.05, low - 0.2, low + 0.02, chamfer=0.05))
+    # Spine: a tall tan box down the middle with a lower block, a latch, a seam, a black top cap, a foot and a lamp.
+    parts.append(block("Spine", T, -sw, sw, y1 - 0.04, -0.06, low + 0.1, top + 0.08, chamfer=0.07, bevel=0.015))
+    parts.append(block("SpineLow", T, -sw * 0.95, sw * 0.95, y1 - 0.06, y1 + 0.2, low - 0.12, low + 0.32, chamfer=0.05,
+                       bevel=0.01))
+    parts.append(block("SpineSeam", F, -sw - 0.005, sw + 0.005, y1 - 0.045, y1 + 0.25, low + 0.32, low + 0.35, bevel=0.0))
+    parts.append(block("Latch", F, -0.1, 0.1, y1 - 0.09, y1 - 0.05, low + 0.05, low + 0.2, bevel=0.0))
+    parts.append(block("SpineTop", F, -sw * 0.9, sw * 0.9, -md - 0.3, -0.1, top + 0.08, top + 0.2, chamfer=0.04))
+    parts.append(block("SpineFoot", F, -sw * 0.8, sw * 0.8, y1 + 0.1, -0.1, low - 0.2, low + 0.12, chamfer=0.05))
+    parts.append(block("Lamp", L, -0.06, 0.06, y1 - 0.06, y1 - 0.045, top - 0.2, top - 0.12, bevel=0.0))
+    # Canisters: Canister<n> empties at the centers; each holds a body, a dark lid ring and a lid at the back (-Y)
+    # end, and a band near the front end.
+    n = 0
+    for z in rows:
+        for sx in (-1.0, 1.0):
+            n += 1
+            pivot = empty(f"Canister{n}", (sx * col_x, (y0 + y1) / 2, z))
+            half = length / 2
+            pieces = [prism(f"CanBody{n}", C, -half, half, r, r, sides=16, bevel=0.0),
+                      prism(f"CanLidRing{n}", CD, -half - 0.02, -half + 0.03, r * 0.96, r * 0.96, sides=16, bevel=0.0),
+                      prism(f"CanLid{n}", C, -half - 0.035, -half - 0.015, r * 0.78, r * 0.78, sides=16, bevel=0.0),
+                      prism(f"CanBand{n}", CD, half - 0.2, half - 0.12, r + 0.012, r + 0.012, sides=16, bevel=0.0)]
+            for piece in pieces:
+                piece.parent = pivot
+            parts.append(pivot)
+            parts += pieces
+    parts.append(empty("Mount", (0.0, 0.0, 0.0)))
+    return parts
+
+
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -303,9 +372,9 @@ def main():
         if args and name not in args:
             continue
         bpy.ops.wm.read_factory_settings(use_empty=True)
-        objects = build_pack(t)
+        objects = build_ammo_pack(t) if t.get("kind") == "ammo" else build_pack(t)
         # Radiator fins and handles stay on the heavy and the other packs; a pack with a radiator has no handles.
-        if t["vent"] == "radiator":
+        if t.get("vent") == "radiator":
             for obj in [o for o in objects if o.name.startswith("Handle")]:
                 objects.remove(obj)
                 bpy.data.objects.remove(obj)

@@ -34,7 +34,11 @@ BACK_PACKS = [
     ("backpack_light", "Light Pack", 0.4, 120.0, 1, 3, 6.0),
     ("backpack_medium", "Aux Pack", 0.8, 200.0, 2, 1, 10.0),
     ("backpack_heavy", "Heavy Pack", 1.6, 320.0, 3, 2, 5.0),
+    # Ammo Pack (user picture 2026-10-31): no aux slot, no bonus, six ammo canisters (ammo_canisters, written below).
+    ("backpack_ammo", "Ammo Pack", 2.4, 260.0, 0, 0, 0.0),
 ]
+## Ammo canisters per pack (BackPackPart.ammo_canisters); packs not listed carry none.
+AMMO_CANISTERS = {"backpack_ammo": 6}
 
 # Mods: file, name, stat (ModData.Stat), percent.
 # Stat: 0 weight, 1 speed, 2 boost thrust, 3 energy capacity, 4 energy output, 5 turn speed,
@@ -93,7 +97,8 @@ def main():
                        for k, x in stats.items()})
         parts[part].append(write(f"data/parts/sanggigilid/sanggigilid_{part}.tres", cls, script, fields))
     back_packs = [write(f"data/parts/backpacks/{f}.tres", "BackPackPart", "back_pack_part",
-                        {"display_name": n, "weight_t": w, "hp": hp, "aux_slots": slots, "bonus": b, "bonus_percent": pc},
+                        dict({"display_name": n, "weight_t": w, "hp": hp, "aux_slots": slots, "bonus": b, "bonus_percent": pc},
+                             **({"ammo_canisters": AMMO_CANISTERS[f]} if f in AMMO_CANISTERS else {})),
                         scene=f"res://models/backpacks/{f}.glb")
                   for f, n, w, hp, slots, b, pc in BACK_PACKS]
     mods = [write(f"data/mods/{f}.tres", "ModData", "mod_data", {"display_name": n, "stat": s, "percent": p})

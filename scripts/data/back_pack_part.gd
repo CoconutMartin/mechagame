@@ -7,7 +7,10 @@ extends PartData
 enum Bonus { NONE, ENERGY, HP, BOOST }
 
 ## Number of auxiliary equipment slots.
-@export_range(1, 4) var aux_slots: int = 2
+@export_range(0, 4) var aux_slots: int = 2
+## Ammo canisters the pack carries (an ammo pack, user request 2026-10-31); each one is a full magazine for a weapon
+## that has no reserve left. The model has one node Canister1..N per canister. 0 = not an ammo pack.
+@export_range(0, 12) var ammo_canisters: int = 0
 ## The stat this back pack improves.
 @export var bonus: Bonus = Bonus.NONE
 ## Size of the bonus in percent (6 = 6% more).

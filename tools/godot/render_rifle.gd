@@ -61,6 +61,9 @@ func _run() -> void:
 	var player := switcher.mech
 	var skeleton := player.find_child("Skeleton3D", true, false) as Skeleton3D
 	var weapons := player.get_node("WeaponController") as WeaponController
+	# RIFLE_PACK_USE=<n>: takes n ammo canisters from the pack first (they drop out of the picture's way).
+	for i in int(_env("RIFLE_PACK_USE", "0")):
+		BackPackMount.take_canister(player)
 	var actions := _env("RIFLE_ACTIONS", "").split(",", false)
 	for action in actions:
 		Input.action_press(action)
