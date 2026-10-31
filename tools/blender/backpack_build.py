@@ -394,7 +394,35 @@ def build_ammo_pack(t):
     parts.append(block("Latch", F, -0.1, 0.1, y1 - 0.09, y1 - 0.05, low + 0.05, low + 0.2, bevel=0.0))
     parts.append(block("SpineTop", F, -sw * 0.9, sw * 0.9, -md - 0.3, -0.1, top + 0.08, top + 0.2, chamfer=0.04))
     parts.append(block("SpineFoot", F, -sw * 0.8, sw * 0.8, y1 + 0.1, -0.1, low - 0.2, low + 0.12, chamfer=0.05))
-    parts.append(block("Lamp", L, -0.06, 0.06, y1 - 0.06, y1 - 0.045, top - 0.2, top - 0.12, bevel=0.0))
+    # More body (user 2026-10-31: "the canister backpack as well": beautify, add body): a raised tan plate on the
+    # spine's back face with a seam, bolts and vent slots, dark rails on the spine's back edges, tan rack bars on
+    # the outer sides of the columns between the clamps, a dark top rail joining the column caps. The lamp sits on
+    # the plate.
+    T_ = T
+    parts.append(block("SpinePlate", T_, -sw + 0.06, sw - 0.06, y1 - 0.09, y1 - 0.03, low + 0.42, top - 0.04,
+                       chamfer=0.05, bevel=0.01))
+    parts.append(block("SpinePlateSeam", F, -sw + 0.055, sw - 0.055, y1 - 0.095, y1 - 0.03, top - 0.42, top - 0.4,
+                       bevel=0.0))
+    for i, (x, z) in enumerate(((-sw + 0.1, top - 0.1), (sw - 0.1, top - 0.1), (-sw + 0.1, low + 0.48),
+                                (sw - 0.1, low + 0.48))):
+        bolt = prism(f"SpineBolt{i}", "bp_steel", y1 - 0.105, y1 - 0.085, 0.018, 0.018, z=z, sides=6, bevel=0.0)
+        bolt.location.x = x
+        parts.append(bolt)
+    for j in range(4):
+        z = top - 0.52 - j * 0.07
+        parts.append(block(f"SpineVent{j}", F, -sw + 0.11, sw - 0.11, y1 - 0.1, y1 - 0.085, z - 0.02, z + 0.02,
+                           bevel=0.0))
+    for side, sx in (("L", -1.0), ("R", 1.0)):
+        xa, xb = sorted((sx * (sw - 0.035), sx * (sw + 0.01)))
+        parts.append(block(f"SpineRail{side}", F, xa, xb, y1 - 0.07, y1 + 0.12, low + 0.1, top + 0.06, chamfer=0.01,
+                           bevel=0.0))
+        for j, z in enumerate((r + gap / 2, -r - gap / 2)):
+            xa, xb = sorted((sx * (col_x + r - 0.02), sx * (col_x + r + 0.07)))
+            parts.append(block(f"RackBar{side}{j}", T_, xa, xb, y0 - length * 0.55 + 0.02, -md - 0.16, z - 0.035,
+                               z + 0.035, chamfer=0.015, bevel=0.005))
+    parts.append(block("TopRail", F, -col_x, col_x, -md - 0.36, -md - 0.08, top + 0.14, top + 0.19, chamfer=0.02,
+                       bevel=0.0))
+    parts.append(block("Lamp", L, -0.06, 0.06, y1 - 0.105, y1 - 0.09, top - 0.3, top - 0.22, bevel=0.0))
     # Canisters: Canister<n> empties at the centers; each holds a body, a dark lid ring and a lid at the back (-Y)
     # end, and a band near the front end.
     n = 0
@@ -406,7 +434,14 @@ def build_ammo_pack(t):
             pieces = [prism(f"CanBody{n}", C, -half, half, r, r, sides=16, bevel=0.0),
                       prism(f"CanLidRing{n}", CD, -half - 0.02, -half + 0.03, r * 0.96, r * 0.96, sides=16, bevel=0.0),
                       prism(f"CanLid{n}", C, -half - 0.035, -half - 0.015, r * 0.78, r * 0.78, sides=16, bevel=0.0),
-                      prism(f"CanBand{n}", CD, half - 0.2, half - 0.12, r + 0.012, r + 0.012, sides=16, bevel=0.0)]
+                      prism(f"CanBand{n}", CD, half - 0.2, half - 0.12, r + 0.012, r + 0.012, sides=16, bevel=0.0),
+                      # Lid detail: a raised boss and a T handle (the user's beautify request), a second band near
+                      # the lid and a tan stencil ring.
+                      prism(f"CanBoss{n}", CD, -half - 0.06, -half - 0.03, r * 0.3, r * 0.3, sides=12, bevel=0.0),
+                      block(f"CanHandle{n}", CD, -r * 0.5, r * 0.5, -half - 0.1, -half - 0.055, -0.03, 0.03,
+                            chamfer=0.01, bevel=0.0),
+                      prism(f"CanBandLid{n}", CD, -half + 0.1, -half + 0.16, r + 0.01, r + 0.01, sides=16, bevel=0.0),
+                      prism(f"CanStencil{n}", T, -0.03, 0.03, r + 0.006, r + 0.006, sides=16, bevel=0.0)]
             for piece in pieces:
                 piece.parent = pivot
             parts.append(pivot)
@@ -437,7 +472,36 @@ def build_missile_pack(t):
         parts.append(block(f"SpineEnd{i}", F, -sw * 0.9, sw * 0.9, ya, yb, h / 2 - 0.12, h / 2 + 0.08, chamfer=0.04))
     parts.append(block("SpineFoot", F, -sw * 0.95, sw * 0.95, y_end - 0.05, front_y + r, -h / 2 - 0.25, -h / 2 + 0.08,
                        chamfer=0.06))
-    parts.append(block("Lamp", L, -0.05, 0.05, y_end - 0.02, y_end - 0.005, h / 2 - 0.3, h / 2 - 0.22, bevel=0.0))
+    # More body (user 2026-10-31: beautify, add body): a raised tan plate on the spine's back face with bolts and
+    # vents, dark edge rails, a dark base tray under the canisters, dark rack posts on the outer sides joined to the
+    # cross arms. The lamp sits on the plate.
+    parts.append(block("SpinePlate", T, -sw + 0.05, sw - 0.05, y_end - 0.05, y_end + 0.01, -h * 0.22, h / 2 - 0.16,
+                       chamfer=0.04, bevel=0.01))
+    for i, (x, z) in enumerate(((-sw + 0.09, h / 2 - 0.22), (sw - 0.09, h / 2 - 0.22), (-sw + 0.09, -h * 0.18),
+                                (sw - 0.09, -h * 0.18))):
+        bolt = prism(f"SpineBolt{i}", "bp_steel", y_end - 0.065, y_end - 0.045, 0.016, 0.016, z=z, sides=6,
+                     bevel=0.0)
+        bolt.location.x = x
+        parts.append(bolt)
+    for j in range(3):
+        z = h / 2 - 0.42 - j * 0.07
+        parts.append(block(f"SpineVent{j}", F, -sw + 0.09, sw - 0.09, y_end - 0.06, y_end - 0.045, z - 0.02,
+                           z + 0.02, bevel=0.0))
+    for side, sx in (("L", -1.0), ("R", 1.0)):
+        xa, xb = sorted((sx * (sw - 0.03), sx * (sw + 0.01)))
+        parts.append(block(f"SpineRail{side}", F, xa, xb, y_end - 0.03, y_end + 0.15, -h / 2 + 0.05, h / 2 - 0.02,
+                           bevel=0.0))
+        # Rack post on the outer side between the two canisters, joined to the cross arms by bars.
+        yp = (front_y + back_y) / 2
+        xa, xb = sorted((sx * (col_x + r * 0.55), sx * (col_x + r * 0.55 + 0.08)))
+        parts.append(block(f"RackPost{side}", F, xa, xb, yp - 0.07, yp + 0.07, -h / 2 - 0.1, h / 2 - 0.16,
+                           chamfer=0.025, bevel=0.0))
+        for j, z in enumerate((h * 0.25, -h * 0.25)):
+            xa, xb = sorted((sx * (col_x + r * 0.15), sx * (col_x + r * 0.6)))
+            parts.append(block(f"RackBar{side}{j}", F, xa, xb, yp - 0.05, yp + 0.05, z - 0.05, z + 0.05, bevel=0.0))
+    parts.append(block("BaseTray", F, -col_x - r * 0.75, col_x + r * 0.75, back_y - r * 0.8, front_y + r * 0.8,
+                       -h / 2 - 0.12, -h / 2 - 0.03, chamfer=0.05, bevel=0.0))
+    parts.append(block("Lamp", L, -0.05, 0.05, y_end - 0.065, y_end - 0.05, h / 2 - 0.34, h / 2 - 0.26, bevel=0.0))
     # Black cross arms from the spine to the space between each column's two canisters.
     for side, sx in (("L", -1.0), ("R", 1.0)):
         x0, x1 = sorted((sx * sw, sx * (col_x + r * 0.2)))
@@ -457,7 +521,15 @@ def build_missile_pack(t):
                       cyl_z(f"CanLid{n}", CD, 0.0, 0.0, half - 0.06, half, r * 0.82, r * 0.78, sides=16),
                       cyl_z(f"CanCap{n}", C, 0.0, 0.0, half, half + 0.04, r * 0.4, sides=16),
                       cyl_z(f"CanFoot{n}", CD, 0.0, 0.0, -half + 0.12, -half, r, r * 0.8, sides=16),
-                      cyl_z(f"CanBand{n}", F, 0.0, 0.0, -0.06, 0.06, r + 0.01, sides=16)]
+                      cyl_z(f"CanBand{n}", F, 0.0, 0.0, -0.06, 0.06, r + 0.01, sides=16),
+                      # Nose detail and a yellow warning ring (the user's beautify request).
+                      cyl_z(f"CanNose{n}", CD, 0.0, 0.0, half + 0.04, half + 0.1, r * 0.28, r * 0.12, sides=12),
+                      cyl_z(f"CanWarn{n}", "bp_yellow", 0.0, 0.0, half - 0.3, half - 0.25, r + 0.008, sides=16)]
+            # Two raised ribs along the canister, facing away from the spine.
+            for j, ry in enumerate((-0.09, 0.09)):
+                xa, xb = sorted((sx * (r - 0.02), sx * (r + 0.018)))
+                pieces.append(block(f"CanRib{n}{j}", CD, xa, xb, ry - 0.02, ry + 0.02, -half + 0.2, half - 0.34,
+                                    bevel=0.0))
             for j, z in enumerate((h * 0.25, -h * 0.25)):
                 pieces.append(cyl_z(f"CanStrap{n}{j}", T, 0.0, 0.0, z - 0.07, z + 0.07, r + 0.02, sides=16))
                 # The buckle faces away from the spine.
