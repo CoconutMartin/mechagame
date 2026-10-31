@@ -5,7 +5,7 @@ extends RefCounted
 
 const SHADER := preload("res://shaders/mech_paint.gdshader")
 ## The paint the "Paint" skin uses.
-const DEFAULT_PAINT := preload("res://data/skins/paint_black_red.tres")
+const DEFAULT_PAINT := preload("res://data/skins/paint_navy_orange.tres")
 
 
 ## Puts the paint on every plain surface of a mesh. Returns the new materials.
@@ -52,7 +52,7 @@ static func make(original: Material, paint: MechPaint) -> ShaderMaterial:
 	if original == null or (original as BaseMaterial3D).albedo_texture == null:
 		# No texture: a white one, so the color alone decides.
 		material.set_shader_parameter(&"albedo_texture", _white())
-	for key: StringName in [&"armor_color", &"accent_color", &"frame_color", &"lamp_color", &"lamp_glow",
+	for key: StringName in [&"armor_color", &"accent_color", &"frame_color", &"lamp_color", &"lamp_glow", &"eye_color", &"eye_glow",
 			&"metallic", &"roughness", &"detail", &"paint_saturation", &"accent_split", &"grey_armor_split"]:
 		material.set_shader_parameter(key, paint.get(key))
 	return material

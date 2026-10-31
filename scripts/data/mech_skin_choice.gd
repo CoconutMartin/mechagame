@@ -1,18 +1,19 @@
 class_name MechSkinChoice
 extends RefCounted
 ## The mech texture the player picked in the garage (user request 2026-10-13): Basic (the model's own
-## materials), PS1 (PS1Skin), Realistic (RealisticSkin) or Black Red (MechPaintSkin: a paint scheme on the
-## mech body, data/skins/paint_black_red.tres; weapons and equipment keep their own materials; 2026-10-31). It is for every mech, weapon and equipment,
-## kept in user://mech_skin.cfg so it stays after a restart. PS1 at first.
+## materials), PS1 (PS1Skin), Realistic (RealisticSkin) or Navy Orange (MechPaintSkin: a paint scheme on the
+## mech body, data/skins/paint_navy_orange.tres; weapons and equipment keep their own materials; 2026-10-31). It is for every mech, weapon and equipment,
+## kept in user://mech_skin.cfg so it stays after a restart. Navy Orange (the SGGv2 paint) at first since
+## 2026-10-31 (PS1 before).
 
 enum Style { BASIC, PS1, REALISTIC, PAINT }
 
-const NAMES: Array[String] = ["Basic", "PS1", "Realistic", "Black Red"]
+const NAMES: Array[String] = ["Basic", "PS1", "Realistic", "Navy Orange"]
 const SAVE_PATH := "user://mech_skin.cfg"
 ## Group of the nodes that put the skin on a mech (PS1SkinLook).
 const GROUP := &"mech_skin_look"
 
-static var _style := Style.PS1
+static var _style := Style.PAINT
 static var _loaded := false
 
 
@@ -23,7 +24,7 @@ static func style() -> Style:
 		_loaded = true
 		var file := ConfigFile.new()
 		if file.load(SAVE_PATH) == OK:
-			_style = clampi(int(file.get_value("skin", "style", Style.PS1)), 0, NAMES.size() - 1) as Style
+			_style = clampi(int(file.get_value("skin", "style", Style.PAINT)), 0, NAMES.size() - 1) as Style
 	return _usable(_style)
 
 

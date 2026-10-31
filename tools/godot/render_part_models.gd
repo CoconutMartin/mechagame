@@ -2,7 +2,8 @@ extends SceneTree
 ## Pictures of the player mech built from its part files (DESIGN "Swappable mech parts"): front, three-quarter,
 ## side and back at rest, then the same four views in a walk. Other mechs are hidden. Each part slot can get a
 ## tint (TINT=1) to show where one part ends and the next starts. The map's objects are hidden; a plain ground is added. xvfb:
-## SKIN=<n> picks the skin first (MechSkinChoice: 0 Basic, 1 PS1, 2 Realistic, 3 Black Red).
+## SKIN=<n> picks the skin first (MechSkinChoice: 0 Basic, 1 PS1, 2 Realistic, 3 Navy Orange).
+## CAM_HEIGHT and CAM_DIST (m) move the camera for close pictures (default 5.2 and 24).
 ## LOADOUT=<n> shows the loadout of key n (PREFIX names the pictures).
 ##   RENDER_OUT=/tmp/x xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 \
 ##     --resolution 1280x720 --fixed-fps 60 --script res://tools/godot/render_part_models.gd
@@ -86,10 +87,11 @@ func _run() -> void:
 
 func _shoot_views(mech: Mech, camera: Camera3D, out: String, tag: String) -> void:
 	for view: String in VIEWS:
-		var center := mech.global_position + Vector3.UP * 5.2
+		var center := mech.global_position + Vector3.UP * (float(OS.get_environment("CAM_HEIGHT")) if OS.has_environment("CAM_HEIGHT") else 5.2)
+		var distance := float(OS.get_environment("CAM_DIST")) if OS.has_environment("CAM_DIST") else 24.0
 		var forward := -mech.global_basis.z
 		var dir := forward.rotated(Vector3.UP, deg_to_rad(VIEWS[view]))
-		camera.global_position = center + dir * 24.0 + Vector3.UP * 1.5
+		camera.global_position = center + dir * distance + Vector3.UP * 1.5 * distance / 24.0
 		camera.look_at(center, Vector3.UP)
 		await _frames(2)
 		var path := "%s/%s_%s_%s.png" % [out, OS.get_environment("PREFIX") if OS.has_environment("PREFIX") else "mech", tag, view]

@@ -1,5 +1,6 @@
 shader_type spatial;
-// Paint skin (user request 2026-10-31, SGGv2: black armor, red accents, dark grey frame, orange lamp).
+// Paint skin (user requests 2026-10-31, SGGv2: navy armor, orange accents, dark grey frame, orange lamps,
+// eyes in the accent color).
 // Recolors the model's own albedo by what each texel is: an orange lamp, a light armor plate, a dark armor
 // panel (the accent), or the grey / black frame. The texel's brightness against its class's typical
 // brightness keeps the texture's panel lines, dirt and shading. MechPaintSkin fills the uniforms from a
@@ -18,6 +19,11 @@ uniform vec4 accent_color : source_color;
 uniform vec4 frame_color : source_color;
 uniform vec4 lamp_color : source_color;
 uniform float lamp_glow = 2.0;
+uniform vec4 eye_color : source_color;
+uniform float eye_glow = 3.0;
+// Eye lens: red (hue near 0), the lowest saturation and brightness.
+uniform float eye_saturation = 0.45;
+uniform float eye_value = 0.3;
 // Saturation above which a texel is painted (olive armor); below it is frame or grey armor.
 uniform float paint_saturation = 0.28;
 // Brightness that splits light armor (above) from the darker accent panels (below).
@@ -54,6 +60,9 @@ void fragment() {
 	float lamp = step(lamp_hue.x, hsv.x) * step(hsv.x, lamp_hue.y)
 			* smoothstep(lamp_saturation - 0.05, lamp_saturation + 0.05, hsv.y)
 			* smoothstep(lamp_value - 0.05, lamp_value + 0.05, hsv.z);
+	float red = max(step(hsv.x, 0.025), step(0.95, hsv.x));
+	float eye = red * smoothstep(eye_saturation - 0.05, eye_saturation + 0.05, hsv.y)
+			* smoothstep(eye_value - 0.05, eye_value + 0.05, hsv.z);
 	vec3 armor = shade(armor_color.rgb, hsv.z, 0.6);
 	vec3 accent = shade(accent_color.rgb, hsv.z, 0.33);
 	vec3 frame = shade(frame_color.rgb, hsv.z, 0.18);
@@ -61,10 +70,11 @@ void fragment() {
 	vec3 grey = mix(frame, shade(armor_color.rgb, hsv.z, 0.55), grey_light);
 	vec3 color = mix(grey, paint, painted);
 	color = mix(color, lamp_color.rgb, lamp);
+	color = mix(color, eye_color.rgb, eye);
 	ALBEDO = color;
-	EMISSION = lamp_color.rgb * lamp * lamp_glow;
+	EMISSION = lamp_color.rgb * lamp * lamp_glow + eye_color.rgb * eye * eye_glow;
 	METALLIC = metallic;
-	ROUGHNESS = mix(roughness, 0.3, lamp);
+	ROUGHNESS = mix(roughness, 0.3, max(lamp, eye));
 	if (has_normal) {
 		NORMAL_MAP = texture(normal_texture, UV).rgb;
 		NORMAL_MAP_DEPTH = normal_scale;

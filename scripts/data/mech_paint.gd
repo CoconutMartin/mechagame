@@ -1,6 +1,6 @@
 class_name MechPaint
 extends Resource
-## A paint scheme for the mech body (the "Paint" skin, MechSkinChoice; user request 2026-10-31, SGGv2).
+## A paint scheme for the mech body (the paint skin, MechSkinChoice; user request 2026-10-31, SGGv2).
 ## MechPaintSkin recolors each body texture by what each texel is (shaders/mech_paint.gdshader).
 
 @export var display_name: String = "Paint"
@@ -15,6 +15,10 @@ extends Resource
 @export var lamp_color: Color = Color(1.0, 0.42, 0.05)
 ## Lamp glow strength.
 @export_range(0.0, 8.0) var lamp_glow: float = 2.5
+## Eye lenses (the red lenses of the model).
+@export var eye_color: Color = Color(1.0, 0.42, 0.05)
+## Eye glow strength.
+@export_range(0.0, 8.0) var eye_glow: float = 3.0
 @export_group("Surface")
 @export_range(0.0, 1.0) var metallic: float = 0.35
 @export_range(0.0, 1.0) var roughness: float = 0.5

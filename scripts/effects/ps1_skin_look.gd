@@ -7,7 +7,7 @@ extends Node
 ##   PS1 (user request 2026-10-11): PS1Skin (chunky pixels, seams / rivets / vents / dirt detail,
 ##   15-bit color with a dither, a light vertex wobble).
 ##   Realistic: RealisticSkin (painted metal with a worn metal plate texture, normal and roughness maps).
-##   Black Red (paint, 2026-10-31): MechPaintSkin on the body and the jointed hands; weapons keep theirs.
+##   Navy Orange (paint, 2026-10-31): MechPaintSkin on the body and the jointed hands; weapons keep theirs.
 ## Weapons added later (loadout change, garage) are skinned when they enter the tree.
 ## Body detail sits on each part's rest position (to_rest each frame, like CharDamageLook), so it
 ## stays on the part; weapon meshes are rigid, so theirs is in their own mesh space.
@@ -19,8 +19,8 @@ const SKIP_GROUP := &"skin_skip"
 ## The mech root: weapon and equipment meshes under it get the skin too.
 @export var mech: Node3D
 @export var settings: PS1SkinSettings = preload("res://data/skins/ps1_skin.tres")
-## Paint scheme of the "Black Red" skin (body and hands only).
-@export var paint: MechPaint = preload("res://data/skins/paint_black_red.tres")
+## Paint scheme of the "Navy Orange" skin (body and hands only).
+@export var paint: MechPaint = preload("res://data/skins/paint_navy_orange.tres")
 
 ## One entry per skinned mesh: {mesh, joint, body, index, overrides (the mesh's own surface
 ## overrides), override (its own material_override), made (the skin materials in use)}.

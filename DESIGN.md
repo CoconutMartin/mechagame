@@ -719,19 +719,33 @@ the jointed hand scenes (`mech_hand_r/l.tscn`) are SGG values; an arm part of an
 fields, phase 2 or 3). The hit part data (`sanggigilid_hit_parts.tres`) names bones, so it fits every part on the
 standard rig.
 
-## Paint skin "Black Red" (user request 2026-10-31, SGGv2)
+## SGGv2 look (user requests 2026-10-31)
 
-User: "Add skin to SGGv2": a new paint skin, "Black armor, red accents, dark grey frame, orange lamp".
-- Garage skin picker: a fourth style "Black Red" (`MechSkinChoice.Style.PAINT`). It paints the mech body and the
-  jointed hands; weapons, equipment and the backpack keep their own materials.
-- `MechPaint` resource `data/skins/paint_black_red.tres` (colors, glow, metal, roughness, detail, texel class
-  limits), `MechPaintSkin` makes the materials, `shaders/mech_paint.gdshader` recolors the model's own texture per
-  texel: light olive and light grey to the armor color, darker olive panels (below `accent_split` 0.56) to the accent
-  color, dark grey and black to the frame color, saturated orange to the lamp color with a glow. The texel's
-  brightness against its class keeps the panel lines and shading (`detail` 0.8); the normal map stays.
-- On SGG the red shows on the panel edges and the darker panel lines (the texture has few dark olive areas), and the
-  SGG body texture has almost no orange (267 of about 1 million sampled texels): the lamp color shows only on parts that have orange.
-- `render_part_models.gd SKIN=3` renders it.
+User: "Add skin to SGGv2" (a new paint skin: first "Black armor, red accents, dark grey frame, orange lamp"), then
+"Beautify SGGv2, add more character, a bit more body and heft. Change main color to navy blue, orange accents.
+Match the eye color with the accent."
+
+Model (`tools/blender/sggv2_build.py`, saves `models/sggv2/sggv2.blend`, exports `models/mechs/sgg/sgg_<part>.glb`;
+the user's `models/new_mech/new_mech_exploded.blend` stays as it was):
+- Heft: torso and pelvis 1.08x, upper arms 1.1x, forearms, thighs and shins 1.12x across their bones (the length
+  along each bone stays, so the joints, grips and animations stay).
+- 43 new faceted pieces in SGG's palette (small 4x4 color textures: olive armor, darker olive accent panels, dark
+  grey frame, orange lamps), each rigid on one bone: shoulder flares, forearm guards and elbow lamps, a chest plate
+  with an accent V, a dark collar, flank plates, two chest lamps, a groin plate, thigh front and side plates, shin
+  guards, pointed knee guards, front tassets with accent stripes (on `skirt_front_L/R`) and side tassets (on
+  `skirt_side_L/R`), which swing off the thighs (AccessoryBoneFollow), a head crest with an accent edge, two
+  swept antennas and a chin guard. Meshes per slot now: head 7, core 10, arms 10 each, legs 33.
+
+Paint skin "Navy Orange" (the 4th garage skin, `MechSkinChoice.Style.PAINT`, the default for a new save):
+- `MechPaint` resource `data/skins/paint_navy_orange.tres`: armor navy (0.06, 0.1, 0.22), accent orange
+  (1, 0.45, 0.06), frame dark grey, lamps orange (glow 1.2), eyes the accent orange (glow 1.2). The first version
+  "Black Red" (black, red, dark grey) was replaced by it.
+- `MechPaintSkin` makes the materials, `shaders/mech_paint.gdshader` recolors the model's own texture per texel:
+  light olive and light grey to the armor color, darker olive (below `accent_split` 0.56) to the accent, dark grey
+  and black to the frame, saturated orange to the lamp color, saturated red (the 4 eye lenses) to the eye color,
+  both glowing. The texel's brightness against its class keeps the panel lines and shading (`detail` 0.8); the
+  normal map stays. It paints the body and the jointed hands; weapons, equipment and the backpack keep theirs.
+- `render_part_models.gd`: `SKIN=3` (paint), `CAM_HEIGHT`, `CAM_DIST` for close pictures.
 
 ## New mech hand (user request 2026-10-13; user drawings: right hand palm, back, closed underside, closed back, open back)
 
@@ -1316,7 +1330,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - "Align shoulders and arm swings during holding war hammer and baton with shoulder and arm swings with fists": the holding arm followed the walk clip (its shoulder block rose and tilted). Now `WeaponController._swings_like_fist` (a HAMMER-kind weapon in the right hand): when it does not swing, the arm takes the fist hang target (`_update_fist_arms`, `fist_hang_target`) and its IK runs, so `SkeletalArmRig` gives it the relaxed hang and the stride swing like a fist arm (level block); the weapon rides the hand. During a swing the target is null and the clip has the arm as before. Test: test_melee_combo, test_stability, test_weapon_hands, test_hit_reactions 0 failures; renders `render_rifle.gd` RIFLE_RIGHT=hammer / baton, RIFLE_ACTIONS=move_forward, views far, far_front.
 
 ## Reminders for the user
-- Open (2026-10-31, built): play test the "Black Red" paint skin (garage skin picker): the colors, the amount of red, the frame grey. Say if SGG needs a real lamp (its texture has almost no orange) or bigger red panels. Tune `data/skins/paint_black_red.tres`.
+- Open (2026-10-31, built): play test SGGv2 (the thicker body, the new armor, the tassets swinging off the thighs) and the "Navy Orange" skin (garage skin picker; the default for a new save). Check for arm and armor clipping in aim, melee and the run. Tune `data/skins/paint_navy_orange.tres`.
 - Open (2026-10-31, user): upload the Haliya HLY-101 model (parts on the SGG rig `MechRig`, collections Head, Core, Arm_L, Arm_R, Legs; skirt and sleeve meshes on the accessory bones). Claude then exports the parts and adds Haliya on key 2.
 - Open (2026-10-31, built, phase 1 of "Swappable mech parts"): play test SGG after the split into part files: it should look and move exactly as before (walk, run, boost, jump, aim, melee, part breaks, the PS1 / Basic skins, the HP indicators). Report any part that looks wrong or sits in the wrong place.
 - Open (2026-10-31, built, phase B): play test the drone aux mods (garage "Aux" picker under Backpack, with the Drone Pack): Drone Swarm (one T release sends all 6) and Drone Recall (each drone comes back after its attack and launches once more). Say if the values should change (2 flights per drone, 10 s to come back).
@@ -1386,6 +1400,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 
 ## Decisions log
 
+- 2026-10-31 (user): SGGv2: more body, heft and character (thicker limbs and torso, added armor); paint skin Navy Orange (navy armor, orange accents, eyes in the accent color), replacing the first paint Black Red.
 - 2026-10-31 (user): SGGv2 paint skin "Black Red": black armor, red accents, dark grey frame, orange lamp; a garage skin option for the body.
 - 2026-10-31 (user): remove the Claude-built Haliya from the game; the user uploads the Haliya model.
 - 2026-10-31 (user): Haliya HLY-101 (user picture) is a second mech on the SGG joints, its parts swap with SGG parts; skirt and sleeves move with follow scripts (accessory bones); the current split SGG is saved as git tag `sggv2`.
