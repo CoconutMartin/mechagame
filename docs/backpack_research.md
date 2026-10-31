@@ -44,6 +44,7 @@ carries the aux equipment (pulse scan now) and gives one bonus stat (boost, ener
 | Power Pack | 1.88 x 2.18 x 0.98 | 1 | energy +25% | center stack with a radiator, towers, battery cells, glowing cables (user picture) |
 | Field Pack | 2.14 x 1.84 x 0.92 | 2 | part HP +6% | grille box between two handled pods (user picture) |
 | Jet Pack | 1.96 x 2.0 x 1.0 | 1 | boost +10% | three column box, two big nozzles down and back (user picture) |
+| Drone Pack | 2.18 x 1.5 x 1.0 | 1 | none; 2 drones (later) | gunmetal box with handles, a detachable drone disc on each side (user picture) |
 
 ## Colors
 
