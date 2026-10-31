@@ -36,9 +36,13 @@ BACK_PACKS = [
     ("backpack_heavy", "Heavy Pack", 1.6, 320.0, 3, 2, 5.0),
     # Ammo Pack (user picture 2026-10-31): no aux slot, no bonus, six ammo canisters (ammo_canisters, written below).
     ("backpack_ammo", "Ammo Pack", 2.4, 260.0, 0, 0, 0.0),
+    # Missile Pack (user picture 2026-10-31): four canisters for missile pods only (canister_kinds, written below).
+    ("backpack_missile", "Missile Pack", 2.2, 240.0, 0, 0, 0.0),
 ]
 ## Ammo canisters per pack (BackPackPart.ammo_canisters); packs not listed carry none.
-AMMO_CANISTERS = {"backpack_ammo": 6}
+AMMO_CANISTERS = {"backpack_ammo": 6, "backpack_missile": 4}
+## Weapon kinds a pack's canisters fit (WeaponData.Kind; 3 = missile pod); packs not listed fit every ammo weapon.
+CANISTER_KINDS = {"backpack_missile": [3]}
 
 # Mods: file, name, stat (ModData.Stat), percent.
 # Stat: 0 weight, 1 speed, 2 boost thrust, 3 energy capacity, 4 energy output, 5 turn speed,
@@ -56,6 +60,8 @@ MODS = [
 
 
 def value(v):
+    if isinstance(v, list):
+        return "Array[int]([%s])" % ", ".join(str(x) for x in v)
     if isinstance(v, str):
         return f'"{v}"'
     if isinstance(v, tuple) and len(v) == 3:
@@ -98,7 +104,8 @@ def main():
         parts[part].append(write(f"data/parts/sanggigilid/sanggigilid_{part}.tres", cls, script, fields))
     back_packs = [write(f"data/parts/backpacks/{f}.tres", "BackPackPart", "back_pack_part",
                         dict({"display_name": n, "weight_t": w, "hp": hp, "aux_slots": slots, "bonus": b, "bonus_percent": pc},
-                             **({"ammo_canisters": AMMO_CANISTERS[f]} if f in AMMO_CANISTERS else {})),
+                             **({"ammo_canisters": AMMO_CANISTERS[f]} if f in AMMO_CANISTERS else {}),
+                             **({"canister_kinds": CANISTER_KINDS[f]} if f in CANISTER_KINDS else {})),
                         scene=f"res://models/backpacks/{f}.glb")
                   for f, n, w, hp, slots, b, pc in BACK_PACKS]
     mods = [write(f"data/mods/{f}.tres", "ModData", "mod_data", {"display_name": n, "stat": s, "percent": p})

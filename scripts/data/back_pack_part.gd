@@ -11,6 +11,14 @@ enum Bonus { NONE, ENERGY, HP, BOOST }
 ## Ammo canisters the pack carries (an ammo pack, user request 2026-10-31); each one is a full magazine for a weapon
 ## that has no reserve left. The model has one node Canister1..N per canister. 0 = not an ammo pack.
 @export_range(0, 12) var ammo_canisters: int = 0
+## Weapon kinds the canisters fit (the Missile Pack, user request 2026-10-31: missile pods only). Empty = every
+## ammo weapon.
+@export var canister_kinds: Array[WeaponData.Kind] = []
+
+
+## True when this pack's canisters fit a weapon of this data (null = any).
+func canister_fits(weapon: WeaponData) -> bool:
+	return canister_kinds.is_empty() or weapon == null or weapon.kind in canister_kinds
 ## The stat this back pack improves.
 @export var bonus: Bonus = Bonus.NONE
 ## Size of the bonus in percent (6 = 6% more).

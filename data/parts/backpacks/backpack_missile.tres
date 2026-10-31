@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BackPackPart" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/back_pack_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/backpacks/backpack_missile.glb" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Missile Pack"
+weight_t = 2.2
+hp = 240.0
+aux_slots = 0
+ammo_canisters = 4
+canister_kinds = Array[int]([3])
+scene = ExtResource("scene")

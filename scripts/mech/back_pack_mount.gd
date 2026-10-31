@@ -19,10 +19,14 @@ const HIT_KEY := "Back Pack"
 ## Speed of a used canister leaving the pack, backward (m/s), and how long it lies on the ground (s).
 @export var canister_eject_speed: float = 3.0
 @export var canister_life: float = 6.0
+## Upward speed of a used canister as it leaves (m/s): an upright canister pops out over the ones behind it.
+@export var canister_eject_up: float = 2.0
 ## Collision mask of a dropped canister (the ground and buildings).
 @export_flags_3d_physics var canister_mask: int = 1
 
 var mech: Mech
+## The pack data.
+var pack: BackPackPart
 ## The model and its bone attachment.
 var model: Node3D
 var _attach: BoneAttachment3D
@@ -46,7 +50,8 @@ static func mount(target: Mech, loadout: Loadout) -> BackPackMount:
 	return holder
 
 
-func _attach_model(skeleton: Skeleton3D, pack: BackPackPart) -> void:
+func _attach_model(skeleton: Skeleton3D, pack_data: BackPackPart) -> void:
+	pack = pack_data
 	var bone := skeleton.find_bone(bone_name)
 	if bone < 0:
 		return
@@ -54,20 +59,20 @@ func _attach_model(skeleton: Skeleton3D, pack: BackPackPart) -> void:
 	_attach.name = "BackPackAttachment"
 	skeleton.add_child(_attach)
 	_attach.bone_name = bone_name
-	model = pack.scene.instantiate() as Node3D
+	model = pack_data.scene.instantiate() as Node3D
 	model.name = "BackPack"
 	_attach.add_child(model)
 	# The rest pose places the pack: the bone's rest frame in the world, and the wanted place in the world.
 	var bone_rest := skeleton.global_transform * skeleton.get_bone_global_rest(bone)
 	var wanted := mech.global_transform * Transform3D(Basis.IDENTITY, mount_offset)
 	model.transform = bone_rest.affine_inverse() * wanted
-	for i in pack.ammo_canisters:
+	for i in pack_data.ammo_canisters:
 		var canister := model.find_child("Canister%d" % (i + 1), true, false) as Node3D
 		if canister != null:
 			_canisters.append(canister)
 	if mech.health != null:
 		var nodes: Array[Node3D] = [model]
-		mech.health.attach_weapon_part(HIT_KEY, pack.hp, pack.hp, nodes)
+		mech.health.attach_weapon_part(HIT_KEY, pack_data.hp, pack_data.hp, nodes)
 		mech.health.part_destroyed.connect(_on_part_destroyed)
 
 
@@ -84,10 +89,11 @@ func _on_part_destroyed(key: String) -> void:
 		aux.process_mode = Node.PROCESS_MODE_DISABLED
 
 
-## Takes one ammo canister from mech's pack (false: no ammo pack, none left, or the pack is destroyed).
-static func take_canister(target: Node) -> bool:
+## Takes one ammo canister from mech's pack for a weapon of this data (false: no ammo pack, none left, the pack is
+## destroyed, or its canisters do not fit this weapon, BackPackPart.canister_kinds).
+static func take_canister(target: Node, weapon: WeaponData = null) -> bool:
 	var holder := target.get_node_or_null(^"BackPackMount") as BackPackMount if target != null else null
-	return holder != null and holder._take_canister()
+	return holder != null and holder.pack.canister_fits(weapon) and holder._take_canister()
 
 
 ## Canisters still in the pack (0 without an ammo pack).
@@ -129,7 +135,7 @@ func _drop(canister: Node3D) -> void:
 	shape.shape = box_shape
 	shape.position = box.get_center()
 	body.add_child(shape)
-	body.linear_velocity = mech.velocity + mech.global_basis.z * canister_eject_speed
+	body.linear_velocity = mech.velocity + mech.global_basis.z * canister_eject_speed + Vector3.UP * canister_eject_up
 	body.angular_velocity = mech.global_basis.x * randf_range(-1.5, 1.5)
 	get_tree().create_timer(canister_life).timeout.connect(body.queue_free)
 

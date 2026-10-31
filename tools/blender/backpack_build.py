@@ -5,7 +5,8 @@ Run (from the project root):
     blender -b --python tools/blender/backpack_build.py               (all types)
     blender -b --python tools/blender/backpack_build.py -- heavy      (one type)
 Writes models/backpacks/backpack_<type>.blend and .glb for each type in TYPES (light, medium, heavy: build_pack;
-ammo: build_ammo_pack, six canisters the game removes one by one).
+ammo: build_ammo_pack, six canisters the game removes one by one; missile: build_missile_pack, four upright
+missile canisters).
 The script starts from an empty file, so hand edits in the .blend are lost when it runs again.
 
 Axes: Blender +Y = forward (Godot -Z), +Z = up. Origin: the Mount, the center of the pack's front face (it lies on
@@ -37,6 +38,10 @@ TYPES = {
     # build_ammo_pack. can_r / can_len: canister radius and length; can_gap: space between stacked canisters;
     # spine_w: half width of the spine; mount_d: depth of the mount frame in front of the canisters.
     "ammo": dict(kind="ammo", can_r=0.28, can_len=1.05, can_gap=0.03, spine_w=0.27, mount_d=0.4),
+    # Missile Pack (user picture models/guides/backpack_missile_ref.png, 2026-10-31): four tall upright canisters
+    # (two rows of two) either side of a tan spine, tan straps with black buckles. Built by build_missile_pack.
+    # can_r / can_h: canister radius and height; row_y: the two canister rows (y of their centers).
+    "missile": dict(kind="missile", can_r=0.3, can_h=1.7, spine_w=0.2, row_y=(-0.45, -1.12)),
 }
 
 MATERIALS = {
@@ -365,6 +370,63 @@ def build_ammo_pack(t):
     return parts
 
 
+def build_missile_pack(t):
+    """The Missile Pack: four upright canisters in a 2 x 2 block (Canister1..4 empties at their centers: the back
+    row first, left before right), a tan spine between the columns with black end blocks and a foot, black cross
+    arms between the canisters, tan straps with black buckles round each canister, and a mount plate."""
+    T, F, K, C, CD, L = "bp_tan", "bp_frame", "bp_dark", "bp_can", "bp_can_dark", "bp_glow"
+    r, h, sw = t["can_r"], t["can_h"], t["spine_w"]
+    col_x = sw + 0.04 + r
+    front_y, back_y = t["row_y"]
+    parts = []
+    # Mount plate on the torso back and the spine (tan box between the columns, full depth).
+    parts.append(block("MountPlate", F, -col_x - r * 0.4, col_x + r * 0.4, front_y + r - 0.02, 0.0, -h * 0.4,
+                       h * 0.4, chamfer=0.06))
+    y_end = back_y - r - 0.04
+    parts.append(block("Spine", T, -sw, sw, y_end, front_y + r + 0.02, -h / 2 + 0.05, h / 2 - 0.02, chamfer=0.06,
+                       bevel=0.015))
+    parts.append(block("SpineSeam", F, -sw - 0.005, sw + 0.005, y_end - 0.005, front_y + r, -h * 0.3,
+                       -h * 0.3 + 0.03, bevel=0.0))
+    parts.append(block("Latch", F, -0.09, 0.09, y_end - 0.04, y_end, -h * 0.4, -h * 0.3, bevel=0.0))
+    for i, (ya, yb) in enumerate(((front_y + r - 0.2, front_y + r + 0.05), (y_end - 0.05, y_end + 0.2))):
+        parts.append(block(f"SpineEnd{i}", F, -sw * 0.9, sw * 0.9, ya, yb, h / 2 - 0.12, h / 2 + 0.08, chamfer=0.04))
+    parts.append(block("SpineFoot", F, -sw * 0.95, sw * 0.95, y_end - 0.05, front_y + r, -h / 2 - 0.25, -h / 2 + 0.08,
+                       chamfer=0.06))
+    parts.append(block("Lamp", L, -0.05, 0.05, y_end - 0.02, y_end - 0.005, h / 2 - 0.3, h / 2 - 0.22, bevel=0.0))
+    # Black cross arms from the spine to the space between each column's two canisters.
+    for side, sx in (("L", -1.0), ("R", 1.0)):
+        x0, x1 = sorted((sx * sw, sx * (col_x + r * 0.2)))
+        for j, z in enumerate((h * 0.25, -h * 0.25)):
+            parts.append(block(f"Arm{side}{j}", F, x0, x1, back_y + r * 0.4, front_y - r * 0.4, z - 0.07, z + 0.07,
+                               chamfer=0.03))
+    # Canisters: body, a narrower shoulder and a lid with a ring on top, a tapered foot, two tan straps with a black
+    # buckle facing out.
+    n = 0
+    for y in (back_y, front_y):
+        for sx in (-1.0, 1.0):
+            n += 1
+            pivot = empty(f"Canister{n}", (sx * col_x, y, 0.0))
+            half = h / 2
+            pieces = [cyl_z(f"CanBody{n}", C, 0.0, 0.0, -half + 0.12, half - 0.18, r, sides=16),
+                      cyl_z(f"CanShoulder{n}", C, 0.0, 0.0, half - 0.18, half - 0.06, r, r * 0.82, sides=16),
+                      cyl_z(f"CanLid{n}", CD, 0.0, 0.0, half - 0.06, half, r * 0.82, r * 0.78, sides=16),
+                      cyl_z(f"CanCap{n}", C, 0.0, 0.0, half, half + 0.04, r * 0.4, sides=16),
+                      cyl_z(f"CanFoot{n}", CD, 0.0, 0.0, -half + 0.12, -half, r, r * 0.8, sides=16),
+                      cyl_z(f"CanBand{n}", F, 0.0, 0.0, -0.06, 0.06, r + 0.01, sides=16)]
+            for j, z in enumerate((h * 0.25, -h * 0.25)):
+                pieces.append(cyl_z(f"CanStrap{n}{j}", T, 0.0, 0.0, z - 0.07, z + 0.07, r + 0.02, sides=16))
+                # The buckle faces away from the spine.
+                pieces.append(block(f"CanBuckle{n}{j}", F, sx * r * 0.75 - 0.09 if sx < 0 else r * 0.75 - 0.0,
+                                    sx * r * 0.75 + 0.0 if sx < 0 else r * 0.75 + 0.09, -0.08, 0.08, z - 0.09,
+                                    z + 0.09, chamfer=0.02))
+            for piece in pieces:
+                piece.parent = pivot
+            parts.append(pivot)
+            parts += pieces
+    parts.append(empty("Mount", (0.0, 0.0, 0.0)))
+    return parts
+
+
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     os.makedirs(OUT_DIR, exist_ok=True)
@@ -372,7 +434,8 @@ def main():
         if args and name not in args:
             continue
         bpy.ops.wm.read_factory_settings(use_empty=True)
-        objects = build_ammo_pack(t) if t.get("kind") == "ammo" else build_pack(t)
+        builders = {"ammo": build_ammo_pack, "missile": build_missile_pack}
+        objects = builders.get(t.get("kind"), build_pack)(t)
         # Radiator fins and handles stay on the heavy and the other packs; a pack with a radiator has no handles.
         if t.get("vent") == "radiator":
             for obj in [o for o in objects if o.name.startswith("Handle")]:

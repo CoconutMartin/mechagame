@@ -2,11 +2,13 @@ extends SceneTree
 ## Ammo Pack test (2026-10-31, user: "the canisters are removed 1 by 1 from the backpack as they are used"). The
 ## player carries the Ammo Pack. take_canister must give 6 canisters, one by one (top row first), then refuse;
 ## each used canister must leave the pack (no longer under the pack model), fall below its start height and be
-## gone after canister_life. A destroyed pack gives no canister. Exits with code 1 on a failure. Headless:
+## gone after canister_life. A destroyed pack gives no canister. The Missile Pack has 4 canisters, for missile
+## pods only. Exits with code 1 on a failure. Headless:
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/test_ammo_pack.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
 const PACK := "res://data/parts/backpacks/backpack_ammo.tres"
+const MISSILE_PACK := "res://data/parts/backpacks/backpack_missile.tres"
 
 var _failures: int = 0
 
@@ -72,6 +74,16 @@ func _run() -> void:
 	mech.health.break_part(BackPackMount.HIT_KEY)
 	await _frames(2)
 	_check(not BackPackMount.take_canister(mech), "a destroyed pack gives no canister")
+	# The Missile Pack: four canisters for missile pods only.
+	loadout.back_pack = load(MISSILE_PACK) as BackPackPart
+	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
+	await _frames(60)
+	mech = switcher.mech
+	_check(BackPackMount.canisters_left(mech) == 4, "Missile Pack: 4 canisters (%d)" % BackPackMount.canisters_left(mech))
+	_check(not BackPackMount.take_canister(mech, load("res://data/weapons/heavy_rifle.tres")),
+			"Missile Pack: no canister for a gun")
+	_check(BackPackMount.take_canister(mech, load("res://data/weapons/missile_pod_l.tres"))
+			and BackPackMount.canisters_left(mech) == 3, "Missile Pack: a canister for a missile pod, 3 left")
 	_finish()
 
 
