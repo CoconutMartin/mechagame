@@ -139,6 +139,9 @@ def main():
     for key, names in weapons.items():
         lists[key] = [f"res://data/weapons/{n}.tres" for n in names]
     lists["mods"] = mods
+    # Aux equipment for the back pack's aux slot (user 2026-10-31: pulse scans and drone mods, interchangeable).
+    lists["aux_items"] = [f"res://data/equipment/{n}.tres" for n in
+                          ["pulse_scan_g1", "pulse_scan_g2", "pulse_scan_g3", "drone_recall", "drone_swarm"]]
     # Catalog: every resource once as an ext_resource, then the typed arrays.
     ids = {}
     lines = ['[gd_resource type="Resource" script_class="GarageCatalog" format=3]', "",
@@ -151,7 +154,7 @@ def main():
     types = {"heads": "HeadPart", "cores": "CorePart", "arms_left": "ArmPart", "arms_right": "ArmPart",
              "legs": "LegPart", "boosters": "BoosterPart", "generators": "GeneratorPart", "back_packs": "BackPackPart",
              "weapons_right": "WeaponData", "weapons_left": "WeaponData", "backs_left": "WeaponData",
-             "backs_right": "WeaponData", "mods": "ModData"}
+             "backs_right": "WeaponData", "mods": "ModData", "aux_items": "EquipmentData"}
     lines += ["", "[resource]", 'script = ExtResource("script")']
     for key, paths in lists.items():
         items = ", ".join(f'ExtResource("{ids[p]}")' for p in paths)

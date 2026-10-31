@@ -8,12 +8,15 @@ extends AnimatableBody3D
 ## a new place (the other flank only when its own has none); a place it finds no way to is dropped too. It flies at
 ## most 12.5 m over the ground, over low buildings and around tall ones, and never touches them (DroneNavigator). At the place it stops and fires its bursts from its
 ## hub (DroneMuzzle<n>); from the first shot it does not move again (user rule). It fires only while it sees the
-## target. At max_flight_s, after its last burst, or when the target is gone, it explodes. Shot down at 0 HP
+## target. At max_flight_s, after its last burst, or when the target is gone, it explodes; with the recall mod
+## (return_home) it flies back to its dock instead and DroneLauncher can launch it again. Shot down at 0 HP
 ## (layer 4, "hitboxes": weapons call on_hit).
 
 signal finished(drone: AttackDrone)
+## A returning drone (recall mod) is back on its dock; model is on the pack again.
+signal docked(drone: AttackDrone, model: Node3D)
 
-enum Phase { LAUNCH, APPROACH, FIRE }
+enum Phase { LAUNCH, APPROACH, FIRE, RETURN }
 
 const BULLET := preload("res://scenes/weapons/bullet.tscn")
 const EXPLOSION := preload("res://scenes/effects/explosion.tscn")
@@ -41,6 +44,14 @@ var velocity: Vector3 = Vector3.ZERO
 var shots_fired: int = 0
 ## True when weapons destroyed it (false: its flight ended).
 var shot_down: bool = false
+## Recall mod: after its attack it flies back to dock (a DroneDock<n> node on the pack) instead of exploding, and
+## puts its model back under home_parent at home_transform.
+var return_home: bool = false
+var dock: Node3D
+var home_parent: Node3D
+var home_transform: Transform3D = Transform3D.IDENTITY
+## Seconds of the way back.
+var return_time: float = 0.0
 
 var _spin: Node3D
 var _muzzle: Node3D
@@ -53,6 +64,7 @@ var _recheck_left: float = 0.0
 var _nav: DroneNavigator
 ## Places (relative to the target) the drone found no way to; it does not pick them again.
 var _avoid: PackedVector3Array = PackedVector3Array()
+var _model: Node3D
 
 
 ## Makes a flying drone from model (a Drone<n> node on the pack) in world. side: -1 = the model's outer face
@@ -84,6 +96,7 @@ static func launch(world: Node, model: Node3D, side: float, mech: Mech, aim_targ
 	drone.add_child(drone._spin)
 	model.reparent(drone._spin, false)
 	model.transform = Transform3D(Basis(Vector3.UP, side * PI / 2.0), Vector3.ZERO)
+	drone._model = model
 	drone._muzzle = model.find_child("DroneMuzzle*", true, false) as Node3D
 	var out := start.basis.x.normalized() * side
 	drone.global_basis = Basis.looking_at(out, Vector3.UP)
@@ -107,13 +120,16 @@ func _exclude() -> Array[RID]:
 func _physics_process(delta: float) -> void:
 	age += delta
 	_phase_time += delta
+	if phase == Phase.RETURN:
+		_return(delta)
+		return
 	if age >= data.max_flight_s:
-		_explode()
+		_end_attack()
 		return
 	if is_instance_valid(target) and target.is_inside_tree() and target.is_in_group(&"lockable"):
 		_target_point = _read_target_point()
 	elif phase != Phase.LAUNCH:
-		_explode()
+		_end_attack()
 		return
 	match phase:
 		Phase.LAUNCH:
@@ -172,7 +188,7 @@ func _start_fire() -> void:
 func _fire_phase(delta: float) -> void:
 	var cycle := int(_phase_time / maxf(data.cycle_time, 0.05))
 	if cycle >= data.bursts:
-		_explode()
+		_end_attack()
 		return
 	if cycle + 1 > bursts_fired:
 		bursts_fired = cycle + 1
@@ -184,6 +200,55 @@ func _fire_phase(delta: float) -> void:
 		_shot_wait += 1.0 / maxf(data.gun.fire_rate, 0.1)
 		if _can_shoot_from(global_position):
 			_fire()
+
+
+## The attack is over: back to the dock (recall mod), or it explodes.
+func _end_attack() -> void:
+	if return_home and _can_dock():
+		_set_phase(Phase.RETURN)
+		return_time = 0.0
+		return
+	_explode()
+
+
+func _can_dock() -> bool:
+	return is_instance_valid(dock) and dock.is_visible_in_tree() and is_instance_valid(home_parent) \
+			and is_instance_valid(launcher_mech) and not launcher_mech.is_wrecked
+
+
+## Flies back to the dock (around buildings, under the ceiling) and docks there. Lost when the dock is gone or the
+## way takes longer than return_max_s.
+func _return(delta: float) -> void:
+	return_time += delta
+	if not _can_dock() or return_time > data.return_max_s:
+		_explode()
+		return
+	var home := dock.global_position
+	var distance := global_position.distance_to(home)
+	if distance <= data.dock_distance:
+		_dock()
+		return
+	_nav.steer_to(home, maxf(distance / data.max_speed, 0.15), delta)
+	_nav.move(delta)
+	# Face the way it flies.
+	var look := velocity if velocity.length() > 0.5 else home - global_position
+	if look.length() > 0.1:
+		var dir := look.normalized()
+		var wanted := Basis.looking_at(dir, Vector3.UP if absf(dir.y) < 0.99 else Vector3.BACK)
+		global_basis = global_basis.slerp(wanted, clampf(delta * 8.0, 0.0, 1.0)).orthonormalized()
+	_spin.rotate_object_local(Vector3.FORWARD, deg_to_rad(data.spin_deg_per_s) * delta)
+
+
+## Puts the model back on the pack (its place before the launch) and removes the flying body.
+func _dock() -> void:
+	if not is_instance_valid(_model):
+		_explode()
+		return
+	_model.reparent(home_parent, false)
+	_model.transform = home_transform
+	docked.emit(self, _model)
+	finished.emit(self)
+	queue_free()
 
 
 func _set_phase(next: Phase) -> void:

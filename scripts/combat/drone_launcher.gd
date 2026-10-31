@@ -4,8 +4,10 @@ extends Node
 ## drone_launch) to lock a target: the "lockable" target nearest the mech aim inside the lock box, in range and in
 ## sight, locks after lock_time. Release T with a lock: drones_per_launch drones leave the pack, taken left and right
 ## in turn, outer first (a pair holds opposite flanks of the target, a pincer; AttackDrone). Release without a
-## lock: nothing. Drones do not come back. BackPackMount adds it when the pack has DroneData and Drone<n> nodes.
-## An AI pilot calls launch itself (AIDroneTactics).
+## lock: nothing. Drones do not come back, unless the back pack's aux slot holds a drone mod (DroneModData, read at
+## each launch): RECALL: each drone flies back to its dock after its attack and can launch again (flights_per_drone
+## in all); SWARM: one launch sends every drone on the pack. BackPackMount adds it when the pack has DroneData and
+## Drone<n> nodes. An AI pilot calls launch itself (AIDroneTactics).
 
 signal launched(count: int)
 
@@ -29,6 +31,9 @@ var lock_progress: float = 0.0
 var total: int = 0
 
 var _next_left: bool = true
+## Per drone model (instance id): its dock node and the attack flights it has left (recall mod).
+var _docks: Dictionary = {}
+var _flights_left: Dictionary = {}
 
 
 ## Adds a DroneLauncher to mech for the pack model (nothing without DroneData or Drone nodes).
@@ -44,6 +49,7 @@ static func attach(target: Mech, model: Node3D, pack: BackPackPart) -> DroneLaun
 		if drone == null:
 			break
 		var dock := model.find_child("DroneDock%d" % i, true, false) as Node3D
+		launcher._docks[drone.get_instance_id()] = dock
 		var side := (dock if dock != null else drone).position.x
 		if side < 0.0:
 			launcher.docked_left.append(drone)
@@ -121,11 +127,20 @@ func _update_lock(delta: float) -> void:
 		lock_progress = 0.0
 
 
-## Launches up to drones_per_launch drones at target. Returns the number launched.
+## The drone mod in the back pack's aux slot, or null.
+func get_mod() -> DroneModData:
+	return DroneMod.find_data(mech)
+
+
+## Launches drones_per_launch drones (every drone on the pack with the swarm mod) at target. Returns the number
+## launched.
 func launch(target: Node3D) -> int:
 	if not is_instance_valid(target) or not mech.is_inside_tree():
 		return 0
-	var count := mini(data.drones_per_launch, docked_count())
+	var mod := get_mod()
+	var swarm := mod != null and mod.kind == DroneModData.Kind.SWARM
+	var recall := mod != null and mod.kind == DroneModData.Kind.RECALL
+	var count := docked_count() if swarm else mini(data.drones_per_launch, docked_count())
 	var world := get_tree().current_scene if get_tree().current_scene != null else get_tree().root
 	for i in count:
 		var take_left := _next_left
@@ -136,15 +151,42 @@ func launch(target: Node3D) -> int:
 		_next_left = not take_left
 		var model: Node3D = docked_left.pop_front() if take_left else docked_right.pop_front()
 		var side := -1.0 if take_left else 1.0
+		var id := model.get_instance_id()
+		var home_parent := model.get_parent() as Node3D
+		var home_transform := model.transform
+		# Flights left after this one (1 flight without the recall mod).
+		var left: int = int(_flights_left.get(id, mod.flights_per_drone if recall else 1)) - 1
+		_flights_left[id] = left
 		# A pincer: each drone takes the flank of its side; left and right in turn give a pair both flanks.
 		var drone := AttackDrone.launch(world, model, side, mech, target, side, data)
+		drone.return_home = recall and left > 0
+		drone.dock = _docks.get(id) as Node3D
+		drone.home_parent = home_parent
+		drone.home_transform = home_transform
+		drone.docked.connect(_on_docked)
+		drone.finished.connect(_on_finished)
 		flying.append(drone)
 	if count > 0:
 		launched.emit(count)
 	return count
 
 
-## The pack is gone: the drones on it go too (the flying ones keep flying).
+## A drone exploded, was shot down or docked: it is no longer in the air.
+func _on_finished(drone: AttackDrone) -> void:
+	flying.erase(drone)
+
+
+## A drone is back on its dock (recall mod): it can launch again.
+func _on_docked(_drone: AttackDrone, model: Node3D) -> void:
+	var dock := _docks.get(model.get_instance_id()) as Node3D
+	var side := (dock if dock != null else model).position.x
+	if side < 0.0:
+		docked_left.append(model)
+	else:
+		docked_right.append(model)
+
+
+## The pack is gone: the drones on it go too (the flying ones keep flying; returning ones are lost).
 func lose_docked() -> void:
 	docked_left.clear()
 	docked_right.clear()

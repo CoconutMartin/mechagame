@@ -123,6 +123,7 @@ func close() -> void:
 static func _copy(loadout: Loadout) -> Loadout:
 	var copy := loadout.duplicate() as Loadout
 	copy.mods = loadout.mods.duplicate()
+	copy.aux = loadout.aux.duplicate()
 	return copy
 
 
@@ -130,6 +131,11 @@ static func _copy(loadout: Loadout) -> Loadout:
 func _on_changed(_index: int = 0) -> void:
 	for part in PARTS:
 		_edit.set(part[0], _picked(part[0]))
+	var aux: Array[EquipmentData] = []
+	var aux_item := _picked("aux_0") as EquipmentData
+	if aux_item != null:
+		aux.append(aux_item)
+	_edit.aux = aux
 	for weapon in WEAPONS:
 		_edit.set(weapon[0], _picked(weapon[0]))
 	# A two-hand weapon uses the left hand: no shield.
@@ -201,6 +207,7 @@ func _picked(key: String) -> Resource:
 func _show_loadout(loadout: Loadout) -> void:
 	for part in PARTS:
 		_select(part[0], loadout.get(part[0]))
+	_select("aux_0", loadout.aux[0] if not loadout.aux.is_empty() else null)
 	for weapon in WEAPONS:
 		_select(weapon[0], loadout.get(weapon[0]))
 	(_pickers["weapon_left"] as OptionButton).disabled = loadout.weapon_right != null and loadout.weapon_right.two_handed
@@ -274,6 +281,8 @@ func _build_ui() -> void:
 	var frame := _section(list, "FRAME")
 	for part in PARTS:
 		_add_picker(frame, part[0], part[1], catalog.get(part[2]), false)
+	# The back pack's aux slot (1 slot, user 2026-10-31): a pulse scan or a drone mod, interchangeable.
+	_add_picker(frame, "aux_0", "Aux", catalog.aux_items, true)
 	var weapons := _section(list, "WEAPONS")
 	for weapon in WEAPONS:
 		_add_picker(weapons, weapon[0], weapon[1], catalog.get(weapon[2]), weapon[3])

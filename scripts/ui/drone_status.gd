@@ -1,8 +1,8 @@
 class_name DroneStatus
 extends Label
 ## Attack drone line at the bottom right of the screen, over the pulse scan line: "T DRONES 6/6" (drones on the
-## pack / total), "LOCKED" while T holds a lock, "0/6" when none are left. Hidden without a drone pack. DebugHud
-## makes it and gives it the mech.
+## pack / total), the drone mod (RECALL or SWARM), "LOCKED" while T holds a lock, "0/6" when none are left. Hidden
+## without a drone pack. DebugHud makes it and gives it the mech.
 
 ## Distance from the bottom and right screen edges, in pixels (over the scan line).
 @export var margin: float = 24.0
@@ -41,6 +41,9 @@ func _process(_delta: float) -> void:
 	visible = true
 	var left := launcher.docked_count()
 	var line := "%sDRONES %d/%d" % ["T " if left > 0 else "", left, launcher.total]
+	var mod := launcher.get_mod()
+	if mod != null:
+		line += "  " + ("RECALL" if mod.kind == DroneModData.Kind.RECALL else "SWARM")
 	var tint := ready_color if left > 0 else wait_color
 	if launcher.held and launcher.locked != null:
 		line += "  LOCKED"

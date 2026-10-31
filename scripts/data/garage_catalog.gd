@@ -11,6 +11,9 @@ extends Resource
 @export var generators: Array[GeneratorPart] = []
 ## Back packs (aux slots and one bonus each).
 @export var back_packs: Array[BackPackPart] = []
+## Aux equipment for the back pack's aux slot (pulse scans, drone mods; interchangeable, user 2026-10-31). The
+## garage adds "none".
+@export var aux_items: Array[EquipmentData] = []
 ## Right arm weapons (guns and melee).
 @export var weapons_right: Array[WeaponData] = []
 ## Left arm (shields). The garage adds "none".

@@ -55,6 +55,11 @@ extends Resource
 ## Seconds a cell's "free or not" stays known (buildings can break).
 @export var cell_cache_time: float = 1.0
 
+## Recall mod: the drone counts as back this close to its dock (m), and is lost when the way back takes longer than
+## return_max_s seconds.
+@export var dock_distance: float = 1.0
+@export var return_max_s: float = 10.0
+
 @export_group("Attack")
 ## The drone fires from a place this close to its goal (m).
 @export var arrive_distance: float = 1.5
