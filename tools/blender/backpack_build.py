@@ -68,7 +68,7 @@ TYPES = {
     # back face between two dark rails, olive armor blocks either side of the belt, olive side boxes (the lower one
     # with a yellow stripe). Built by build_belt_pack. w / h / d: half width, half height and depth of the frame
     # box; rounds: rounds on the belt; per_canister: rounds per canister (Canister1..N, the top pair first).
-    "belt": dict(kind="belt", w=0.42, h=0.92, d=0.82, rounds=16, per_canister=2),
+    "belt": dict(kind="belt", w=0.46, h=0.92, d=0.86, rounds=16, per_canister=2),
 }
 
 MATERIALS = {
@@ -862,59 +862,107 @@ def build_quad_pack(t):
 
 
 def build_belt_pack(t):
-    """The Belt Pack: a dark frame box (mount plate and back posts on the torso side), a carry handle on top, a
-    recessed belt channel down the back face between two dark rails, 16 rounds on a gentle arc in the channel (each a
-    dark case lying across, a brass tip to +X, a brass band and a dark link; Canister1..8 empties hold two rounds
-    each, the top pair first), four olive armor blocks either side of the belt, olive side boxes with a dark slot
-    panel (upper) and a yellow stripe (lower), dark feet, an orange lamp low on each side, one hardpoint on top."""
+    """The Belt Pack (more body and detail since the user's request 2026-10-31: "make the belt pack more beautiful,
+    add a bit more body to it"): a dark frame box (mount plate and panels on the torso side), a ribbed carry handle,
+    a recessed belt channel down the back face between two riveted dark rails, a feed chute at the channel top with
+    an olive cap and a curved guide at its foot, 16 rounds on a gentle arc in the channel (each a dark case lying
+    across, a brass tip to +X, a brass band, base and a dark link; Canister1..8 empties hold two rounds each, the top
+    pair first), four sloped olive armor blocks with inset plates and grip notches beside the belt, thick olive side
+    boxes (upper with a slot and a top cap, lower with a yellow stripe, inset panels and bolts) joined by dark
+    straps, a dark base skid with feet, orange lamps low on each side, one hardpoint on top."""
     A, AD, F, K, S, B, Y = "bp_armor", "bp_armor_dark", "bp_frame", "bp_dark", "bp_steel", "bp_brass", "bp_yellow"
     w, h, d = t["w"], t["h"], t["d"]
+    top = h * 0.92
+    sw = w + 0.36  # Outer x of the side boxes.
     parts = []
-    # Frame box, mount plate, back posts and plates on the torso side.
-    parts.append(block("Frame", F, -w, w, -d, -0.08, -h, h * 0.92, chamfer=0.07, bevel=0.015))
-    parts.append(block("MountPlate", K, -w * 0.7, w * 0.7, -0.08, 0.0, -h * 0.8, h * 0.8, chamfer=0.05))
-    for i, (z0, z1) in enumerate(((0.02, h * 0.75), (-h * 0.75, -0.04))):
-        parts.append(block(f"MountPanel{i}", K, -w * 0.5, w * 0.5, -0.1, -0.06, z0, z1, chamfer=0.04, bevel=0.0))
-    # Belt channel (dark well) and the two rails either side of it, up to the handle.
+
+    def bolt(name, x, y0, y1, z, r=0.018):
+        obj = prism(name, S, y0, y1, r, r, z=z, sides=6, bevel=0.0)
+        obj.location.x = x
+        return obj
+
+    # Frame box, mount plate and panels on the torso side.
+    parts.append(block("Frame", F, -w, w, -d, -0.08, -h, top, chamfer=0.08, bevel=0.015))
+    parts.append(block("MountPlate", K, -w * 0.72, w * 0.72, -0.08, 0.0, -h * 0.82, h * 0.8, chamfer=0.05))
+    for i, (z0, z1) in enumerate(((0.04, h * 0.74), (-h * 0.76, -0.04))):
+        parts.append(block(f"MountPanel{i}", F, -w * 0.52, w * 0.52, -0.1, -0.06, z0, z1, chamfer=0.04, bevel=0.0))
+    # Belt channel (dark well), the feed chute on top with its olive cap, and a curved guide at the foot.
     cw = 0.19
-    parts.append(block("BeltWell", K, -cw, cw, -d - 0.02, -d + 0.1, -h + 0.08, h * 0.92 - 0.06, bevel=0.0))
+    parts.append(block("BeltWell", K, -cw, cw, -d - 0.02, -d + 0.1, -h + 0.08, top - 0.06, bevel=0.0))
+    parts.append(block("FeedChute", F, -cw - 0.05, cw + 0.05, -d - 0.16, -d + 0.08, top - 0.1, top + 0.08,
+                       chamfer=0.04, bevel=0.01))
+    parts.append(block("FeedCap", A, -cw - 0.02, cw + 0.02, -d - 0.19, -d - 0.02, top - 0.02, top + 0.11,
+                       chamfer=0.04, bevel=0.012))
+    parts.append(block("FeedMouth", K, -cw + 0.02, cw - 0.02, -d - 0.165, -d - 0.12, top - 0.09, top - 0.04, bevel=0.0))
+    parts.append(loft("BeltGuide", F, [
+        (-h - 0.02, -h - 0.02, -cw - 0.04, cw + 0.04, -d + 0.06, -d - 0.04),
+        (-h + 0.1, -h + 0.06, -cw - 0.04, cw + 0.04, -d + 0.06, -d - 0.17),
+        (-h + 0.16, -h + 0.14, -cw - 0.04, cw + 0.04, -d + 0.06, -d - 0.16)], bevel=0.01))
     for side, sx in (("L", -1.0), ("R", 1.0)):
-        xa, xb = sorted((sx * cw, sx * (cw + 0.08)))
-        parts.append(block(f"Rail{side}", F, xa, xb, -d - 0.12, -d + 0.05, -h - 0.04, h * 0.92 + 0.02, chamfer=0.025,
+        # Rails either side of the belt with rivets and caps.
+        xa, xb = sorted((sx * cw, sx * (cw + 0.09)))
+        parts.append(block(f"Rail{side}", F, xa, xb, -d - 0.13, -d + 0.05, -h - 0.02, top + 0.02, chamfer=0.03,
                            bevel=0.01))
+        for j in range(6):
+            z = top - 0.2 - j * (top + h - 0.36) / 5
+            parts.append(bolt(f"Rivet{side}{j}", sx * (cw + 0.045), -d - 0.14, -d - 0.12, z, r=0.016))
         # Handle post on the rail top.
-        xa, xb = sorted((sx * (cw + 0.04), sx * (cw + 0.12)))
-        parts.append(block(f"HandlePost{side}", F, xa, xb, -0.62, -0.3, h * 0.92 - 0.02, h + 0.16, chamfer=0.025))
-        # Olive armor blocks on the back face beside the belt: upper and lower, sloped to the side.
-        for j, (z0, z1) in enumerate(((0.22, 0.66), (-0.6, -0.14))):
-            xa, xb = sorted((sx * (cw + 0.08), sx * (w + 0.03)))
-            parts.append(block(f"Armor{side}{j}", A, xa, xb, -d - 0.1, -d + 0.04, z0, z1, chamfer=0.06, bevel=0.012))
-            xa, xb = sorted((sx * (cw + 0.13), sx * (w - 0.06)))
-            parts.append(block(f"ArmorPlate{side}{j}", AD, xa, xb, -d - 0.115, -d - 0.09, z0 + 0.05, z0 + 0.14,
+        xa, xb = sorted((sx * (cw + 0.03), sx * (cw + 0.13)))
+        parts.append(block(f"HandlePost{side}", F, xa, xb, -0.64, -0.28, top - 0.02, h + 0.16, chamfer=0.03,
+                           bevel=0.01))
+        # Sloped olive armor blocks beside the belt (thicker at the outer edge), an inset plate and a grip notch.
+        for j, (z0, z1) in enumerate(((0.2, 0.7), (-0.64, -0.12))):
+            x_in, x_out = cw + 0.09, w + 0.06
+            parts.append(loft(f"Armor{side}{j}", A, [
+                (z0, z0, x_in, x_out, -d + 0.04, -d - 0.1),
+                (z0 + 0.06, z0 + 0.06, x_in, x_out, -d + 0.04, -d - 0.17),
+                (z1 - 0.06, z1 - 0.06, x_in, x_out, -d + 0.04, -d - 0.17),
+                (z1, z1, x_in, x_out, -d + 0.04, -d - 0.1)], sx=sx, bevel=0.015))
+            xa, xb = sorted((sx * (x_in + 0.05), sx * (x_out - 0.05)))
+            parts.append(block(f"ArmorInset{side}{j}", AD, xa, xb, -d - 0.185, -d - 0.16, z0 + 0.12, z1 - 0.16,
+                               chamfer=0.02, bevel=0.0))
+            xa, xb = sorted((sx * (x_in + 0.07), sx * (x_in + 0.16)))
+            parts.append(block(f"ArmorNotch{side}{j}", K, xa, xb, -d - 0.19, -d - 0.16, z1 - 0.13, z1 - 0.09,
                                bevel=0.0))
-        # Side boxes: upper with a dark slot panel, lower (taller) with a seam and a yellow stripe.
-        xa, xb = sorted((sx * (w - 0.02), sx * (w + 0.3)))
-        parts.append(block(f"SideBoxUp{side}", A, xa, xb, -d + 0.04, -0.14, 0.42, h * 0.92, chamfer=0.07, bevel=0.012))
-        xa2, xb2 = sorted((sx * (w + 0.29), sx * (w + 0.31)))
-        parts.append(block(f"SideSlot{side}", K, xa2, xb2, -d + 0.2, -0.3, 0.62, 0.72, bevel=0.0))
-        parts.append(block(f"SideBoxLow{side}", A, xa, xb, -d + 0.02, -0.16, -0.66, 0.36, chamfer=0.07, bevel=0.012))
-        parts.append(block(f"SideSeam{side}", F, xa2, xb2, -d + 0.04, -0.18, -0.16, -0.14, bevel=0.0))
-        xa3, xb3 = sorted((sx * (w + 0.3), sx * (w + 0.312)))
+        # Thick side boxes: the upper with a slot, a top cap and bolts; the lower with an inset panel and the
+        # yellow stripe; dark straps between them and round the lower box.
+        xa, xb = sorted((sx * (w - 0.02), sx * sw))
+        parts.append(block(f"SideBoxUp{side}", A, xa, xb, -d + 0.02, -0.12, 0.4, top, chamfer=0.08, bevel=0.015))
+        xa2, xb2 = sorted((sx * (w + 0.06), sx * (sw - 0.06)))
+        parts.append(block(f"SideCap{side}", AD, xa2, xb2, -d + 0.1, -0.2, top - 0.01, top + 0.04, chamfer=0.03,
+                           bevel=0.0))
+        xs0, xs1 = sorted((sx * (sw - 0.01), sx * (sw + 0.012)))
+        parts.append(block(f"SideSlot{side}", K, xs0, xs1, -d + 0.22, -0.3, 0.6, 0.7, bevel=0.0))
+        for j, y in enumerate((-d + 0.14, -0.24)):
+            parts.append(block(f"SideBolt{side}{j}", S, xs0, xs1, y - 0.02, y + 0.02, 0.48, 0.52, bevel=0.0))
+        parts.append(block(f"SideBoxLow{side}", A, xa, xb, -d + 0.0, -0.14, -0.7, 0.34, chamfer=0.08, bevel=0.015))
+        parts.append(block(f"SidePanel{side}", AD, xs0, xs1, -d + 0.1, -0.58, -0.3, 0.2, chamfer=0.02, bevel=0.0))
         y = (-d - 0.14) / 2
-        parts.append(block(f"Stripe{side}", Y, xa3, xb3, y - 0.035, y + 0.035, -0.6, 0.3, bevel=0.0))
-        # Dark foot under the side box with the lamp, and a dark block under the armor.
-        xa, xb = sorted((sx * (w - 0.04), sx * (w + 0.24)))
-        parts.append(block(f"Foot{side}", F, xa, xb, -d + 0.06, -0.18, -h - 0.04, -0.64, chamfer=0.05))
-        xa, xb = sorted((sx * (cw + 0.09), sx * (w - 0.02)))
-        parts.append(block(f"FootBack{side}", F, xa, xb, -d - 0.06, -d + 0.2, -h - 0.04, -h + 0.22, chamfer=0.04))
-    parts.append(block("HandleBar", F, -cw - 0.12, cw + 0.12, -0.62, -0.3, h + 0.06, h + 0.16, chamfer=0.03))
-    parts.append(block("HandleGrip", K, -cw, cw, -0.6, -0.32, h + 0.155, h + 0.17, bevel=0.0))
-    parts.append(block("Hardpoint1", F, -0.12, 0.12, -0.26, -0.14, h * 0.92 - 0.02, h * 0.92 + 0.04, bevel=0.0))
-    parts.append(empty("Aux1", (0.0, -0.2, h * 0.92 + 0.04)))
+        xy0, xy1 = sorted((sx * (sw + 0.008), sx * (sw + 0.02)))
+        parts.append(block(f"Stripe{side}", Y, xy0, xy1, y - 0.035, y + 0.035, -0.64, 0.28, bevel=0.0))
+        xa3, xb3 = sorted((sx * (w - 0.03), sx * (sw + 0.015)))
+        parts.append(block(f"StrapMid{side}", F, xa3, xb3, -d - 0.01, -0.12, 0.34, 0.42, chamfer=0.02, bevel=0.0))
+        parts.append(block(f"StrapLow{side}", F, xa3, xb3, -d - 0.01, -0.12, -0.4, -0.34, chamfer=0.015, bevel=0.0))
+        # Feet under the side box and the armor.
+        xa, xb = sorted((sx * (w - 0.04), sx * (sw - 0.04)))
+        parts.append(block(f"Foot{side}", F, xa, xb, -d + 0.04, -0.16, -h - 0.06, -0.68, chamfer=0.06, bevel=0.01))
+        xa, xb = sorted((sx * (cw + 0.1), sx * (w - 0.02)))
+        parts.append(block(f"FootBack{side}", F, xa, xb, -d - 0.1, -d + 0.2, -h - 0.06, -h + 0.22, chamfer=0.05,
+                           bevel=0.01))
+    # Base skid across the bottom, the handle bar with a ribbed grip, the hardpoint.
+    parts.append(block("BaseSkid", K, -w - 0.02, w + 0.02, -d + 0.06, -0.12, -h - 0.1, -h + 0.02, chamfer=0.05,
+                       bevel=0.0))
+    parts.append(block("HandleBar", F, -cw - 0.13, cw + 0.13, -0.64, -0.28, h + 0.05, h + 0.17, chamfer=0.035,
+                       bevel=0.01))
+    for i in range(4):
+        x = -0.12 + i * 0.08
+        parts.append(block(f"HandleRib{i}", K, x - 0.02, x + 0.02, -0.62, -0.3, h + 0.165, h + 0.18, bevel=0.0))
+    parts.append(block("Hardpoint1", F, -0.12, 0.12, -0.26, -0.14, top - 0.02, top + 0.04, bevel=0.0))
+    parts.append(empty("Aux1", (0.0, -0.2, top + 0.04)))
     lamps = []
     for sx in (-1.0, 1.0):
-        xa, xb = sorted((sx * (w + 0.23), sx * (w + 0.25)))
-        lamps.append(block("Lamp" if sx < 0 else "LampR", "bp_glow", xa, xb, -0.5, -0.42, -h + 0.08, -h + 0.14,
+        xa, xb = sorted((sx * (sw - 0.05), sx * (sw - 0.03)))
+        lamps.append(block("Lamp" if sx < 0 else "LampR", "bp_glow", xa, xb, -0.5, -0.4, -h + 0.06, -h + 0.13,
                            bevel=0.0))
     with bpy.context.temp_override(active_object=lamps[0], selected_editable_objects=lamps):
         bpy.ops.object.join()
