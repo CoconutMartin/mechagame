@@ -192,6 +192,25 @@ func _run() -> void:
 	var holder := switcher.mech.get_node_or_null(^"BackPackMount") as BackPackMount
 	_check(holder != null and is_instance_valid(holder.model)
 			and switcher.mech.get_node_or_null(^"BackPackOutlets") == null, "the Power Pack model is on the mech")
+	var glow := switcher.mech.get_node_or_null(^"BackPackEnergyBar") as BackPackEnergyBar
+	_check(glow != null and glow.get_cables().size() == 6, "6 energy cables on the Power Pack (%d)" %
+			(glow.get_cables().size() if glow != null else 0))
+	if glow != null:
+		var energy := switcher.mech.energy
+		energy.current = energy.capacity
+		await _frames(1)
+		var bright := glow.get_cable_glow()
+		energy.current = energy.capacity * 0.3
+		await _frames(1)
+		var dim := glow.get_cable_glow()
+		_check(bright > dim and dim > 0.0 and absf(bright - glow.cable_glow) < 0.2,
+				"the cables glow with the energy (%.2f at full, %.2f at 30%%)" % [bright, dim])
+		var power_shot := OS.get_environment("POWER_SHOT")
+		if power_shot != "":
+			for e in [1.0, 0.3]:
+				energy.current = energy.capacity * e
+				await _frames(2)
+				root.get_viewport().get_texture().get_image().save_png(power_shot.replace(".png", "_%d.png" % int(e * 100)))
 	_finish()
 
 
