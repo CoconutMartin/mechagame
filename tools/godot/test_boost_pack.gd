@@ -52,7 +52,7 @@ func _run() -> void:
 		var glow := outlets._model.find_child("OutletGlow%d" % (i + 1), true, false) as MeshInstance3D
 		# The wind leaves backward (mech +Z is back).
 		var back := outlet.global_basis.y.normalized().dot(mech.global_basis.z.normalized())
-		_check(back > 0.9, "Outlet%d blows backward (%.2f)" % [i + 1, back])
+		_check(back > 0.8, "Outlet%d blows backward (%.2f)" % [i + 1, back])
 		_check(glow != null and glow.material_overlay == outlets._glow_material, "OutletGlow%d has the glow" % (i + 1))
 	_check(outlets.amount < 0.01 and not outlets._winds[0].emitting, "standing: no glow, no wind")
 	Input.action_press("boost")

@@ -544,28 +544,39 @@ def build_boost_pack(t):
     parts.append(block("LowerVentFrame", F, -0.23, 0.23, lb_y - 0.04, lb_y, lb_z1 - 0.33, lb_z1 - 0.05, chamfer=0.03))
     parts += grille("LowerVent", low_vent, lambda z: lb_y - 0.03, pitch=0.06, inset=0.02)
     parts.append(block("LowerSeam", F, -0.285, 0.285, lb_y - 0.005, -0.12, lb_z1 - 0.4, lb_z1 - 0.37, bevel=0.0))
-    # Fins (wings), mirrored, the side profile from the picture's SIDE view (user request 2026-10-31: "the fin
-    # shape on the dorsal side should be like in the picture", same pack size). Upper fin: wide at the top and
-    # tapering in toward the bottom (back view); in the side view a tall slab whose top slopes down to the back,
-    # its back face leans back toward the top and its lower front corner is cut away. Lower fin: narrow at the
-    # top, flaring out toward the bottom; in the side view a wedge whose back face slopes far back at the bottom.
-    up_top_in, up_top_out = top, top - 0.17
-    up_y_bot, up_y_top, up_z_bot = wy1 + 0.1, wy1 + 0.04, -0.06
+    # Fins (wings), mirrored, the side profile from the picture's SIDE view, same pack size (user requests
+    # 2026-10-31: "the fin shape on the dorsal side should be like in the picture"; "more like an inverted K
+    # shape"). Seen from the side the fins are the two arms of an inverted K: both start at a root next to the
+    # box, the upper fin leans back toward its top and the lower fin leans back toward its bottom, so a V opens
+    # between them on the back. Back view: the upper fin is wide at the top and tapers down, the lower fin is
+    # narrow at the top and flares out at the bottom.
+    up_top_in, up_top_out = top, top - 0.07
+    root_in, root_out = -0.28, -0.62
+    up_z_bot, up_tip_in, up_tip_out = -0.06, -0.62, -1.06
+    low_bottom = -bh - 0.52
+    lw_z_top, lw_z_bot = -0.18, low_bottom + 0.08
+    low_tip_in, low_tip_out = -0.62, -1.10
+
+    def up_frac(z):
+        return (z - up_z_bot) / (up_top_out - up_z_bot)
+
+    def up_in(z):
+        return root_in + (up_tip_in - root_in) * up_frac(z)
 
     def up_face(z):
-        f = (z - up_z_bot) / (up_top_out - up_z_bot)
-        return up_y_bot + (up_y_top - up_y_bot) * f
+        return root_out + (up_tip_out - root_out) * up_frac(z)
 
     def up_outer_x(z):
         return min(wx1, wx0 + 0.28 + (wx1 - wx0 - 0.28) * (z - up_z_bot) / (0.56 - up_z_bot))
 
-    low_bottom = -bh - 0.52
-    lw_y_top, lw_y_bot = wy1 + 0.16, wy1 - 0.1
-    lw_z_top, lw_z_bot = -0.18, low_bottom + 0.08
+    def low_frac(z):
+        return (lw_z_top - z) / (lw_z_top - lw_z_bot)
+
+    def low_in(z):
+        return root_in + (low_tip_in - root_in) * low_frac(z)
 
     def low_face(z):
-        f = (lw_z_top - z) / (lw_z_top - lw_z_bot)
-        return lw_y_top + (lw_y_bot - lw_y_top) * f
+        return root_out + (low_tip_out - root_out) * low_frac(z)
 
     def outlet_tilt(dy, dz):
         """X rotation that turns an empty's +Z out of a face whose bottom to top direction is (dy, dz)."""
@@ -573,18 +584,19 @@ def build_boost_pack(t):
 
     for side, sx, n in (("L", -1.0, 0), ("R", 1.0, 1)):
         parts.append(loft(f"WingUpper{side}", A, [
-            (-0.14, up_z_bot - 0.02, wx0 + 0.03, wx0 + 0.24, -0.53, up_face(up_z_bot) + 0.03),
-            (-0.10, up_z_bot + 0.02, wx0, wx0 + 0.28, -0.48, up_face(up_z_bot + 0.02)),
-            (0.40, 0.40, wx0, up_outer_x(0.40), wy0, up_face(0.40)),
-            (0.62, 0.56, wx0, wx1, wy0, up_face(0.56)),
-            (up_top_in - 0.05, up_top_out - 0.05, wx0, wx1, wy0, up_face(up_top_out - 0.05)),
-            (up_top_in, up_top_out, wx0 + 0.03, wx1 - 0.03, wy0 - 0.04, up_face(up_top_out) + 0.04)], sx=sx,
-            bevel=0.02))
+            (up_z_bot - 0.05, up_z_bot - 0.05, wx0 + 0.03, wx0 + 0.24, up_in(up_z_bot) - 0.03,
+             up_face(up_z_bot) + 0.03),
+            (up_z_bot, up_z_bot, wx0, wx0 + 0.28, up_in(up_z_bot), up_face(up_z_bot)),
+            (0.40, 0.40, wx0, up_outer_x(0.40), up_in(0.40), up_face(0.40)),
+            (0.59, 0.59, wx0, wx1, up_in(0.59), up_face(0.59)),
+            (up_top_in - 0.05, up_top_out - 0.05, wx0, wx1, up_in(up_top_in - 0.05), up_face(up_top_out - 0.05)),
+            (up_top_in, up_top_out, wx0 + 0.03, wx1 - 0.03, up_in(up_top_in) - 0.04, up_face(up_top_out) + 0.04)],
+            sx=sx, bevel=0.02))
         parts.append(loft(f"WingLower{side}", A, [
-            (low_bottom, low_bottom, wx0 + 0.03, wx1 - 0.1, -0.48, lw_y_bot + 0.03),
-            (lw_z_bot, lw_z_bot, wx0, wx1, -0.44, lw_y_bot),
-            (lw_z_top, lw_z_top, wx0, wx0 + 0.27, -0.50, lw_y_top),
-            (lw_z_top + 0.04, lw_z_top + 0.04, wx0 + 0.03, wx0 + 0.23, -0.53, lw_y_top + 0.03)], sx=sx,
+            (low_bottom, low_bottom, wx0 + 0.03, wx1 - 0.1, low_in(low_bottom) - 0.03, low_face(low_bottom) + 0.03),
+            (lw_z_bot, lw_z_bot, wx0, wx1, low_in(lw_z_bot), low_face(lw_z_bot)),
+            (lw_z_top, lw_z_top, wx0, wx0 + 0.27, root_in, root_out),
+            (lw_z_top + 0.04, lw_z_top + 0.04, wx0 + 0.03, wx0 + 0.23, root_in - 0.03, root_out + 0.03)], sx=sx,
             bevel=0.02))
         # A dark panel line on the upper fin's outer side.
         x0, x1 = sorted((sx * (wx1 - 0.004), sx * (wx1 + 0.008)))
@@ -604,21 +616,21 @@ def build_boost_pack(t):
         # Black connectors between the box and the fins.
         for j, (z0, z1) in enumerate(((0.08, 0.32), (-0.44, -0.22))):
             x0, x1 = sorted((sx * (bw - 0.03), sx * (wx0 + 0.03)))
-            parts.append(block(f"Connector{side}{j}", F, x0, x1, -0.75, -0.25, z0, z1, chamfer=0.03))
+            parts.append(block(f"Connector{side}{j}", F, x0, x1, -0.62, -0.3, z0, z1, chamfer=0.03))
         # Outlet1..2 on the upper grilles, Outlet3..4 on the lower ones: +Z out of the grille (the wind).
         z = 0.5
         th = empty(f"Outlet{n + 1}", (sx * (wx0 + 0.2), up_face(z) - 0.03, z))
-        th.rotation_euler = (outlet_tilt(up_y_top - up_y_bot, up_top_out - up_z_bot), 0.0, 0.0)
+        th.rotation_euler = (outlet_tilt(up_tip_out - root_out, up_top_out - up_z_bot), 0.0, 0.0)
         parts.append(th)
         z = (lw_z_top + lw_z_bot) / 2
         th = empty(f"Outlet{n + 3}", (sx * (wx0 + 0.2), low_face(z) - 0.03, z))
-        th.rotation_euler = (outlet_tilt(lw_y_top - lw_y_bot, lw_z_top - lw_z_bot), 0.0, 0.0)
+        th.rotation_euler = (outlet_tilt(root_out - low_tip_out, lw_z_top - lw_z_bot), 0.0, 0.0)
         parts.append(th)
     # Orange lamps on the lower wings' outer sides near the top (one object, Lamp).
     lamps = []
     for sx in (-1.0, 1.0):
         x0, x1 = sorted((sx * (wx0 + 0.27), sx * (wx0 + 0.33)))
-        lamps.append(block("Lamp" if sx > 0 else "LampL", "bp_glow", x0, x1, -0.70, -0.56, -0.42, -0.3, bevel=0.0))
+        lamps.append(block("Lamp" if sx > 0 else "LampL", "bp_glow", x0, x1, -0.62, -0.50, -0.42, -0.3, bevel=0.0))
     with bpy.context.temp_override(active_object=lamps[1], selected_editable_objects=lamps):
         bpy.ops.object.join()
     parts.append(lamps[1])
