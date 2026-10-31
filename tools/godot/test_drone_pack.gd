@@ -7,7 +7,8 @@ extends SceneTree
 ## fires 3 bursts, hits, and is gone at 5 s. A low wall (6 m) in the way: the drones fly over it. A tall wall
 ## (40 m) in the way: they fly around it. Cover after the release (the dummy moves into a U of 30 m walls, open toward
 ## the mech): the drones seek a place that sees it and hit. No drone step passes through a wall or building, no drone touches one
-## (its hit sphere stays free), and no drone is over 12.5 m above the ground. The mech's own weapons skip its drones (get_hit_exclude). A drone shot down
+## (its hit sphere stays free), and no drone is over 12.5 m above the ground. A dummy on a 15 m roof (over the
+## ceiling): the drones fire at it from under the ceiling, at most 45 degrees up, and hit. The mech's own weapons skip its drones (get_hit_exclude). A drone shot down
 ## explodes (an AI drone). AI: an AI enemy with the Drone Pack launches drones at the player; it shoots enemy
 ## drones at it with a heavy rifle (it hits the small drones); with an SMG (its spread misses them: not efficient)
 ## it takes cover; with a beam rifle it charges and shoots them. "One hit" and charged shots hit 75% of the time
@@ -180,7 +181,7 @@ func _wall(center: Vector3, size: Vector3, facing: Vector3) -> StaticBody3D:
 func _watch(drones: Array[AttackDrone], dummy: TargetDummy, right: Vector3, shot_path: String = "") -> Array:
 	var out := []
 	for k in drones.size():
-		out.append([-1.0, 0, -1.0, 0.0, -1.0, 0.0, drones[k].flank])
+		out.append([-1.0, 0, -1.0, 0.0, -1.0, 0.0, drones[k].flank, 0.0])
 	var fire_pos := {}
 	for f in 420:
 		await _frames(1)
@@ -198,6 +199,8 @@ func _watch(drones: Array[AttackDrone], dummy: TargetDummy, right: Vector3, shot
 					out[k][0] = d.age
 					out[k][4] = d.global_position.distance_to(dummy.get_lock_point())
 					out[k][5] = signf((d.global_position - dummy.global_position).dot(right))
+					var to := dummy.get_lock_point() - d.global_position
+					out[k][7] = rad_to_deg(atan2(to.y, Vector2(to.x, to.z).length()))
 				out[k][3] = maxf(out[k][3], d.global_position.distance_to(fire_pos[k]))
 		if OS.has_environment("DRONE_TRACE") and f % 15 == 0:
 			for k in drones.size():
@@ -324,6 +327,26 @@ func _flight_tests(mech: Mech) -> void:
 	print("cover: fires at %.2f s and %.2f s, dummy damage %.0f" % [result[0][0], result[1][0], hp_before - dummy.hp])
 	_check(result[0][0] > 0.0 or result[1][0] > 0.0, "cover: the drones find a firing place that sees the dummy")
 	_check(dummy.hp < hp_before, "cover: the drones hit the dummy in cover")
+	# 4. A dummy on a roof 15 m high (its lock point 20 m up, over the 12.5 m ceiling): the drones fire from under
+	# the ceiling, at most 45 degrees up (user rule), and hit.
+	var roof := _wall(start + flat * 70.0 + Vector3.UP * 7.5, Vector3(10.0, 15.0, 10.0), flat)
+	await _frames(70)
+	dummy.global_position = start + flat * 70.0 + Vector3.UP * 15.0
+	await _frames(2)
+	hp_before = dummy.hp
+	if launcher.docked_count() < 2:
+		await _refill(mech)
+		mech = (current_scene.get_node("LoadoutSwitcher") as LoadoutSwitcher).mech
+		launcher = DroneLauncher.find(mech)
+	_check(launcher.launch(dummy) == 2, "roof: a pair launches")
+	drones = launcher.flying.duplicate()
+	result = await _watch(drones, dummy, right)
+	print("roof: fires at %.2f s and %.2f s, tilt %.1f and %.1f degrees up, dummy damage %.0f" % [result[0][0],
+			result[1][0], result[0][7], result[1][7], hp_before - dummy.hp])
+	_check(result[0][0] > 0.0 or result[1][0] > 0.0, "roof: the drones find a firing place under the ceiling")
+	_check(result[0][7] <= 45.01 and result[1][7] <= 45.01, "roof: they aim at most 45 degrees up")
+	_check(dummy.hp < hp_before, "roof: the drones hit the dummy on the roof")
+	roof.queue_free()
 	_check(_through == 0, "no drone step passed through a wall or building (%d)" % _through)
 	_check(_touches == 0, "no drone touched a wall, a roof or a corner (%d frames)" % _touches)
 	_check(_top_height <= 12.55, "no drone flew over 12.5 m above the ground (top %.2f m)" % _top_height)

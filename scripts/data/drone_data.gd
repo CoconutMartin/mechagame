@@ -37,6 +37,9 @@ extends Resource
 @export_flags_3d_physics var sight_mask: int = 17
 ## Highest flight over the ground under the drone (m; user rule 2026-10-31: 12.5 m). Taller buildings: around.
 @export var max_height: float = 12.5
+## Highest the drone tilts up to aim (degrees; user rule 2026-10-31: 45). A target above the ceiling (a mech on a
+## roof) can be attacked from under it when it is within the gun range, in sight and at most this steep.
+@export var max_tilt_up_deg: float = 45.0
 ## Gap the drone body keeps from walls, roofs and corners (m; user rule: it cannot touch them).
 @export var skin: float = 0.15
 ## Extra room a planned way keeps from them (m).

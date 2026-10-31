@@ -3,7 +3,8 @@ extends AnimatableBody3D
 ## One flying attack drone (user design 2026-10-31; values in DroneData). DroneLauncher takes a drone model node
 ## (Drone<n>) off the back pack and gives it to launch. The drone pops out of its dock and flies to a firing place
 ## on its flank of the target (flank -1 or 1: a launched pair takes both flanks, a pincer). A firing place is
-## within the gun range of the target's lock point and sees it; when the target goes behind cover, the drone seeks
+## within the gun range of the target's lock point, sees it and aims at it at most 45 degrees up (a mech on a roof
+## above the ceiling too); when the target goes behind cover, the drone seeks
 ## a new place (the other flank only when its own has none); a place it finds no way to is dropped too. It flies at
 ## most 12.5 m over the ground, over low buildings and around tall ones, and never touches them (DroneNavigator). At the place it stops and fires its bursts from its
 ## hub (DroneMuzzle<n>); from the first shot it does not move again (user rule). It fires only while it sees the
@@ -155,7 +156,8 @@ func _approach(delta: float) -> void:
 
 ## A firing place: within the gun range and in sight of the target point (DroneData).
 func _can_shoot_from(place: Vector3) -> bool:
-	return place.distance_to(_target_point) <= data.gun.range_m - 0.5 and DroneNavigator.sees(self, place, _target_point)
+	return place.distance_to(_target_point) <= data.gun.range_m - 0.5 \
+			and DroneNavigator.tilt_ok(data, place, _target_point) and DroneNavigator.sees(self, place, _target_point)
 
 
 func _start_fire() -> void:
@@ -210,6 +212,12 @@ func _face(delta: float) -> void:
 	var look := (_target_point - global_position) if phase != Phase.LAUNCH else velocity
 	if look.length() > 0.1:
 		var dir := look.normalized()
+		# It tilts up at most max_tilt_up_deg (user rule).
+		var up_limit := deg_to_rad(data.max_tilt_up_deg)
+		var flat := Vector2(dir.x, dir.z)
+		if flat.length() > 0.001 and atan2(dir.y, flat.length()) > up_limit:
+			var f := flat.normalized() * cos(up_limit)
+			dir = Vector3(f.x, sin(up_limit), f.y)
 		var wanted := Basis.looking_at(dir, Vector3.UP if absf(dir.y) < 0.99 else Vector3.BACK)
 		global_basis = global_basis.slerp(wanted, clampf(delta * 10.0, 0.0, 1.0)).orthonormalized()
 	_spin.rotate_object_local(Vector3.FORWARD, deg_to_rad(data.spin_deg_per_s) * delta)

@@ -9,7 +9,8 @@ extends RefCounted
 ##   cells of path_cell m) at the cruise height, shortened where a sweep is clear, then down to the goal.
 ##   Move: the drone body (hit_radius + skin) sweeps each step and stops before any wall, roof or corner, then
 ##   slides along it, so it never touches one.
-## find_place gives a firing place that sees the target, under the ceiling.
+## find_place gives a firing place under the ceiling that sees the target, within the gun range and at most
+## max_tilt_up_deg below it (a target on a roof above the ceiling can be attacked from under it).
 
 ## Cell solidity cache shared by all drones: key Vector3i(cell x, cruise height dm, cell z) -> [solid, time].
 static var _cells: Dictionary = {}
@@ -40,6 +41,13 @@ static func clear(drone: Node3D, a: Vector3, b: Vector3, mask: int) -> bool:
 		return true
 	var query := PhysicsRayQueryParameters3D.create(a, b, mask)
 	return drone.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+
+## True when a drone at place aims at point with at most max_tilt_up_deg up (any angle down).
+static func tilt_ok(data: DroneData, place: Vector3, point: Vector3) -> bool:
+	var to := point - place
+	var flat := Vector2(to.x, to.z).length()
+	return to.y <= 0.0 or rad_to_deg(atan2(to.y, flat)) <= data.max_tilt_up_deg + 0.01
 
 
 ## True when a drone at place sees point (no wall or building between).
@@ -364,7 +372,8 @@ static func _near_any(offset: Vector3, avoid: PackedVector3Array, radius: float)
 
 
 static func _good_place(drone: AttackDrone, data: DroneData, place: Vector3, center: Vector3) -> bool:
-	if place.distance_to(center) > data.gun.range_m - 1.0 or not sees(drone, place, center):
+	if place.distance_to(center) > data.gun.range_m - 1.0 or not tilt_ok(data, place, center) \
+			or not sees(drone, place, center):
 		return false
 	var space := drone.get_world_3d().direct_space_state
 	# Free air around the place.
