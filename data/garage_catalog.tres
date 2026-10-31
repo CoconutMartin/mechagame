@@ -16,6 +16,7 @@
 [ext_resource type="Resource" path="res://data/weapons/pile_bunker_2.tres" id="pile_bunker_2"]
 [ext_resource type="Resource" path="res://data/weapons/pile_bunker_3.tres" id="pile_bunker_3"]
 [ext_resource type="Resource" path="res://data/weapons/pile_bunker_4.tres" id="pile_bunker_4"]
+[ext_resource type="Resource" path="res://data/weapons/pile_bunker_5.tres" id="pile_bunker_5"]
 [ext_resource type="Resource" path="res://data/weapons/auto_cannon.tres" id="r12"]
 [ext_resource type="Resource" path="res://data/weapons/smg.tres" id="r13"]
 [ext_resource type="Resource" path="res://data/weapons/shotgun.tres" id="shotgun"]
@@ -46,8 +47,8 @@ legs = Array[LegPart]([ExtResource("r4")])
 boosters = Array[BoosterPart]([ExtResource("r5")])
 generators = Array[GeneratorPart]([ExtResource("r6")])
 fcs = Array[FcsPart]([ExtResource("r7")])
-weapons_right = Array[WeaponData]([ExtResource("r8"), ExtResource("r9"), ExtResource("r10"), ExtResource("r11"), ExtResource("pile_bunker_2"), ExtResource("pile_bunker_3"), ExtResource("pile_bunker_4"), ExtResource("r12"), ExtResource("r13"), ExtResource("shotgun"), ExtResource("melee_fist"), ExtResource("melee_hammer"), ExtResource("melee_baton")])
-weapons_left = Array[WeaponData]([ExtResource("r14"), ExtResource("r15"), ExtResource("r13"), ExtResource("shotgun"), ExtResource("r12"), ExtResource("r11"), ExtResource("pile_bunker_2"), ExtResource("pile_bunker_3"), ExtResource("pile_bunker_4"), ExtResource("melee_fist")])
+weapons_right = Array[WeaponData]([ExtResource("r8"), ExtResource("r9"), ExtResource("r10"), ExtResource("r11"), ExtResource("pile_bunker_2"), ExtResource("pile_bunker_3"), ExtResource("pile_bunker_4"), ExtResource("pile_bunker_5"), ExtResource("r12"), ExtResource("r13"), ExtResource("shotgun"), ExtResource("melee_fist"), ExtResource("melee_hammer"), ExtResource("melee_baton")])
+weapons_left = Array[WeaponData]([ExtResource("r14"), ExtResource("r15"), ExtResource("r13"), ExtResource("shotgun"), ExtResource("r12"), ExtResource("r11"), ExtResource("pile_bunker_2"), ExtResource("pile_bunker_3"), ExtResource("pile_bunker_4"), ExtResource("pile_bunker_5"), ExtResource("melee_fist")])
 backs_left = Array[WeaponData]([ExtResource("r16"), ExtResource("r17")])
 backs_right = Array[WeaponData]([ExtResource("r18"), ExtResource("r17")])
 mods = Array[ModData]([ExtResource("r29"), ExtResource("r30"), ExtResource("r31"), ExtResource("r32"), ExtResource("r33"), ExtResource("r34"), ExtResource("r35"), ExtResource("r36")])

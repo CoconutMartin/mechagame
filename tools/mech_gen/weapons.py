@@ -452,6 +452,16 @@ if __name__ == "__main__":
         "rest_transform": bunker_rest, "aim_anchor": v3(bunker_aim),
         "right_pole_rest": v3((0.6, -1.0, 0.3)), "right_pole_aim": v3((0.6, -1.0, 0.4))},
         "res://scenes/weapons/pile_bunker_4.tscn")
+    # Pile Bunker 5, the Shield Bunker (user request 2026-10-31: a shield type Pile Bunker that also blocks like a
+    # shield; hand-made scene scenes/weapons/pile_bunker_5.tscn). Shield HP between the Small Shield and the Hex Shield.
+    res("data/weapons/pile_bunker_5.tres", {"display_name": '"Shield Bunker"', "weight_t": 4.5, "hp": 1000.0,
+        "kind": 5, "fire_rate": 0.16667,
+        "damage": 675.0, "stagger_points": 30.0, "magazine": 3, "reload_time": 5.0,
+        "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,
+        "shake_trauma": 0.45, "shake_kick": 0.6, "recoil_up_deg": 2.0, "recoil_side_deg": 1.0,
+        "rest_transform": bunker_rest, "aim_anchor": v3(bunker_aim),
+        "right_pole_rest": v3((0.6, -1.0, 0.3)), "right_pole_aim": v3((0.6, -1.0, 0.4))},
+        "res://scenes/weapons/pile_bunker_5.tscn")
     for side in ("l", "r"):
         res(f"data/weapons/missile_pod_{side}.tres", {"display_name": f'"Missile Pod {side.upper()}"', "weight_t": 3.0, "hp": 250.0,
             "kind": 3, "slot": 1, "fire_rate": 1.0, "damage": 112.5, "stagger_points": 10.0, "stagger_cap_per_shot": 30.0, "projectile_speed": 90.0, "range_m": 250.0,
