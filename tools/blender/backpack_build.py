@@ -44,7 +44,8 @@ TYPES = {
     "missile": dict(kind="missile", can_r=0.3, can_h=1.7, spine_w=0.2, row_y=(-0.45, -1.12)),
     # Boost Pack (user picture models/guides/backpack_boost_ref.png, 2026-10-31): a gunmetal center box with a
     # lower box, and two wings each side (an upper wing wide at the top, a lower wing that flares out at the
-    # bottom), each with a louvered grille on the back face (the boost outlets, flames later). Built by
+    # bottom), each with a louvered grille on the back face (the boost outlets: they glow and blow wind while
+    # boosting, BackPackOutlets). Built by
     # build_boost_pack. body_w / body_h / body_d: half width, half height and depth of the center box; wing_x:
     # inner and outer x of the wings; wing_y: front and back y of the wings; top: top of the upper wings.
     # Depth is about 60% of the picture's, so the pack stays close to the torso.
@@ -484,10 +485,11 @@ def poly_x_range(pts, z):
     return (min(xs), max(xs)) if xs else None
 
 
-def grille(name, pts, face_y, sx=1.0, pitch=0.07, inset=0.03):
-    """A louvered grille on a face: a black recess plate in the outline pts and light gray slats across it."""
+def grille(name, pts, face_y, sx=1.0, pitch=0.07, inset=0.03, back_name=""):
+    """A louvered grille on a face: a black recess plate (named back_name, or name + "Back") in the outline pts and
+    light gray slats across it."""
     F, S = "bp_frame", "bp_slat"
-    parts = [face_plate(name + "Back", F, pts, face_y, 0.015, sx=sx)]
+    parts = [face_plate(back_name or name + "Back", F, pts, face_y, 0.015, sx=sx)]
     z_low = min(z for _, z in pts) + inset + 0.01
     z_top = max(z for _, z in pts) - inset
     i = 0
@@ -507,8 +509,8 @@ def grille(name, pts, face_y, sx=1.0, pitch=0.07, inset=0.03):
 
 def build_boost_pack(t):
     """The Boost Pack: a center box with a lower box, two wings each side (upper wings wide at the top, lower
-    wings flaring out to the back at the bottom), black connectors, louvered grilles on the back faces (the boost
-    outlets: Thruster1..5 empties, +Z out of the grille), one hardpoint on the box top, orange lamps on the lower
+    wings flaring out to the back at the bottom), black connectors, louvered grilles on the fins' back faces (the boost
+    outlets: Outlet1..4 empties, +Z out of the grille; OutletGlow1..4 recess plates), one hardpoint on the box top, orange lamps on the lower
     wings' sides."""
     A, AD, F, K, S = "bp_gun", "bp_gun_dark", "bp_frame", "bp_dark", "bp_steel"
     bw, bh, bd = t["body_w"], t["body_h"], t["body_d"]
@@ -542,64 +544,81 @@ def build_boost_pack(t):
     parts.append(block("LowerVentFrame", F, -0.23, 0.23, lb_y - 0.04, lb_y, lb_z1 - 0.33, lb_z1 - 0.05, chamfer=0.03))
     parts += grille("LowerVent", low_vent, lambda z: lb_y - 0.03, pitch=0.06, inset=0.02)
     parts.append(block("LowerSeam", F, -0.285, 0.285, lb_y - 0.005, -0.12, lb_z1 - 0.4, lb_z1 - 0.37, bevel=0.0))
-    th = empty("Thruster5", (0.0, lb_y - 0.07, lb_z1 - 0.19))
-    th.rotation_euler = (math.pi / 2, 0.0, 0.0)
-    parts.append(th)
-    # Wings, mirrored. Upper wing: wide at the top, its outer edge slants in toward the bottom; the top slopes down
-    # to the back. Lower wing: narrow at the top, its outer edge and back face flare out toward the bottom.
-    up_top_in, up_top_out = top, top - 0.08
+    # Fins (wings), mirrored, the side profile from the picture's SIDE view (user request 2026-10-31: "the fin
+    # shape on the dorsal side should be like in the picture", same pack size). Upper fin: wide at the top and
+    # tapering in toward the bottom (back view); in the side view a tall slab whose top slopes down to the back,
+    # its back face leans back toward the top and its lower front corner is cut away. Lower fin: narrow at the
+    # top, flaring out toward the bottom; in the side view a wedge whose back face slopes far back at the bottom.
+    up_top_in, up_top_out = top, top - 0.17
+    up_y_bot, up_y_top, up_z_bot = wy1 + 0.1, wy1 + 0.04, -0.06
+
+    def up_face(z):
+        f = (z - up_z_bot) / (up_top_out - up_z_bot)
+        return up_y_bot + (up_y_top - up_y_bot) * f
+
+    def up_outer_x(z):
+        return min(wx1, wx0 + 0.28 + (wx1 - wx0 - 0.28) * (z - up_z_bot) / (0.56 - up_z_bot))
+
     low_bottom = -bh - 0.52
-    lw_y_top, lw_y_bot = wy1 + 0.04, wy1 - 0.1
-    lw_z_top, lw_z_bot = -0.18, low_bottom + 0.12
+    lw_y_top, lw_y_bot = wy1 + 0.16, wy1 - 0.1
+    lw_z_top, lw_z_bot = -0.18, low_bottom + 0.08
 
     def low_face(z):
         f = (lw_z_top - z) / (lw_z_top - lw_z_bot)
         return lw_y_top + (lw_y_bot - lw_y_top) * f
 
+    def outlet_tilt(dy, dz):
+        """X rotation that turns an empty's +Z out of a face whose bottom to top direction is (dy, dz)."""
+        return math.atan2(dz, dy)
+
     for side, sx, n in (("L", -1.0, 0), ("R", 1.0, 1)):
         parts.append(loft(f"WingUpper{side}", A, [
-            (-0.06, -0.12, wx0 + 0.03, wx0 + 0.23, wy0 - 0.04, wy1 + 0.04),
-            (0.0, -0.06, wx0, wx0 + 0.27, wy0, wy1),
-            (0.62, 0.56, wx0, wx1, wy0, wy1),
-            (up_top_in - 0.05, up_top_out - 0.05, wx0, wx1, wy0, wy1),
-            (up_top_in, up_top_out, wx0 + 0.03, wx1 - 0.03, wy0 - 0.04, wy1 + 0.04)], sx=sx, bevel=0.02))
-        parts.append(loft(f"WingLower{side}", A, [
-            (low_bottom, low_bottom, wx0 + 0.03, wx1 - 0.1, wy0 - 0.05, lw_y_bot + 0.03),
-            (lw_z_bot, lw_z_bot, wx0, wx1, wy0, lw_y_bot),
-            (lw_z_top, lw_z_top, wx0, wx0 + 0.27, wy0, lw_y_top),
-            (lw_z_top + 0.04, lw_z_top + 0.04, wx0 + 0.03, wx0 + 0.23, wy0 - 0.04, lw_y_top + 0.03)], sx=sx,
+            (-0.14, up_z_bot - 0.02, wx0 + 0.03, wx0 + 0.24, -0.53, up_face(up_z_bot) + 0.03),
+            (-0.10, up_z_bot + 0.02, wx0, wx0 + 0.28, -0.48, up_face(up_z_bot + 0.02)),
+            (0.40, 0.40, wx0, up_outer_x(0.40), wy0, up_face(0.40)),
+            (0.62, 0.56, wx0, wx1, wy0, up_face(0.56)),
+            (up_top_in - 0.05, up_top_out - 0.05, wx0, wx1, wy0, up_face(up_top_out - 0.05)),
+            (up_top_in, up_top_out, wx0 + 0.03, wx1 - 0.03, wy0 - 0.04, up_face(up_top_out) + 0.04)], sx=sx,
             bevel=0.02))
-        # A dark panel line on the upper wing's outer side.
+        parts.append(loft(f"WingLower{side}", A, [
+            (low_bottom, low_bottom, wx0 + 0.03, wx1 - 0.1, -0.48, lw_y_bot + 0.03),
+            (lw_z_bot, lw_z_bot, wx0, wx1, -0.44, lw_y_bot),
+            (lw_z_top, lw_z_top, wx0, wx0 + 0.27, -0.50, lw_y_top),
+            (lw_z_top + 0.04, lw_z_top + 0.04, wx0 + 0.03, wx0 + 0.23, -0.53, lw_y_top + 0.03)], sx=sx,
+            bevel=0.02))
+        # A dark panel line on the upper fin's outer side.
         x0, x1 = sorted((sx * (wx1 - 0.004), sx * (wx1 + 0.008)))
-        parts.append(block(f"WingSeam{side}", AD, x0, x1, wy1 + 0.3, wy1 + 0.33, 0.68, up_top_out - 0.15, bevel=0.0))
-        # Grilles: the upper one tapers to the bottom with a dark octagonal block, the lower one widens.
+        parts.append(block(f"WingSeam{side}", AD, x0, x1, wy1 + 0.3, wy1 + 0.33, 0.68, up_top_out - 0.1, bevel=0.0))
+        # Outlet grilles (user 2026-10-31: "the outlet is on the fins"): the upper one tapers to the bottom with a
+        # dark octagonal block, the lower one widens. The black recess plate of each is OutletGlow<n> (lit while
+        # boosting, BackPackOutlets).
         up_pts = [(wx0 + 0.08, 0.06), (wx0 + 0.21, 0.06), (wx1 - 0.08, 0.64), (wx1 - 0.08, up_top_out - 0.12),
                   (wx0 + 0.08, up_top_out - 0.12)]
-        parts += grille(f"GrilleUp{side}", up_pts, lambda z: wy1, sx=sx)
+        parts += grille(f"GrilleUp{side}", up_pts, up_face, sx=sx, back_name=f"OutletGlow{n + 1}")
         x0, x1 = sorted((sx * (wx0 + 0.1), sx * (wx0 + 0.27)))
-        parts.append(block(f"GrilleBlock{side}", K, x0, x1, wy1 - 0.08, wy1, 0.1, 0.27, chamfer=0.045, bevel=0.01))
+        yb = up_face(0.185)
+        parts.append(block(f"GrilleBlock{side}", K, x0, x1, yb - 0.08, yb, 0.1, 0.27, chamfer=0.045, bevel=0.01))
         low_pts = [(wx0 + 0.08, lw_z_bot + 0.06), (wx1 - 0.1, lw_z_bot + 0.06), (wx0 + 0.24, lw_z_top - 0.08),
                    (wx0 + 0.08, lw_z_top - 0.08)]
-        parts += grille(f"GrilleLow{side}", low_pts, low_face, sx=sx)
-        # Black connectors between the box and the wings.
+        parts += grille(f"GrilleLow{side}", low_pts, low_face, sx=sx, back_name=f"OutletGlow{n + 3}")
+        # Black connectors between the box and the fins.
         for j, (z0, z1) in enumerate(((0.08, 0.32), (-0.44, -0.22))):
             x0, x1 = sorted((sx * (bw - 0.03), sx * (wx0 + 0.03)))
             parts.append(block(f"Connector{side}{j}", F, x0, x1, -0.75, -0.25, z0, z1, chamfer=0.03))
-        # Boost outlets: Thruster1..2 on the upper grilles (+Z to the back), 3..4 on the lower ones (along the
-        # tilted face's normal).
-        th = empty(f"Thruster{n + 1}", (sx * (wx0 + 0.2), wy1 - 0.02, 0.55))
-        th.rotation_euler = (math.pi / 2, 0.0, 0.0)
+        # Outlet1..2 on the upper grilles, Outlet3..4 on the lower ones: +Z out of the grille (the wind).
+        z = 0.5
+        th = empty(f"Outlet{n + 1}", (sx * (wx0 + 0.2), up_face(z) - 0.03, z))
+        th.rotation_euler = (outlet_tilt(up_y_top - up_y_bot, up_top_out - up_z_bot), 0.0, 0.0)
         parts.append(th)
         z = (lw_z_top + lw_z_bot) / 2
-        tilt = math.atan2(lw_y_top - lw_y_bot, lw_z_top - lw_z_bot)
-        th = empty(f"Thruster{n + 3}", (sx * (wx0 + 0.2), low_face(z) - 0.02, z))
-        th.rotation_euler = (math.pi / 2 - tilt, 0.0, 0.0)
+        th = empty(f"Outlet{n + 3}", (sx * (wx0 + 0.2), low_face(z) - 0.03, z))
+        th.rotation_euler = (outlet_tilt(lw_y_top - lw_y_bot, lw_z_top - lw_z_bot), 0.0, 0.0)
         parts.append(th)
     # Orange lamps on the lower wings' outer sides near the top (one object, Lamp).
     lamps = []
     for sx in (-1.0, 1.0):
         x0, x1 = sorted((sx * (wx0 + 0.27), sx * (wx0 + 0.33)))
-        lamps.append(block("Lamp" if sx > 0 else "LampL", "bp_glow", x0, x1, -0.62, -0.46, -0.42, -0.3, bevel=0.0))
+        lamps.append(block("Lamp" if sx > 0 else "LampL", "bp_glow", x0, x1, -0.70, -0.56, -0.42, -0.3, bevel=0.0))
     with bpy.context.temp_override(active_object=lamps[1], selected_editable_objects=lamps):
         bpy.ops.object.join()
     parts.append(lamps[1])
