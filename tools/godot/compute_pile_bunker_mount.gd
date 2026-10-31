@@ -8,7 +8,9 @@ extends SceneTree
 ## so its detailed side faces out on both arms. Prints PileBunkerWeapon.bone_mount_right / bone_mount_left. Run:
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/compute_pile_bunker_mount.gd
 ## Another model (Pile Bunker 2, 2026-10-31): MODEL=res://models/pilebunker_2/pilebunker_2.glb MIRROR=none
-## (MIRROR: R, L, both or none; default R).
+## (MIRROR: R, L, both or none; default R). ALIGN=axis puts the stake axis (model origin height) level with the
+## middle of the forearm armor's height instead of the model's bottom on the armor's bottom (Pile Bunker 3,
+## user request 2026-10-31: "the spike aligns with the forearm").
 
 var MODEL := OS.get_environment("MODEL") if OS.has_environment("MODEL") else "res://models/pile_bunker/pile_bunker.glb"
 ## Gap between the armor's outer face and the model's plain side (m).
@@ -61,9 +63,11 @@ func _run() -> void:
 		var out := x if side == "R" else -x
 		var armor_out := -INF
 		var armor_bottom := INF
+		var armor_top := -INF
 		for p in points:
 			armor_out = maxf(armor_out, p.dot(out))
 			armor_bottom = minf(armor_bottom, p.dot(up))
+			armor_top = maxf(armor_top, p.dot(up))
 		# The model in Mount space (mirrored for this hand): its extent toward the arm and its bottom.
 		var mirror := Basis.from_scale(Vector3(-1.0, 1.0, 1.0)) if MIRROR[side] else Basis.IDENTITY
 		var inner := -INF
@@ -73,7 +77,8 @@ func _run() -> void:
 			var m := mirror * q
 			inner = maxf(inner, -m.x * out_sign)
 			bottom = minf(bottom, m.y)
-		var origin := out * (armor_out + GAP + inner) + up * (armor_bottom - bottom)
+		var height := (armor_bottom + armor_top) / 2.0 if OS.get_environment("ALIGN") == "axis" else armor_bottom - bottom
+		var origin := out * (armor_out + GAP + inner) + up * height
 		var place := Transform3D(Basis(x, up, z), origin)
 		print("%s armor along %s, outer face %.3f, bottom %.3f; model inner side %.3f, bottom %.3f" % [side, along,
 				armor_out, armor_bottom, inner, bottom])

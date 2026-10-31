@@ -16,8 +16,8 @@ drum_paths = Array[NodePath]([NodePath("Mount/Model/Drum")])
 nose_ring_path = NodePath("Mount/Model/NoseRing")
 mirror_path = NodePath("Mount/Model")
 on_forearm_bone = true
-bone_mount_right = Transform3D(0.99751, 0.00737, 0.07019, 0.07023, -0.00521, -0.99752, -0.00699, 0.99996, -0.00572, 1.04393, 0.06967, 0.66113)
-bone_mount_left = Transform3D(0.99797, 0.00390, -0.06359, -0.06363, 0.00928, -0.99793, -0.00331, 0.99995, 0.00950, -1.03061, 0.07253, 0.71949)
+bone_mount_right = Transform3D(0.99751, 0.00737, 0.07019, 0.07023, -0.00521, -0.99752, -0.00699, 0.99996, -0.00572, 1.03878, 0.07331, -0.03742)
+bone_mount_left = Transform3D(0.99797, 0.00390, -0.06359, -0.06363, 0.00928, -0.99793, -0.00331, 0.99995, 0.00950, -1.03332, 0.06607, 0.02381)
 bone_mirror_right = false
 bone_mirror_left = false
 
