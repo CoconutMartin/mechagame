@@ -6,7 +6,7 @@ extends Node
 ## BackPackMount adds this node when the model has OutletFlap nodes.
 
 ## Flap angle when fully open (degrees; the top edge swings out).
-@export var open_angle_deg: float = 65.0
+@export var open_angle_deg: float = 90.0
 ## How fast the flaps open (fraction of the full swing per second).
 @export var open_speed: float = 6.0
 ## How fast the flaps close (fraction of the full swing per second).

@@ -489,8 +489,8 @@ def poly_x_range(pts, z):
 def grille_flaps(name, pts, face_y, depth, sx, pitch, inset, z_from=-99.0):
     """Louver flaps across a recessed grille (user request 2026-10-31: "turn the grilles into flaps that open when
     boosting and close when not boosting"). Each flap is its own object <name><i>, origin on its hinge (the flap's
-    middle line, depth * 0.4 inside the face), local X = the hinge along the fin's width, local Z = up along the
-    face, local -Y = out of the face. Closed (as built) the flaps lie in the face plane and overlap a little, so
+    middle line, depth * 0.3 inside the face, so a flap open at a right angle clears the back plate), local X = the
+    hinge along the fin's width, local Z = up along the face, local -Y = out of the face. Closed (as built) the flaps lie in the face plane and overlap a little, so
     they cover the recess; the game turns them about local X to open them (BackPackFlaps)."""
     height, thick = pitch + 0.012, 0.014
     z_low = max(min(z for _, z in pts) + 0.01, z_from)
@@ -511,7 +511,7 @@ def grille_flaps(name, pts, face_y, depth, sx, pitch, inset, z_from=-99.0):
                 bmesh.ops.create_cube(bm, size=1.0)
                 bmesh.ops.scale(bm, vec=(x1 - x0, thick, height), verts=bm.verts)
                 obj = new_object(f"{name}{i}", bm)
-                obj.location = (sx * (x0 + x1) / 2, face_y(z) + depth * 0.4, z)
+                obj.location = (sx * (x0 + x1) / 2, face_y(z) + depth * 0.3, z)
                 obj.rotation_euler = (tilt, 0.0, 0.0)
                 parts.append(finish(obj, "bp_slat", 0.004))
         z += pitch
