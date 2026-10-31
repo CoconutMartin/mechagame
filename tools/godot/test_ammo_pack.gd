@@ -84,7 +84,46 @@ func _run() -> void:
 			"Missile Pack: no canister for a gun")
 	_check(BackPackMount.take_canister(mech, load("res://data/weapons/missile_pod_l.tres"))
 			and BackPackMount.canisters_left(mech) == 3, "Missile Pack: a canister for a missile pod, 3 left")
+	await _reload_cases(switcher, loadout)
 	_finish()
+
+
+## Weapons take canisters when their reserve is empty: a Heavy Rifle from the Ammo Pack; with the Missile Pack the
+## rifle stays empty and a missile pod (back left) refills.
+func _reload_cases(switcher: LoadoutSwitcher, base: Loadout) -> void:
+	var loadout := base.duplicate() as Loadout
+	loadout.weapon_right = load("res://data/weapons/heavy_rifle.tres")
+	loadout.back_left = load("res://data/weapons/missile_pod_l.tres")
+	loadout.back_pack = load(PACK) as BackPackPart
+	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
+	await _frames(60)
+	var mech := switcher.mech
+	var weapons := mech.get_node("WeaponController") as WeaponController
+	var gun := weapons.right_weapon
+	gun.ammo = 0
+	gun.reserve_ammo = 0
+	gun.start_reload()
+	_check(gun.reload_left > 0.0 and gun.reserve_ammo == gun.data.magazine and BackPackMount.canisters_left(mech) == 5,
+			"Ammo Pack: an empty rifle reloads from a canister (reserve %d, %d left)" % [gun.reserve_ammo,
+			BackPackMount.canisters_left(mech)])
+	loadout.back_pack = load(MISSILE_PACK) as BackPackPart
+	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
+	await _frames(60)
+	mech = switcher.mech
+	weapons = mech.get_node("WeaponController") as WeaponController
+	gun = weapons.right_weapon
+	gun.ammo = 0
+	gun.reserve_ammo = 0
+	gun.start_reload()
+	_check(gun.reload_left <= 0.0 and gun.is_empty() and BackPackMount.canisters_left(mech) == 4,
+			"Missile Pack: the rifle stays empty, 4 canisters left")
+	var pod := weapons.back_left
+	pod.ammo = 0
+	pod.reserve_ammo = 0
+	await _frames(5)
+	_check(BackPackMount.canisters_left(mech) == 3 and pod.reserve_ammo > 0,
+			"Missile Pack: the empty pod takes a canister (reserve %d, %d left)" % [pod.reserve_ammo,
+			BackPackMount.canisters_left(mech)])
 
 
 func _finish() -> void:

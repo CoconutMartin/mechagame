@@ -333,7 +333,7 @@ if __name__ == "__main__":
         "kind": 0, "fire_rate": 0.33333, "damage": 90.0, "stagger_points": 18.0, "projectile_speed": 400.0, "spread_deg": 0.4,
         "range_m": 310.0, "effective_range_m": 155.0,
         "recoil_up_deg": 2.0, "recoil_side_deg": 0.8, "model_kick_back": 0.7, "model_kick_up_deg": 10.0,
-        "shake_trauma": 0.25, "shake_kick": 0.12, "magazine": 12, "reload_time": 3.5,
+        "shake_trauma": 0.25, "shake_kick": 0.12, "magazine": 12, "reserve_magazines": 5, "reload_time": 3.5,
         # Forearm line (2026-10-24): found by the in-game solver tools/godot/measure_arms_solve.gd: the gun axis lies
         # along the forearm at rest and aim (the aim wrist is the same place for all three guns); at rest the arm is the empty arm's hang pose moved 0.4 m out and 0.2 m up
         # (so the shoulder blocks match the empty side) and the gun is rolled 16 deg (keeps off the thigh and the
@@ -418,7 +418,7 @@ if __name__ == "__main__":
     bunker_aim = RIGHT_HAND_AIM
     res("data/weapons/pile_bunker.tres", {"display_name": '"Pile Bunker"', "weight_t": 2.5, "hp": 300.0,
         "kind": 5, "fire_rate": 0.16667,  # 1 punch per 6 s (user 2026-10-15)
-        "damage": 675.0, "stagger_points": 30.0, "magazine": 3, "reload_time": 5.0,
+        "damage": 675.0, "stagger_points": 30.0, "magazine": 3, "reserve_magazines": 3, "reload_time": 5.0,
         "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,
         "shake_trauma": 0.45, "shake_kick": 0.6, "recoil_up_deg": 2.0, "recoil_side_deg": 1.0,
         "rest_transform": bunker_rest, "aim_anchor": v3(bunker_aim),
@@ -428,7 +428,7 @@ if __name__ == "__main__":
     # the same hold and values, a bigger model.
     res("data/weapons/pile_bunker_2.tres", {"display_name": '"Pile Bunker 2"', "weight_t": 3.0, "hp": 300.0,
         "kind": 5, "fire_rate": 0.16667,
-        "damage": 675.0, "stagger_points": 30.0, "magazine": 3, "reload_time": 5.0,
+        "damage": 675.0, "stagger_points": 30.0, "magazine": 3, "reserve_magazines": 3, "reload_time": 5.0,
         "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,
         "shake_trauma": 0.45, "shake_kick": 0.6, "recoil_up_deg": 2.0, "recoil_side_deg": 1.0,
         "rest_transform": bunker_rest, "aim_anchor": v3(bunker_aim),
@@ -437,7 +437,7 @@ if __name__ == "__main__":
     # Pile Bunker 3 (user design 2026-10-31, one long spike; hand-made scene scenes/weapons/pile_bunker_3.tscn).
     res("data/weapons/pile_bunker_3.tres", {"display_name": '"Pile Bunker 3"', "weight_t": 2.8, "hp": 300.0,
         "kind": 5, "fire_rate": 0.16667,
-        "damage": 675.0, "stagger_points": 30.0, "magazine": 3, "reload_time": 5.0,
+        "damage": 675.0, "stagger_points": 30.0, "magazine": 3, "reserve_magazines": 3, "reload_time": 5.0,
         "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,
         "shake_trauma": 0.45, "shake_kick": 0.6, "recoil_up_deg": 2.0, "recoil_side_deg": 1.0,
         "rest_transform": bunker_rest, "aim_anchor": v3(bunker_aim),
@@ -446,7 +446,7 @@ if __name__ == "__main__":
     # Pile Bunker 4 (user design 2026-10-31, spike in three claws; hand-made scene scenes/weapons/pile_bunker_4.tscn).
     res("data/weapons/pile_bunker_4.tres", {"display_name": '"Pile Bunker 4"', "weight_t": 3.2, "hp": 300.0,
         "kind": 5, "fire_rate": 0.16667,
-        "damage": 675.0, "stagger_points": 30.0, "magazine": 3, "reload_time": 5.0,
+        "damage": 675.0, "stagger_points": 30.0, "magazine": 3, "reserve_magazines": 3, "reload_time": 5.0,
         "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,
         "shake_trauma": 0.45, "shake_kick": 0.6, "recoil_up_deg": 2.0, "recoil_side_deg": 1.0,
         "rest_transform": bunker_rest, "aim_anchor": v3(bunker_aim),
@@ -456,7 +456,7 @@ if __name__ == "__main__":
     # shield; hand-made scene scenes/weapons/pile_bunker_5.tscn). Shield HP between the Small Shield and the Hex Shield.
     res("data/weapons/pile_bunker_5.tres", {"display_name": '"Shield Bunker"', "weight_t": 4.5, "hp": 1000.0,
         "kind": 5, "fire_rate": 0.16667,
-        "damage": 675.0, "stagger_points": 30.0, "magazine": 3, "reload_time": 5.0,
+        "damage": 675.0, "stagger_points": 30.0, "magazine": 3, "reserve_magazines": 3, "reload_time": 5.0,
         "lunge_distance": 16.0, "lunge_speed": 32.0, "lunge_energy": 20.0,
         "shake_trauma": 0.45, "shake_kick": 0.6, "recoil_up_deg": 2.0, "recoil_side_deg": 1.0,
         "rest_transform": bunker_rest, "aim_anchor": v3(bunker_aim),
@@ -465,7 +465,7 @@ if __name__ == "__main__":
     for side in ("l", "r"):
         res(f"data/weapons/missile_pod_{side}.tres", {"display_name": f'"Missile Pod {side.upper()}"', "weight_t": 3.0, "hp": 250.0,
             "kind": 3, "slot": 1, "fire_rate": 1.0, "damage": 112.5, "stagger_points": 10.0, "stagger_cap_per_shot": 30.0, "projectile_speed": 90.0, "range_m": 250.0,
-            "magazine": 4, "reload_time": 6.0, "lock_box_deg": 7.0, "lock_time": 0.5, "missile_turn_deg": 110.0, "lock_range_m": 500.0, "max_locks": 4,
+            "magazine": 4, "reserve_magazines": 4, "reload_time": 6.0, "lock_box_deg": 7.0, "lock_time": 0.5, "missile_turn_deg": 110.0, "lock_range_m": 500.0, "max_locks": 4,
             "recoil_up_deg": 0.3, "recoil_side_deg": 0.3, "shake_trauma": 0.08, "shake_kick": 0.1},
             f"res://scenes/weapons/missile_pod_{side}.tscn")
     res("data/weapons/warden_shield.tres", {"display_name": '"Hex Shield"', "weight_t": 3.0, "hp": 1200.0,

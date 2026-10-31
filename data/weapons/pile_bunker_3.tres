@@ -13,6 +13,7 @@ fire_rate = 0.16667
 damage = 675.0
 stagger_points = 30.0
 magazine = 3
+reserve_magazines = 3
 reload_time = 5.0
 lunge_distance = 16.0
 lunge_speed = 32.0

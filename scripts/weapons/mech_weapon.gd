@@ -11,6 +11,9 @@ var data: WeaponData
 var controller: WeaponController
 var trigger_held: bool = false
 var ammo: int = 0
+## Rounds left in the reserve besides the loaded magazine (user decision 2026-10-31: finite ammo, the pack is the
+## reserve). -1 = unlimited. A reload fills the magazine from it; when it is 0, a reload takes a canister from the back pack.
+var reserve_ammo: int = -1
 ## Seconds left in the reload. 0 = not reloading.
 var reload_left: float = 0.0
 ## 0 to 100.
@@ -38,10 +41,11 @@ func setup(weapon_data: WeaponData, weapon_controller: WeaponController) -> void
 	data = weapon_data
 	controller = weapon_controller
 	ammo = data.magazine
+	reserve_ammo = data.reserve_magazines * data.magazine if data.reserve_magazines >= 0 else -1
 
 
 ## A new hand takes the weapon (it was picked up from the ground): it talks to this controller from now
-## on. Ammo, heat and HP stay.
+## on. Ammo, reserve, heat and HP stay.
 func rebind(new_controller: WeaponController) -> void:
 	controller = new_controller
 
@@ -78,7 +82,7 @@ func _physics_process(delta: float) -> void:
 		reload_left -= delta
 		if reload_left <= 0.0:
 			reload_left = 0.0
-			ammo = data.magazine
+			fill_magazine()
 	_update(delta)
 
 
@@ -109,9 +113,37 @@ func consume(count: int = 1) -> void:
 			start_reload()
 
 
+## Starts a reload when the magazine is not full and rounds are at hand (the reserve, or a canister from the back pack).
+## No rounds = no reload: the weapon is empty.
 func start_reload() -> void:
-	if reload_left <= 0.0 and ammo < data.magazine:
+	if reload_left <= 0.0 and ammo < data.magazine and has_reload_rounds():
 		reload_left = data.reload_time
+
+
+## True when the reserve holds rounds (or is unlimited). With an empty reserve it takes one canister from the back pack
+## (one canister = one full magazine in the reserve); false when there is no canister.
+func has_reload_rounds() -> bool:
+	if uses_heat() or reserve_ammo != 0:
+		return true
+	if controller == null or not BackPackMount.take_canister(controller.mech, data):
+		return false
+	reserve_ammo = data.magazine
+	return true
+
+
+## Moves rounds from the reserve to the magazine, up to a full magazine. Returns the count moved.
+func fill_magazine() -> int:
+	var need := data.magazine - ammo
+	var moved := need if reserve_ammo < 0 else mini(need, reserve_ammo)
+	ammo += moved
+	if reserve_ammo >= 0:
+		reserve_ammo -= moved
+	return moved
+
+
+## True when the weapon has no rounds and no reload runs (ammo weapons only).
+func is_empty() -> bool:
+	return not uses_heat() and ammo <= 0 and reserve_ammo == 0 and reload_left <= 0.0
 
 
 ## Weapon pose between rest and aim. The blade overrides it for its swing.
@@ -135,7 +167,16 @@ func get_status_text() -> String:
 		return "Heat %s %d%%" % [_bar(heat / 100.0), roundi(heat)]
 	if reload_left > 0.0:
 		return "RELOAD %s" % _bar(1.0 - reload_left / data.reload_time)
-	return "%d / %d" % [ammo, data.magazine]
+	return ammo_text()
+
+
+## "ammo / magazine  [reserve]", or "EMPTY".
+func ammo_text() -> String:
+	if is_empty():
+		return "EMPTY"
+	if reserve_ammo < 0:
+		return "%d / %d" % [ammo, data.magazine]
+	return "%d / %d  [%d]" % [ammo, data.magazine, reserve_ammo]
 
 
 func _bar(fraction: float) -> String:

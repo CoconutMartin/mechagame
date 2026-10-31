@@ -17,6 +17,7 @@ stagger_cap_per_shot = 30.0
 projectile_speed = 90.0
 range_m = 250.0
 magazine = 4
+reserve_magazines = 4
 reload_time = 6.0
 lock_box_deg = 7.0
 lock_time = 0.5

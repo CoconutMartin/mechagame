@@ -25,6 +25,7 @@ model_kick_up_deg = 2.0
 shake_trauma = 0.08
 shake_kick = 0.04
 magazine = 45
+reserve_magazines = 4
 reload_time = 2.5
 rest_transform = Transform3D(0.9443972, -0.0352323, -0.3269138, 0.2265883, 0.7902074, 0.5694119, 0.238268, -0.6118259, 0.754253, 2.018764, 0.813291, -1.4226328)
 aim_anchor = Vector3(1.5293, 1.7368, -1.2396)

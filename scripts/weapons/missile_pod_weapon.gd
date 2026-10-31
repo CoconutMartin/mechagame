@@ -42,20 +42,28 @@ func is_busy() -> bool:
 	return trigger_held or not _queue.is_empty()
 
 
-## One missile at a time instead of a full reload.
+## One missile at a time instead of a full reload (the R key does nothing here; the trickle runs by itself).
 func start_reload() -> void:
 	pass
 
 
-func _update(delta: float) -> void:
-	if ammo < data.magazine:
-		_trickle += delta
-		var each := data.reload_time / maxf(data.magazine, 1)
-		if _trickle >= each:
-			_trickle -= each
-			ammo += 1
-	else:
+## Loads one missile per step from the reserve. With an empty reserve it takes a canister from the back pack (a
+## full magazine of missiles in the reserve). No rounds = no loading: the pod is empty.
+func _trickle_load(delta: float) -> void:
+	if ammo >= data.magazine or not has_reload_rounds():
 		_trickle = 0.0
+		return
+	_trickle += delta
+	var each := data.reload_time / maxf(data.magazine, 1)
+	if _trickle >= each:
+		_trickle -= each
+		ammo += 1
+		if reserve_ammo > 0:
+			reserve_ammo -= 1
+
+
+func _update(delta: float) -> void:
+	_trickle_load(delta)
 	_update_launches(delta)
 	if is_lock_mode():
 		_update_locking(delta)
@@ -169,8 +177,8 @@ static func _lock_point(target: Node3D) -> Vector3:
 
 
 func get_status_text() -> String:
-	var text := "%d / %d" % [ammo, data.magazine]
-	if ammo < data.magazine:
+	var text := ammo_text()
+	if ammo < data.magazine and not is_empty():
 		text += "  +%s" % _bar(_trickle / (data.reload_time / maxf(data.magazine, 1)))
 	if trigger_held:
 		text += "  LOCK %d/%d" % [locks.size(), mini(data.max_locks, ammo)]

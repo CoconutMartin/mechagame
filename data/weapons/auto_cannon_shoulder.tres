@@ -21,6 +21,7 @@ recoil_side_deg = 0.75
 shake_trauma = 0.35
 shake_kick = 0.25
 magazine = 8
+reserve_magazines = 5
 reload_time = 4.5
 slot = 1
 scene = ExtResource("scene")

@@ -60,6 +60,9 @@ enum Slot { ARM, BACK }
 @export_group("Ammo")
 ## Shots before a reload (guns and missiles).
 @export var magazine: int = 12
+## Full magazines the weapon carries besides the loaded one (the reserve). -1 = unlimited. When the reserve is
+## empty, the weapon takes an ammo canister from the back pack (one canister = one magazine).
+@export var reserve_magazines: int = -1
 ## Reload time in seconds.
 @export var reload_time: float = 3.5
 

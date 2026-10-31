@@ -22,6 +22,7 @@ recoil_side_deg = 2.25
 shake_trauma = 0.45
 shake_kick = 0.3
 magazine = 8
+reserve_magazines = 5
 reload_time = 4.5
 slot = 0
 model_kick_back = 1.2
