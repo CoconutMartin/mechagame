@@ -690,6 +690,9 @@ Phases:
    only to measure the wrist pins and takes them off before it saves the scene. `test_part_models.gd` checks the
    slots, the skin binds and the hitboxes (`OLD_SCENE=` compares with an older one-file scene: all 27 mesh boxes
    and 18 hitboxes matched to 0 mm on 2026-10-31; bind poses and vertices match the old file exactly).
+   Tests after the split: test_stability, test_weapon_hands, test_beam_arm_break, test_break_time, test_hit_reactions,
+   test_pulse_scan, test_boost_pack 0 failures; test_clip_self 5 failures with the same numbers as the old scene (the
+   open arm clipping, not the split).
    `models/new_mech/new_mech_exploded.glb` stays for the tools that read only its skeleton and animations
    (`mirror_clip`, `retarget_mixamo`, `make_*`); it has the same rig.
 2. Garage pickers for the 5 slots and a test part (next).
