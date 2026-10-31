@@ -4,13 +4,13 @@ extends SceneTree
 ##   every skin bind names a bone of the mech skeleton (the part fits the standard rig);
 ##   each part mesh, posed by the skeleton, is where the rest pose puts it (no tearing at rest);
 ##   every hit part has hitboxes;
-##   the skirt panels and sleeves (AccessoryBoneFollow) turn when the mech walks (LOADOUT=2, Haliya).
+##   the skirt panels and sleeves (AccessoryBoneFollow) turn when the mech walks (LOADOUT=2, a mech with a skirt on key 2).
 ## OLD_SCENE=res://... compares the hitbox boxes and the mesh boxes with an older mech scene (one-file model).
 ## Prints "RESULT: <n> failures"; exit code 1 on a failure. Headless:
 ##   godot --headless --path . --script res://tools/godot/test_part_models.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
-## Meshes per slot for SGG-101 (key 1) and Haliya HLY-101 (key 2, LOADOUT=2).
+## Meshes per slot for SGG-101 (key 1). HLY_MESHES: the Haliya build of 2026-10-31 (removed; LOADOUT=2 needs a key 2 loadout).
 const SGG_MESHES := {&"head": 2, &"core": 2, &"arm_left": 5, &"arm_right": 5, &"legs": 13}
 const HLY_MESHES := {&"head": 8, &"core": 13, &"arm_left": 27, &"arm_right": 27, &"legs": 36}
 
