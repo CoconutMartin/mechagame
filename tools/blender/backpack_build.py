@@ -52,7 +52,7 @@ TYPES = {
     # inner and outer x of the wings; wing_y: front and back y of the wings; top: top of the upper wings; recess:
     # depth of the fin grilles' recess.
     # Depth is about 60% of the picture's, so the pack stays close to the torso.
-    "boost": dict(kind="boost", body_w=0.43, body_h=0.55, body_d=0.85, wing_x=(0.55, 1.0), wing_y=(-0.15, -1.0),
+    "boost": dict(kind="boost", body_w=0.45, body_h=0.55, body_d=0.88, wing_x=(0.55, 1.0), wing_y=(-0.15, -1.0),
                   top=1.07, recess=0.09),
     # Quad Booster (user picture models/guides/backpack_quad_ref.png, 2026-10-31: "another booster back pack"): four
     # olive octagonal thruster pods in a 2 x 2 block, each with a big dark nozzle on its back end, a tan spine plate
@@ -618,9 +618,24 @@ def build_boost_pack(t):
             parts.append(block(f"Bolt{i}{j}", K, x - 0.025, x + 0.025, -bd - 0.04, -bd, z - 0.025, z + 0.025,
                                bevel=0.0))
     # Hardpoint on the box top (aux slot 1).
-    parts.append(block("Hardpoint1", F, -0.18, 0.18, -0.62, -0.28, bh - 0.01, bh + 0.06, chamfer=0.03))
-    parts.append(block("HardpointRail1", S, -0.12, 0.12, -0.58, -0.32, bh + 0.06, bh + 0.08, bevel=0.0))
-    parts.append(empty("Aux1", (0.0, -0.45, bh + 0.08)))
+    # More body (user 2026-10-31: "for the very first backpack, beautify it and add a bit more body as well"): a
+    # dark top cap with the hardpoint, raised plates on the box sides, a keel rib down the back face, dark corner
+    # guards.
+    parts.append(block("BodyCap", AD, -bw + 0.04, bw - 0.04, -bd + 0.08, -0.12, bh - 0.02, bh + 0.06, chamfer=0.04,
+                       bevel=0.01))
+    for side, sx in (("L", -1.0), ("R", 1.0)):
+        xa, xb = sorted((sx * (bw - 0.01), sx * (bw + 0.035)))
+        parts.append(block(f"BodySidePlate{side}", A, xa, xb, -bd + 0.12, -0.2, -bh + 0.1, bh - 0.12, chamfer=0.05,
+                           bevel=0.01))
+        for j, z in enumerate((bh - 0.02, -bh + 0.02)):
+            xa, xb = sorted((sx * (bw - 0.1), sx * (bw + 0.015)))
+            za, zb = (z - 0.1, z + 0.02) if j == 0 else (z - 0.02, z + 0.1)
+            parts.append(block(f"CornerGuard{side}{j}", F, xa, xb, -bd - 0.04, -bd + 0.14, za, zb, chamfer=0.03,
+                               bevel=0.0))
+    parts.append(block("BodyKeel", AD, -0.06, 0.06, -bd - 0.06, -bd, -bh + 0.32, bh - 0.34, chamfer=0.02, bevel=0.0))
+    parts.append(block("Hardpoint1", F, -0.18, 0.18, -0.62, -0.28, bh + 0.06, bh + 0.11, chamfer=0.03))
+    parts.append(block("HardpointRail1", S, -0.12, 0.12, -0.58, -0.32, bh + 0.11, bh + 0.13, bevel=0.0))
+    parts.append(empty("Aux1", (0.0, -0.45, bh + 0.13)))
     # Lower box under the center box, a grille on its back face and a seam.
     lb_z0, lb_z1, lb_y = -bh - 0.5, -bh + 0.05, -bd - 0.05
     parts.append(block("LowerBox", A, -0.28, 0.28, lb_y, -0.12, lb_z0, lb_z1, chamfer=0.05, bevel=0.015))
@@ -628,6 +643,12 @@ def build_boost_pack(t):
     parts.append(block("LowerVentFrame", F, -0.23, 0.23, lb_y - 0.04, lb_y, lb_z1 - 0.33, lb_z1 - 0.05, chamfer=0.03))
     parts += grille("LowerVent", low_vent, lambda z: lb_y - 0.03, pitch=0.06, inset=0.02)
     parts.append(block("LowerSeam", F, -0.285, 0.285, lb_y - 0.005, -0.12, lb_z1 - 0.4, lb_z1 - 0.37, bevel=0.0))
+    parts.append(block("LowerFoot", F, -0.32, 0.32, lb_y + 0.04, -0.14, lb_z0 - 0.06, lb_z0 + 0.04, chamfer=0.03,
+                       bevel=0.0))
+    for side, sx in (("L", -1.0), ("R", 1.0)):
+        xa, xb = sorted((sx * 0.275, sx * 0.305))
+        parts.append(block(f"LowerSidePlate{side}", AD, xa, xb, lb_y + 0.1, -0.2, lb_z0 + 0.08, lb_z1 - 0.08,
+                           chamfer=0.03, bevel=0.0))
     # Fins (wings), mirrored, the side profile from the picture's SIDE view, same pack size (user requests
     # 2026-10-31: "the fin shape on the dorsal side should be like in the picture"; "more like an inverted K
     # shape"). Seen from the side the fins are the two arms of an inverted K: both start at a root next to the
@@ -702,6 +723,37 @@ def build_boost_pack(t):
         parts += grille(f"GrilleLow{side}", low_pts, low_face, sx=sx, back_name=f"OutletGlow{n + 3}",
                         cut=bpy.data.objects[f"WingLower{side}"], depth=t["recess"],
                         flaps=f"OutletFlap{n + 3}_")
+        # Fin trims: a dark rib along each fin's inner edge on the back face, an armor plate on the upper fin's outer
+        # side, a dark cap on the upper fin's top and on the lower fin's foot.
+        parts.append(face_plate(f"FinRibUp{side}", AD, [(wx0 + 0.015, up_z_bot + 0.03), (wx0 + 0.065, up_z_bot + 0.03),
+                                                        (wx0 + 0.065, up_top_out - 0.05),
+                                                        (wx0 + 0.015, up_top_out - 0.05)], up_face, 0.025, sx=sx))
+        parts.append(face_plate(f"FinRibLow{side}", AD, [(wx0 + 0.015, lw_z_bot + 0.03), (wx0 + 0.065, lw_z_bot + 0.03),
+                                                         (wx0 + 0.065, lw_z_top - 0.03),
+                                                         (wx0 + 0.015, lw_z_top - 0.03)], low_face, 0.025, sx=sx))
+        parts.append(loft(f"FinSidePlate{side}", A, [
+            (0.66, 0.66, wx1 - 0.01, wx1 + 0.03, up_in(0.66) - 0.07, up_face(0.66) + 0.09),
+            (up_top_out - 0.14, up_top_out - 0.14, wx1 - 0.01, wx1 + 0.03, up_in(up_top_out - 0.14) - 0.07,
+             up_face(up_top_out - 0.14) + 0.09)], sx=sx, bevel=0.01))
+        parts.append(loft(f"FinCap{side}", K, [
+            (up_top_in - 0.03, up_top_out - 0.03, wx0 + 0.05, wx1 - 0.05, up_in(up_top_in) - 0.07,
+             up_face(up_top_out) + 0.07),
+            (up_top_in + 0.02, up_top_out + 0.02, wx0 + 0.08, wx1 - 0.08, up_in(up_top_in) - 0.1,
+             up_face(up_top_out) + 0.1)], sx=sx, bevel=0.008))
+        parts.append(loft(f"FinFoot{side}", K, [
+            (low_bottom - 0.04, low_bottom - 0.04, wx0 + 0.07, wx1 - 0.16, low_in(low_bottom) - 0.07,
+             low_face(low_bottom) + 0.08),
+            (low_bottom + 0.02, low_bottom + 0.02, wx0 + 0.05, wx1 - 0.13, low_in(low_bottom) - 0.05,
+             low_face(low_bottom) + 0.06)], sx=sx, bevel=0.008))
+        # Hydraulic struts from the box sides to the fins: a dark sleeve and a steel rod.
+        for k, (z, y) in enumerate(((0.2, -0.62), (-0.36, -0.6))):
+            x_box, x_fin = bw + 0.03, wx0 + 0.02
+            sleeve = cyl_z(f"StrutSleeve{side}{k}", K, 0.0, 0.0, 0.0, (x_fin - x_box) * 0.55, 0.045, sides=10)
+            rod = cyl_z(f"StrutRod{side}{k}", S, 0.0, 0.0, 0.0, x_fin - x_box, 0.024, sides=8)
+            for obj in (sleeve, rod):
+                obj.rotation_euler = (0.0, sx * math.pi / 2, 0.0)
+                obj.location = (sx * x_box, y, z)
+                parts.append(obj)
         # Black connectors between the box and the fins.
         for j, (z0, z1) in enumerate(((0.08, 0.32), (-0.44, -0.22))):
             x0, x1 = sorted((sx * (bw - 0.03), sx * (wx0 + 0.03)))
