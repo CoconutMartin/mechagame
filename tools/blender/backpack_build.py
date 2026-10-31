@@ -47,10 +47,11 @@ TYPES = {
     # bottom), each with a louvered grille on the back face (the boost outlets: they glow and blow wind while
     # boosting, BackPackOutlets). Built by
     # build_boost_pack. body_w / body_h / body_d: half width, half height and depth of the center box; wing_x:
-    # inner and outer x of the wings; wing_y: front and back y of the wings; top: top of the upper wings.
+    # inner and outer x of the wings; wing_y: front and back y of the wings; top: top of the upper wings; recess:
+    # depth of the fin grilles' recess.
     # Depth is about 60% of the picture's, so the pack stays close to the torso.
     "boost": dict(kind="boost", body_w=0.43, body_h=0.55, body_d=0.85, wing_x=(0.55, 1.0), wing_y=(-0.15, -1.0),
-                  top=1.07),
+                  top=1.07, recess=0.09),
 }
 
 MATERIALS = {
@@ -485,10 +486,23 @@ def poly_x_range(pts, z):
     return (min(xs), max(xs)) if xs else None
 
 
-def grille(name, pts, face_y, sx=1.0, pitch=0.07, inset=0.03, back_name=""):
-    """A louvered grille on a face: a black recess plate (named back_name, or name + "Back") in the outline pts and
-    light gray slats across it."""
+def grille(name, pts, face_y, sx=1.0, pitch=0.07, inset=0.03, back_name="", cut=None, depth=0.0):
+    """A louvered grille on a face: a black back plate (named back_name, or name + "Back") in the outline pts and
+    light gray slats across it. With cut (the part the face belongs to) and depth, the grille sits in a recess:
+    a Boolean cuts the outline depth meters into the part (user request 2026-10-31: "push the grills into the fins
+    a bit more"), and the plate and slats sit at the bottom of the recess."""
     F, S = "bp_frame", "bp_slat"
+    if cut is not None and depth > 0.0:
+        cutter = face_plate(name + "Cutter", F, pts, face_y, 0.1, back=depth, sx=sx)
+        cutter.display_type = "WIRE"
+        cutter.hide_render = True
+        mod = cut.modifiers.new("Recess", "BOOLEAN")
+        mod.operation = "DIFFERENCE"
+        mod.solver = "EXACT"
+        mod.object = cutter
+        cut.modifiers.move(len(cut.modifiers) - 1, 0)  # Cut before the bevel, so the recess edges are beveled.
+        bottom = face_y
+        face_y = lambda z: bottom(z) + depth
     parts = [face_plate(back_name or name + "Back", F, pts, face_y, 0.015, sx=sx)]
     z_low = min(z for _, z in pts) + inset + 0.01
     z_top = max(z for _, z in pts) - inset
@@ -606,13 +620,16 @@ def build_boost_pack(t):
         # boosting, BackPackOutlets).
         up_pts = [(wx0 + 0.08, 0.06), (wx0 + 0.21, 0.06), (wx1 - 0.08, 0.64), (wx1 - 0.08, up_top_out - 0.12),
                   (wx0 + 0.08, up_top_out - 0.12)]
-        parts += grille(f"GrilleUp{side}", up_pts, up_face, sx=sx, back_name=f"OutletGlow{n + 1}")
+        parts += grille(f"GrilleUp{side}", up_pts, up_face, sx=sx, back_name=f"OutletGlow{n + 1}",
+                        cut=bpy.data.objects[f"WingUpper{side}"], depth=t["recess"])
         x0, x1 = sorted((sx * (wx0 + 0.1), sx * (wx0 + 0.27)))
         yb = up_face(0.185)
-        parts.append(block(f"GrilleBlock{side}", K, x0, x1, yb - 0.08, yb, 0.1, 0.27, chamfer=0.045, bevel=0.01))
+        parts.append(block(f"GrilleBlock{side}", K, x0, x1, yb - 0.03, yb + t["recess"], 0.1, 0.27, chamfer=0.045,
+                           bevel=0.01))
         low_pts = [(wx0 + 0.08, lw_z_bot + 0.06), (wx1 - 0.1, lw_z_bot + 0.06), (wx0 + 0.24, lw_z_top - 0.08),
                    (wx0 + 0.08, lw_z_top - 0.08)]
-        parts += grille(f"GrilleLow{side}", low_pts, low_face, sx=sx, back_name=f"OutletGlow{n + 3}")
+        parts += grille(f"GrilleLow{side}", low_pts, low_face, sx=sx, back_name=f"OutletGlow{n + 3}",
+                        cut=bpy.data.objects[f"WingLower{side}"], depth=t["recess"])
         # Black connectors between the box and the fins.
         for j, (z0, z1) in enumerate(((0.08, 0.32), (-0.44, -0.22))):
             x0, x1 = sorted((sx * (bw - 0.03), sx * (wx0 + 0.03)))
