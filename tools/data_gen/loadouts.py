@@ -4,7 +4,7 @@ They have no mech_scene: the map's LoadoutSwitcher builds Sanggigilid (its mech_
 import os
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
-PARTS = ["head", "core", "arm_left", "arm_right", "legs", "booster", "generator", "fcs"]
+PARTS = ["head", "core", "arm_left", "arm_right", "legs", "booster", "generator"]
 PART_FILE = {"arm_left": "arm_l", "arm_right": "arm_r"}
 LOADOUTS = [
     # The only test loadout (user, 2026-10-13: key 1; the user picks other equipment in the garage).

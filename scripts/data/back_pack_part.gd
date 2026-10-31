@@ -2,6 +2,25 @@ class_name BackPackPart
 extends PartData
 ## A back pack (pulse scan phase, user answer 2026-10-14): it carries auxiliary equipment
 ## (EquipmentData) in its slots. Slot 1 is used with key X (action aux_1), slot 2 with aux_2.
+## Each back pack also gives one bonus in percent (user decision 2026-10-31, replaces the FCS slot).
+
+enum Bonus { NONE, ENERGY, HP, BOOST }
 
 ## Number of auxiliary equipment slots.
 @export_range(1, 4) var aux_slots: int = 2
+## The stat this back pack improves.
+@export var bonus: Bonus = Bonus.NONE
+## Size of the bonus in percent (6 = 6% more).
+@export var bonus_percent: float = 0.0
+
+
+## The mod stat the bonus changes, or -1 without a bonus.
+func get_mod_stat() -> int:
+	match bonus:
+		Bonus.ENERGY:
+			return ModData.Stat.ENERGY_CAPACITY
+		Bonus.HP:
+			return ModData.Stat.PART_HP
+		Bonus.BOOST:
+			return ModData.Stat.BOOST_THRUST
+	return -1

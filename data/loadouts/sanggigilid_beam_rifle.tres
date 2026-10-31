@@ -8,9 +8,8 @@
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_legs.tres" id="legs"]
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_booster.tres" id="booster"]
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_generator.tres" id="generator"]
-[ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_fcs.tres" id="fcs"]
 [ext_resource type="Resource" path="res://data/weapons/beam_rifle.tres" id="beam_rifle"]
-[ext_resource type="Resource" path="res://data/parts/back_pack_aux2.tres" id="back_pack"]
+[ext_resource type="Resource" path="res://data/parts/backpacks/backpack_medium.tres" id="back_pack"]
 [ext_resource type="Resource" path="res://data/equipment/pulse_scan_g2.tres" id="pulse_scan"]
 
 [resource]
@@ -23,7 +22,6 @@ arm_right = ExtResource("arm_right")
 legs = ExtResource("legs")
 booster = ExtResource("booster")
 generator = ExtResource("generator")
-fcs = ExtResource("fcs")
 weapon_right = ExtResource("beam_rifle")
 back_pack = ExtResource("back_pack")
 aux = Array[Resource]([ExtResource("pulse_scan")])

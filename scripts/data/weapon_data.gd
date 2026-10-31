@@ -78,6 +78,10 @@ enum Slot { ARM, BACK }
 @export var lock_time: float = 0.5
 ## Missile turn speed in degrees per second.
 @export var missile_turn_deg: float = 110.0
+## Lock-on range in meters (missiles). The lock-on also stops at range_m.
+@export var lock_range_m: float = 500.0
+## Most targets locked at the same time (missiles).
+@export var max_locks: int = 4
 
 @export_group("Melee")
 ## Lunge length (m), lunge speed (m/s) and energy cost of one melee charge (blade, pile bunker).

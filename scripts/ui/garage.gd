@@ -3,7 +3,7 @@ extends CanvasLayer
 ## Garage screen (Phase 5). G opens and closes it in the level (Esc also closes it).
 ## The game pauses and a camera circles the player mech. Every change rebuilds the mech at once
 ## at its place (full HP), so the look and the stats show the new build.
-##   Frame: head, core, arms, legs, booster, generator, FCS (GarageCatalog).
+##   Frame: head, core, arms, legs, booster, generator, backpack (GarageCatalog).
 ##   Weapons: right arm, left arm (shield, fist, one-hand gun, pile bunker or none; none with a
 ##   two-hand weapon), back units. Melee weapons may not be doubled, except the fist and (user request
 ##   2026-10-30) the Pile Bunker: such an entry is greyed out in the other arm's list while the other arm holds one.
@@ -40,7 +40,7 @@ var _settle_off: Array[Node] = []
 const PARTS := [
 	["head", "Head", "heads"], ["core", "Core", "cores"], ["arm_left", "Arm L", "arms_left"],
 	["arm_right", "Arm R", "arms_right"], ["legs", "Legs", "legs"], ["booster", "Booster", "boosters"],
-	["generator", "Generator", "generators"], ["fcs", "FCS", "fcs"],
+	["generator", "Generator", "generators"], ["back_pack", "Backpack", "back_packs"],
 ]
 ## [loadout property, label, catalog list, "none" allowed]
 const WEAPONS := [

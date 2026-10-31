@@ -8,7 +8,7 @@ extends Resource
 @export var weight_t: float = 1.0
 ## Part hit points.
 @export var hp: float = 100.0
-## Part model. Optional (a generator or FCS has no model).
+## Part model. Optional (a generator has no model).
 @export var scene: PackedScene
 
 @export_group("Look")

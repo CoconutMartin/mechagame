@@ -1,0 +1,317 @@
+"""Builds the backpacks (user request 2026-10-31: "replace FCS with backpack; research and write python to build
+backpacks in blender"; 3 types from one script, user choice). Research notes: docs/backpack_research.md.
+
+Run (from the project root):
+    blender -b --python tools/blender/backpack_build.py               (all types)
+    blender -b --python tools/blender/backpack_build.py -- heavy      (one type)
+Writes models/backpacks/backpack_<type>.blend and .glb for each type in TYPES.
+The script starts from an empty file, so hand edits in the .blend are lost when it runs again.
+
+Axes: Blender +Y = forward (Godot -Z), +Z = up. Origin: the Mount, the center of the pack's front face (it lies on
+the mech's torso back); the pack goes back along -Y. Named nodes for the game: Mount, Aux1..AuxN (hardpoints, one
+per aux slot), Thruster1..N (nozzle exits, pointing down), Lamp (orange glow mesh, emission off).
+Each type is a set of numbers in TYPES; the build functions turn them into the same kinds of parts (mount plate,
+body, side armor, tanks, nozzles, hardpoints, vents or radiator, antennas, handles, lamp).
+"""
+import math, os, sys
+import bpy
+import bmesh
+from mathutils import Matrix, Vector
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+OUT_DIR = os.path.join(ROOT, "models", "backpacks")
+
+## Pack types (sizes in m). w, h, d: width, height, depth of the body. slots: aux hardpoints. tank_r / tank_h:
+## side tanks (0 = none; "back" puts them on the back face). nozzle_r: nozzle exit radius. antennas: (count,
+## length). vent: "grille", "radiator" or "". taper: how much the body narrows toward the back (0 to 1).
+TYPES = {
+    "light": dict(w=1.1, h=1.5, d=0.6, slots=1, tank_r=0.11, tank_h=0.9, tanks_on="back", nozzle_r=0.13,
+                  antennas=(1, 1.5), vent="", taper=0.25),
+    "medium": dict(w=1.6, h=1.7, d=0.85, slots=2, tank_r=0.19, tank_h=1.15, tanks_on="side", nozzle_r=0.17,
+                   antennas=(2, 0.6), vent="grille", taper=0.12),
+    "heavy": dict(w=2.3, h=1.9, d=1.15, slots=3, tank_r=0.24, tank_h=1.3, tanks_on="side", nozzle_r=0.24,
+                  antennas=(0, 0.0), vent="radiator", taper=0.05),
+}
+
+MATERIALS = {
+    # name: (sRGB color, roughness, metallic, emission): the Sagigilid colors (olive armor, dark olive, black frame).
+    "bp_armor": ((0.47, 0.47, 0.31), 0.6, 0.3, None),
+    "bp_armor_dark": ((0.30, 0.31, 0.19), 0.6, 0.3, None),
+    "bp_frame": ((0.11, 0.11, 0.12), 0.6, 0.4, None),
+    "bp_dark": ((0.22, 0.23, 0.24), 0.55, 0.5, None),
+    "bp_steel": ((0.55, 0.55, 0.56), 0.3, 0.9, None),
+    "bp_glow": ((0.6, 0.35, 0.05), 0.5, 0.0, (1.0, 0.55, 0.1)),
+}
+
+
+def srgb_to_linear(c):
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def material(name):
+    mat = bpy.data.materials.get(name)
+    if mat:
+        return mat
+    color, rough, metal, emission = MATERIALS[name]
+    color = tuple(srgb_to_linear(c) for c in color)
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    bsdf = mat.node_tree.nodes["Principled BSDF"]
+    bsdf.inputs["Base Color"].default_value = (*color, 1.0)
+    bsdf.inputs["Roughness"].default_value = rough
+    bsdf.inputs["Metallic"].default_value = metal
+    if emission:
+        bsdf.inputs["Emission Color"].default_value = (*emission, 1.0)
+        bsdf.inputs["Emission Strength"].default_value = 0.0
+    mat.diffuse_color = (*color, 1.0)
+    return mat
+
+
+def finish(obj, mat, bevel):
+    obj.data.materials.append(material(mat))
+    if bevel > 0.0:
+        mod = obj.modifiers.new("Bevel", "BEVEL")
+        mod.width = bevel
+        mod.segments = 1
+        mod.limit_method = "ANGLE"
+        mod.angle_limit = math.radians(35)
+        mod.harden_normals = True
+        obj.data.use_auto_smooth = True
+    return obj
+
+
+def new_object(name, bm):
+    mesh = bpy.data.meshes.new(name)
+    bm.to_mesh(mesh)
+    bm.free()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    return obj
+
+
+def block(name, mat, x0, x1, y0, y1, z0, z1, chamfer=0.0, bevel=0.015):
+    """Box from x0..x1 (side), y0..y1 (along), z0..z1 (up). Chamfer cuts the four edges along Y."""
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    bmesh.ops.scale(bm, vec=(x1 - x0, y1 - y0, z1 - z0), verts=bm.verts)
+    bmesh.ops.translate(bm, vec=((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2), verts=bm.verts)
+    if chamfer > 0.0:
+        along = [e for e in bm.edges if abs((e.verts[0].co - e.verts[1].co).normalized().y) > 0.99]
+        bmesh.ops.bevel(bm, geom=along, offset=chamfer, segments=1, affect="EDGES")
+    return finish(new_object(name, bm), mat, bevel)
+
+
+def prism(name, mat, y0, y1, r0, r1, z=0.0, sides=8, bevel=0.01):
+    """Prism or frustum along +Y from y0 (radius r0) to y1 (radius r1); 8 sides with a flat face on top."""
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=sides, radius1=r0, radius2=r1, depth=y1 - y0)
+    bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(math.pi / sides, 3, "Z"))
+    bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(math.radians(-90), 3, "X"))
+    bmesh.ops.translate(bm, vec=(0.0, (y0 + y1) / 2, z), verts=bm.verts)
+    return finish(new_object(name, bm), mat, bevel)
+
+
+def wedge(name, mat, x0, x1, pts, bevel=0.012):
+    """Flat plate across X from x0 to x1, outline pts = [(y, z), ...] in the side view."""
+    bm = bmesh.new()
+    left = [bm.verts.new((x0, y, z)) for y, z in pts]
+    right = [bm.verts.new((x1, y, z)) for y, z in pts]
+    n = len(pts)
+    bm.faces.new(list(reversed(left)))
+    bm.faces.new(right)
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new([left[i], left[j], right[j], right[i]])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return finish(new_object(name, bm), mat, bevel)
+
+
+def empty(name, location, parent=None):
+    obj = bpy.data.objects.new(name, None)
+    obj.empty_display_type = "PLAIN_AXES"
+    obj.empty_display_size = 0.3
+    obj.location = location
+    bpy.context.collection.objects.link(obj)
+    if parent:
+        obj.parent = parent
+    return obj
+
+
+def cyl_z(name, mat, x, y, z0, z1, r0, r1=None, sides=12, bevel=0.0):
+    """Cylinder or cone along Z from z0 (radius r0) to z1 (radius r1)."""
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=sides, radius1=r0, radius2=r0 if r1 is None else r1,
+                          depth=abs(z1 - z0))
+    if z1 < z0:
+        bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(math.pi, 3, "X"))
+    bmesh.ops.translate(bm, vec=(x, y, (z0 + z1) / 2), verts=bm.verts)
+    return finish(new_object(name, bm), mat, bevel)
+
+
+def body_outline(t):
+    """Side view (y, z) of the body: a flat front on the mount, a sloped top back edge and a bottom that rises
+    toward the front (room for the nozzles)."""
+    h, d = t["h"], t["d"]
+    return [(-0.1, h / 2), (-d + 0.18, h / 2), (-d, h / 2 - 0.22), (-d, -h / 2 + 0.28), (-d + 0.2, -h / 2),
+            (-0.35 * d, -h / 2), (-0.1, -h / 2 + 0.12)]
+
+
+def tapered_body(name, mat, t, half_w):
+    """The body: the side view outline, half_w wide at the front, narrower at the back by taper."""
+    pts = body_outline(t)
+    d = t["d"]
+    bm = bmesh.new()
+
+    def width(y):
+        return half_w * (1.0 - t["taper"] * min(max(-y / d, 0.0), 1.0))
+
+    left = [bm.verts.new((-width(y), y, z)) for y, z in pts]
+    right = [bm.verts.new((width(y), y, z)) for y, z in pts]
+    n = len(pts)
+    bm.faces.new(list(reversed(left)))
+    bm.faces.new(right)
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new([left[i], left[j], right[j], right[i]])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return finish(new_object(name, bm), mat, 0.04)
+
+
+def build_pack(t):
+    A, AD, F, K, S, L = "bp_armor", "bp_armor_dark", "bp_frame", "bp_dark", "bp_steel", "bp_glow"
+    w, h, d = t["w"], t["h"], t["d"]
+    side_tanks = t["tank_r"] > 0 and t["tanks_on"] == "side"
+    half_w = w / 2 - (2.2 * t["tank_r"] if side_tanks else 0.0)
+    back_w = half_w * (1.0 - t["taper"])
+    parts = []
+    # Mount plate and two clamps against the torso back.
+    parts.append(block("MountPlate", F, -half_w * 0.75, half_w * 0.75, -0.12, 0.0, -h * 0.38, h * 0.38, chamfer=0.06))
+    for i, z in enumerate((h * 0.3, -h * 0.3)):
+        parts.append(block(f"Clamp{i}", K, -half_w * 0.9, half_w * 0.9, -0.16, -0.02, z - 0.07, z + 0.07, chamfer=0.03))
+    # Body, a dark band round its middle, a top cap plate and seams.
+    parts.append(tapered_body("Body", A, t, half_w))
+    parts.append(block("BodyBand", AD, -half_w - 0.01, half_w + 0.01, -d * 0.62, -d * 0.48, -h / 2 + 0.05,
+                       h / 2 - 0.02, bevel=0.01))
+    parts.append(block("TopCap", AD, -half_w * 0.8, half_w * 0.8, -d + 0.25, -0.18, h / 2 - 0.02, h / 2 + 0.06,
+                       chamfer=0.04, bevel=0.01))
+    for side, sx in (("L", -1.0), ("R", 1.0)):
+        x0, x1 = sorted((sx * (half_w - 0.005), sx * (half_w + 0.012)))
+        parts.append(block(f"SideSeam{side}", F, x0, x1, -d * 0.3, -d * 0.28, -h / 2 + 0.2, h / 2 - 0.1, bevel=0.0))
+        # Side armor plate on the body flank.
+        x0, x1 = sorted((sx * (half_w - 0.02), sx * (half_w + 0.06)))
+        parts.append(block(f"SidePlate{side}", AD, x0, x1, -d * 0.45, -0.2, -h * 0.28, h * 0.3, chamfer=0.03,
+                           bevel=0.01))
+    # Back plate with the hardpoints (one per aux slot) in a row across.
+    n = t["slots"]
+    ## Hardpoints 0.4 m apart; the back plate is wide enough for them.
+    plate_w = max(back_w * 0.85, (n - 1) * 0.2 + 0.25)
+    parts.append(block("BackPlate", AD, -plate_w, plate_w, -d - 0.05, -d + 0.01, -h * 0.3, h * 0.32,
+                       chamfer=0.05, bevel=0.01))
+    for i in range(n):
+        x = (i - (n - 1) / 2.0) * 0.4
+        parts.append(block(f"Hardpoint{i + 1}", F, x - 0.17, x + 0.17, -d - 0.12, -d - 0.04, 0.0, 0.34, chamfer=0.03))
+        parts.append(block(f"HardpointRail{i + 1}", S, x - 0.12, x + 0.12, -d - 0.135, -d - 0.115, 0.04, 0.3,
+                           bevel=0.0))
+        parts.append(empty(f"Aux{i + 1}", (x, -d - 0.135, 0.17)))
+    # Lamp on the back plate, under the hardpoints.
+    parts.append(block("Lamp", L, -0.12, 0.12, -d - 0.065, -d - 0.045, -0.12, -0.08, bevel=0.0))
+    # Tanks: on the sides (with straps and caps) or on the back face (light pack).
+    if t["tank_r"] > 0:
+        r, th = t["tank_r"], t["tank_h"]
+        if side_tanks:
+            places = [(sx * (half_w + r + 0.03), -d * 0.5) for sx in (-1.0, 1.0)]
+        else:
+            places = [(sx * back_w * 0.55, -d - 0.05 - r) for sx in (-1.0, 1.0)]
+            places = [(x, y) for x, y in places]
+        for i, (x, y) in enumerate(places):
+            parts.append(cyl_z(f"Tank{i}", A, x, y, -th / 2, th / 2, r, sides=12, bevel=0.01))
+            parts.append(cyl_z(f"TankCapTop{i}", K, x, y, th / 2, th / 2 + 0.06, r * 0.8, r * 0.55, sides=12))
+            parts.append(cyl_z(f"TankCapLow{i}", K, x, y, -th / 2, -th / 2 - 0.06, r * 0.8, r * 0.55, sides=12))
+            for j, z in enumerate((-th * 0.28, th * 0.28)):
+                parts.append(cyl_z(f"TankStrap{i}{j}", F, x, y, z - 0.035, z + 0.035, r + 0.015, sides=12))
+            # Strap arm from the tank to the body.
+            x_in = sx_in = (half_w if x > 0 else -half_w) if side_tanks else x
+            if side_tanks:
+                x0, x1 = sorted((x_in, x))
+                parts.append(block(f"TankArm{i}", F, x0, x1, y - 0.06, y + 0.06, -0.06, 0.06, bevel=0.0))
+    # Nozzles under the body, pointing down, in black housings; Thruster empties at the exits.
+    r = t["nozzle_r"]
+    for i, sx in enumerate((-1.0, 1.0)):
+        x, y = sx * half_w * 0.5, -d * 0.62
+        z_top = -h / 2 + 0.05
+        parts.append(block(f"NozzleHousing{i}", F, x - r * 1.2, x + r * 1.2, y - r * 1.2, y + r * 1.2, z_top - 0.12,
+                           z_top + 0.1, chamfer=0.04))
+        parts.append(cyl_z(f"NozzleThroat{i}", K, x, y, z_top - 0.12, z_top - 0.2, r * 0.6, sides=12))
+        parts.append(cyl_z(f"Nozzle{i}", S, x, y, z_top - 0.2, z_top - 0.2 - r * 1.6, r * 0.6, r, sides=12))
+        th = empty(f"Thruster{i + 1}", (x, y, z_top - 0.2 - r * 1.6))
+        th.rotation_euler = (math.pi, 0.0, 0.0)
+        parts.append(th)
+    # Vents: a grille on the upper back plate or a radiator stack on the top.
+    if t["vent"] == "grille":
+        for i in range(5):
+            z = h * 0.38 + i * 0.045 - 0.1
+            parts.append(block(f"Grille{i}", F, -back_w * 0.6, back_w * 0.6, -d - 0.02, -d + 0.03, z, z + 0.02,
+                               bevel=0.0))
+    elif t["vent"] == "radiator":
+        fins = 9
+        for i in range(fins):
+            x = -half_w * 0.7 + half_w * 1.4 * i / (fins - 1)
+            parts.append(wedge(f"Fin{i}", K, x - 0.025, x + 0.025,
+                               [(-0.3, h / 2 + 0.05), (-d + 0.3, h / 2 + 0.05), (-d + 0.4, h / 2 + 0.32),
+                                (-0.42, h / 2 + 0.32)], bevel=0.0))
+        parts.append(block("RadiatorFrame", F, -half_w * 0.78, half_w * 0.78, -d + 0.28, -0.28, h / 2 + 0.03,
+                           h / 2 + 0.08, bevel=0.0))
+    # Antennas from the top back corners (one: the left corner, as a mast).
+    count, length = t["antennas"]
+    for i in range(count):
+        x = -back_w * 0.6 if count == 1 else (-1.0 + 2.0 * i) * back_w * 0.6
+        parts.append(block(f"AntennaBase{i}", F, x - 0.06, x + 0.06, -d + 0.08, -d + 0.2, h / 2 - 0.1, h / 2 + 0.06,
+                           bevel=0.0))
+        parts.append(cyl_z(f"Antenna{i}", K, x, -d + 0.14, h / 2 + 0.06, h / 2 + 0.06 + length, 0.025, 0.012,
+                           sides=6))
+    # Handles on the top.
+    for i, sx in enumerate((-1.0, 1.0)):
+        x = sx * half_w * 0.45
+        parts.append(block(f"HandlePostF{i}", F, x - 0.03, x + 0.03, -0.3, -0.25, h / 2 + 0.04, h / 2 + 0.14, bevel=0.0))
+        parts.append(block(f"HandlePostB{i}", F, x - 0.03, x + 0.03, -0.55, -0.5, h / 2 + 0.04, h / 2 + 0.14, bevel=0.0))
+        parts.append(block(f"HandleBar{i}", F, x - 0.03, x + 0.03, -0.55, -0.25, h / 2 + 0.12, h / 2 + 0.16, bevel=0.0))
+    parts.append(empty("Mount", (0.0, 0.0, 0.0)))
+    return parts
+
+
+def export(path, objects):
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in objects:
+        obj.select_set(True)
+    bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", use_selection=True, export_apply=True,
+                              export_yup=True)
+    tris = 0
+    for obj in objects:
+        if obj.type == "MESH":
+            ev = obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
+            m = ev.to_mesh()
+            m.calc_loop_triangles()
+            tris += len(m.loop_triangles)
+            ev.to_mesh_clear()
+    print("backpack: %s, %d objects, %d triangles" % (os.path.basename(path), len(objects), tris))
+
+
+def main():
+    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    os.makedirs(OUT_DIR, exist_ok=True)
+    for name, t in TYPES.items():
+        if args and name not in args:
+            continue
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        objects = build_pack(t)
+        # Radiator fins and handles stay on the heavy and the other packs; a pack with a radiator has no handles.
+        if t["vent"] == "radiator":
+            for obj in [o for o in objects if o.name.startswith("Handle")]:
+                objects.remove(obj)
+                bpy.data.objects.remove(obj)
+        path = os.path.join(OUT_DIR, "backpack_%s" % name)
+        bpy.ops.wm.save_as_mainfile(filepath=path + ".blend")
+        export(path + ".glb", objects)
+
+
+main()

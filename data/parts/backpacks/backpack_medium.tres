@@ -1,10 +1,14 @@
 [gd_resource type="Resource" script_class="BackPackPart" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/back_pack_part.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/backpacks/backpack_medium.glb" id="scene"]
 
 [resource]
 script = ExtResource("script")
-display_name = "Aux Pack (2 slots)"
-weight_t = 0.6
-hp = 150.0
+display_name = "Aux Pack"
+weight_t = 0.8
+hp = 200.0
 aux_slots = 2
+bonus = 1
+bonus_percent = 10.0
+scene = ExtResource("scene")

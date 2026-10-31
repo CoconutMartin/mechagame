@@ -9,10 +9,10 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 SCRIPT = {
     "head": ("HeadPart", "head_part"), "core": ("CorePart", "core_part"), "arm_l": ("ArmPart", "arm_part"),
     "arm_r": ("ArmPart", "arm_part"), "legs": ("LegPart", "leg_part"), "booster": ("BoosterPart", "booster_part"),
-    "generator": ("GeneratorPart", "generator_part"), "fcs": ("FcsPart", "fcs_part"),
+    "generator": ("GeneratorPart", "generator_part"),
 }
 LABEL = {"head": "Head", "core": "Core", "arm_l": "Arm L", "arm_r": "Arm R", "legs": "Legs",
-         "booster": "Booster", "generator": "Generator", "fcs": "FCS"}
+         "booster": "Booster", "generator": "Generator"}
 
 # Sanggigilid parts (values of the removed Warden parts; HP = the body part HP the mech had:
 # head 400, core 1600 = center torso 960 + side torsos 640 each, arms 600, legs 1400 = groin 560 +
@@ -26,8 +26,15 @@ SANGGIGILID = {
                  turn_speed_deg=116.1, turn_speed_standing_deg=58.05),
     "booster": dict(weight_t=3.0, hp=200, thrust=1200, boost_speed_multiplier=1.5, energy_per_second=30),
     "generator": dict(weight_t=3.0, hp=200, energy_output=17.5, recharge_delay=2.0),
-    "fcs": dict(weight_t=1.0, hp=100, lock_range=500, max_locks=4, aim_assist=0.0),
 }
+
+# Back packs (user decision 2026-10-31, replace the FCS slot): file, name, weight, HP, aux slots,
+# bonus (BackPackPart.Bonus: 1 energy, 2 HP, 3 boost), bonus percent.
+BACK_PACKS = [
+    ("backpack_light", "Light Pack", 0.4, 120.0, 1, 3, 6.0),
+    ("backpack_medium", "Aux Pack", 0.8, 200.0, 2, 1, 10.0),
+    ("backpack_heavy", "Heavy Pack", 1.6, 320.0, 3, 2, 5.0),
+]
 
 # Mods: file, name, stat (ModData.Stat), percent.
 # Stat: 0 weight, 1 speed, 2 boost thrust, 3 energy capacity, 4 energy output, 5 turn speed,
@@ -82,9 +89,13 @@ def main():
     for part, stats in SANGGIGILID.items():
         cls, script = SCRIPT[part]
         fields = {"display_name": f"Sanggigilid {LABEL[part]}"}
-        fields.update({k: (float(x) if isinstance(x, (int, float)) and k not in ("leg_type", "max_locks") else x)
+        fields.update({k: (float(x) if isinstance(x, (int, float)) and k != "leg_type" else x)
                        for k, x in stats.items()})
         parts[part].append(write(f"data/parts/sanggigilid/sanggigilid_{part}.tres", cls, script, fields))
+    back_packs = [write(f"data/parts/backpacks/{f}.tres", "BackPackPart", "back_pack_part",
+                        {"display_name": n, "weight_t": w, "hp": hp, "aux_slots": slots, "bonus": b, "bonus_percent": pc},
+                        scene=f"res://models/backpacks/{f}.glb")
+                  for f, n, w, hp, slots, b, pc in BACK_PACKS]
     mods = [write(f"data/mods/{f}.tres", "ModData", "mod_data", {"display_name": n, "stat": s, "percent": p})
             for f, n, s, p in MODS]
     weapons = {
@@ -97,7 +108,7 @@ def main():
     }
     lists = {"heads": parts["head"], "cores": parts["core"], "arms_left": parts["arm_l"],
              "arms_right": parts["arm_r"], "legs": parts["legs"], "boosters": parts["booster"],
-             "generators": parts["generator"], "fcs": parts["fcs"]}
+             "generators": parts["generator"], "back_packs": back_packs}
     for key, names in weapons.items():
         lists[key] = [f"res://data/weapons/{n}.tres" for n in names]
     lists["mods"] = mods
@@ -111,7 +122,7 @@ def main():
                 ids[p] = f"r{len(ids)}"
                 lines.append(f'[ext_resource type="Resource" path="{p}" id="{ids[p]}"]')
     types = {"heads": "HeadPart", "cores": "CorePart", "arms_left": "ArmPart", "arms_right": "ArmPart",
-             "legs": "LegPart", "boosters": "BoosterPart", "generators": "GeneratorPart", "fcs": "FcsPart",
+             "legs": "LegPart", "boosters": "BoosterPart", "generators": "GeneratorPart", "back_packs": "BackPackPart",
              "weapons_right": "WeaponData", "weapons_left": "WeaponData", "backs_left": "WeaponData",
              "backs_right": "WeaponData", "mods": "ModData"}
     lines += ["", "[resource]", 'script = ExtResource("script")']

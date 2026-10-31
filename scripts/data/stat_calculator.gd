@@ -16,12 +16,18 @@ static func weight_factor(load_ratio: float) -> float:
 static func compute(loadout: Loadout) -> MechStats:
 	var stats := MechStats.new()
 	var mods := _mod_totals(loadout.mods)
+	# The back pack bonus counts like a mod.
+	if loadout.back_pack != null:
+		var pack_stat := loadout.back_pack.get_mod_stat()
+		if pack_stat >= 0:
+			mods[pack_stat] = mods.get(pack_stat, 0.0) + loadout.back_pack.bonus_percent
 
 	# Weight: parts and weapons.
 	var weight := 0.0
 	for part in loadout.get_parts():
 		weight += part.weight_t
 	stats.total_weight_t = weight * _mod(mods, ModData.Stat.WEIGHT)
+	stats.aux_slots = loadout.back_pack.aux_slots if loadout.back_pack != null else 0
 
 	var legs := loadout.legs
 	stats.load_capacity_t = legs.load_capacity_t if legs != null else 1.0
@@ -55,10 +61,7 @@ static func compute(loadout: Loadout) -> MechStats:
 	var arm_recoil := loadout.arm_right.recoil_control if loadout.arm_right != null else 1.0
 	stats.recoil_multiplier = arm_recoil * _mod(mods, ModData.Stat.RECOIL)
 
-	# Lock-on.
-	if loadout.fcs != null:
-		stats.lock_range = loadout.fcs.lock_range
-		stats.max_locks = loadout.fcs.max_locks
+	# Head lock-on speed (lock range and max locks are in the missile pods).
 	if loadout.head != null:
 		stats.lock_on_speed = loadout.head.lock_on_speed
 

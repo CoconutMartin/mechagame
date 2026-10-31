@@ -252,7 +252,7 @@ func _add_node(key: String, node: Node3D) -> void:
 	segment_nodes[key] = list
 
 
-## Core parts (core, booster, generator, FCS) split by side; legs split by socket.
+## Core parts (core, booster, generator) split by side; legs split by socket.
 func _segment_key(part_key: String, node: Node3D) -> String:
 	if part_key == "Booster":
 		return "Booster"

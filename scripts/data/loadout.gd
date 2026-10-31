@@ -19,7 +19,6 @@ extends Resource
 @export var back_pack: BackPackPart
 @export var aux: Array[EquipmentData] = []
 @export var generator: GeneratorPart
-@export var fcs: FcsPart
 @export var weapon_left: WeaponData
 @export var weapon_right: WeaponData
 @export var mods: Array[ModData] = []
@@ -28,7 +27,7 @@ extends Resource
 ## All parts and weapons that are set, in a fixed order.
 func get_parts() -> Array[PartData]:
 	var parts: Array[PartData] = []
-	for part: PartData in [head, core, arm_left, arm_right, legs, back_left, back_right, booster, generator, fcs, weapon_left, weapon_right]:
+	for part: PartData in [head, core, arm_left, arm_right, legs, back_left, back_right, booster, generator, weapon_left, weapon_right]:
 		if part != null:
 			parts.append(part)
 	if back_pack != null:
@@ -50,12 +49,12 @@ func get_aux() -> Array[EquipmentData]:
 
 
 
-## Frame parts (not weapons) with their hit keys, as [key, part] pairs. The generator and FCS sit
+## Frame parts (not weapons) with their hit keys, as [key, part] pairs. The generator sits
 ## in the core, so hits on them damage the core. The booster (backpack) has its own HP.
 func get_part_slots() -> Array:
 	var slots := []
 	for pair in [["Head", head], ["Core", core], ["Arm L", arm_left], ["Arm R", arm_right], ["Legs", legs],
-			["Booster", booster], ["Core", generator], ["Core", fcs]]:
+			["Booster", booster], ["Core", generator]]:
 		if pair[1] != null:
 			slots.append(pair)
 	return slots

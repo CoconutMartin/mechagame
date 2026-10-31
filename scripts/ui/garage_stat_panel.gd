@@ -53,8 +53,7 @@ func show_stats(loadout: Loadout, now: MechStats, before: MechStats, before_load
 		["Recharge (/s)", now.energy_output, before.energy_output, "%.1f", true],
 		["Recharge delay (s)", now.recharge_delay, before.recharge_delay, "%.1f", false],
 		["Recoil", now.recoil_multiplier * 100.0, before.recoil_multiplier * 100.0, "%.0f%%", false],
-		["Lock range (m)", now.lock_range, before.lock_range, "%.0f", true],
-		["Max locks", float(now.max_locks), float(before.max_locks), "%.0f", true],
+		["Aux slots", float(now.aux_slots), float(before.aux_slots), "%.0f", true],
 		["Lock speed", now.lock_on_speed * 100.0, before.lock_on_speed * 100.0, "%.0f%%", true],
 	]
 	for key in ["Head", "Core", "Arm L", "Arm R", "Legs"]:

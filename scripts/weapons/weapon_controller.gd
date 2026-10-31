@@ -1357,13 +1357,5 @@ func get_world() -> Node:
 	return scene if scene != null else get_tree().root
 
 
-func get_max_locks() -> int:
-	return mech.stats.max_locks if mech.stats != null else 4
-
-
-func get_lock_range() -> float:
-	return mech.stats.lock_range if mech.stats != null else 500.0
-
-
 func get_lock_speed() -> float:
 	return mech.stats.lock_on_speed if mech.stats != null else 1.0

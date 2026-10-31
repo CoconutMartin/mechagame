@@ -49,6 +49,9 @@ func _run() -> void:
 	loadout.weapon_right = _weapon(_env("RIFLE_RIGHT", "heavy_rifle"))
 	loadout.weapon_left = _weapon(_env("RIFLE_LEFT", "-"))
 	# RIFLE_BACK: "left/right" back weapon file names ("-" = empty); unset keeps the loadout's.
+	# RIFLE_PACK: back pack file name in data/parts/backpacks (e.g. backpack_heavy); unset keeps the loadout's.
+	if OS.has_environment("RIFLE_PACK"):
+		loadout.back_pack = load("res://data/parts/backpacks/%s.tres" % OS.get_environment("RIFLE_PACK")) as BackPackPart
 	if OS.has_environment("RIFLE_BACK"):
 		var backs := OS.get_environment("RIFLE_BACK").split("/")
 		loadout.back_left = _weapon(backs[0])

@@ -465,7 +465,7 @@ if __name__ == "__main__":
     for side in ("l", "r"):
         res(f"data/weapons/missile_pod_{side}.tres", {"display_name": f'"Missile Pod {side.upper()}"', "weight_t": 3.0, "hp": 250.0,
             "kind": 3, "slot": 1, "fire_rate": 1.0, "damage": 112.5, "stagger_points": 10.0, "stagger_cap_per_shot": 30.0, "projectile_speed": 90.0, "range_m": 250.0,
-            "magazine": 4, "reload_time": 6.0, "lock_box_deg": 7.0, "lock_time": 0.5, "missile_turn_deg": 110.0,
+            "magazine": 4, "reload_time": 6.0, "lock_box_deg": 7.0, "lock_time": 0.5, "missile_turn_deg": 110.0, "lock_range_m": 500.0, "max_locks": 4,
             "recoil_up_deg": 0.3, "recoil_side_deg": 0.3, "shake_trauma": 0.08, "shake_kick": 0.1},
             f"res://scenes/weapons/missile_pod_{side}.tscn")
     res("data/weapons/warden_shield.tres", {"display_name": '"Hex Shield"', "weight_t": 3.0, "hp": 1200.0,

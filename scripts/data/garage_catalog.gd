@@ -9,7 +9,8 @@ extends Resource
 @export var legs: Array[LegPart] = []
 @export var boosters: Array[BoosterPart] = []
 @export var generators: Array[GeneratorPart] = []
-@export var fcs: Array[FcsPart] = []
+## Back packs (aux slots and one bonus each).
+@export var back_packs: Array[BackPackPart] = []
 ## Right arm weapons (guns and melee).
 @export var weapons_right: Array[WeaponData] = []
 ## Left arm (shields). The garage adds "none".

@@ -24,6 +24,7 @@ func _ready() -> void:
 		_to_shoulders()
 	if mech != null:
 		AuxMount.mount.call_deferred(mech, loadout)
+		BackPackMount.mount.call_deferred(mech, loadout)
 
 
 func _to_shoulders() -> void:

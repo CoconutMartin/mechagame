@@ -2,7 +2,7 @@ class_name MissilePodWeapon
 extends MechWeapon
 ## A missile pod on the back. Hold its key (Q = left, E = right) to lock targets: each target inside
 ## the lock box around the mech aim locks after lock_time (faster with a better head). Up to the
-## FCS max locks (and the missiles left). Release: one missile per lock. No lock: one missile fires
+## max_locks of its data (and the missiles left). Release: one missile per lock. No lock: one missile fires
 ## straight at the aim point. Uses ammo: the pod reloads one missile at a time (reload_time /
 ## magazine each), so it can lock and fire with the missiles it has, even while it reloads.
 ## Every volley, locked or free, entrenches the mech on the ground (it stops and braces while the
@@ -69,7 +69,7 @@ func _update(delta: float) -> void:
 func _update_locking(delta: float) -> void:
 	# Drop locks that are gone or left the range.
 	locks = locks.filter(func(t: Node3D) -> bool: return is_instance_valid(t) and _in_range(t))
-	var max_locks := mini(controller.get_max_locks(), ammo)
+	var max_locks := mini(data.max_locks, ammo)
 	if locks.size() >= max_locks:
 		locking = null
 		return
@@ -155,7 +155,7 @@ func _can_lock(target: Node3D) -> bool:
 
 
 func _in_range(target: Node3D) -> bool:
-	var range_m := minf(data.range_m, controller.get_lock_range())
+	var range_m := minf(data.range_m, data.lock_range_m)
 	return controller.mech.global_position.distance_to(target.global_position) <= range_m
 
 
@@ -173,5 +173,5 @@ func get_status_text() -> String:
 	if ammo < data.magazine:
 		text += "  +%s" % _bar(_trickle / (data.reload_time / maxf(data.magazine, 1)))
 	if trigger_held:
-		text += "  LOCK %d/%d" % [locks.size(), mini(controller.get_max_locks(), ammo)]
+		text += "  LOCK %d/%d" % [locks.size(), mini(data.max_locks, ammo)]
 	return text
