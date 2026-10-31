@@ -73,6 +73,7 @@ func _attach_model(skeleton: Skeleton3D, pack_data: BackPackPart) -> void:
 	# Boost outlets (Boost Pack): glow, wind and louver flaps that open while boosting.
 	BackPackOutlets.attach(mech, model)
 	BackPackFlaps.attach(mech, model)
+	BackPackEnergyBar.attach(mech, model)
 	if mech.health != null:
 		var nodes: Array[Node3D] = [model]
 		mech.health.attach_weapon_part(HIT_KEY, pack_data.hp, pack_data.hp, nodes)

@@ -70,6 +70,7 @@ MATERIALS = {
     "bp_gun": ((0.33, 0.35, 0.39), 0.55, 0.5, None),
     "bp_gun_dark": ((0.22, 0.23, 0.26), 0.55, 0.5, None),
     "bp_slat": ((0.44, 0.44, 0.45), 0.45, 0.6, None),
+    "bp_energy": ((0.45, 0.8, 1.0), 0.5, 0.0, (0.45, 0.8, 1.0)),
 }
 
 
@@ -575,6 +576,10 @@ def build_boost_pack(t):
     vent = [(-0.25, bh - 0.27), (0.25, bh - 0.27), (0.25, bh - 0.08), (-0.25, bh - 0.08)]
     parts.append(block("VentFrame", F, -0.28, 0.28, -bd - 0.06, -bd, bh - 0.3, bh - 0.05, chamfer=0.03))
     parts += grille("Vent", vent, lambda z: -bd - 0.05, pitch=0.06, inset=0.02)
+    # Third bar above the two vent slats: the boost energy light (user request 2026-10-31; BackPackEnergyBar
+    # lights it light blue at full energy, dimmer and grayer toward empty).
+    parts.append(face_plate("EnergyBar", "bp_energy", [(-0.23, bh - 0.12), (0.23, bh - 0.12), (0.23, bh - 0.085),
+                                                       (-0.23, bh - 0.085)], lambda z: -bd - 0.05, 0.035, back=0.0))
     for i, sx in enumerate((-1.0, 1.0)):
         x = sx * 0.16
         parts.append(block(f"Notch{i}", F, x - 0.03, x + 0.03, -bd - 0.04, -bd, -bh + 0.17, -bh + 0.27, bevel=0.0))

@@ -64,6 +64,25 @@ func _run() -> void:
 	var flap := flaps.get_flaps()[0]
 	var closed := flap.basis
 	_check(flaps.amount < 0.01, "standing: flaps closed")
+	var bar := mech.get_node_or_null(^"BackPackEnergyBar") as BackPackEnergyBar
+	_check(bar != null, "the energy bar is on the pack")
+	if bar == null:
+		_finish()
+		return
+	await _frames(2)
+	var full := bar.get_color()
+	_check(full.is_equal_approx(bar.full_color), "full energy: bright light blue")
+	var saved := mech.energy.current
+	mech.energy.current = mech.energy.capacity * 0.5
+	await _frames(1)
+	var half := bar.get_color()
+	mech.energy.current = 0.0
+	await _frames(1)
+	var empty := bar.get_color()
+	_check(half.get_luminance() < full.get_luminance() and empty.get_luminance() < half.get_luminance()
+			and empty.is_equal_approx(bar.empty_color), "the bar dims toward empty (%.2f, %.2f, %.2f)" %
+			[full.get_luminance(), half.get_luminance(), empty.get_luminance()])
+	mech.energy.current = saved
 	var shot := OS.get_environment("BOOST_SHOT")
 	if shot != "":
 		root.get_viewport().get_texture().get_image().save_png(shot.replace(".png", "_closed.png"))
@@ -96,7 +115,9 @@ func _run() -> void:
 	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
 	await _frames(30)
 	_check(switcher.mech.get_node_or_null(^"BackPackOutlets") == null
-			and switcher.mech.get_node_or_null(^"BackPackFlaps") == null, "the Aux Pack has no outlets or flaps")
+			and switcher.mech.get_node_or_null(^"BackPackFlaps") == null
+			and switcher.mech.get_node_or_null(^"BackPackEnergyBar") == null,
+			"the Aux Pack has no outlets, flaps or energy bar")
 	_finish()
 
 
