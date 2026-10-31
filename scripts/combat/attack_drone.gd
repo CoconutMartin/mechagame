@@ -4,8 +4,8 @@ extends AnimatableBody3D
 ## (Drone<n>) off the back pack and gives it to launch. The drone pops out of its dock and flies to a firing place
 ## on its flank of the target (flank -1 or 1: a launched pair takes both flanks, a pincer). A firing place is
 ## within the gun range of the target's lock point and sees it; when the target goes behind cover, the drone seeks
-## a new place (the other flank only when its own has none). It flies around buildings: over them when the way is
-## blocked, and it never passes through them (DroneNavigator). At the place it stops and fires its bursts from its
+## a new place (the other flank only when its own has none); a place it finds no way to is dropped too. It flies at
+## most 12.5 m over the ground, over low buildings and around tall ones, and never touches them (DroneNavigator). At the place it stops and fires its bursts from its
 ## hub (DroneMuzzle<n>); from the first shot it does not move again (user rule). It fires only while it sees the
 ## target. At max_flight_s, after its last burst, or when the target is gone, it explodes. Shot down at 0 HP
 ## (layer 4, "hitboxes": weapons call on_hit).
@@ -50,6 +50,8 @@ var _target_point: Vector3 = Vector3.ZERO
 var _goal_offset: Vector3 = Vector3.ZERO
 var _recheck_left: float = 0.0
 var _nav: DroneNavigator
+## Places (relative to the target) the drone found no way to; it does not pick them again.
+var _avoid: PackedVector3Array = PackedVector3Array()
 
 
 ## Makes a flying drone from model (a Drone<n> node on the pack) in world. side: -1 = the model's outer face
@@ -139,6 +141,12 @@ func _approach(delta: float) -> void:
 			goal = _target_point + _goal_offset
 	var time_left := maxf(data.approach_time - age, 0.15)
 	_nav.steer_to(goal, time_left, delta)
+	# No way to the place (shut in under the ceiling): drop it and seek another.
+	if _nav.blocked_time >= data.unreachable_time:
+		_avoid.append(_goal_offset)
+		_nav.blocked_time = 0.0
+		_pick_place()
+		goal = _target_point + _goal_offset
 	# Fire from here when the place is reached (or the drone is already in range and sees the target).
 	var close := global_position.distance_to(goal) < data.arrive_distance
 	if (close or age >= data.approach_time) and _can_shoot_from(global_position):
@@ -185,7 +193,7 @@ func _set_phase(next: Phase) -> void:
 ## no place is found (it looks again at the next check).
 func _pick_place() -> void:
 	var from := launcher_mech.global_position if is_instance_valid(launcher_mech) else global_position
-	var place := DroneNavigator.find_place(self, data, _target_point, from, flank, global_position)
+	var place := DroneNavigator.find_place(self, data, _target_point, from, flank, global_position, _avoid)
 	has_place = place.is_finite()
 	if has_place:
 		_goal_offset = place - _target_point

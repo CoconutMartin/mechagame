@@ -1,7 +1,8 @@
 class_name DroneData
 extends Resource
 ## Attack drones of a drone back pack (user design 2026-10-31): hold T to lock a target, release to launch. A
-## drone flies to the target (2 s at 100 m) around buildings, takes a firing place on its flank of it (a launched
+## drone flies to the target (2 s at 100 m) at most 12.5 m over the ground, over low buildings and around tall ones,
+## takes a firing place on its flank of it (a launched
 ## pair holds opposite flanks: a pincer) within 20 m that sees it, then stops and fires its bursts (it does not
 ## move after the first shot). After max_flight_s it is gone (it does not come back). It can be shot down.
 
@@ -34,17 +35,32 @@ extends Resource
 
 ## Layers that block the drone's flight and sight (1 = world, 5 = buildings).
 @export_flags_3d_physics var sight_mask: int = 17
-## Seconds between path checks (the way over buildings).
-@export var path_check_time: float = 0.1
-## Height steps and top height of the climb over a building in the way (m).
-@export var climb_step: float = 4.0
-@export var climb_max: float = 120.0
+## Highest flight over the ground under the drone (m; user rule 2026-10-31: 12.5 m). Taller buildings: around.
+@export var max_height: float = 12.5
+## Gap the drone body keeps from walls, roofs and corners (m; user rule: it cannot touch them).
+@export var skin: float = 0.15
+## Extra room a planned way keeps from them (m).
+@export var corner_margin: float = 0.4
+## Seconds between path plans.
+@export var path_check_time: float = 0.25
+## Grid path around tall buildings: cell size (m), room around the start and the goal (m), most cells per plan,
+## and how many points ahead a shortcut may skip.
+@export var path_cell: float = 3.0
+@export var path_margin: float = 40.0
+@export var path_max_cells: int = 8000
+@export var path_shorten_reach: int = 12
+## Seconds a cell's "free or not" stays known (buildings can break).
+@export var cell_cache_time: float = 1.0
 
 @export_group("Attack")
 ## The drone fires from a place this close to its goal (m).
 @export var arrive_distance: float = 1.5
 ## Seconds between checks that the firing place still sees the target (the target can go behind cover).
 @export var recheck_time: float = 0.25
+## Seconds without a way to a firing place before the drone drops it, and how far (m) from a dropped place a new
+## one must be.
+@export var unreachable_time: float = 0.5
+@export var avoid_radius: float = 6.0
 ## Random places tried per flank when a firing place is picked.
 @export var place_tries: int = 16
 ## Free air around a firing place (m).
