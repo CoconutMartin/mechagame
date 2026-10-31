@@ -915,6 +915,12 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
 - In the game: `scenes/weapons/pile_bunker_4.tscn`, `data/weapons/pile_bunker_4.tres` (the first Pile Bunker's values, 3.2 t; also in `tools/mech_gen/weapons.py`), both arm lists of the garage catalog (hand edit). Mount: `compute_pile_bunker_mount.gd` with `ALIGN=axis MODEL=res://models/pilebunker_4/pilebunker_4.glb MIRROR=none` (the spike in line with the forearm, as Pile Bunker 3); the petals make it wide, so its axis is 1.45 m out from the forearm bone.
 - Test: `test_pile_bunker_hit.gd` has a miss case (`right_miss`, target at 45 m) and checks the claws (closed at the release, open after the hit or miss, closed at rest) and the drill spin stop after a miss: 0 failures for Pile Bunkers 1 to 4.
 
+## Pile Bunker 5, shield type (mock-up 2026-10-31, not in the game)
+- User request: "mockup a shield type pile bunker" (no picture). Pile Bunker 4B (telescoping claws) was removed the same day (user: not good).
+- Script `tools/blender/pilebunker_5_build.py` writes `models/pilebunker_5/pilebunker_5.blend` and `.glb` (1,162 triangles). Picture: `models/pilebunker_5/pilebunker_5_preview.png` (3/4 and side from the shield face, front, top).
+- Shape: a long forearm shield (3.55 m from behind the elbow to the pointed front, 2 m high) on the outer side (+X), with rims along the top and bottom edges bent back toward the arm, a raised tan face plate with a seam, red stripes, a black hex boss, a lamp (Drum) and bolts. Behind it: the pile bunker body (black core, grey eight-sided housing, two braces to the shield). The stake (six-sided, 1.5 m) comes out of a port at the shield's pointed front (Nose, 3.0 m), with the glow ring (NoseRing). Same node names as the other Pile Bunkers, so `PileBunkerWeapon` can use it.
+- Open (user decision): put it in the game; if yes, should it also block like a shield (WeaponData shield values, LMB guard).
+
 ## Beam Rifle (user design, Blender model, in the game since 2026-10-11)
 
 - Picture: `models/guides/beam_rifle_ref.png` (side, front and 3/4 views). Script: `tools/blender/beam_rifle_build.py` (run `blender -b --python tools/blender/beam_rifle_build.py`; it starts from an empty file, so hand edits are lost). Output: `models/beam_rifle/beam_rifle.blend` and `beam_rifle.glb`.
