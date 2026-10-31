@@ -4,6 +4,10 @@ claws, tan inner sleeve, black core and a black rear bracket).
 Run (from the project root):
     blender -b --python tools/blender/pilebunker_4_build.py
 Writes models/pilebunker_4/pilebunker_4.blend and pilebunker_4.glb.
+Version B (user request 2026-10-31: telescoping claws):
+    blender -b --python tools/blender/pilebunker_4_build.py -- --telescope
+Writes models/pilebunker_4b/pilebunker_4b.blend and .glb. Each claw is a base sleeve and a narrower tip part under
+a ClawTipN empty (child of ClawN); the weapon script slides the tip out along the claw, then spreads the claws.
 The script starts from an empty file, so hand edits in the .blend are lost when it runs again.
 
 Shapes from the user's picture, models/guides/pilebunker_4_ref.png (3/4, front, side and top views; sizes are
@@ -17,14 +21,16 @@ collar), Mount.
 Each claw and its red petal are built in a local frame with the claw on the +Z side, then turned about the
 spike axis by CLAW_ANGLES (0 = up, 90 = the +X side, 180 = down).
 """
-import math, os
+import math, os, sys
 import bpy
 import bmesh
 from mathutils import Matrix, Vector
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-OUT_DIR = os.path.join(ROOT, "models", "pilebunker_4")
-NAME = "pilebunker_4"
+## Version B: telescoping claws (a base sleeve and a sliding tip).
+TELESCOPE = "--telescope" in sys.argv
+NAME = "pilebunker_4b" if TELESCOPE else "pilebunker_4"
+OUT_DIR = os.path.join(ROOT, "models", NAME)
 
 ## Front face of the collar (the Nose), where the spike comes out.
 NOSE_Y = 2.6
@@ -41,6 +47,13 @@ HINGE_Y, HINGE_Z = 2.3, 0.47
 CLAW_OUTLINE = [(2.18, 0.62), (3.0, 0.58), (3.8, 0.38), (4.1, 0.27), (4.1, 0.18), (3.5, 0.22), (2.7, 0.32),
                 (2.18, 0.33)]
 CLAW_HALF_WIDTH = 0.12
+## Version B: the base sleeve outline, the tip part outline (narrower, it slides out of the sleeve) and the tip
+## empty's place (on the claw's center line, so the tip slides from the hinge toward it).
+SLEEVE_OUTLINE = [(2.18, 0.62), (3.0, 0.58), (3.35, 0.5), (3.35, 0.25), (2.7, 0.32), (2.18, 0.33)]
+## The tip part's back (from y 2.5) stays inside the sleeve, so the slid-out tip still joins the sleeve.
+TIP_OUTLINE = [(2.5, 0.5), (2.95, 0.53), (3.8, 0.38), (4.1, 0.27), (4.1, 0.18), (3.5, 0.22), (2.95, 0.27), (2.5, 0.35)]
+TIP_HALF_WIDTH = 0.09
+TIP_ORIGIN = (2.95, 0.4)
 
 MATERIALS = {
     # name: (sRGB color from the picture, roughness, metallic, emission)
@@ -208,13 +221,25 @@ def build_claw(i, angle):
     pivot = empty(f"Claw{i}", (0.0, HINGE_Y, 0.0))
     pivot.location = Matrix.Rotation(math.radians(angle), 3, "Y") @ Vector((0.0, HINGE_Y, HINGE_Z))
     pivot.rotation_euler = (0.0, math.radians(angle), 0.0)
-    outline = [(y - HINGE_Y, z - HINGE_Z) for y, z in CLAW_OUTLINE]
+    outline = [(y - HINGE_Y, z - HINGE_Z) for y, z in (SLEEVE_OUTLINE if TELESCOPE else CLAW_OUTLINE)]
     parts = [wedge(f"ClawArm{i}", T, -CLAW_HALF_WIDTH, CLAW_HALF_WIDTH, outline, bevel=0.02)]
     parts.append(block(f"ClawKnuckle{i}", K, -0.14, 0.14, -0.15, 0.25, -0.12, 0.17, chamfer=0.05))
-    parts.append(block(f"ClawMark{i}", K, -0.125, 0.125, 0.9, 0.93, 0.0, 0.12, bevel=0.0))
+    if not TELESCOPE:
+        parts.append(block(f"ClawMark{i}", K, -0.125, 0.125, 0.9, 0.93, 0.0, 0.12, bevel=0.0))
     for p in parts:
         p.parent = pivot
-    return [pivot] + parts
+    if not TELESCOPE:
+        return [pivot] + parts
+    # The tip part under its own empty (relative to the hinge), with a dark band where it leaves the sleeve.
+    oy, oz = TIP_ORIGIN[0] - HINGE_Y, TIP_ORIGIN[1] - HINGE_Z
+    tip = empty(f"ClawTip{i}", (0.0, oy, oz), pivot)
+    tip_outline = [(y - TIP_ORIGIN[0], z - TIP_ORIGIN[1]) for y, z in TIP_OUTLINE]
+    tip_parts = [wedge(f"ClawTipArm{i}", T, -TIP_HALF_WIDTH, TIP_HALF_WIDTH, tip_outline, bevel=0.015)]
+    tip_parts.append(block(f"ClawTipBand{i}", "pb4_dark", -TIP_HALF_WIDTH - 0.005, TIP_HALF_WIDTH + 0.005, 0.38, 0.45,
+                           -0.13, 0.1, bevel=0.0))
+    for p in tip_parts:
+        p.parent = tip
+    return [pivot] + parts + [tip] + tip_parts
 
 
 def build_bracket():

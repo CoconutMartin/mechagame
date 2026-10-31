@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/pile_bunker_4b.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Pile Bunker 4B"
+weight_t = 3.2
+hp = 300.0
+kind = 5
+fire_rate = 0.16667
+damage = 675.0
+stagger_points = 30.0
+magazine = 3
+reload_time = 5.0
+lunge_distance = 16.0
+lunge_speed = 32.0
+lunge_energy = 20.0
+shake_trauma = 0.45
+shake_kick = 0.6
+recoil_up_deg = 2.0
+recoil_side_deg = 1.0
+rest_transform = Transform3D(0.97815, 0, -0.20791, 0.14702, 0.70711, 0.69165, 0.14702, -0.70711, 0.69165, 1.9, -0.82, -1.95)
+aim_anchor = Vector3(2.1800, 1.1600, -2.7600)
+right_pole_rest = Vector3(0.6000, -1.0000, 0.3000)
+right_pole_aim = Vector3(0.6000, -1.0000, 0.4000)
+scene = ExtResource("scene")

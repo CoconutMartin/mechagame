@@ -124,6 +124,14 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 ## Seconds to open and to close.
 @export var claw_open_time: float = 0.12
 @export var claw_close_time: float = 0.5
+## Telescoping claw tips (Pile Bunker 4B, user request 2026-10-31), one per claw in claw_paths order: on opening
+## each tip slides out along its claw first, then the claws spread; on closing the claws close first, then the
+## tips slide back in. A tip slides from its claw's hinge toward its own rest place. Empty = no telescope.
+@export var claw_tip_paths: Array[NodePath] = []
+## How far a tip slides out (m).
+@export var claw_extend: float = 0.7
+## Part of the open time the slide takes (the spread takes the rest).
+@export_range(0.05, 0.95) var claw_extend_share: float = 0.5
 
 @export_group("Power")
 ## Hold RMB to power up the stake: seconds to full power, and energy use per second while holding.
@@ -191,6 +199,10 @@ var _claws: Array[Node3D] = []
 var _claw_rest: Array[Basis] = []
 var _claw_axes: Array[Vector3] = []
 var _claw_open: float = 0.0
+## Telescoping tips, their rest place and their slide direction (in their claw's space).
+var _claw_tips: Array[Node3D] = []
+var _tip_rest: Array[Vector3] = []
+var _tip_dirs: Array[Vector3] = []
 
 @onready var _mount: Node3D = $Mount
 @onready var _stake: Node3D = get_node(stake_path)
@@ -209,6 +221,11 @@ func _ready() -> void:
 		_claw_rest.append(claw.basis)
 		# Turning the stake direction (-Z) toward the radial: the claw tip moves out.
 		_claw_axes.append(Vector3.FORWARD.cross(radial).normalized())
+	for path in claw_tip_paths:
+		var tip := get_node(path) as Node3D
+		_claw_tips.append(tip)
+		_tip_rest.append(tip.position)
+		_tip_dirs.append(tip.position.normalized())
 	# The drum and the nose ring glow with the stored power.
 	_glow.color = Color(1.0, 0.55, 0.2)
 	add_child(_glow)
@@ -568,7 +585,14 @@ func _update_claws(delta: float) -> void:
 		_claw_open = move_toward(_claw_open, 1.0, delta / maxf(claw_open_time, 0.01))
 	else:
 		_claw_open = move_toward(_claw_open, 0.0, delta / maxf(claw_close_time, 0.01))
-	var angle := deg_to_rad(claw_open_deg) * smoothstep(0.0, 1.0, _claw_open)
+	var spread := _claw_open
+	if not _claw_tips.is_empty():
+		var share := claw_extend_share
+		var slide := smoothstep(0.0, 1.0, clampf(_claw_open / share, 0.0, 1.0))
+		spread = clampf((_claw_open - share) / (1.0 - share), 0.0, 1.0)
+		for i in _claw_tips.size():
+			_claw_tips[i].position = _tip_rest[i] + _tip_dirs[i] * claw_extend * slide
+	var angle := deg_to_rad(claw_open_deg) * smoothstep(0.0, 1.0, spread)
 	for i in _claws.size():
 		_claws[i].basis = Basis(_claw_axes[i], angle) * _claw_rest[i]
 

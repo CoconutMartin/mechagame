@@ -915,6 +915,13 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
 - In the game: `scenes/weapons/pile_bunker_4.tscn`, `data/weapons/pile_bunker_4.tres` (the first Pile Bunker's values, 3.2 t; also in `tools/mech_gen/weapons.py`), both arm lists of the garage catalog (hand edit). Mount: `compute_pile_bunker_mount.gd` with `ALIGN=axis MODEL=res://models/pilebunker_4/pilebunker_4.glb MIRROR=none` (the spike in line with the forearm, as Pile Bunker 3); the petals make it wide, so its axis is 1.45 m out from the forearm bone.
 - Test: `test_pile_bunker_hit.gd` has a miss case (`right_miss`, target at 45 m) and checks the claws (closed at the release, open after the hit or miss, closed at rest) and the drill spin stop after a miss: 0 failures for Pile Bunkers 1 to 4.
 
+## Pile Bunker 4B (telescoping claws, user request 2026-10-31, in the game since 2026-10-31)
+- A version of Pile Bunker 4 (user: "the claws sort of expand from the front tip to the end"; user choice: "telescope, then spread"). Same script: `blender -b --python tools/blender/pilebunker_4_build.py -- --telescope` writes `models/pilebunker_4b/pilebunker_4b.blend` and `.glb` (2,822 triangles). Picture of the 3 stages (closed, tips out, spread): `models/pilebunker_4b/pilebunker_4b_preview.png`.
+- Each claw is a base sleeve on the hinge (`ClawN`) and a narrower tip part under `ClawTipN` (child of `ClawN`). The tip part's back stays inside the sleeve, so the slid-out tip still joins it.
+- `PileBunkerWeapon` group "Claws": `claw_tip_paths`, `claw_extend` 0.7 m, `claw_extend_share` 0.5. Opening: the tips slide out along their claws (first half of the open time), then the claws spread `claw_open_deg`; closing runs it backward (the claws close, then the tips slide in). In `scenes/weapons/pile_bunker_4b.tscn`: `claw_open_time` 0.3 s, `claw_close_time` 0.6 s. Open and close follow the same rules as Pile Bunker 4.
+- `data/weapons/pile_bunker_4b.tres` ("Pile Bunker 4B"; also in `tools/mech_gen/weapons.py`), both arm lists of the garage catalog. Mount: the same as Pile Bunker 4.
+- Test: `BUNKER=res://data/weapons/pile_bunker_4b.tres` with `test_pile_bunker_hit.gd` (it also checks that the tips are back in at rest): 0 failures.
+
 ## Beam Rifle (user design, Blender model, in the game since 2026-10-11)
 
 - Picture: `models/guides/beam_rifle_ref.png` (side, front and 3/4 views). Script: `tools/blender/beam_rifle_build.py` (run `blender -b --python tools/blender/beam_rifle_build.py`; it starts from an empty file, so hand edits are lost). Output: `models/beam_rifle/beam_rifle.blend` and `beam_rifle.glb`.
@@ -1181,6 +1188,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - "Align shoulders and arm swings during holding war hammer and baton with shoulder and arm swings with fists": the holding arm followed the walk clip (its shoulder block rose and tilted). Now `WeaponController._swings_like_fist` (a HAMMER-kind weapon in the right hand): when it does not swing, the arm takes the fist hang target (`_update_fist_arms`, `fist_hang_target`) and its IK runs, so `SkeletalArmRig` gives it the relaxed hang and the stride swing like a fist arm (level block); the weapon rides the hand. During a swing the target is null and the clip has the arm as before. Test: test_melee_combo, test_stability, test_weapon_hands, test_hit_reactions 0 failures; renders `render_rifle.gd` RIFLE_RIGHT=hammer / baton, RIFLE_ACTIONS=move_forward, views far, far_front.
 
 ## Reminders for the user
+- Open (2026-10-31, built): play test Pile Bunker 4B: the claw tips slide out, then the claws spread after a hit or a miss; they close and slide back in at rest.
 - Open (2026-10-31, built): play test Pile Bunker 4 (garage, both arms): the place on the forearm, the claws closed at rest, opening after a hit or a miss and closing at rest, all 5 clips.
 - Open (2026-10-31, built): play test Pile Bunker 3 (garage, both arms): the place on the forearm (spike in line with the forearm), the spike, all 5 clips.
 - Open (2026-10-31, built): play test Pile Bunker 2 (garage, both arms): the place on the forearm, the drill spin from the power-up to the hit or miss, the pointed tip, all 5 clips.
