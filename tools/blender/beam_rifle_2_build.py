@@ -183,84 +183,137 @@ SEGMENTS = [(492, 600), (608, 760), (768, 920), (928, 1080), (1088, 1236)]
 DOTS_TOP = [2, 2, 1, 1, 0]
 DOTS_BOTTOM = [2, 2, 2, 2, 0]
 RAIL_W = 0.50
-# Upper and lower rail rows (top, bottom). The lower rail bottom (311) is where the left hand holds
-# (the first Beam Rifle's rail bottom is 309, its grip socket 0.37 m under the bore).
-TOP_ROWS = (169, 219)
+# Raised side panel on each segment: this much wider than the segment (both sides together).
+PANEL_RISE = 0.06
+# Upper and lower rail rows (top, bottom). The lower rail bottom (313) is where the left hand holds
+# (the first Beam Rifle's rail bottom is 309, its grip socket 0.37 m under the bore). Nothing hangs
+# below the lower rail between u 640 and 1200 (the left hand's rest, aim and low aim places).
+TOP_ROWS = (166, 219)
 BOTTOM_ROWS = (263, 313)
 
 
-def rail(prefix, rows, dots):
+def rail(prefix, rows, dots, top):
     v0, v1 = rows
     mid = (v0 + v1) / 2
     # Dark spine behind the segments, seen in the gaps between them.
     box(f"{prefix}Spine", D, 500, 1240, v0 + 6, v1 - 6, RAIL_W - 0.08, bevel=0.01)
     for i, ((u0, u1), count) in enumerate(zip(SEGMENTS, dots)):
-        chamfer_box(f"{prefix}Seg{i}", W, u0, u1, v0, v1, RAIL_W, 5, bevel=0.022)
-        span = u1 - u0
+        if i == 0:
+            # Nose segment: the front corners cut deeper, so the rail tip narrows like a shroud.
+            prism(f"{prefix}Seg{i}", W, [(u0 + 12, v0), (u1 - 5, v0), (u1, v0 + 5), (u1, v1 - 5),
+                                         (u1 - 5, v1), (u0 + 12, v1), (u0, v1 - 12), (u0, v0 + 12)],
+                  RAIL_W, bevel=0.022)
+        else:
+            chamfer_box(f"{prefix}Seg{i}", W, u0, u1, v0, v1, RAIL_W, 5, bevel=0.022)
+        # Raised side panel with chamfered corners, a grey seam line under it on the outer edge.
+        pu0, pu1 = u0 + (20 if i == 0 else 12), u1 - 12
+        chamfer_box(f"{prefix}Panel{i}", W, pu0, pu1, v0 + 9, v1 - 9, RAIL_W + PANEL_RISE, 6, bevel=0.012)
+        seam_v = v1 - 6 if top else v0 + 6
+        box(f"{prefix}Seam{i}", GR, pu0 + 6, pu1 - 6, seam_v - 1.5, seam_v + 1.5, RAIL_W + 0.012, bevel=0.0)
+        span = pu1 - pu0
         if count == 1:
-            places = [u0 + span * 0.5]
+            places = [pu0 + span * 0.5]
         elif count == 2:
-            places = [u0 + span * 0.28, u0 + span * 0.55] if i == 0 else [u0 + span * 0.3, u0 + span * 0.7]
+            places = [pu0 + span * 0.3, pu0 + span * 0.7]
         else:
             places = []
         for k, u in enumerate(places):
-            pin(f"{prefix}Dot{i}_{k}", u, mid, RAIL_W / 2)
-    # Bore in the front face of the rail: a dark ring and a dark hole, where the shots leave.
+            pin(f"{prefix}Dot{i}_{k}", u, mid, (RAIL_W + PANEL_RISE) / 2)
+        # Vent slots on the outer face (top of the upper rail, bottom of the lower rail) of the middle
+        # segments. Only on the upper rail's top: the left hand holds the lower rail's bottom.
+        if top and 1 <= i <= 3:
+            for k in range(3):
+                su = u0 + span * 0.35 + k * 14
+                box(f"{prefix}Vent{i}_{k}", D, su, su + 6, v0 - 1.5, v0 + 3, 0.26, bevel=0.0)
+    # Bore in the front face of the rail: a grey ring and a dark hole, where the shots leave.
     tube(f"{prefix}BoreRing", GR, 486, 494, 17, mid, bevel=0.005, sides=16)
     tube(f"{prefix}Bore", D, 484, 487, 10, mid, bevel=0.0, sides=16)
 
 
 def build():
-    rail("RailTop", TOP_ROWS, DOTS_TOP)
-    rail("RailBottom", BOTTOM_ROWS, DOTS_BOTTOM)
+    rail("RailTop", TOP_ROWS, DOTS_TOP, True)
+    rail("RailBottom", BOTTOM_ROWS, DOTS_BOTTOM, False)
 
-    # Barrel: dark tube with collars, a grey muzzle cap, an orange cell before the receiver.
+    # Front bracket between the rails, behind the barrel tip.
+    box("FrontBracket", D, 548, 578, 214, 268, 0.30, bevel=0.012)
+
+    # Barrel: dark tube with collars, a grey muzzle cap, heat-sink fins, an orange cell in a dark cage.
     tube("MuzzleCap", GR, 500, 540, 18)
     tube("MuzzleBore", D, 497, 502, 10, bevel=0.0)
     tube("Barrel", D, 540, 1220, 13)
-    for i, (u0, u1) in enumerate(((600, 622), (760, 784), (920, 944), (1040, 1062))):
+    for i, (u0, u1) in enumerate(((600, 622), (760, 784), (920, 944))):
         tube(f"Collar{i}", GR, u0, u1, 17)
-    tube("CellCollar0", D, 1062, 1080, 18)
-    box("Cell", O, 1080, 1130, 227, 255, 0.24, bevel=0.008)
-    tube("CellCollar1", D, 1130, 1150, 18)
+    for i in range(6):
+        u = 966 + i * 14
+        tube(f"Fin{i}", GR, u, u + 6, 21, bevel=0.004)
+    tube("CellCollar0", D, 1050, 1078, 19)
+    box("Cell", O, 1078, 1132, 226, 256, 0.24, bevel=0.008)
+    for i, u in enumerate((1092, 1116)):
+        box(f"CellStrap{i}", D, u, u + 6, 223, 259, 0.27, bevel=0.0)
+    tube("CellCollar1", D, 1132, 1152, 19)
 
-    # Receiver: dark core, white upper body that steps up to the stock, white lower body under the
-    # lower rail that runs back to the grip, a big round dark hub on both sides.
-    box("Receiver", D, 1150, 1400, 178, 312, 0.44)
-    prism("UpperBody", W, [(1236, 169), (1330, 169), (1352, 156), (1400, 156), (1400, 219), (1236, 219)], 0.52)
-    prism("LowerBody", W, [(1236, 263), (1300, 263), (1310, 275), (1310, 298), (1290, 318), (1236, 318)], 0.52)
-    disc("Hub", D, 1290, 243, 52, 0.60)
-    disc("HubRing", GR, 1290, 243, 40, 0.64)
-    disc("HubCap", D, 1290, 243, 24, 0.68)
-    # Second orange cell behind the hub, on both sides of the stock spine.
-    box("CellRear", O, 1360, 1410, 230, 256, 0.30, bevel=0.008)
+    # Receiver: dark core, white upper body that steps up to the stock with a raised side plate,
+    # white lower body under the lower rail with vent slats, a big round hub with bolts and a lamp.
+    box("Receiver", D, 1150, 1400, 176, 314, 0.50)
+    prism("UpperBody", W, [(1236, 166), (1330, 166), (1352, 152), (1400, 152), (1400, 219), (1236, 219)], 0.56)
+    prism("UpperPlate", W, [(1248, 175), (1325, 175), (1347, 162), (1392, 162), (1392, 196), (1248, 196)],
+          0.62, bevel=0.012)
+    box("UpperSeam", GR, 1252, 1388, 199, 202, 0.572, bevel=0.0)
+    prism("LowerBody", W, [(1236, 263), (1300, 263), (1312, 275), (1312, 300), (1292, 320), (1236, 320)], 0.56)
+    for i in range(3):
+        u = 1248 + i * 14
+        box(f"LowerVent{i}", D, u, u + 6, 285, 308, 0.575, bevel=0.0)
+    disc("Hub", D, 1290, 243, 58, 0.64)
+    disc("HubRing", GR, 1290, 243, 44, 0.68)
+    disc("HubCap", D, 1290, 243, 26, 0.72)
+    disc("HubLamp", O, 1290, 243, 8, 0.74, bevel=0.0, sides=16)
+    for k in range(6):
+        a = math.radians(30 + 60 * k)
+        disc(f"HubBolt{k}", GR, 1290 + 51 * math.cos(a), 243 + 51 * math.sin(a), 4.5, 0.70, bevel=0.0, sides=10)
+    # Second orange cell behind the hub, on both sides of the stock spine, in a dark frame.
+    box("CellRearFrame", D, 1354, 1416, 226, 260, 0.28, bevel=0.008)
+    box("CellRear", O, 1360, 1410, 230, 256, 0.32, bevel=0.008)
 
-    # Scope: dark mount, white body, one dark lens tube with glass in front, a small dark sight on top.
-    box("ScopeMount", D, 1250, 1330, 150, 171, 0.22)
-    box("Scope", W, 1240, 1335, 112, 152, 0.30)
-    tube("ScopeLens", D, 1205, 1242, 19, 130)
-    tube("ScopeGlass", G, 1202, 1208, 13, 130, bevel=0.0)
-    tube("ScopeCap", D, 1335, 1352, 16, 130)
-    box("ScopeSight", D, 1262, 1300, 98, 113, 0.14, bevel=0.008)
+    # Scope: dark mount on a grey rail, white body with side knobs, a dark lens hood with glass,
+    # a dark back cap, a small sight with glass on top.
+    box("ScopeRail", GR, 1240, 1345, 160, 168, 0.18, bevel=0.004)
+    box("ScopeMount", D, 1250, 1330, 148, 166, 0.24)
+    prism("Scope", W, [(1240, 112), (1325, 112), (1338, 122), (1338, 146), (1325, 154), (1240, 154)], 0.32)
+    for side, sx in (("L", 0.18), ("R", -0.18)):
+        tube(f"ScopeKnob{side}", GR, 1282, 1300, 9, 133, sx, bevel=0.003, sides=12)
+    tube("ScopeHood", D, 1196, 1242, 22, 132)
+    tube("ScopeGlass", G, 1194, 1200, 15, 132, bevel=0.0)
+    tube("ScopeCap", D, 1336, 1356, 17, 132)
+    box("ScopeSight", D, 1262, 1302, 96, 113, 0.14, bevel=0.008)
+    box("ScopeSightGlass", G, 1259, 1263, 99, 109, 0.10, bevel=0.0)
 
-    # Stock: white top member, dark spine, white lower brace, white butt plate with a dot, dark pad.
-    prism("StockTop", W, [(1400, 156), (1560, 156), (1610, 130), (1660, 130), (1660, 175),
-                          (1622, 175), (1580, 222), (1400, 222)], 0.32)
+    # Stock: white top member with a raised cheek plate, dark spine with an orange stripe, white lower
+    # brace, white butt plate with a dot, dark pad with grey grooves.
+    prism("StockTop", W, [(1400, 152), (1560, 152), (1610, 126), (1660, 126), (1660, 175),
+                          (1622, 175), (1580, 222), (1400, 222)], 0.36)
+    prism("CheekPlate", W, [(1415, 164), (1548, 164), (1585, 145), (1640, 145), (1640, 160),
+                            (1600, 160), (1565, 206), (1415, 206)], 0.42, bevel=0.012)
     prism("StockSpine", D, [(1400, 220), (1580, 220), (1634, 176), (1634, 300), (1610, 268),
-                            (1400, 268)], 0.24)
-    prism("StockBrace", W, [(1548, 262), (1592, 262), (1650, 322), (1650, 350), (1626, 350)], 0.32)
-    prism("ButtPlate", W, [(1630, 130), (1674, 130), (1674, 350), (1630, 350)], 0.40)
-    pin("ButtDot", 1652, 240, 0.21)
-    prism("ButtPad", D, [(1674, 126), (1716, 126), (1728, 140), (1728, 342), (1716, 356),
-                         (1674, 356)], 0.44)
+                            (1400, 268)], 0.26)
+    prism("StockStripe", O, [(1430, 238), (1560, 238), (1590, 214), (1598, 220), (1566, 246), (1430, 246)],
+          0.272, bevel=0.0)
+    prism("StockBrace", W, [(1548, 262), (1592, 262), (1650, 322), (1650, 350), (1626, 350)], 0.36)
+    prism("ButtPlate", W, [(1630, 126), (1674, 126), (1674, 350), (1630, 350)], 0.44)
+    pin("ButtDot", 1652, 240, 0.23)
+    prism("ButtPad", D, [(1674, 122), (1716, 122), (1728, 136), (1728, 346), (1716, 360),
+                         (1674, 360)], 0.48)
+    for i in range(5):
+        v = 170 + i * 36
+        box(f"PadGroove{i}", GR, 1682, 1720, v, v + 4, 0.492, bevel=0.0)
 
-    # Pistol grip (the first Beam Rifle's place and size): white body, dark back panels, dark base,
-    # trigger slot on both sides.
+    # Pistol grip (the first Beam Rifle's place and size): white body, dark back panels, a grey
+    # swell plate, dark base, trigger slot on both sides.
     tilt = 24.0
     slanted("Grip", W, 1338, 370, 172, 92, 0.24, tilt)
     for side, sx in (("L", 0.125), ("R", -0.125)):
         slanted(f"GripPanel{side}", D, 1366, 384, 110, 40, 0.02, tilt, sx, bevel=0.006)
         slanted(f"TriggerSlot{side}", D, 1312, 316, 34, 22, 0.02, tilt + 6, sx, bevel=0.006)
+    slanted("GripSwell", GR, 1312, 425, 80, 10, 0.25, tilt, bevel=0.004)
     slanted("GripBase", D, 1374, 448, 28, 108, 0.30, tilt)
 
     # Markers.
