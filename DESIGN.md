@@ -1330,7 +1330,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - "Align shoulders and arm swings during holding war hammer and baton with shoulder and arm swings with fists": the holding arm followed the walk clip (its shoulder block rose and tilted). Now `WeaponController._swings_like_fist` (a HAMMER-kind weapon in the right hand): when it does not swing, the arm takes the fist hang target (`_update_fist_arms`, `fist_hang_target`) and its IK runs, so `SkeletalArmRig` gives it the relaxed hang and the stride swing like a fist arm (level block); the weapon rides the hand. During a swing the target is null and the clip has the arm as before. Test: test_melee_combo, test_stability, test_weapon_hands, test_hit_reactions 0 failures; renders `render_rifle.gd` RIFLE_RIGHT=hammer / baton, RIFLE_ACTIONS=move_forward, views far, far_front.
 
 ## Reminders for the user
-- Open (2026-10-31, built): play test SGGv2 (the thicker body, the new armor, the tassets swinging off the thighs) and the "Navy Orange" skin (garage skin picker; the default for a new save). Check for arm and armor clipping in aim, melee and the run. Tune `data/skins/paint_navy_orange.tres`.
+- Paused (2026-11-01, user: "Set SGGv2 aside for now"): SGGv2 (thicker body, added armor, Navy Orange skin) stays in the game as built; no more work on it until the user asks. Open when it resumes: run test_clip_self on the last build (forearms and thighs at their own size), play test it, tune `data/skins/paint_navy_orange.tres`.
 - Open (2026-10-31, user): upload the Haliya HLY-101 model (parts on the SGG rig `MechRig`, collections Head, Core, Arm_L, Arm_R, Legs; skirt and sleeve meshes on the accessory bones). Claude then exports the parts and adds Haliya on key 2.
 - Open (2026-10-31, built, phase 1 of "Swappable mech parts"): play test SGG after the split into part files: it should look and move exactly as before (walk, run, boost, jump, aim, melee, part breaks, the PS1 / Basic skins, the HP indicators). Report any part that looks wrong or sits in the wrong place.
 - Open (2026-10-31, built, phase B): play test the drone aux mods (garage "Aux" picker under Backpack, with the Drone Pack): Drone Swarm (one T release sends all 6) and Drone Recall (each drone comes back after its attack and launches once more). Say if the values should change (2 flights per drone, 10 s to come back).
@@ -1400,6 +1400,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 
 ## Decisions log
 
+- 2026-11-01 (user): set SGGv2 aside for now (the work pauses; the build stays).
 - 2026-10-31 (user): SGGv2: more body, heft and character (thicker limbs and torso, added armor); paint skin Navy Orange (navy armor, orange accents, eyes in the accent color), replacing the first paint Black Red.
 - 2026-10-31 (user): SGGv2 paint skin "Black Red": black armor, red accents, dark grey frame, orange lamp; a garage skin option for the body.
 - 2026-10-31 (user): remove the Claude-built Haliya from the game; the user uploads the Haliya model.
