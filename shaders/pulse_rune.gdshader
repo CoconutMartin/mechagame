@@ -26,7 +26,9 @@ uniform float solid = 1.0;
 uniform float outline = 0.0;
 // Scattered particles (solid mode): cell size as a part of the short side, and the share of cells lit.
 uniform float scatter_cell = 0.085;
-uniform float scatter_lit = 0.75;
+uniform float scatter_lit = 0.78;
+// Width of the thinning border at the edge, as a part of the short side.
+uniform float edge_soft = 0.2;
 // HDR boost of the gold and cyan (bloom).
 uniform float glow = 1.8;
 
@@ -57,30 +59,37 @@ void fragment() {
 		// cells; in each cell one short stroke at a random place, length and direction, lit by a hash that changes
 		// over time, so no grid shows.
 		float total = 0.0;
+		vec2 hb = size * 0.5 - vec2(s * line_w);
+		float rr = s * corner * 0.5;
 		for (int layer = 0; layer < 2; layer++) {
 			float c = s * scatter_cell * (layer == 0 ? 1.0 : 0.63);
-			vec2 drift = vec2(TIME * (layer == 0 ? 0.9 : -0.6), TIME * 0.25);
-			vec2 g = p / c + drift + float(layer) * 13.7;
+			vec2 drift = vec2(TIME * (layer == 0 ? 0.9 : -0.6), TIME * 0.25) + float(layer) * 13.7;
+			vec2 g = p / c + drift;
 			vec2 id = floor(g);
 			vec2 f = fract(g);
-			float step_t = floor(TIME * 8.0 + hash(id) * 8.0);
-			float lit = step(1.0 - scatter_lit * (layer == 0 ? 1.0 : 0.6), hash(id + vec2(step_t, float(layer) * 5.0)));
 			vec2 center = vec2(0.2) + vec2(hash(id + 1.3), hash(id + 7.9)) * 0.6;
+			// The edge thins out (user 2026-11-01: "less prominent, looks like a dotted line"): each particle is tested
+			// at its own center (whole or not at all, never cut by the edge), and fewer are lit near the edge, with a
+			// random border per particle.
+			vec2 pc = (id + center - drift) * c;
+			float dc = sd_round_box(pc, hb, rr);
+			float border = s * edge_soft * (0.6 + 0.8 * hash(id + 5.5));
+			float keep = smoothstep(0.0, border, -dc);
+			float step_t = floor(TIME * 8.0 + hash(id) * 8.0);
+			float lit = step(1.0 - scatter_lit * keep * (layer == 0 ? 1.0 : 0.6), hash(id + vec2(step_t, float(layer) * 5.0)));
 			vec2 q = f - center;
 			float vertical = step(0.5, hash(id + 4.2));
 			float len = 0.15 + 0.22 * hash(id + 2.6);
 			float wid = 0.1 + 0.06 * hash(id + 8.1);
 			vec2 a = vertical > 0.5 ? q.yx : q;
 			float stroke = step(abs(a.x), len) * step(abs(a.y), wid);
-			total = max(total, lit * stroke * (0.7 + 0.3 * hash(id + 3.3)));
+			total = max(total, lit * stroke * (0.7 + 0.3 * hash(id + 3.3)) * (0.5 + 0.5 * keep));
 		}
-		float spark = step(0.993, hash(floor(p / (s * 0.05)) + floor(TIME * 24.0)));
-		// Fade the particles out right at the edge so the shape reads without an outline.
-		float edge = smoothstep(0.0, s * 0.06, -d);
-		color += (cyan.rgb * total + vec3(0.85, 1.0, 1.0) * spark) * glow * edge;
-		alpha = max(alpha, max(total, spark) * edge);
-		alpha = max(alpha, 0.1 * edge);
-		color += cyan.rgb * 0.1 * edge;
+		float spark = step(0.995, hash(floor(p / (s * 0.05)) + floor(TIME * 24.0))) * smoothstep(0.0, s * edge_soft, -d);
+		// A faint haze that fades in slowly from the edge.
+		float haze = 0.08 * smoothstep(0.0, s * edge_soft * 1.5, -d);
+		color += (cyan.rgb * total + vec3(0.85, 1.0, 1.0) * spark) * glow + cyan.rgb * haze;
+		alpha = max(alpha, max(max(total, spark), haze));
 	} else if (r > 0.0 && r < 1.0) {
 		// Glyph cells along the nearest edge (upright runes, not rays): the side edges run along y, the top and bottom
 		// along x; they scroll round the ring.
