@@ -1,8 +1,8 @@
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never, blend_mix;
 // Rune pulse card for the electric shotgun shots (user reference 2026-11-01: a golden rune ring with a cyan center).
-// On a 1 x 1 quad scaled to `size` (meters): a rounded rectangle with a thin outer gold line, filled edge to middle with
-// flickering cyan glyph particles and sparkles (user 2026-11-01: "Remove space in the middle and replace with
+// On a 1 x 1 quad scaled to `size` (meters): a rounded rectangle filled with scattered flickering cyan particles and
+// sparkles (user 2026-11-01: no outline, 25% fewer particles, random spread; `outline` 1 brings the gold line back) (user 2026-11-01: "Remove space in the middle and replace with
 // particles. Change particle color to cyan"; `solid` 0 brings back the band, the inner line and the cyan center). Line widths follow the short side.
 
 uniform vec2 size = vec2(4.0, 2.0);
@@ -22,6 +22,11 @@ uniform float fade = 1.0;
 uniform float seed = 0.0;
 // 1 = glyph particles fill the whole inside (no inner line, no center plate).
 uniform float solid = 1.0;
+// Gold outer line strength (user 2026-11-01: "No orange outline": 0).
+uniform float outline = 0.0;
+// Scattered particles (solid mode): cell size as a part of the short side, and the share of cells lit.
+uniform float scatter_cell = 0.085;
+uniform float scatter_lit = 0.75;
 // HDR boost of the gold and cyan (bloom).
 uniform float glow = 1.8;
 
@@ -42,12 +47,41 @@ void fragment() {
 	float alpha = 0.0;
 	// Outer line.
 	float outer = 1.0 - smoothstep(0.0, s * line_w * 0.6, abs(d));
-	color += gold.rgb * outer * glow;
-	alpha = max(alpha, outer);
+	color += gold.rgb * outer * glow * outline;
+	alpha = max(alpha, outer * outline);
 	// Glyph band: cells around the outline, each a 3 x 4 grid of small strokes lit by a hash that changes over time.
 	float band_in = s * (gap_w + band_w);
 	float r = (-d - s * gap_w) / (s * band_w);
-	if (r > 0.0 && (r < 1.0 || solid > 0.5)) {
+	if (solid > 0.5 && d < 0.0) {
+		// Scattered cyan particles over the whole inside (user 2026-11-01: 25% fewer, random spread): two layers of
+		// cells; in each cell one short stroke at a random place, length and direction, lit by a hash that changes
+		// over time, so no grid shows.
+		float total = 0.0;
+		for (int layer = 0; layer < 2; layer++) {
+			float c = s * scatter_cell * (layer == 0 ? 1.0 : 0.63);
+			vec2 drift = vec2(TIME * (layer == 0 ? 0.9 : -0.6), TIME * 0.25);
+			vec2 g = p / c + drift + float(layer) * 13.7;
+			vec2 id = floor(g);
+			vec2 f = fract(g);
+			float step_t = floor(TIME * 8.0 + hash(id) * 8.0);
+			float lit = step(1.0 - scatter_lit * (layer == 0 ? 1.0 : 0.6), hash(id + vec2(step_t, float(layer) * 5.0)));
+			vec2 center = vec2(0.2) + vec2(hash(id + 1.3), hash(id + 7.9)) * 0.6;
+			vec2 q = f - center;
+			float vertical = step(0.5, hash(id + 4.2));
+			float len = 0.15 + 0.22 * hash(id + 2.6);
+			float wid = 0.1 + 0.06 * hash(id + 8.1);
+			vec2 a = vertical > 0.5 ? q.yx : q;
+			float stroke = step(abs(a.x), len) * step(abs(a.y), wid);
+			total = max(total, lit * stroke * (0.7 + 0.3 * hash(id + 3.3)));
+		}
+		float spark = step(0.993, hash(floor(p / (s * 0.05)) + floor(TIME * 24.0)));
+		// Fade the particles out right at the edge so the shape reads without an outline.
+		float edge = smoothstep(0.0, s * 0.06, -d);
+		color += (cyan.rgb * total + vec3(0.85, 1.0, 1.0) * spark) * glow * edge;
+		alpha = max(alpha, max(total, spark) * edge);
+		alpha = max(alpha, 0.1 * edge);
+		color += cyan.rgb * 0.1 * edge;
+	} else if (r > 0.0 && r < 1.0) {
 		// Glyph cells along the nearest edge (upright runes, not rays): the side edges run along y, the top and bottom
 		// along x; they scroll round the ring.
 		vec2 hb = size * 0.5 - vec2(s * line_w);
