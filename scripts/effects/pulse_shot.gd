@@ -1,101 +1,98 @@
 class_name PulseShot
 extends Node3D
-## The look of an electric pulse shot (Shotgun 2, user request 2026-11-01: "a square electric pulse shot"; Shotgun 3: an
-## X, `cross`): a glowing blue square frame (or X) that flies along a direction, grows with the distance (it matches the square pellet pattern),
-## flickers like an electric arc, and ends at the first wall it meets or at its range. It does no damage: the pellets
-## of the shot do (PulseShotgunWeapon).
+## The look of an electric pulse shot (Shotgun 2 and 3; user requests 2026-11-01, the rune ring reference picture):
+## a card drawn by shaders/pulse_rune.gdshader (a rounded rectangle with a gold outer line, a band of flickering gold
+## glyphs, a gold inner line, a cyan center and sparkles). Shotgun 2: one horizontal rectangle; Shotgun 3 (`cross`): an
+## X of two rune strips with cyan cores, corner to corner of the same rectangle. It flies along `velocity`, faces the
+## way it flies, and keeps its size on screen: half_deg (degrees, across and up) seen from the player camera, a bit
+## larger than the crosshair box. It ends at the first wall or at its range. It does no damage (the pellets do).
 
-## Square side at the muzzle, in meters.
-@export var start_size: float = 1.2
-## Frame bar thickness, in meters.
-@export var bar: float = 0.32
-@export var color: Color = Color(0.25, 0.55, 1.0)
-## See-through fill inside the frame.
-@export var fill_color: Color = Color(0.3, 0.6, 1.0, 0.22)
-## Layers that stop the look (1 world, 3 props, 5 buildings; mechs too, 4).
+const SHADER := preload("res://shaders/pulse_rune.gdshader")
+
+## Light color at the card's middle.
+@export var light_color: Color = Color(0.5, 0.9, 1.0)
+## X strip width as a part of the rectangle's height.
+@export var strip_share: float = 0.5
+## Layers that stop the look (1 world, 3 props, 4 hitboxes, 5 buildings).
 @export_flags_3d_physics var collision_mask: int = 29
 
 var velocity: Vector3 = Vector3.ZERO
-## Half angle of the square pellet pattern (degrees): the square grows to match it.
-var spread_deg: float = 4.0
+## Half size seen from the camera, in degrees (across, up).
+var half_deg: Vector2 = Vector2(7.2, 4.15)
 var range_m: float = 270.0
 var exclude: Array[RID] = []
-## True: an X (two crossing bars, Shotgun 3) instead of a square frame. Set before it enters the tree.
+## True: an X instead of a rectangle. Set before it enters the tree.
 var cross: bool = false
 
 var _travelled: float = 0.0
-var _frame: Node3D
+var _cards: Array[MeshInstance3D] = []
+var _materials: Array[ShaderMaterial] = []
 var _fade: float = -1.0
+var _age: float = 0.0
 
 
 func _ready() -> void:
-	_frame = Node3D.new()
-	add_child(_frame)
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	# Solid unshaded blue: added light washed out to white against the bright sky.
-	material.albedo_color = color
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	for side in (2 if cross else 4):
-		var mesh := MeshInstance3D.new()
-		var box := BoxMesh.new()
-		box.size = Vector3(1.0, bar, bar * 0.5)
-		mesh.mesh = box
-		mesh.material_override = material
-		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		_frame.add_child(mesh)
-	if cross:
-		_add_light()
-		_layout(start_size)
-		return
-	var fill := MeshInstance3D.new()
-	var quad := QuadMesh.new()
-	fill.mesh = quad
-	var fill_material := material.duplicate() as StandardMaterial3D
-	fill_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	fill_material.albedo_color = fill_color
-	fill.material_override = fill_material
-	fill.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	fill.name = "Fill"
-	_frame.add_child(fill)
-	_add_light()
-	_layout(start_size)
-
-
-func _add_light() -> void:
+	var seed := randf() * 100.0
+	for i in (2 if cross else 1):
+		var card := MeshInstance3D.new()
+		var quad := QuadMesh.new()
+		quad.size = Vector2.ONE
+		card.mesh = quad
+		var material := ShaderMaterial.new()
+		material.shader = SHADER
+		material.set_shader_parameter(&"seed", seed + i * 7.0)
+		if not cross:
+			# The rectangle: a narrower glyph band, so the cyan center shows (the short side is only about 60% of the long).
+			material.set_shader_parameter(&"band_w", 0.19)
+		if cross:
+			# A strip: no corners to speak of, fewer glyph cells across, a bright cyan core along it.
+			material.set_shader_parameter(&"corner", 0.9)
+			material.set_shader_parameter(&"cells", 26.0)
+			material.set_shader_parameter(&"band_w", 0.2)
+			material.set_shader_parameter(&"core", 1.0)
+			material.set_shader_parameter(&"fill", 0.45)
+		card.material_override = material
+		card.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(card)
+		_cards.append(card)
+		_materials.append(material)
 	var light := OmniLight3D.new()
-	light.light_color = color
-	light.light_energy = 4.0
+	light.light_color = light_color
+	light.light_energy = 3.0
 	light.omni_range = 14.0
 	add_child(light)
+	_layout()
 
 
-func _layout(size: float) -> void:
-	if cross:
-		# Two bars corner to corner of the square the pellets fill.
-		for i in 2:
-			var bar_mesh := _frame.get_child(i) as MeshInstance3D
-			bar_mesh.position = Vector3.ZERO
-			bar_mesh.rotation = Vector3(0, 0, PI * 0.25 if i == 0 else -PI * 0.25)
-			bar_mesh.scale = Vector3(size * sqrt(2.0) + bar, 1.0, 1.0)
+## World half sizes now (m): half_deg seen from the player camera at this distance.
+func half_size() -> Vector2:
+	var camera := get_viewport().get_camera_3d() if is_inside_tree() else null
+	var distance := camera.global_position.distance_to(global_position) if camera != null else _travelled + 8.0
+	return Vector2(tan(deg_to_rad(half_deg.x)), tan(deg_to_rad(half_deg.y))) * maxf(distance, 1.0)
+
+
+func _layout() -> void:
+	var half := half_size()
+	if not cross:
+		_cards[0].scale = Vector3(half.x * 2.0, half.y * 2.0, 1.0)
+		_materials[0].set_shader_parameter(&"size", half * 2.0)
 		return
-	var half := size * 0.5
-	var places := [Vector3(0, half, 0), Vector3(0, -half, 0), Vector3(half, 0, 0), Vector3(-half, 0, 0)]
-	for i in 4:
-		var mesh := _frame.get_child(i) as MeshInstance3D
-		mesh.position = places[i]
-		mesh.rotation = Vector3(0, 0, 0 if i < 2 else PI * 0.5)
-		mesh.scale = Vector3(size + bar, 1.0, 1.0)
-	var fill := _frame.get_node_or_null(^"Fill") as MeshInstance3D
-	if fill != null:
-		fill.scale = Vector3(size, size, 1.0)
+	var length := half.length() * 2.0
+	var width := half.y * 2.0 * strip_share
+	var angle := atan2(half.y, half.x)
+	for i in 2:
+		_cards[i].rotation = Vector3(0.0, 0.0, angle if i == 0 else -angle)
+		_cards[i].scale = Vector3(length, width, 1.0)
+		_materials[i].set_shader_parameter(&"size", Vector2(length, width))
 
 
 func _physics_process(delta: float) -> void:
+	_age += delta
 	if _fade >= 0.0:
 		_fade += delta
-		scale = Vector3.ONE * (1.0 - _fade / 0.12)
-		if _fade >= 0.12:
+		for material in _materials:
+			material.set_shader_parameter(&"fade", clampf(1.0 - _fade / 0.15, 0.0, 1.0))
+		if _fade >= 0.15:
 			queue_free()
 		return
 	var from := global_position
@@ -112,7 +109,8 @@ func _physics_process(delta: float) -> void:
 		_fade = 0.0
 		return
 	look_at(to + velocity, Vector3.UP if absf(velocity.normalized().y) < 0.99 else Vector3.FORWARD)
-	# Grows with the pellet pattern; flickers and turns a little like an electric arc.
-	_layout(start_size + 2.0 * _travelled * tan(deg_to_rad(spread_deg)))
-	_frame.rotation.z = randf_range(-0.06, 0.06)
-	_frame.scale = Vector3.ONE * randf_range(0.94, 1.06)
+	# A quick bloom out of the muzzle, then a slight pulse.
+	var grow := clampf(_age / 0.06, 0.25, 1.0) * (1.0 + 0.04 * sin(_age * 40.0))
+	_layout()
+	for card in _cards:
+		card.scale *= Vector3(grow, grow, 1.0)

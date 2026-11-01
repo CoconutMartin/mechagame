@@ -82,11 +82,13 @@ func _run() -> void:
 	center = center.normalized()
 	var across := center.cross(Vector3.UP).normalized()
 	var upward := across.cross(center).normalized()
+	var tx := tan(deg_to_rad(gun.pattern_half_deg.x))
+	var ty := tan(deg_to_rad(gun.pattern_half_deg.y))
 	var on_x := true
 	for p in pellets:
 		var d := (p as Bullet).velocity.normalized() - center
-		on_x = on_x and absf(absf(d.dot(across)) - absf(d.dot(upward))) < 0.004
-	_check(pellets.size() == 9 and on_x, "9 pellets on an X (%d)" % pellets.size())
+		on_x = on_x and absf(absf(d.dot(across)) / tx - absf(d.dot(upward)) / ty) < 0.05
+	_check(pellets.size() == 9 and on_x, "9 pellets on an X, corner to corner of the rectangle (%d)" % pellets.size())
 	var looks := current_scene.find_children("*", "PulseShot", true, false)
 	_check(looks.size() == 1 and (looks[0] as PulseShot).cross, "one X pulse look")
 	var top := gun.spin_speed
