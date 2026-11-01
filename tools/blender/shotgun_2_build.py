@@ -183,6 +183,20 @@ def head(i, angle_deg):
     gbox(f"HeadStripe{i}", Y, stripe, (HEAD_W - 0.08, 0.012, 0.08), basis, 0.0, pivot)
     slot = radial * (HEAD_R + HEAD_T / 2 + 0.05) + Vector((0.0, 0.0, zc + 0.12))
     gbox(f"HeadSlot{i}", D, slot, (HEAD_W * 0.45, 0.012, 0.16), basis, 0.0, pivot)
+    # More character (user 2026-11-01): a grey plate on the inner face, three slots on each side face, four bolts on the
+    # outer plate, a dark rib across it behind the stripe.
+    inner = radial * (HEAD_R - HEAD_T / 2 - 0.012) + Vector((0.0, 0.0, zc))
+    gbox(f"HeadInner{i}", GR, inner, (HEAD_W - 0.1, 0.03, length - 0.15), basis, 0.006, pivot)
+    for s_side in (-1.0, 1.0):
+        for k in range(3):
+            slot_c = radial * HEAD_R + tangent * s_side * (HEAD_W / 2 + 0.004) + Vector((0.0, 0.0, zc + 0.05 - k * 0.09))
+            gbox(f"HeadSideSlot{i}_{int(s_side > 0)}_{k}", D, slot_c, (0.012, HEAD_T * 0.5, 0.04), basis, 0.0, pivot)
+    for k, (bt, bz) in enumerate(((-1, -1), (1, -1), (-1, 1), (1, 1))):
+        bolt = radial * (HEAD_R + HEAD_T / 2 + 0.05) + tangent * bt * (HEAD_W / 2 - 0.06) \
+            + Vector((0.0, 0.0, zc + 0.02 + bz * (length / 2 - 0.1)))
+        gbox(f"HeadBolt{i}_{k}", GR, bolt, (0.04, 0.02, 0.04), basis, 0.0, pivot)
+    rib = radial * (HEAD_R + HEAD_T / 2 + 0.052) + Vector((0.0, 0.0, HEAD_Z0 + 0.3))
+    gbox(f"HeadRib{i}", D, rib, (HEAD_W - 0.06, 0.016, 0.03), basis, 0.0, pivot)
     # Arm from the hinge to the block's back, and the hinge knuckle.
     arm_from = hinge
     arm_to = radial * (HEAD_R - 0.04) + Vector((0.0, 0.0, HEAD_Z1 + 0.05))
@@ -209,14 +223,14 @@ def build():
     box("Collar", D, 175, 245, 466, 604, 0.6, bevel=0.025)
     for k, x in enumerate((200, 222)):
         box(f"CollarBand{k}", GR, x, x + 8, 464, 606, 0.612, bevel=0.0)
-    prism("Body", OL, [(245, 480), (300, 470), (560, 470), (560, 576), (245, 576)], 0.52)
-    prism("BodyPanel", OL, [(262, 486), (304, 478), (548, 478), (548, 506), (262, 506)], 0.55, bevel=0.008)
+    prism("Body", OL, [(245, 480), (300, 470), (560, 470), (560, 576), (245, 576)], 0.58)
+    prism("BodyPanel", OL, [(262, 486), (304, 478), (548, 478), (548, 506), (262, 506)], 0.62, bevel=0.008)
     for k in range(4):
         x = 300 + k * 22
-        prism(f"Vent{k}", D, [(x + 10, 515), (x + 18, 515), (x + 8, 548), (x, 548)], 0.532, bevel=0.0)
-    prism("YellowPanel", Y, [(555, 470), (614, 470), (602, 540), (545, 540)], 0.54)
-    box("RearUpper", GR, 600, 748, 492, 554, 0.46)
-    box("RearPanel", OL, 614, 736, 500, 542, 0.48, bevel=0.008)
+        prism(f"Vent{k}", D, [(x + 10, 515), (x + 18, 515), (x + 8, 548), (x, 548)], 0.592, bevel=0.0)
+    prism("YellowPanel", Y, [(555, 470), (614, 470), (602, 540), (545, 540)], 0.60)
+    box("RearUpper", GR, 600, 748, 492, 554, 0.50)
+    box("RearPanel", OL, 614, 736, 500, 542, 0.53, bevel=0.008)
 
     # Top rail with notches, and the carry handle.
     box("TopRail", D, 300, 700, 461, 472, 0.2, bevel=0.004)
@@ -261,9 +275,71 @@ def build():
         y = 500 + k * 22
         box(f"PadRib{k}", GR, 975, 987, y, y + 5, 0.36, bevel=0.0)
 
+    details()
+
     # Markers.
     empty("Muzzle", (0.0, 0.0, GZ(95)))
     empty("GripRight", (-0.2, -0.62287, -1.7261))
+
+
+def side_bolt(name, mat, x, y, width, size=0.045):
+    """A small square bolt head on both side faces (picture x, y; the faces at +-width / 2)."""
+    for k, sx in enumerate((width / 2, -width / 2)):
+        gbox(f"{name}_{k}", mat, (sx, GY(y), GZ(x)), (0.02, size, size), None, 0.0)
+
+
+def details():
+    """More character and body (user 2026-11-01: "Beautify it, add a bit more character and body")."""
+    # Emitter: three dark fins between the heads on the hub, six bolts round the front plate.
+    for k, a_deg in enumerate((30.0, 150.0, 270.0)):
+        a = math.radians(a_deg)
+        radial = Vector((math.cos(a), math.sin(a), 0.0))
+        tangent = Vector((-math.sin(a), math.cos(a), 0.0))
+        gbox(f"HubFin{k}", D, radial * 0.31 + Vector((0.0, 0.0, GZ(170))), (0.05, 0.1, 0.42),
+             (tangent, radial, Vector((0.0, 0.0, 1.0))), 0.008)
+    for k in range(6):
+        a = math.radians(60.0 * k)
+        gbox(f"PlateBolt{k}", D, (math.cos(a) * 0.195, math.sin(a) * 0.195, GZ(106)), (0.03, 0.03, 0.02), None, 0.0)
+    # Collar bolts.
+    for k, (x, y) in enumerate(((186, 480), (186, 590), (236, 480), (236, 590))):
+        side_bolt(f"CollarBolt{k}", GR, x, y, 0.6)
+    # Lower side armor with a seam, bolts and a yellow front stripe; heat sink fins under the front of the body.
+    prism("SideArmor", OL, [(250, 552), (540, 552), (554, 566), (554, 586), (250, 586)], 0.64, bevel=0.012)
+    box("SideArmorSeam", GR, 252, 538, 549, 552, 0.62, bevel=0.0)
+    box("SideStripe", Y, 254, 292, 558, 580, 0.652, bevel=0.0)
+    for k, x in enumerate((320, 420, 520)):
+        side_bolt(f"SideBolt{k}", GR, x, 569, 0.64)
+    for k in range(5):
+        x = 258 + k * 16
+        box(f"HeatFin{k}", D, x, x + 7, 586, 604, 0.36, bevel=0.0)
+    # Power cell under the lower receiver, with a blue lamp strip.
+    box("PowerCell", D, 300, 384, 612, 642, 0.32, bevel=0.012)
+    box("CellLamp", BL, 312, 372, 624, 628, 0.33, bevel=0.0)
+    # Rear upper: dark vent slots and a blue status lamp on the olive panel.
+    for k in range(4):
+        x = 640 + k * 14
+        box(f"RearVent{k}", D, x, x + 6, 508, 534, 0.542, bevel=0.0)
+    box("StatusLamp", BL, 712, 724, 506, 512, 0.544, bevel=0.0)
+    # Carry handle grip rings, top rail end caps.
+    for k in range(5):
+        x = 486 + k * 24
+        box(f"HandleRing{k}", GR, x, x + 10, 438, 457, 0.135, bevel=0.003)
+    for k, (x0, x1) in enumerate(((294, 304), (696, 706))):
+        box(f"RailCap{k}", GR, x0, x1, 458, 474, 0.22, bevel=0.003)
+    # Hose connectors.
+    for k, (x, y) in enumerate(((398, 598), (560, 596))):
+        box(f"HoseClamp{k}", GR, x - 8, x + 8, y - 6, y + 8, 0.12, bevel=0.004)
+    # Stock: olive cheek pad on the frame, bolts.
+    prism("CheekPad", OL, [(762, 498), (880, 498), (892, 508), (892, 530), (762, 530)], 0.40, bevel=0.01)
+    for k, x in enumerate((780, 860)):
+        side_bolt(f"StockBolt{k}", GR, x, 545, 0.36)
+    # Grip: three finger ridges on its front face.
+    top = Vector((0.0, -0.2, -1.7))
+    axis = Vector((0.0, -0.9397, 0.342))
+    back = Vector((0.0, 0.342, 0.9397))
+    for k in range(3):
+        gbox(f"GripRidge{k}", GR, top + axis * (0.38 + 0.13 * k) - back * 0.122, (0.205, 0.025, 0.02),
+             (Vector((1.0, 0.0, 0.0)), axis * -1.0, back), 0.0)
 
 
 def main():
