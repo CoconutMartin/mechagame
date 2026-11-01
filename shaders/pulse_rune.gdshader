@@ -1,8 +1,9 @@
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_never, blend_mix;
 // Rune pulse card for the electric shotgun shots (user reference 2026-11-01: a golden rune ring with a cyan center).
-// On a 1 x 1 quad scaled to `size` (meters): a rounded rectangle with a thin outer gold line, a band of flickering gold
-// glyphs, a thin inner gold line, a cyan glowing center, and sparkles in the band. Line widths follow the short side.
+// On a 1 x 1 quad scaled to `size` (meters): a rounded rectangle with a thin outer gold line, filled edge to middle with
+// flickering cyan glyph particles and sparkles (user 2026-11-01: "Remove space in the middle and replace with
+// particles. Change particle color to cyan"; `solid` 0 brings back the band, the inner line and the cyan center). Line widths follow the short side.
 
 uniform vec2 size = vec2(4.0, 2.0);
 uniform vec4 gold : source_color = vec4(1.0, 0.78, 0.32, 1.0);
@@ -19,6 +20,8 @@ uniform float core = 0.0;
 // 0 to 1: fades the whole card.
 uniform float fade = 1.0;
 uniform float seed = 0.0;
+// 1 = glyph particles fill the whole inside (no inner line, no center plate).
+uniform float solid = 1.0;
 // HDR boost of the gold and cyan (bloom).
 uniform float glow = 1.8;
 
@@ -44,7 +47,7 @@ void fragment() {
 	// Glyph band: cells around the outline, each a 3 x 4 grid of small strokes lit by a hash that changes over time.
 	float band_in = s * (gap_w + band_w);
 	float r = (-d - s * gap_w) / (s * band_w);
-	if (r > 0.0 && r < 1.0) {
+	if (r > 0.0 && (r < 1.0 || solid > 0.5)) {
 		// Glyph cells along the nearest edge (upright runes, not rays): the side edges run along y, the top and bottom
 		// along x; they scroll round the ring.
 		vec2 hb = size * 0.5 - vec2(s * line_w);
@@ -66,12 +69,16 @@ void fragment() {
 		stroke *= step(0.12, fract(u)) * step(fract(u), 0.94);
 		float glyph = lit * stroke * (0.75 + 0.25 * hash(cell + sub + 3.0));
 		float spark = step(0.982, hash(floor(vec2(u * 5.0, r * 6.0)) + floor(TIME * 24.0)));
-		color += gold.rgb * glyph * glow + vec3(1.0, 0.95, 0.85) * spark * glow;
+		color += cyan.rgb * glyph * glow + vec3(0.85, 1.0, 1.0) * spark * glow;
 		alpha = max(alpha, max(glyph, spark));
-		// A faint gold haze in the band behind the glyphs.
+		// A faint cyan haze behind the glyphs.
 		alpha = max(alpha, 0.12);
-		color += gold.rgb * 0.12;
+		color += cyan.rgb * 0.12;
 	}
+	if (solid > 0.5) {
+		ALBEDO = color;
+		ALPHA = clamp(alpha, 0.0, 1.0) * fade;
+	} else {
 	// Inner line.
 	float inner_d = abs(-d - band_in - s * gap_w);
 	float inner = 1.0 - smoothstep(0.0, s * line_w * 0.5, inner_d);
@@ -90,4 +97,5 @@ void fragment() {
 	}
 	ALBEDO = color;
 	ALPHA = clamp(alpha, 0.0, 1.0) * fade;
+	}
 }
