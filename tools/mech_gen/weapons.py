@@ -429,13 +429,13 @@ if __name__ == "__main__":
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
         "aim_twist_deg": 25.0, "aim_tilt_deg": 4.0, "zoom_fov": 43.4},
         "res://scenes/weapons/beam_rifle_3.tscn")
-    # Beam Rifle 4 (user picture 2026-11-01, models/guides/beam_rifle_4_ref.png, 7 m, one barrel; hand-made scene
+    # Beam Rifle 4 (user picture 2026-11-01, models/guides/beam_rifle_4_ref.png, 10 m, one barrel; hand-made scene
     # scenes/weapons/beam_rifle_4.tscn, BeamRepeaterWeapon as a sniper beam): one heavy beam each 2.5 s, no heat.
-    # The Beam Rifle hold (the left hand markers sit 0.053 m lower, 0.083 m at the aim pad, in the scene).
-    res("data/weapons/beam_rifle_4.tres", {"display_name": '"Beam Rifle 4"', "weight_t": 4.5, "hp": 300.0,
+    # The Beam Rifle hold (the left hand markers sit 0.034 m higher, 0.008 m lower at the aim pad, in the scene).
+    res("data/weapons/beam_rifle_4.tres", {"display_name": '"Beam Rifle 4"', "weight_t": 5.5, "hp": 300.0,
         "kind": 1, "two_handed": "true", "fire_rate": 0.4, "damage": 300.0, "stagger_points": 60.0, "stagger_cap_per_shot": 60.0,
         "spread_deg": 0.0, "range_m": 450.0, "effective_range_m": 300.0,
-        "recoil_up_deg": 4.0, "recoil_side_deg": 0.6, "model_kick_back": 0.7, "model_kick_up_deg": 8.0,
+        "recoil_up_deg": 4.0, "recoil_side_deg": 0.6, "model_kick_back": 0.9, "model_kick_up_deg": 8.0,
         "shake_trauma": 0.22, "shake_kick": 0.2, "heat_per_use": 0.0, "heat_cooling": 10.0, "overheat_cooling": 25.0,
         "rest_transform": xf_rows(br_rows, br_rest), "aim_anchor": v3(br_anchor),
         "right_pole_rest": v3((1.0, -0.6, 0.4)), "right_pole_aim": v3((1.0, -0.6, 0.3)),

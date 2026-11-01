@@ -6,7 +6,7 @@
 [resource]
 script = ExtResource("script")
 display_name = "Beam Rifle 4"
-weight_t = 4.5
+weight_t = 5.5
 hp = 300.0
 kind = 1
 two_handed = true
@@ -19,7 +19,7 @@ range_m = 450.0
 effective_range_m = 300.0
 recoil_up_deg = 4.0
 recoil_side_deg = 0.6
-model_kick_back = 0.7
+model_kick_back = 0.9
 model_kick_up_deg = 8.0
 shake_trauma = 0.22
 shake_kick = 0.2

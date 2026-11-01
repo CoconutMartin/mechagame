@@ -5,7 +5,7 @@ extends SceneTree
 ## shot; 3 s cool down (a held trigger fires again about 3.3 s later).
 ## Beam Rifle 2 (BeamRepeaterWeapon): rapid bolts from the middle barrel; the two rail bores glow red while firing.
 ## Beam Rifle 4 (BeamRepeaterWeapon as a sniper beam): one beam from the muzzle, then 2.5 s until the next; the
-## muzzle ring flashes orange; HUD READY / COOLING; the rifle is about 7 m long.
+## muzzle ring flashes orange; HUD READY / COOLING; the rifle is 10 m long.
 ## Run: godot --headless --path . --script res://tools/godot/test_beam_rifles.gd
 
 var _fails: int = 0
@@ -140,7 +140,7 @@ func _run() -> void:
 		var times: Array[float] = []
 		rifle4.fired.connect(func() -> void: times.append(_now()))
 		_check(rifle4._muzzles[0] == rifle4.get_node("Muzzle"), "Beam Rifle 4 fires from its muzzle")
-		_check(absf((rifle4.get_node("Muzzle") as Node3D).position.z + 7.0) < 0.05, "the muzzle is 7 m from the butt (%.2f)" % (rifle4.get_node("Muzzle") as Node3D).position.z)
+		_check(absf((rifle4.get_node("Muzzle") as Node3D).position.z + 10.0) < 0.05, "the muzzle is 10 m from the butt (%.2f)" % (rifle4.get_node("Muzzle") as Node3D).position.z)
 		_check(rifle4.get_status_text() == "READY", "the HUD shows READY (%s)" % rifle4.get_status_text())
 		await _frames(40)
 		Input.action_press("use_left_arm")

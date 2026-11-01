@@ -1,4 +1,4 @@
-"""Builds Beam Rifle 4 (two-hand sniper beam rifle, 7 m long, one barrel) and exports it.
+"""Builds Beam Rifle 4 (two-hand sniper beam rifle, 10 m long, one barrel) and exports it.
 
 Run (from the project root):
     blender -b --python tools/blender/beam_rifle_4_build.py
@@ -7,12 +7,13 @@ file, so hand edits in the .blend are lost when it runs again.
 
 From the user's picture models/guides/beam_rifle_4_ref.png (two side views, front, back, top, bottom). Traced
 from the level side view (the second picture, x 48 muzzle to 1080 butt). User request 2026-11-01: "make the
-barrel part longer, total length 7 meters. One barrel only" (the picture has two barrels).
+barrel part longer, total length 7 meters. One barrel only" (the picture has two barrels); then "Extend to 10
+meters. Beautify, add some character, body, and heft".
 
 Picture pixels (x, y) go to the first Beam Rifle's frame (u, v) by PU and PV: the receiver and stock (x 560
 and back) at KR frame pixels per picture pixel, with the pistol grip on the first Beam Rifle's grip (frame 1338,
 370) and the butt at the frame origin (u 1728); the barrel section (x 48 to 560) stretched to KF so the rifle is
-7 m long. The lower armor and the hand pad sit lower than the Beam Rifle's rail: the scene's left hand markers
+10 m long, and heights at KV (35% more). The lower armor and the hand pad sit a little lower than the Beam Rifle's rail: the scene's left hand markers
 go down (LEFT_DROP_REST, LEFT_DROP_AIM in the scene notes, DESIGN "Beam Rifle 4").
 
 Axes: Blender +Y = forward (Godot -Z), +Z = up, +X = left side of the gun.
@@ -185,10 +186,14 @@ def empty(name, u, v, x=0.0):
 
 GRIP_X, GRIP_Y = 770, 625      # Picture grip center (level side view).
 SPLIT_X = 560                  # Front of the receiver: the barrel section is in front of it.
-KR = 390 / (1080 - GRIP_X)     # Frame pixels per picture pixel, receiver and stock (butt at frame 1728).
+KR = 390 / (1080 - GRIP_X)     # Frame pixels per picture pixel along the gun, receiver and stock (butt at 1728).
+# Heft (user 2026-11-01: "Extend to 10 meters. Beautify, add some character, body, and heft"): heights and
+# radii at KV, 35% more than KR. The grip stays on the first Beam Rifle's grip, so the body grows upward.
+KV = KR * 1.35
 U_SPLIT = 1338 + (SPLIT_X - GRIP_X) * KR
-MUZZLE_U = 1728 - 7.0 / SCALE  # 7 m from the butt to the muzzle.
-KF = (U_SPLIT - MUZZLE_U) / (SPLIT_X - 48)
+LENGTH_M = 10.0
+MUZZLE_U = 1728 - LENGTH_M / SCALE
+KF = (U_SPLIT - MUZZLE_U) / (SPLIT_X - 43)  # The bore face (picture x 43) is the muzzle.
 
 
 def PU(x):
@@ -197,8 +202,20 @@ def PU(x):
     return U_SPLIT - (SPLIT_X - x) * KF
 
 
+def XU(u):
+    """Frame pixel u back to a picture x (the inverse of PU)."""
+    if u >= U_SPLIT:
+        return GRIP_X + (u - 1338) / KR
+    return SPLIT_X - (U_SPLIT - u) / KF
+
+
+def XZ(z_godot):
+    """Picture x of a place given as Godot z (meters, negative = forward of the butt)."""
+    return XU(1728 + z_godot / SCALE)
+
+
 def PV(y):
-    return 370 + (y - GRIP_Y) * KR
+    return 370 + (y - GRIP_Y) * KV
 
 
 def pic(outline):
@@ -213,8 +230,16 @@ def pprism(name, mat, outline, width, x=0.0, bevel=BEVEL):
     return prism(name, mat, pic(outline), width, x, bevel)
 
 
+def pchamfer(name, mat, x0, x1, y0, y1, width, cut, bevel=BEVEL):
+    """Box with its side corners cut by cut picture pixels (vertical cut at KV, along the gun at the local scale)."""
+    u0, u1, v0, v1 = PU(x0), PU(x1), PV(y0), PV(y1)
+    c = cut * KV
+    return prism(name, mat, [(u0 + c, v0), (u1 - c, v0), (u1, v0 + c), (u1, v1 - c), (u1 - c, v1), (u0 + c, v1),
+                             (u0, v1 - c), (u0, v0 + c)], width, 0.0, bevel)
+
+
 def ptube(name, mat, x0, x1, radius, y, bevel=0.01, sides=24):
-    return tube(name, mat, PU(x0), PU(x1), radius * KR, PV(y), 0.0, bevel, sides)
+    return tube(name, mat, PU(x0), PU(x1), radius * KV, PV(y), 0.0, bevel, sides)
 
 
 def ppin(name, x, y, half_width):
@@ -222,86 +247,129 @@ def ppin(name, x, y, half_width):
 
 
 def pdisc(name, mat, x, y, radius, width, bevel=0.0, sides=12):
-    return disc(name, mat, PU(x), PV(y), radius * KR, width, bevel, sides)
+    return disc(name, mat, PU(x), PV(y), radius * KV, width, bevel, sides)
 
 
-ARMOR_W = 0.56
+ARMOR_W = 0.72
+RISE = 0.05
 BORE_Y = 552   # The one barrel (between the picture's two barrels).
+# Upper armor segments of the barrel section (picture x, front to back), dark gaps between them.
+UPPER_SEGS = [(48, 210), (216, 395), (401, 560)]
+LOWER_SEGS = [(110, 300), (306, 560)]
+# Left hand places of the Beam Rifle hold (Godot z): rest, aim (the hand pad), low aim.
+LEFT_REST_Z, LEFT_AIM_Z, LEFT_LOW_Z = -5.0835, -4.1835, -2.734
+
+
+def upper_top(x):
+    """Top edge of the upper armor at picture x: level at the front, rising to the receiver."""
+    return 476 - 6 * (x - 48) / 357 if x < 405 else (470 if x < 428 else 458)
 
 
 def build():
-    # Barrel: one long dark tube with two grey collars, a grey muzzle ring (flashes orange at a shot) and a
-    # dark bore; it runs back into the receiver.
-    ptube("Barrel", D, 56, 700, 13, BORE_Y)
-    ptube("MuzzleRing", GR, 48, 60, 17, BORE_Y, bevel=0.005, sides=32)
-    ptube("MuzzleBore", D, 45, 49, 9, BORE_Y, bevel=0.0)
-    for i, (x0, x1) in enumerate(((205, 228), (515, 540))):
-        ptube(f"Collar{i}", GR, x0, x1, 17, BORE_Y, bevel=0.005)
-    ptube("BarrelBlock", D, 640, 690, 21, BORE_Y)
+    # Barrel: one long thick dark barrel, a heavy muzzle brake (dark block with ports, a grey muzzle ring that
+    # flashes orange, a dark bore), grey support collars with dark clamps up to the upper armor.
+    ptube("Barrel", D, 70, 700, 15, BORE_Y)
+    pchamfer("MuzzleBrake", D, 50, 74, 532, 572, 0.36, 5, bevel=0.012)
+    for k in range(3):
+        pbox(f"BrakePort{k}", GR, 54 + k * 6.5, 57 + k * 6.5, 540, 564, 0.372, bevel=0.0)
+    ptube("MuzzleRing", GR, 45, 51, 19, BORE_Y, bevel=0.005, sides=32)
+    ptube("MuzzleBore", D, 43, 46, 10, BORE_Y, bevel=0.0)
+    for i, x in enumerate((140, 300, 470)):
+        ptube(f"Collar{i}", GR, x, x + 10, 20, BORE_Y, bevel=0.005)
+        pbox(f"Clamp{i}", D, x + 1, x + 9, 528, 540, 0.20, bevel=0.006)
+    ptube("BarrelBlock", D, 640, 690, 23, BORE_Y)
 
-    # Upper armor (barrel section): a long white plate, deeper toward the receiver, a dark vent in its front
-    # face and a dark slot on top near the front, a grey seam along the side, dots.
-    pprism("UpperArmor", W, [(48, 476), (405, 470), (428, 458), (560, 456), (560, 524), (70, 534), (48, 530)],
-           ARMOR_W)
-    pbox("FrontVent", D, 46, 52, 492, 514, 0.30, bevel=0.0)
-    pbox("TopSlot", D, 75, 130, 469, 476, 0.22, bevel=0.0)
-    pbox("UpperSeam", GR, 60, 556, 515, 517.5, ARMOR_W + 0.012, bevel=0.0)
-    pprism("UpperPanel", W, [(80, 484), (400, 478), (420, 468), (540, 466), (540, 508), (80, 512)], ARMOR_W + 0.05,
-           bevel=0.012)
-    ppin("UpperDot0", 520, 490, (ARMOR_W + 0.05) / 2)
-    ppin("UpperDot1", 100, 498, (ARMOR_W + 0.05) / 2)
+    # Upper armor (barrel section): three white segments with dark gaps, each with a raised side panel, a grey
+    # seam, dots and top vents; a dark vent in the front face; a grey rail along the top.
+    pbox("UpperSpine", D, 52, 560, 480, 528, ARMOR_W - 0.08, bevel=0.01)
+    for i, (x0, x1) in enumerate(UPPER_SEGS):
+        top0, top1 = upper_top(x0), upper_top(x1 - 0.01)
+        outline = [(x0, top0), (x1, top1), (x1, 528), (x0, 532)]
+        if i == 0:
+            outline = [(x0 + 6, top0), (x1, top1), (x1, 528), (x0 + 14, 534), (x0, 528), (x0, top0 + 6)]
+        if i == 2:
+            outline = [(x0, top0), (405, upper_top(404)), (428, 458), (x1, 456), (x1, 524), (x0, 528)]
+        pprism(f"UpperArmor{i}", W, outline, ARMOR_W)
+        p0, p1 = x0 + (14 if i == 0 else 8), x1 - 8
+        pchamfer(f"UpperPanel{i}", W, p0, p1, max(top0, top1) + 8, 512, ARMOR_W + RISE, 4, bevel=0.012)
+        pbox(f"UpperSeam{i}", GR, p0 + 4, p1 - 4, 516, 518, ARMOR_W + 0.012, bevel=0.0)
+        for k, x in enumerate((p0 + 10, p1 - 10)):
+            ppin(f"UpperDot{i}_{k}", x, 500, (ARMOR_W + RISE) / 2)
+        # A grey rail along the top of the segment.
+        rail_top = min(top0, top1) if i < 2 else 456
+        rx0, rx1 = (x0 + 12, x1 - 12) if i < 2 else (434, x1 - 12)
+        pbox(f"TopRail{i}", GR, rx0, rx1, rail_top - 3, rail_top + 1, 0.12, bevel=0.003)
+        for k in range(3):
+            vx = (x0 + x1) / 2 - 10 + k * 8
+            pbox(f"UpperVent{i}_{k}", D, vx, vx + 4, upper_top(vx) - 1.5, upper_top(vx) + 2, 0.30, bevel=0.0)
+    pbox("FrontVent", D, 46, 50, 492, 514, 0.34, bevel=0.0)
 
-    # Lower armor (barrel section): a long white plate with a slanted nose, a seam, and a dark hand pad under it
-    # with two bolts, where the left hand holds when aiming.
-    pprism("LowerArmor", W, [(110, 562), (560, 558), (560, 585), (125, 585), (100, 575)], ARMOR_W)
-    pbox("LowerSeam", GR, 130, 556, 566, 568.5, ARMOR_W + 0.012, bevel=0.0)
-    pprism("LowerPanel", W, [(140, 566), (540, 563), (540, 580), (150, 580)], ARMOR_W + 0.05, bevel=0.01)
-    pbox("HandPad", D, 410, 480, 582, 590, 0.42, bevel=0.01)
-    for k, x in enumerate((420, 470)):
-        pdisc(f"PadBolt{k}", GR, x, 586, 3.5, 0.43)
-    pbox("BarrelSpine", D, 300, 560, 524, 560, 0.30, bevel=0.008)
+    # Lower armor (barrel section): two white segments with raised panels and seams; a dark hand pad with bolts
+    # under it where the left hand holds when aiming.
+    for i, (x0, x1) in enumerate(LOWER_SEGS):
+        outline = [(x0, 560), (x1, 558), (x1, 585), (x0, 585)]
+        if i == 0:
+            outline = [(x0 + 10, 562), (x1, 560), (x1, 585), (x0 + 22, 585), (x0, 575)]
+        pprism(f"LowerArmor{i}", W, outline, ARMOR_W)
+        p0, p1 = x0 + (24 if i == 0 else 8), x1 - 8
+        pchamfer(f"LowerPanel{i}", W, p0, p1, 566, 580, ARMOR_W + RISE, 3, bevel=0.01)
+        ppin(f"LowerDot{i}", p1 - 8, 573, (ARMOR_W + RISE) / 2)
+    pbox("LowerSpine", D, 112, 560, 560, 580, ARMOR_W - 0.08, bevel=0.008)
+    pad_x = XZ(LEFT_AIM_Z)
+    pbox("HandPad", D, pad_x - 14, pad_x + 14, 582, 590, 0.46, bevel=0.01)
+    for k, x in enumerate((pad_x - 9, pad_x + 9)):
+        pdisc(f"PadBolt{k}", GR, x, 586, 3.0, 0.47)
 
-    # Receiver: dark body, a white band with a slanted back over it, a raised white plate under the sight, a
-    # white lower plate that rises to a hex panel with a dot.
-    pbox("Receiver", D, 560, 1000, 470, 590, 0.46)
+    # Receiver: dark body, a white band with a raised panel, a raised plate under the sight, a white lower plate
+    # with a hex panel, a dark power cell on the side with an amber lamp strip, vents and bolts.
+    pbox("Receiver", D, 560, 1000, 470, 592, 0.52)
     pprism("UpperBand", W, [(560, 456), (640, 456), (660, 470), (860, 470), (880, 488), (880, 504), (600, 504),
-                            (560, 524)], 0.54)
-    pbox("BandSeam", GR, 600, 870, 506, 508.5, 0.552, bevel=0.0)
-    pbox("SightBase", W, 640, 800, 452, 471, 0.40)
+                            (560, 524)], 0.60)
+    pprism("BandPanel", W, [(575, 466), (640, 466), (656, 478), (850, 478), (864, 490), (864, 498), (600, 498),
+                            (575, 512)], 0.65, bevel=0.01)
+    pbox("BandSeam", GR, 600, 870, 506, 508, 0.612, bevel=0.0)
+    pbox("SightBase", W, 640, 800, 450, 471, 0.44)
     pprism("LowerPlate", W, [(560, 558), (700, 558), (755, 530), (862, 530), (876, 540), (876, 552), (862, 560),
-                             (780, 560), (742, 585), (560, 585)], 0.54)
-    pprism("HexPanel", W, [(780, 534), (858, 534), (868, 541), (868, 551), (858, 557), (780, 557)], 0.58, bevel=0.008)
-    ppin("HexDot", 850, 545, 0.29)
-    pbox("ReceiverSlot", GR, 700, 840, 512, 522, 0.47, bevel=0.0)
+                             (780, 560), (742, 585), (560, 585)], 0.60)
+    pprism("HexPanel", W, [(780, 534), (858, 534), (868, 541), (868, 551), (858, 557), (780, 557)], 0.65, bevel=0.008)
+    ppin("HexDot", 850, 545, 0.325)
+    pchamfer("PowerCell", D, 600, 690, 512, 548, 0.70, 3, bevel=0.01)
+    pbox("CellLamp", A, 610, 680, 527, 532, 0.712, bevel=0.0)
+    for k, x in enumerate((606, 684)):
+        pdisc(f"CellBolt{k}", GR, x, 518, 2.5, 0.71)
     for k in range(4):
-        x = 920 + k * 14
-        pbox(f"StockVent{k}", GR, x, x + 6, 520, 570, 0.412, bevel=0.0)
+        x = 705 + k * 9
+        pbox(f"ReceiverVent{k}", GR, x, x + 4, 512, 524, 0.532, bevel=0.0)
 
     # Top sight: white box with a dark top and an amber lens (glows), a dark rear cap.
-    pprism("Sight", W, [(668, 452), (772, 452), (782, 440), (782, 470), (668, 470)], 0.30)
-    pbox("SightTop", D, 688, 726, 424, 442, 0.20, bevel=0.008)
-    pbox("SightLens", A, 683, 689, 427, 439, 0.15, bevel=0.0)
-    pbox("SightCap", D, 772, 790, 444, 466, 0.24, bevel=0.006)
+    pprism("Sight", W, [(668, 438), (774, 438), (784, 448), (784, 470), (668, 470)], 0.34)
+    pbox("SightTop", D, 688, 726, 422, 440, 0.22, bevel=0.008)
+    pbox("SightLens", A, 683, 689, 425, 437, 0.17, bevel=0.0)
+    pbox("SightCap", D, 772, 790, 442, 466, 0.26, bevel=0.006)
 
-    # Rear scope: a dark tube with grey rings on a dark mount, the glass at its front.
-    ptube("Scope", D, 850, 912, 15, 466)
-    for i, x in enumerate((860, 882)):
-        ptube(f"ScopeRing{i}", GR, x, x + 8, 17, 466, bevel=0.004)
-    ptube("ScopeGlass", G, 846, 851, 10, 466, bevel=0.0)
-    pbox("ScopeMount", D, 862, 902, 478, 492, 0.20)
+    # Rear scope: a dark tube with grey rings on a dark mount, the glass at its front, side knobs.
+    ptube("Scope", D, 846, 914, 15, 464)
+    for i, x in enumerate((858, 882, 900)):
+        ptube(f"ScopeRing{i}", GR, x, x + 7, 17, 464, bevel=0.004)
+    ptube("ScopeGlass", G, 842, 847, 10, 464, bevel=0.0)
+    pbox("ScopeMount", D, 860, 904, 476, 492, 0.24)
 
-    # Stock: dark block, white Y top member with a dark hole, white lower brace, dark butt pad with grey ribs.
-    pbox("StockBlock", D, 900, 1042, 478, 592, 0.40)
-    pprism("StockTop", W, [(900, 478), (990, 478), (1022, 444), (1062, 444), (1062, 470), (1032, 470),
-                           (1000, 504), (900, 504)], 0.36)
-    pprism("StockPanel", W, [(912, 484), (985, 484), (1012, 452), (1052, 452), (1052, 464), (1026, 464),
-                             (996, 498), (912, 498)], 0.40, bevel=0.008)
-    pbox("StockHole", D, 1030, 1052, 450, 462, 0.37, bevel=0.0)
-    pprism("StockBrace", W, [(955, 590), (995, 590), (1042, 612), (1042, 628), (1018, 628)], 0.36)
-    pprism("ButtPad", D, [(1042, 446), (1074, 446), (1080, 454), (1080, 622), (1074, 630), (1042, 630)], 0.50)
-    for k in range(6):
-        y = 470 + k * 24
-        pbox(f"PadRib{k}", GR, 1050, 1074, y, y + 4, 0.512, bevel=0.0)
+    # Stock: dark block with grey vents, white Y top member with a raised panel and a dark hole, a white cheek
+    # plate, white lower brace, a thick dark butt pad with grey ribs.
+    pbox("StockBlock", D, 900, 1042, 478, 594, 0.46)
+    for k in range(4):
+        x = 920 + k * 14
+        pbox(f"StockVent{k}", GR, x, x + 6, 522, 572, 0.472, bevel=0.0)
+    pprism("StockTop", W, [(900, 478), (990, 478), (1022, 442), (1064, 442), (1064, 470), (1032, 470),
+                           (1000, 506), (900, 506)], 0.42)
+    pprism("StockPanel", W, [(912, 484), (985, 484), (1012, 452), (1054, 452), (1054, 464), (1026, 464),
+                             (996, 500), (912, 500)], 0.47, bevel=0.008)
+    pbox("StockHole", D, 1032, 1054, 448, 462, 0.43, bevel=0.0)
+    pprism("StockBrace", W, [(950, 592), (995, 592), (1042, 614), (1042, 632), (1014, 632)], 0.42)
+    pprism("ButtPad", D, [(1042, 442), (1074, 442), (1082, 452), (1082, 626), (1074, 636), (1042, 636)], 0.58)
+    for k in range(7):
+        y = 462 + k * 24
+        pbox(f"PadRib{k}", GR, 1050, 1076, y, y + 4, 0.592, bevel=0.0)
 
     # Pistol grip (the first Beam Rifle's place and size): white body, dark side panels, dark base,
     # trigger slot on both sides.
@@ -314,8 +382,8 @@ def build():
 
     # Markers.
     empty("GripRight", 1340, 368)
-    empty("GripLeft", PU(300), PV(592))
-    empty("Muzzle", PU(45), PV(BORE_Y))
+    empty("GripLeft", PU(XZ(LEFT_REST_Z)), PV(592))
+    empty("Muzzle", PU(43), PV(BORE_Y))
 
 
 def main():
@@ -338,7 +406,7 @@ def main():
         o = bpy.data.objects[name]
         print("marker %s godot (%.4f, %.4f, %.4f)" % (name, o.location.x, o.location.z, -o.location.y))
     from mathutils import Vector
-    for prefix in ("LowerArmor", "HandPad", "LowerPlate"):
+    for prefix in ("LowerArmor0", "LowerArmor1", "HandPad", "LowerPlate"):
         obj = bpy.data.objects[prefix]
         print("%s bottom z %.4f" % (prefix, min((obj.matrix_world @ Vector(c)).z for c in obj.bound_box)))
     ys = [(o.matrix_world @ Vector(c)).y for o in bpy.data.objects if o.type == "MESH" for c in o.bound_box]
