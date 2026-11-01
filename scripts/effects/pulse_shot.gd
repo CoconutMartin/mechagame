@@ -1,7 +1,7 @@
 class_name PulseShot
 extends Node3D
-## The look of an electric pulse shot (Shotgun 2, user request 2026-11-01: "a square electric pulse shot"): a glowing
-## blue square frame that flies along a direction, grows with the distance (it matches the square pellet pattern),
+## The look of an electric pulse shot (Shotgun 2, user request 2026-11-01: "a square electric pulse shot"; Shotgun 3: an
+## X, `cross`): a glowing blue square frame (or X) that flies along a direction, grows with the distance (it matches the square pellet pattern),
 ## flickers like an electric arc, and ends at the first wall it meets or at its range. It does no damage: the pellets
 ## of the shot do (PulseShotgunWeapon).
 
@@ -20,6 +20,8 @@ var velocity: Vector3 = Vector3.ZERO
 var spread_deg: float = 4.0
 var range_m: float = 270.0
 var exclude: Array[RID] = []
+## True: an X (two crossing bars, Shotgun 3) instead of a square frame. Set before it enters the tree.
+var cross: bool = false
 
 var _travelled: float = 0.0
 var _frame: Node3D
@@ -34,7 +36,7 @@ func _ready() -> void:
 	# Solid unshaded blue: added light washed out to white against the bright sky.
 	material.albedo_color = color
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	for side in 4:
+	for side in (2 if cross else 4):
 		var mesh := MeshInstance3D.new()
 		var box := BoxMesh.new()
 		box.size = Vector3(1.0, bar, bar * 0.5)
@@ -42,6 +44,10 @@ func _ready() -> void:
 		mesh.material_override = material
 		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_frame.add_child(mesh)
+	if cross:
+		_add_light()
+		_layout(start_size)
+		return
 	var fill := MeshInstance3D.new()
 	var quad := QuadMesh.new()
 	fill.mesh = quad
@@ -52,15 +58,27 @@ func _ready() -> void:
 	fill.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	fill.name = "Fill"
 	_frame.add_child(fill)
+	_add_light()
+	_layout(start_size)
+
+
+func _add_light() -> void:
 	var light := OmniLight3D.new()
 	light.light_color = color
 	light.light_energy = 4.0
 	light.omni_range = 14.0
 	add_child(light)
-	_layout(start_size)
 
 
 func _layout(size: float) -> void:
+	if cross:
+		# Two bars corner to corner of the square the pellets fill.
+		for i in 2:
+			var bar_mesh := _frame.get_child(i) as MeshInstance3D
+			bar_mesh.position = Vector3.ZERO
+			bar_mesh.rotation = Vector3(0, 0, PI * 0.25 if i == 0 else -PI * 0.25)
+			bar_mesh.scale = Vector3(size * sqrt(2.0) + bar, 1.0, 1.0)
+		return
 	var half := size * 0.5
 	var places := [Vector3(0, half, 0), Vector3(0, -half, 0), Vector3(half, 0, 0), Vector3(-half, 0, 0)]
 	for i in 4:

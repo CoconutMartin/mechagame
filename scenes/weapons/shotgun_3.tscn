@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/spin_pulse_shotgun_weapon.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/shotgun_3/shotgun_3.glb" id="model"]
+
+[node name="Shotgun3" type="Node3D"]
+script = ExtResource("script")
+x_pattern = true
+spinner_path = NodePath("Model/Heads")
+glow_paths = Array[NodePath]([NodePath("Model/EmitterRing")])
+arc_path = NodePath("Model/ArcRing")
+
+[node name="Model" parent="." instance=ExtResource("model")]
+
+[node name="Muzzle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5.145)
+
+[node name="GripRight" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, -0.62287, -1.7261)
+
+[node name="GripSocketRight" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.93969, 0.34202, 0, -0.34202, 0.93969, 0, -0.62287, -1.5461)
+metadata/grip_radius = 0.11
+metadata/hand_reach = true
+metadata/hold_drop = 0.2

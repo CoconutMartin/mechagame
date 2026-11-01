@@ -119,7 +119,7 @@ if __name__ == "__main__":
     open(path, "w").write(scene_text())
     print("wrote", path)
     # Slow, heavy shot: 8 pellets of 9 damage (the game's -25% damage pass), wide cone, small magazine.
-    res("data/weapons/shotgun.tres", {
+    res("data/weapons/shotgun.tres", {"semi_auto": "true", 
         "display_name": '"Shotgun"', "weight_t": 2.5, "hp": 250.0, "kind": 0, "slot": 0,
         "fire_rate": round(1 / 1.1, 4), "damage": 9.0, "pellets": 8, "projectile_speed": 350.0, "spread_deg": 6.0,
         "recoil_up_deg": 3.0, "recoil_side_deg": 1.2, "model_kick_back": 0.6, "model_kick_up_deg": 8.0,

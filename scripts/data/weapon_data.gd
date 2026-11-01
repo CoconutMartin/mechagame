@@ -24,6 +24,9 @@ enum Slot { ARM, BACK }
 @export var spread_deg: float = 0.4
 ## Bullets per shot (guns). Each pellet has its own spread and does `damage`. One shot uses one ammo.
 @export var pellets: int = 1
+## True: one shot per trigger press, no automatic fire while it is held (shotguns; user rule 2026-11-01: "Shotguns
+## need manual shooting every time, no auto fire"). A press while the gun is still rising fires once it is up.
+@export var semi_auto: bool = false
 ## Max range in meters (user choice 2026-10-16: MechWarrior Online ranges): a bullet, beam or missile ends
 ## here (the damage reaches 0), and the lock-on reaches this far. Past it the crosshair stays white.
 @export var range_m: float = 1500.0

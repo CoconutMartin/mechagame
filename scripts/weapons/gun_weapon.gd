@@ -5,16 +5,39 @@ extends MechWeapon
 
 const BULLET := preload("res://scenes/weapons/bullet.tscn")
 
+## Semi-auto (WeaponData.semi_auto): true after a shot until the trigger is let go (AiPilot reads it to let go).
+var needs_release: bool = false
+## Semi-auto: a press waits here until the gun is raised and ready; letting go drops it.
+var _shot_queued: bool = false
+
 ## A subclass with the muzzle elsewhere (on a moved model) sets it in _ready.
 @onready var _muzzle: Node3D = get_node_or_null("Muzzle")
 @onready var _flash: MuzzleFlash = get_node_or_null("Muzzle/MuzzleFlash")
 
 
 func _update(_delta: float) -> void:
+	if data.semi_auto:
+		_update_semi_auto()
+		return
 	if not trigger_held or not can_use():
 		return
 	if controller.weapon_pose.aim_amount < 0.9:
 		return  # Not raised yet.
+	_fire()
+
+
+## One shot per press (WeaponData.semi_auto).
+func _update_semi_auto() -> void:
+	if not trigger_held:
+		needs_release = false
+		_shot_queued = false
+		return
+	if trigger_pressed():
+		_shot_queued = true
+	if not _shot_queued or not can_use() or controller.weapon_pose.aim_amount < 0.9:
+		return
+	_shot_queued = false
+	needs_release = true
 	_fire()
 
 

@@ -1,6 +1,6 @@
 extends SceneTree
 ## Shotgun 2 test (user request 2026-11-01): a square electric pulse shot (a 3 x 3 square of pellets and one square
-## frame look), two shots a second while RMB is held, the three heads open fully at each shot (their fronts move out
+## frame look), one shot per press and two shots a second at most (fast taps), the three heads open fully at each shot (their fronts move out
 ## from the bore) and go back to neutral, the emitter ring flashes and the arc shows at a shot.
 ## Run: godot --headless --path . --script res://tools/godot/test_shotgun_2.gd
 
@@ -75,11 +75,22 @@ func _run() -> void:
 	await _frames(20)
 	_check(gun.head_open_amount() < 0.05, "the heads are back to neutral before the next shot (%.2f)" % gun.head_open_amount())
 	_check(absf(_out(gun, tip, muzzle) - rest_out) < 0.02, "the head is back at its rest place")
-	while _times.size() < 3:
-		await _frames(1)
+	# Manual fire (user rule 2026-11-01): holding the trigger fires no more shots.
+	await _frames(60)
+	_check(_times.size() == 1, "holding the trigger fires once (%d shots in 1.3 s)" % _times.size())
 	Input.action_release("use_right_arm")
-	var gap := (_times[2] - _times[0]) / 2.0
-	_check(absf(gap - 0.5) < 0.05, "two shots a second (%.3f s apart)" % gap)
+	await _frames(2)
+	# Fast taps: at most two shots a second.
+	var t0 := Time.get_ticks_msec() / 1000.0
+	while Time.get_ticks_msec() / 1000.0 - t0 < 1.6:
+		Input.action_press("use_right_arm")
+		await _frames(2)
+		Input.action_release("use_right_arm")
+		await _frames(2)
+	var gaps: Array[float] = []
+	for i in range(2, _times.size()):
+		gaps.append(_times[i] - _times[i - 1])
+	_check(_times.size() >= 4 and gaps.min() > 0.45 and gaps.min() < 0.6, "fast taps fire two shots a second (gaps %s)" % str(gaps))
 	print("SHOTGUN 2: %s (%d failures)" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	quit(1 if _fails > 0 else 0)
 

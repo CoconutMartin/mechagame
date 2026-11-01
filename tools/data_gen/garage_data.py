@@ -126,10 +126,10 @@ def main():
     mods = [write(f"data/mods/{f}.tres", "ModData", "mod_data", {"display_name": n, "stat": s, "percent": p})
             for f, n, s, p in MODS]
     weapons = {
-        "weapons_right": ["heavy_rifle", "beam_rifle", "beam_rifle_2", "beam_rifle_3", "beam_rifle_4", "beam_sniper", "pile_bunker", "pile_bunker_2", "pile_bunker_3", "pile_bunker_4", "pile_bunker_5", "auto_cannon", "smg", "shotgun", "shotgun_2",
+        "weapons_right": ["heavy_rifle", "beam_rifle", "beam_rifle_2", "beam_rifle_3", "beam_rifle_4", "beam_sniper", "pile_bunker", "pile_bunker_2", "pile_bunker_3", "pile_bunker_4", "pile_bunker_5", "auto_cannon", "smg", "shotgun", "shotgun_2", "shotgun_3",
                           "fist", "hammer", "baton"],
         # Left hand (user rules 2026-10-15): shields, one-hand guns, the Pile Bunker and the Fist.
-        "weapons_left": ["warden_shield", "small_shield", "smg", "shotgun", "shotgun_2", "auto_cannon", "pile_bunker", "pile_bunker_2", "pile_bunker_3", "pile_bunker_4", "pile_bunker_5", "fist"],
+        "weapons_left": ["warden_shield", "small_shield", "smg", "shotgun", "shotgun_2", "shotgun_3", "auto_cannon", "pile_bunker", "pile_bunker_2", "pile_bunker_3", "pile_bunker_4", "pile_bunker_5", "fist"],
         "backs_left": ["missile_pod_l", "auto_cannon_shoulder"],
         "backs_right": ["missile_pod_r", "auto_cannon_shoulder"],
     }

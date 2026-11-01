@@ -287,9 +287,9 @@ func _fire(distance: float, sees: bool) -> void:
 		if charging and not input.left_fire_held:
 			_charge_goal = -1.0
 	elif _weapons != null and _weapons.right_data != null and _weapons.right_data.two_handed:
-		input.left_fire_held = ready
+		input.left_fire_held = ready and not _must_release(weapon)
 	else:
-		input.fire_held = ready
+		input.fire_held = ready and not _must_release(weapon)
 
 
 ## Now and then the shield comes up for a moment (more often when hurt).
@@ -321,3 +321,9 @@ func _dodge(delta: float) -> void:
 	_dodge_wait = 0.12
 	if _dodge_step > 2:
 		_dodge_step = 0
+
+
+## True when a one-shot-per-press weapon (WeaponData.semi_auto) fired and waits for the trigger to be let go: the pilot
+## lets go for a frame, then presses again for the next shot.
+static func _must_release(weapon: MechWeapon) -> bool:
+	return weapon != null and weapon.get(&"needs_release") == true

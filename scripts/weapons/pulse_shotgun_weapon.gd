@@ -9,6 +9,10 @@ extends GunWeapon
 
 const PELLET := preload("res://scenes/weapons/pulse_pellet.tscn")
 
+## True: the pellets fly on an X (the two diagonals of the square, center first) and the look is an X (Shotgun 3).
+@export var x_pattern: bool = false
+## Bar thickness of the X look (m): the two bars need more weight than the square's four.
+@export var x_bar: float = 0.5
 ## Head nodes (their origins on the hinges, the gun's bore at the Muzzle marker's x and y).
 @export var head_paths: Array[NodePath] = []
 ## Degrees each head swings out at a shot, seconds to open, seconds to close again.
@@ -80,6 +84,27 @@ func head_open_amount() -> float:
 	return 0.0
 
 
+## Pellet places on the unit square (-1 to 1 across and up): a square grid (data.pellets rounded to a square), or with
+## x_pattern the center and an even share of the rest along the four half diagonals.
+func pattern_points() -> Array[Vector2]:
+	var points: Array[Vector2] = []
+	var count := maxi(data.pellets, 1)
+	if x_pattern:
+		points.append(Vector2.ZERO)
+		var per_arm := maxi((count - 1) / 4, 1)
+		for corner in [Vector2(1, 1), Vector2(-1, 1), Vector2(-1, -1), Vector2(1, -1)]:
+			for k in per_arm:
+				points.append(corner * float(k + 1) / float(per_arm))
+		return points
+	var grid := maxi(roundi(sqrt(float(count))), 1)
+	for gx in grid:
+		for gy in grid:
+			var u := 0.0 if grid == 1 else lerpf(-1.0, 1.0, float(gx) / float(grid - 1))
+			var v := 0.0 if grid == 1 else lerpf(-1.0, 1.0, float(gy) / float(grid - 1))
+			points.append(Vector2(u, v))
+	return points
+
+
 func _fire() -> void:
 	consume()
 	var origin := _muzzle.global_position
@@ -91,30 +116,29 @@ func _fire() -> void:
 		side = Vector3.RIGHT
 	side = side.normalized()
 	var up := side.cross(aim).normalized()
-	var grid := maxi(roundi(sqrt(float(maxi(data.pellets, 1)))), 1)
 	var shot := MechStability.new_shot_id()
 	var spread := tan(deg_to_rad(data.spread_deg))
 	var exclude := controller.mech.get_hit_exclude()
-	for gx in grid:
-		for gy in grid:
-			var u := 0.0 if grid == 1 else lerpf(-1.0, 1.0, float(gx) / float(grid - 1))
-			var v := 0.0 if grid == 1 else lerpf(-1.0, 1.0, float(gy) / float(grid - 1))
-			var direction := (aim + (side * u + up * v) * spread).normalized()
-			var pellet := PELLET.instantiate() as Bullet
-			pellet.velocity = direction * data.projectile_speed
-			pellet.exclude = exclude
-			pellet.damage = data.damage
-			pellet.weapon_data = data
-			pellet.shot_id = shot
-			pellet.lifetime = maxf(pellet.lifetime, data.range_m / maxf(data.projectile_speed, 1.0) + 0.5)
-			controller.get_world().add_child(pellet)
-			pellet.global_position = origin
-			pellet.look_at(origin + direction, Vector3.UP if absf(direction.y) < 0.99 else Vector3.FORWARD)
+	for point in pattern_points():
+		var direction := (aim + (side * point.x + up * point.y) * spread).normalized()
+		var pellet := PELLET.instantiate() as Bullet
+		pellet.velocity = direction * data.projectile_speed
+		pellet.exclude = exclude
+		pellet.damage = data.damage
+		pellet.weapon_data = data
+		pellet.shot_id = shot
+		pellet.lifetime = maxf(pellet.lifetime, data.range_m / maxf(data.projectile_speed, 1.0) + 0.5)
+		controller.get_world().add_child(pellet)
+		pellet.global_position = origin
+		pellet.look_at(origin + direction, Vector3.UP if absf(direction.y) < 0.99 else Vector3.FORWARD)
 	var look := PulseShot.new()
 	look.velocity = aim * data.projectile_speed
 	look.spread_deg = data.spread_deg
 	look.range_m = data.range_m
 	look.exclude = exclude
+	look.cross = x_pattern
+	if x_pattern:
+		look.bar = x_bar
 	controller.get_world().add_child(look)
 	look.global_position = origin
 	look.look_at(origin + aim, Vector3.UP if absf(aim.y) < 0.99 else Vector3.FORWARD)
