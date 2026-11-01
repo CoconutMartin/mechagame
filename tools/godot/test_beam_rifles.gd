@@ -4,13 +4,14 @@ extends SceneTree
 ## fully lit at the shot, then fading; one PPC bolt from the middle barrel after the charge; the prong tips red at a
 ## shot; 3 s cool down (a held trigger fires again about 3.3 s later).
 ## Beam Rifle 2 (BeamRepeaterWeapon): rapid bolts from the middle barrel; the two rail bores glow red while firing.
+## Beam Rifle 4 (BeamRepeaterWeapon as a sniper beam): one beam from the muzzle, then 2.5 s until the next; the
+## muzzle ring flashes orange; HUD READY / COOLING; the rifle is about 7 m long.
 ## Run: godot --headless --path . --script res://tools/godot/test_beam_rifles.gd
 
 var _fails: int = 0
 var _shot_times: Array[float] = []
 var _shot_offsets: Array[float] = []
-## Untyped: a typed reference to the new weapon classes in this test script loads them before GunWeapon is ready.
-var _rifle3: Node
+var _rifle3: BeamCannonWeapon
 
 
 func _initialize() -> void:
@@ -66,9 +67,9 @@ func _run() -> void:
 	var switcher := current_scene.get_node("LoadoutSwitcher") as LoadoutSwitcher
 
 	# Beam Rifle 3.
-	_rifle3 = await _equip(switcher, "res://data/weapons/beam_rifle_3.tres")
-	_check(_rifle3 != null and _rifle3.get_script().get_global_name() == &"BeamCannonWeapon", "the player holds Beam Rifle 3")
-	if _rifle3 == null or _rifle3.get_script().get_global_name() != &"BeamCannonWeapon":
+	_rifle3 = await _equip(switcher, "res://data/weapons/beam_rifle_3.tres") as BeamCannonWeapon
+	_check(_rifle3 != null, "the player holds Beam Rifle 3")
+	if _rifle3 == null:
 		quit(1)
 		return
 	var glow_paths := ["Model/Ring0", "Model/Ring6", "Model/UpperRail", "Model/LowerRail"]
@@ -114,8 +115,8 @@ func _run() -> void:
 		_check(false, "a second shot after the cool down")
 
 	# Beam Rifle 2.
-	var rifle2: Node = await _equip(switcher, "res://data/weapons/beam_rifle_2.tres")
-	var is_repeater: bool = rifle2 != null and rifle2.get_script().get_global_name() == &"BeamRepeaterWeapon"
+	var rifle2 := await _equip(switcher, "res://data/weapons/beam_rifle_2.tres") as BeamRepeaterWeapon
+	var is_repeater := rifle2 != null
 	_check(is_repeater, "the player holds Beam Rifle 2")
 	if is_repeater:
 		var shots := [0]
@@ -131,6 +132,30 @@ func _run() -> void:
 		Input.action_release("use_left_arm")
 		_check(shots[0] >= 4 and shots[0] <= 7, "rapid bolts while LMB is held (%d in 1.5 s)" % shots[0])
 		_check(glow > 1.0, "the rail bores glow red while firing (%.2f)" % glow)
+
+	# Beam Rifle 4.
+	var rifle4 := await _equip(switcher, "res://data/weapons/beam_rifle_4.tres") as BeamRepeaterWeapon
+	_check(rifle4 != null, "the player holds Beam Rifle 4")
+	if rifle4 != null:
+		var times: Array[float] = []
+		rifle4.fired.connect(func() -> void: times.append(_now()))
+		_check(rifle4._muzzles[0] == rifle4.get_node("Muzzle"), "Beam Rifle 4 fires from its muzzle")
+		_check(absf((rifle4.get_node("Muzzle") as Node3D).position.z + 7.0) < 0.05, "the muzzle is 7 m from the butt (%.2f)" % (rifle4.get_node("Muzzle") as Node3D).position.z)
+		_check(rifle4.get_status_text() == "READY", "the HUD shows READY (%s)" % rifle4.get_status_text())
+		await _frames(40)
+		Input.action_press("use_left_arm")
+		var ring := 0.0
+		var t0 := _now()
+		while times.size() < 2 and _now() - t0 < 4.0:
+			await _frames(1)
+			ring = maxf(ring, _energy(rifle4, "Model/MuzzleRing"))
+			if times.size() == 1 and _now() - times[0] > 1.0 and _now() - times[0] < 1.1:
+				_check(rifle4.get_status_text().begins_with("COOLING"), "the HUD shows the cool down (%s)" % rifle4.get_status_text())
+		Input.action_release("use_left_arm")
+		_check(times.size() == 2 and absf(times[1] - times[0] - 2.5) < 0.15, "one beam each 2.5 s (%s)" % str(times))
+		_check(ring > 1.0, "the muzzle ring flashes at a shot (%.2f)" % ring)
+		var color := ((rifle4.get_node("Model/MuzzleRing") as MeshInstance3D).material_override as StandardMaterial3D).emission
+		_check(color.r > 0.9 and color.g > 0.2 and color.g < 0.5, "the flash is orange (%s)" % color)
 	Input.action_release("aim")
 	print("BEAM RIFLES: %s (%d failures)" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	quit(1 if _fails > 0 else 0)

@@ -27,9 +27,6 @@ func _run() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-40, -60, 0)
 	world.add_child(sun)
-	# The weapon scripts load cleanly only after WeaponController (GunWeapon subclasses loaded first meet the
-	# GunWeapon -> MechWeapon -> WeaponController -> ForearmGunWeapon cycle; in the game the mech loads it first).
-	load("res://scripts/weapons/weapon_controller.gd")
 	var rifle := (load(path) as PackedScene).instantiate() as Node3D
 	world.add_child(rifle)
 	var camera := Camera3D.new()

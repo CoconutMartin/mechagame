@@ -32,6 +32,24 @@ func is_busy() -> bool:
 	return false
 
 
+## True for a gun worn on the forearm (ForearmGunWeapon). WeaponController and WeaponPose ask this and
+## is_shoulder_gun() instead of naming those classes: a class name there made a load cycle (GunWeapon ->
+## MechWeapon -> WeaponController -> ForearmGunWeapon extends GunWeapon), so a GunWeapon subclass scene failed to
+## load when nothing had loaded WeaponController before it (2026-11-01).
+func is_forearm_gun() -> bool:
+	return false
+
+
+## True for a shoulder gun (ShoulderGunWeapon).
+func is_shoulder_gun() -> bool:
+	return false
+
+
+## True when a shoulder gun wants the mech to brace now (ShoulderGunWeapon).
+func wants_brace() -> bool:
+	return false
+
+
 ## True for melee weapons (blade, pile bunker): they work together with the other weapons.
 func is_melee() -> bool:
 	return false

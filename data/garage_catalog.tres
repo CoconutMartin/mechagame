@@ -29,6 +29,7 @@
 [ext_resource type="Resource" path="res://data/weapons/beam_rifle.tres" id="r9"]
 [ext_resource type="Resource" path="res://data/weapons/beam_rifle_2.tres" id="beam_rifle_2"]
 [ext_resource type="Resource" path="res://data/weapons/beam_rifle_3.tres" id="beam_rifle_3"]
+[ext_resource type="Resource" path="res://data/weapons/beam_rifle_4.tres" id="beam_rifle_4"]
 [ext_resource type="Resource" path="res://data/weapons/beam_sniper.tres" id="r10"]
 [ext_resource type="Resource" path="res://data/weapons/pile_bunker.tres" id="r11"]
 [ext_resource type="Resource" path="res://data/weapons/pile_bunker_2.tres" id="pile_bunker_2"]
@@ -66,7 +67,7 @@ boosters = Array[BoosterPart]([ExtResource("r5")])
 generators = Array[GeneratorPart]([ExtResource("r6")])
 back_packs = Array[BackPackPart]([ExtResource("pack_light"), ExtResource("pack_medium"), ExtResource("pack_heavy"), ExtResource("backpack_ammo"), ExtResource("backpack_missile"), ExtResource("backpack_boost"), ExtResource("backpack_quad"), ExtResource("backpack_belt"), ExtResource("backpack_power"), ExtResource("backpack_field"), ExtResource("backpack_jet"), ExtResource("backpack_drone")])
 aux_items = Array[EquipmentData]([ExtResource("aux_scan_g1"), ExtResource("aux_scan_g2"), ExtResource("aux_scan_g3"), ExtResource("aux_drone_recall"), ExtResource("aux_drone_swarm")])
-weapons_right = Array[WeaponData]([ExtResource("r8"), ExtResource("r9"), ExtResource("beam_rifle_2"), ExtResource("beam_rifle_3"), ExtResource("r10"), ExtResource("r11"), ExtResource("pile_bunker_2"), ExtResource("pile_bunker_3"), ExtResource("pile_bunker_4"), ExtResource("pile_bunker_5"), ExtResource("r12"), ExtResource("r13"), ExtResource("shotgun"), ExtResource("melee_fist"), ExtResource("melee_hammer"), ExtResource("melee_baton")])
+weapons_right = Array[WeaponData]([ExtResource("r8"), ExtResource("r9"), ExtResource("beam_rifle_2"), ExtResource("beam_rifle_3"), ExtResource("beam_rifle_4"), ExtResource("r10"), ExtResource("r11"), ExtResource("pile_bunker_2"), ExtResource("pile_bunker_3"), ExtResource("pile_bunker_4"), ExtResource("pile_bunker_5"), ExtResource("r12"), ExtResource("r13"), ExtResource("shotgun"), ExtResource("melee_fist"), ExtResource("melee_hammer"), ExtResource("melee_baton")])
 weapons_left = Array[WeaponData]([ExtResource("r14"), ExtResource("r15"), ExtResource("r13"), ExtResource("shotgun"), ExtResource("r12"), ExtResource("r11"), ExtResource("pile_bunker_2"), ExtResource("pile_bunker_3"), ExtResource("pile_bunker_4"), ExtResource("pile_bunker_5"), ExtResource("melee_fist")])
 backs_left = Array[WeaponData]([ExtResource("r16"), ExtResource("r17")])
 backs_right = Array[WeaponData]([ExtResource("r18"), ExtResource("r17")])

@@ -1,0 +1,59 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/beam_repeater_weapon.gd" id="script"]
+[ext_resource type="PackedScene" path="res://models/beam_rifle_4/beam_rifle_4.glb" id="model"]
+
+[node name="BeamRifle4" type="Node3D"]
+script = ExtResource("script")
+glow_paths = Array[NodePath]([NodePath("Model/MuzzleRing")])
+glow_color = Color(1, 0.35, 0, 1)
+glow_hold = 0.1
+glow_fade = 0.6
+bolt_width = 0.7
+bolt_fade = 0.4
+
+[node name="Model" parent="." instance=ExtResource("model")]
+
+[node name="GripRight" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.051, -0.2105, -2.1325)
+
+[node name="GripRightRest" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.051, -0.2105, -2.1325)
+
+[node name="GripRightAim" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.043, -0.0225, -2.1205)
+
+[node name="GripLeft" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.146, -0.4868, -4.7785)
+
+[node name="GripLeftRest" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.146, -0.4868, -4.7785)
+
+[node name="GripLeftAim" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.185, -0.5598, -3.9915)
+
+[node name="GripLeftAimLow" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.145, -0.2068, -2.664)
+
+[node name="Muzzle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1804, -7.0224)
+
+[node name="GripSocketRight" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.91355, 0.40674, 0, -0.40674, 0.91355, 0, -0.6165, -1.8835)
+metadata/grip_radius = 0.26
+metadata/hand_reach = true
+
+[node name="GripSocketLeft" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -0.4268, -5.0835)
+metadata/grip_radius = 0.15
+metadata/hand_reach = true
+
+[node name="GripSocketLeftAim" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -0.4568, -4.1835)
+metadata/grip_radius = 0.15
+metadata/hand_reach = true
+
+[node name="GripSocketLeftAimLow" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -0.4268, -2.73398)
+metadata/grip_radius = 0.15
+metadata/hand_reach = true

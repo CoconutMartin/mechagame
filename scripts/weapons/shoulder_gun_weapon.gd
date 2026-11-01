@@ -22,6 +22,10 @@ func is_busy() -> bool:
 	return armed
 
 
+func is_shoulder_gun() -> bool:
+	return true
+
+
 ## True when the cannon wants the mech to brace now.
 func wants_brace() -> bool:
 	return armed

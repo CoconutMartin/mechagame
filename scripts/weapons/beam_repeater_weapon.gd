@@ -5,6 +5,9 @@ extends GunWeapon
 ## middle barrel (Muzzle; user request 2026-11-01), or from muzzle_paths in turn when set. A bolt hits at once along the aim (no travel time) up to data.range_m. Each bolt adds heat
 ## (data.heat_per_use); at full heat the rifle overheats and fires again when it has cooled to zero.
 ## The glow meshes (the two rail bores) flash red at each shot (user request 2026-11-01).
+## Beam Rifle 4 uses it as a sniper beam (user choice 2026-11-01): one heavy beam per shot, a long wait between
+## shots (data.fire_rate), no heat (data.heat_per_use 0: the HUD shows READY or COOLING), the muzzle ring flashing
+## orange.
 ## It is a GunWeapon, so the drop, the dual-gun rules and the AI treat it like a gun.
 
 const BEAM := preload("res://scenes/effects/beam_shot.tscn")
@@ -15,8 +18,12 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 @export_flags_3d_physics var collision_mask: int = 29
 ## Muzzles that fire in turn, one bolt each. Empty = the Muzzle marker.
 @export var muzzle_paths: Array[NodePath] = []
-## Meshes that flash red at each shot.
+## Meshes that flash at each shot, their color, and the seconds fully lit and fading. Many shots in a row keep
+## the glow up with a short hold and fade.
 @export var glow_paths: Array[NodePath] = []
+@export var glow_color: Color = Color(1.0, 0.08, 0.04)
+@export var glow_hold: float = 0.05
+@export var glow_fade: float = 0.3
 ## Thickness of a bolt's beam, in meters.
 @export var bolt_width: float = 0.25
 ## Seconds a bolt's beam takes to fade.
@@ -37,9 +44,9 @@ func _ready() -> void:
 			_muzzles.append(muzzle)
 	if _muzzles.is_empty() and _muzzle != null:
 		_muzzles.append(_muzzle)
-	# Many shots in a row keep the glow up: a short hold and fade.
-	_glow.hold = 0.05
-	_glow.fade = 0.3
+	_glow.color = glow_color
+	_glow.hold = glow_hold
+	_glow.fade = glow_fade
 	add_child(_glow)
 	var meshes: Array[MeshInstance3D] = []
 	for path in glow_paths:
@@ -91,3 +98,12 @@ func _impact(point: Vector3, normal: Vector3, body: Object, damage: float, origi
 	controller.get_world().add_child(mark)
 	var side := normal.cross(Vector3.FORWARD if absf(normal.dot(Vector3.FORWARD)) < 0.99 else Vector3.RIGHT).normalized()
 	mark.global_transform = Transform3D(Basis(side, normal, side.cross(normal)), point)
+
+
+func get_status_text() -> String:
+	if data == null or data.heat_per_use > 0.0:
+		return super.get_status_text()
+	# No heat: the wait between shots is the cool down.
+	if _cooldown > 0.0:
+		return "COOLING %s %.1f s" % [_bar(1.0 - _cooldown * data.fire_rate), _cooldown]
+	return "READY"

@@ -833,7 +833,7 @@ func lose_left_gun() -> Array[Node3D]:
 ## True when the hand can let go of this weapon on a knock-down: a hand gun or a rifle (the pile bunker and
 ## the fist stay, the shields stay), and the Auto Cannon only with drop_forearm_guns.
 func can_drop(weapon: MechWeapon) -> bool:
-	if weapon is ForearmGunWeapon and not drop_forearm_guns:
+	if _is_forearm_gun(weapon) and not drop_forearm_guns:
 		return false
 	return is_droppable(weapon)
 
@@ -955,8 +955,8 @@ func _let_go(weapon: MechWeapon, is_right: bool, two_hand: bool, ownerless: bool
 	if active == weapon:
 		active = null
 	# A forearm gun has its model under the forearm: it goes back to the weapon to fall with it.
-	if weapon is ForearmGunWeapon:
-		var model := (weapon as ForearmGunWeapon).get_model()
+	if _is_forearm_gun(weapon):
+		var model: Node3D = weapon.call(&"get_model")
 		if model.get_parent() != weapon:
 			model.reparent(weapon, true)
 	weapon.process_mode = Node.PROCESS_MODE_DISABLED
@@ -1273,7 +1273,7 @@ func _make_brace_pose() -> void:
 func _shoulder_armed_count() -> int:
 	var count := 0
 	for weapon: MechWeapon in [back_left, back_right]:
-		if weapon is ShoulderGunWeapon and (weapon as ShoulderGunWeapon).wants_brace():
+		if _is_shoulder_gun(weapon) and weapon.wants_brace():
 			count += 1
 	return count
 
@@ -1281,9 +1281,19 @@ func _shoulder_armed_count() -> int:
 ## True when a shoulder cannon waits for the brace.
 func _shoulder_wants_brace() -> bool:
 	for weapon: MechWeapon in [back_left, back_right]:
-		if weapon is ShoulderGunWeapon and (weapon as ShoulderGunWeapon).wants_brace():
+		if _is_shoulder_gun(weapon) and weapon.wants_brace():
 			return true
 	return false
+
+
+## True for a shoulder gun (null: false). Asked by method, not by class name (MechWeapon.is_forearm_gun).
+static func _is_shoulder_gun(weapon: Object) -> bool:
+	return weapon is MechWeapon and (weapon as MechWeapon).is_shoulder_gun()
+
+
+## True for a forearm gun (null: false).
+static func _is_forearm_gun(weapon: Object) -> bool:
+	return weapon is MechWeapon and (weapon as MechWeapon).is_forearm_gun()
 
 
 ## The two arm guns (right and left hand) work together (dual guns, user rule 2026-10-15), like the
@@ -1297,7 +1307,7 @@ func _is_arm_gun(weapon: MechWeapon) -> bool:
 func _may_fire(weapon: MechWeapon) -> bool:
 	return weapon == active or weapon.is_melee() \
 			or (weapon is MissilePodWeapon and active is MissilePodWeapon) \
-			or (weapon is ShoulderGunWeapon and active is ShoulderGunWeapon) \
+			or (_is_shoulder_gun(weapon) and _is_shoulder_gun(active)) \
 			or (_is_arm_gun(weapon) and _is_arm_gun(active))
 
 
@@ -1312,9 +1322,9 @@ func _still_in_use(weapon: MechWeapon, wants: Dictionary) -> bool:
 		for other in wants:
 			if other is MissilePodWeapon and (wants[other] or _is_busy(other)):
 				return true
-	if weapon is ShoulderGunWeapon:
+	if _is_shoulder_gun(weapon):
 		for other in wants:
-			if other != weapon and other is ShoulderGunWeapon and (wants[other] or _is_busy(other)):
+			if other != weapon and _is_shoulder_gun(other) and (wants[other] or _is_busy(other)):
 				return true
 	return false
 

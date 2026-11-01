@@ -113,13 +113,13 @@ func _physics_process(delta: float) -> void:
 	low_aim_amount = move_toward(low_aim_amount, _low_aim(mech_aim.aim_point - parent.global_transform * origin),
 			low_aim_speed * delta)
 	if one_hand_elbow_pivot and left_grip_target == null and weapon is GunWeapon \
-			and not weapon is ForearmGunWeapon:
+			and not (weapon as MechWeapon).is_forearm_gun():
 		aim_pose.origin = one_hand_pivot + aim_pose.basis * (origin - one_hand_pivot)
 	if weapon is MechWeapon:
 		weapon.transform = (weapon as MechWeapon).get_pose(rest, aim_pose, t)
 	else:
 		weapon.transform = rest.interpolate_with(aim_pose, t)
-	if left_grip_target == null and not weapon is ForearmGunWeapon and not weapon is MeleeWeapon:
+	if left_grip_target == null and not (weapon is MechWeapon and (weapon as MechWeapon).is_forearm_gun()) and not weapon is MeleeWeapon:
 		_sway_gun(parent, left_arm, 1.0 - t)
 	if recoil != null:
 		weapon.transform = weapon.transform * recoil.get_offset()
@@ -127,7 +127,7 @@ func _physics_process(delta: float) -> void:
 		weapon.position += bounce.offset * bounce.amount()
 
 	var hold_ik := arm_ik_left if left_arm else arm_ik_right
-	if left_grip_target == null and not weapon is ForearmGunWeapon:
+	if left_grip_target == null and not (weapon is MechWeapon and (weapon as MechWeapon).is_forearm_gun()):
 		_keep_in_reach(hold_ik)
 	hold_ik.pole_direction = right_pole_rest.lerp(right_pole_aim, t)
 	if right_grip_target != null and right_grip_rest != null and right_grip_aim != null:

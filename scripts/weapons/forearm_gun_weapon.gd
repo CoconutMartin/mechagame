@@ -45,6 +45,10 @@ func _ready() -> void:
 	_flash = $Mount/Muzzle/MuzzleFlash
 
 
+func is_forearm_gun() -> bool:
+	return true
+
+
 ## The model (it sits on the forearm).
 func get_model() -> Node3D:
 	return _mount
