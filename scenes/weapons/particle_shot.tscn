@@ -1,0 +1,53 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/bullet.gd" id="bullet"]
+[ext_resource type="PackedScene" path="res://scenes/effects/impact_spark.tscn" id="impact"]
+[ext_resource type="PackedScene" path="res://scenes/effects/bullet_mark.tscn" id="mark"]
+[ext_resource type="Material" path="res://materials/effects/particle_halo.tres" id="halo"]
+[ext_resource type="Material" path="res://materials/effects/particle_core.tres" id="core"]
+
+[sub_resource type="BoxMesh" id="streak"]
+size = Vector3(1.1, 1.1, 7.0)
+
+[sub_resource type="SphereMesh" id="ball"]
+radius = 1.1
+height = 2.2
+radial_segments = 14
+rings = 7
+
+[sub_resource type="SphereMesh" id="glow"]
+radius = 2.0
+height = 4.0
+radial_segments = 14
+rings = 7
+
+[node name="ParticleShot" type="Node3D"]
+script = ExtResource("bullet")
+impact_scene = ExtResource("impact")
+mark_scene = ExtResource("mark")
+gravity = 0.0
+crater_min_damage = 200.0
+crater_radius = 1.5
+
+[node name="Tracer" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.5)
+cast_shadow = 0
+mesh = SubResource("streak")
+surface_material_override/0 = ExtResource("halo")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Core" type="MeshInstance3D" parent="Visual"]
+cast_shadow = 0
+mesh = SubResource("ball")
+surface_material_override/0 = ExtResource("core")
+
+[node name="Halo" type="MeshInstance3D" parent="Visual"]
+cast_shadow = 0
+mesh = SubResource("glow")
+surface_material_override/0 = ExtResource("halo")
+
+[node name="Light" type="OmniLight3D" parent="Visual"]
+light_color = Color(1, 0.6, 0.15, 1)
+light_energy = 6.0
+omni_range = 22.0

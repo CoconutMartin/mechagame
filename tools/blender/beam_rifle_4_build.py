@@ -19,7 +19,8 @@ go down (LEFT_DROP_REST, LEFT_DROP_AIM in the scene notes, DESIGN "Beam Rifle 4"
 Axes: Blender +Y = forward (Godot -Z), +Z = up, +X = left side of the gun.
 Origin: the butt pad back face (frame u 1728), on the first Beam Rifle's bore row.
 Empties: GripRight, GripLeft, Muzzle (the barrel front, where the beam leaves).
-Glow meshes: SightLens (amber, always lit, emissive material), MuzzleRing (the weapon flashes it orange at a shot).
+Glow meshes: SightLens (amber, always lit, emissive material), MuzzleRing, LightBar0..2 (the light bars on top of the
+upper armor segments, front to back; the weapon lights them amber with the charge and the cool down).
 """
 import math, os
 import bpy
@@ -42,7 +43,7 @@ MATERIALS = {
     "beam_rifle_4_orange": ((1.0, 0.36, 0.04), 0.35, 0.0, 0.0),
     "beam_rifle_4_glass": ((0.25, 0.42, 0.45), 0.08, 0.0, 0.0),
     # Sight lens: amber, always glowing (user choice 2026-11-01).
-    "beam_rifle_4_amber": ((1.0, 0.55, 0.05), 0.2, 0.0, 2.0),
+    "beam_rifle_4_amber": ((1.0, 0.38, 0.0), 0.2, 0.0, 0.6),
 }
 A = "beam_rifle_4_amber"
 W, D, GR, O, G = ("beam_rifle_4_white", "beam_rifle_4_dark", "beam_rifle_4_grey", "beam_rifle_4_orange",
@@ -257,6 +258,8 @@ BORE_Y = 552   # The one barrel (between the picture's two barrels).
 UPPER_SEGS = [(48, 210), (216, 395), (401, 560)]
 # The lower armor runs to the muzzle brake, as long as the barrel (user 2026-11-01), in the upper armor's segments.
 LOWER_SEGS = [(50, 210), (216, 395), (401, 560)]
+# Bottom of the lower armor: as thick as the upper armor (58 picture pixels, user 2026-11-01).
+LOWER_BOTTOM = 618
 # Left hand places (Godot z): rest, aim (the hand pad; 0.6 m ahead of the Beam Rifle's, user 2026-11-01: "Move the
 # left hand a bit more forward when holding the rifle while aiming"), low aim.
 LEFT_REST_Z, LEFT_AIM_Z, LEFT_LOW_Z = -5.0835, -4.7835, -2.734
@@ -297,30 +300,39 @@ def build():
         pbox(f"UpperSeam{i}", GR, p0 + 4, p1 - 4, 516, 518, ARMOR_W + 0.012, bevel=0.0)
         for k, x in enumerate((p0 + 10, p1 - 10)):
             ppin(f"UpperDot{i}_{k}", x, 500, (ARMOR_W + RISE) / 2)
-        # A grey rail along the top of the segment.
-        rail_top = min(top0, top1) if i < 2 else 456
-        rx0, rx1 = (x0 + 12, x1 - 12) if i < 2 else (434, x1 - 12)
-        pbox(f"TopRail{i}", GR, rx0, rx1, rail_top - 3, rail_top + 1, 0.12, bevel=0.003)
+        # A light bar along the top of the segment (user 2026-11-01: more prominent and whole; it lights amber with
+        # the charge, body -> midsection -> barrel): a raised grey bar in a dark housing, from the front of the
+        # segment to the three short vents near its back.
+        bar_top = min(top0, top1) if i < 2 else 456
+        bx0, bx1 = (x0 + 10, x1 - 36) if i < 2 else (436, x1 - 36)
+        pchamfer(f"BarHousing{i}", D, bx0 - 3, bx1 + 3, bar_top - 3, bar_top + 2, 0.30, 1.5, bevel=0.004)
+        pchamfer(f"LightBar{i}", GR, bx0, bx1, bar_top - 6.5, bar_top, 0.20, 2, bevel=0.006)
         for k in range(3):
-            vx = (x0 + x1) / 2 - 10 + k * 8
-            pbox(f"UpperVent{i}_{k}", D, vx, vx + 4, upper_top(vx) - 1.5, upper_top(vx) + 2, 0.30, bevel=0.0)
+            vx = x1 - 30 + k * 6
+            pbox(f"UpperVent{i}_{k}", D, vx, vx + 3, upper_top(vx) - 1.5, upper_top(vx) + 2, 0.30, bevel=0.0)
     pbox("FrontVent", D, 46, 50, 492, 514, 0.34, bevel=0.0)
 
-    # Lower armor (barrel section): two white segments with raised panels and seams; a dark hand pad with bolts
+    # Lower armor (barrel section): three white segments as thick as the upper armor (user 2026-11-01), with raised
+    # panels, seams and dots; the back segment slopes up to the receiver's lower plate. A dark hand pad with bolts
     # under it where the left hand holds when aiming.
     for i, (x0, x1) in enumerate(LOWER_SEGS):
-        outline = [(x0, 560), (x1, 558), (x1, 585), (x0, 585)]
+        outline = [(x0, 560), (x1, 558), (x1, LOWER_BOTTOM), (x0, LOWER_BOTTOM)]
         if i == 0:
-            outline = [(x0 + 4, 562), (x1, 560), (x1, 585), (x0 + 12, 585), (x0, 576), (x0, 566)]
+            outline = [(x0 + 4, 562), (x1, 560), (x1, LOWER_BOTTOM), (x0 + 14, LOWER_BOTTOM), (x0, LOWER_BOTTOM - 14),
+                       (x0, 566)]
+        if i == 2:
+            outline = [(x0, 560), (x1, 558), (x1, 590), (x1 - 40, LOWER_BOTTOM), (x0, LOWER_BOTTOM)]
         pprism(f"LowerArmor{i}", W, outline, ARMOR_W)
-        p0, p1 = x0 + (16 if i == 0 else 8), x1 - 8
-        pchamfer(f"LowerPanel{i}", W, p0, p1, 566, 580, ARMOR_W + RISE, 3, bevel=0.01)
-        ppin(f"LowerDot{i}", p1 - 8, 573, (ARMOR_W + RISE) / 2)
-    pbox("LowerSpine", D, 54, 560, 560, 580, ARMOR_W - 0.08, bevel=0.008)
+        p0, p1 = x0 + (18 if i == 0 else 8), x1 - (44 if i == 2 else 8)
+        pchamfer(f"LowerPanel{i}", W, p0, p1, 568, LOWER_BOTTOM - 10, ARMOR_W + RISE, 4, bevel=0.012)
+        pbox(f"LowerSeam{i}", GR, p0 + 4, p1 - 4, LOWER_BOTTOM - 7, LOWER_BOTTOM - 5, ARMOR_W + 0.012, bevel=0.0)
+        for k, x in enumerate((p0 + 10, p1 - 10)):
+            ppin(f"LowerDot{i}_{k}", x, 588, (ARMOR_W + RISE) / 2)
+    pbox("LowerSpine", D, 54, 560, 560, LOWER_BOTTOM - 8, ARMOR_W - 0.08, bevel=0.008)
     pad_x = XZ(LEFT_AIM_Z)
-    pbox("HandPad", D, pad_x - 14, pad_x + 14, 582, 590, 0.46, bevel=0.01)
+    pbox("HandPad", D, pad_x - 14, pad_x + 14, LOWER_BOTTOM - 3, LOWER_BOTTOM + 7, 0.46, bevel=0.01)
     for k, x in enumerate((pad_x - 9, pad_x + 9)):
-        pdisc(f"PadBolt{k}", GR, x, 586, 3.0, 0.47)
+        pdisc(f"PadBolt{k}", GR, x, LOWER_BOTTOM + 2, 3.0, 0.47)
 
     # Receiver: dark body, a white band with a raised panel, a raised plate under the sight, a white lower plate
     # with a hex panel, a dark power cell on the side with an amber lamp strip, vents and bolts.
@@ -408,7 +420,7 @@ def main():
         o = bpy.data.objects[name]
         print("marker %s godot (%.4f, %.4f, %.4f)" % (name, o.location.x, o.location.z, -o.location.y))
     from mathutils import Vector
-    for prefix in ("LowerArmor0", "LowerArmor1", "HandPad", "LowerPlate"):
+    for prefix in ("LowerArmor0", "LowerArmor1", "LowerArmor2", "HandPad", "LowerPlate"):
         obj = bpy.data.objects[prefix]
         print("%s bottom z %.4f" % (prefix, min((obj.matrix_world @ Vector(c)).z for c in obj.bound_box)))
     ys = [(o.matrix_world @ Vector(c)).y for o in bpy.data.objects if o.type == "MESH" for c in o.bound_box]

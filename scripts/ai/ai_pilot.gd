@@ -273,14 +273,17 @@ func _fire(distance: float, sees: bool) -> void:
 	if weapon != null and weapon.data != null and weapon.data.range_m > 0.0:
 		max_range = minf(max_range, weapon.data.range_m)
 	var ready := sees and distance <= max_range and _shield_left <= 0.0 and error < deg_to_rad(fire_angle_deg)
-	if weapon is BeamRifleWeapon:
-		var rifle := weapon as BeamRifleWeapon
+	# Weapons that fire on the trigger release: the Beam Rifle, and those with is_release_charge_weapon()
+	# (ParticleRifleWeapon). Both have charge and discharge_left.
+	if weapon is BeamRifleWeapon or (weapon != null and weapon.has_method(&"is_release_charge_weapon")):
+		var charge: float = weapon.get(&"charge")
+		var discharge: float = weapon.get(&"discharge_left")
 		if _charge_goal < 0.0:
 			# Above 0, so a release goal of 0 still presses the trigger once.
 			_charge_goal = maxf(randf_range(charge_release_min, charge_release_max), 0.05)
 		# Start the charge when ready; once charging, hold until the goal charge and a clear shot.
-		var charging := rifle.charge > 0.0
-		input.left_fire_held = (ready or charging) and not (ready and rifle.charge >= _charge_goal) and rifle.discharge_left <= 0.0
+		var charging := charge > 0.0
+		input.left_fire_held = (ready or charging) and not (ready and charge >= _charge_goal) and discharge <= 0.0
 		if charging and not input.left_fire_held:
 			_charge_goal = -1.0
 	elif _weapons != null and _weapons.right_data != null and _weapons.right_data.two_handed:

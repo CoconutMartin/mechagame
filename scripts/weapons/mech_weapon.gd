@@ -32,6 +32,17 @@ func is_busy() -> bool:
 	return false
 
 
+## True when holding the trigger raises a two-hand weapon (and so locks walking: the sniping stance). False for a
+## weapon that charges at the low ready while the mech walks (ParticleRifleWeapon, user 2026-11-01).
+func raise_on_trigger() -> bool:
+	return true
+
+
+## True while the weapon keeps itself raised without the trigger (a two-hand weapon). Default: while busy.
+func holds_raised() -> bool:
+	return is_busy()
+
+
 ## True for a gun worn on the forearm (ForearmGunWeapon). WeaponController and WeaponPose ask this and
 ## is_shoulder_gun() instead of naming those classes: a class name there made a load cycle (GunWeapon ->
 ## MechWeapon -> WeaponController -> ForearmGunWeapon extends GunWeapon), so a GunWeapon subclass scene failed to

@@ -1235,7 +1235,8 @@ func _physics_process(delta: float) -> void:
 	if right_weapon != null and not right_weapon is MeleeWeapon:
 		var right_on := _may_fire(right_weapon)
 		if _two_handed():
-			weapon_pose.wants_raise = input.aim_held or (right_on and (input.left_fire_held or right_weapon.is_busy()))
+			weapon_pose.wants_raise = input.aim_held or (right_on and ((input.left_fire_held and right_weapon.raise_on_trigger())
+					or right_weapon.holds_raised()))
 			# Sniping stance: no walking while the rifle is raised (user, 2026-10-12). The rifle lowers
 			# slowly (WeaponPose.lower_speed), so walking comes back early in the lowering.
 			input.stance_lock = weapon_pose.wants_raise or weapon_pose.aim_amount > 0.85
@@ -1269,21 +1270,19 @@ func _make_brace_pose() -> void:
 	skeleton.add_child(pose)
 
 
-## How many shoulder cannons wait for the brace now.
+## How many weapons wait for the brace now: the shoulder cannons, and a hand weapon that stops to fire (Beam Rifle 4,
+## ParticleRifleWeapon; 2026-11-01).
 func _shoulder_armed_count() -> int:
 	var count := 0
-	for weapon: MechWeapon in [back_left, back_right]:
-		if _is_shoulder_gun(weapon) and weapon.wants_brace():
+	for weapon: MechWeapon in [back_left, back_right, right_weapon]:
+		if weapon != null and is_instance_valid(weapon) and weapon.wants_brace():
 			count += 1
 	return count
 
 
-## True when a shoulder cannon waits for the brace.
+## True when a weapon waits for the brace.
 func _shoulder_wants_brace() -> bool:
-	for weapon: MechWeapon in [back_left, back_right]:
-		if _is_shoulder_gun(weapon) and weapon.wants_brace():
-			return true
-	return false
+	return _shoulder_armed_count() > 0
 
 
 ## True for a shoulder gun (null: false). Asked by method, not by class name (MechWeapon.is_forearm_gun).

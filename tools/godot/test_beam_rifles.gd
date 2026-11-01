@@ -4,8 +4,9 @@ extends SceneTree
 ## fully lit at the shot, then fading; one PPC bolt from the middle barrel after the charge; the prong tips red at a
 ## shot; 3 s cool down (a held trigger fires again about 3.3 s later).
 ## Beam Rifle 2 (BeamRepeaterWeapon): rapid bolts from the middle barrel; the two rail bores glow red while firing.
-## Beam Rifle 4 (BeamRepeaterWeapon as a sniper beam): one beam from the muzzle, then 2.5 s until the next; the
-## muzzle ring flashes orange; HUD READY / COOLING; the rifle is 10 m long.
+## Beam Rifle 4 (ParticleRifleWeapon): charges while walking, the light bars light body -> midsection -> barrel, the
+## release stops the mech and fires one particle shot (smaller and weaker for a part charge), all bars lit after the
+## shot and fading together over the 3 s cool down, no charge while cooling, a full cycle of about 6 s.
 ## Run: godot --headless --path . --script res://tools/godot/test_beam_rifles.gd
 
 var _fails: int = 0
@@ -133,29 +134,87 @@ func _run() -> void:
 		_check(shots[0] >= 4 and shots[0] <= 7, "rapid bolts while LMB is held (%d in 1.5 s)" % shots[0])
 		_check(glow > 1.0, "the rail bores glow red while firing (%.2f)" % glow)
 
-	# Beam Rifle 4.
-	var rifle4 := await _equip(switcher, "res://data/weapons/beam_rifle_4.tres") as BeamRepeaterWeapon
+	# Beam Rifle 4: charge while walking, release, the mech stops, one particle shot; light bars. No RMB (RMB raises the
+	# rifle, and a raised two-hand rifle locks walking: the sniping stance).
+	Input.action_release("aim")
+	var rifle4 := await _equip(switcher, "res://data/weapons/beam_rifle_4.tres") as ParticleRifleWeapon
 	_check(rifle4 != null, "the player holds Beam Rifle 4")
 	if rifle4 != null:
-		var times: Array[float] = []
-		rifle4.fired.connect(func() -> void: times.append(_now()))
-		_check(rifle4._muzzles[0] == rifle4.get_node("Muzzle"), "Beam Rifle 4 fires from its muzzle")
+		var mech := switcher.mech
+		var bars := ["Model/LightBar2", "Model/LightBar1", "Model/LightBar0"]
+		var shots: Array[float] = []
+		rifle4.fired.connect(func() -> void: shots.append(_now()))
 		_check(absf((rifle4.get_node("Muzzle") as Node3D).position.z + 10.0) < 0.05, "the muzzle is 10 m from the butt (%.2f)" % (rifle4.get_node("Muzzle") as Node3D).position.z)
 		_check(rifle4.get_status_text() == "READY", "the HUD shows READY (%s)" % rifle4.get_status_text())
+		for path in bars:
+			_check(is_zero_approx(_energy(rifle4, path)), "%s is dark when ready" % path)
 		await _frames(40)
+		Input.action_press("move_forward")
+		await _frames(30)
 		Input.action_press("use_left_arm")
-		var ring := 0.0
-		var t0 := _now()
-		while times.size() < 2 and _now() - t0 < 4.0:
-			await _frames(1)
-			ring = maxf(ring, _energy(rifle4, "Model/MuzzleRing"))
-			if times.size() == 1 and _now() - times[0] > 1.0 and _now() - times[0] < 1.1:
-				_check(rifle4.get_status_text().begins_with("COOLING"), "the HUD shows the cool down (%s)" % rifle4.get_status_text())
+		await _frames(90)
+		var moving := mech.get_horizontal_speed()
+		_check(rifle4.charge > 0.4 and rifle4.charge < 0.6, "it charges while walking (charge %.2f, %.1f m/s)" % [rifle4.charge, moving])
+		_check(moving > 1.0, "the mech walks while it charges (%.1f m/s)" % moving)
+		var e := [_energy(rifle4, bars[0]), _energy(rifle4, bars[1]), _energy(rifle4, bars[2])]
+		_check(e[0] > rifle4.bar_energy * 0.95 and e[1] > 0.0 and e[1] < rifle4.bar_energy and is_zero_approx(e[2]),
+				"the bars light body -> midsection -> barrel at half charge (%.2f, %.2f, %.2f)" % e)
 		Input.action_release("use_left_arm")
-		_check(times.size() == 2 and absf(times[1] - times[0] - 2.5) < 0.15, "one beam each 2.5 s (%s)" % str(times))
-		_check(ring > 1.0, "the muzzle ring flashes at a shot (%.2f)" % ring)
-		var color := ((rifle4.get_node("Model/MuzzleRing") as MeshInstance3D).material_override as StandardMaterial3D).emission
-		_check(color.r > 0.9 and color.g > 0.2 and color.g < 0.5, "the flash is orange (%s)" % color)
+		var t0 := _now()
+		var speed_at_shot := -1.0
+		var shot_scale := -1.0
+		var shot_damage := -1.0
+		while shots.is_empty() and _now() - t0 < 3.0:
+			await _frames(1)
+		if not shots.is_empty():
+			speed_at_shot = mech.get_horizontal_speed()
+			for node in current_scene.find_children("ParticleShot*", "", true, false):
+				shot_scale = (node.get_node("Visual") as Node3D).scale.x
+				shot_damage = (node as Bullet).damage
+		_check(not shots.is_empty(), "the release fires a shot (%.2f s after the release)" % (shots[0] - t0 if not shots.is_empty() else -1.0))
+		_check(speed_at_shot >= 0.0 and speed_at_shot < 0.5, "the mech stops to fire, W still held (%.2f m/s)" % speed_at_shot)
+		_check(shot_scale > 0.6 and shot_scale < 0.85, "a half charge fires a smaller shot (scale %.2f)" % shot_scale)
+		_check(shot_damage > 250.0 and shot_damage < 350.0, "a half charge does less damage (%.0f of 450)" % shot_damage)
+		await _frames(2)
+		var all_lit := true
+		for path in bars:
+			all_lit = all_lit and _energy(rifle4, path) > rifle4.bar_energy * 0.95
+		_check(all_lit, "all three bars are lit after the shot, whatever the charge")
+		await _frames(90)
+		e = [_energy(rifle4, bars[0]), _energy(rifle4, bars[1]), _energy(rifle4, bars[2])]
+		_check(absf(e[0] - e[2]) < 0.05 and e[0] > rifle4.bar_energy * 0.3 and e[0] < rifle4.bar_energy * 0.7,
+				"the bars fade together (%.2f, %.2f, %.2f after 1.5 s)" % e)
+		_check(rifle4.get_status_text().begins_with("COOLING"), "the HUD shows the cool down (%s)" % rifle4.get_status_text())
+		Input.action_press("use_left_arm")
+		await _frames(30)
+		_check(is_zero_approx(rifle4.charge), "no charge during the cool down")
+		Input.action_release("use_left_arm")
+		Input.action_release("move_forward")
+		while rifle4.cooling() > 0.0 and _now() - t0 < 8.0:
+			await _frames(1)
+		var cool_time := _now() - shots[0] if not shots.is_empty() else -1.0
+		_check(absf(cool_time - 3.0) < 0.15, "the cool down is 3 s for a part charge (%.2f s)" % cool_time)
+		for path in bars:
+			_check(_energy(rifle4, path) < 0.01, "%s is dark again: ready" % path)
+		# A full charge: hold 3 s, release; the full cycle is about 6 s.
+		await _frames(10)
+		var t_full := _now()
+		Input.action_press("use_left_arm")
+		while rifle4.charge < 1.0 and _now() - t_full < 4.0:
+			await _frames(1)
+		var charge_time := _now() - t_full
+		Input.action_release("use_left_arm")
+		while shots.size() < 2 and _now() - t_full < 6.0:
+			await _frames(1)
+		_check(absf(charge_time - 3.0) < 0.15, "a full charge takes 3 s (%.2f s)" % charge_time)
+		var full_damage := -1.0
+		for node in current_scene.find_children("ParticleShot*", "", true, false):
+			full_damage = maxf(full_damage, (node as Bullet).damage)
+		_check(absf(full_damage - 450.0) < 1.0, "a full charge does full damage (%.0f)" % full_damage)
+		while rifle4.cooling() > 0.0 and _now() - t_full < 9.0:
+			await _frames(1)
+		var cycle := _now() - t_full
+		_check(cycle > 5.8 and cycle < 6.6, "a full charge and the cool down take about 6 s (%.2f s)" % cycle)
 	Input.action_release("aim")
 	print("BEAM RIFLES: %s (%d failures)" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	quit(1 if _fails > 0 else 0)
