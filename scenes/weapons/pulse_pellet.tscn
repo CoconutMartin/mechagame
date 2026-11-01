@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/bullet.gd" id="bullet"]
+[ext_resource type="PackedScene" path="res://scenes/effects/impact_spark.tscn" id="impact"]
+[ext_resource type="PackedScene" path="res://scenes/effects/bullet_mark.tscn" id="mark"]
+
+[node name="PulsePellet" type="Node3D"]
+script = ExtResource("bullet")
+impact_scene = ExtResource("impact")
+mark_scene = ExtResource("mark")
+gravity = 0.0

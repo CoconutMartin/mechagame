@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/shotgun_2.tscn" id="scene"]
+
+[resource]
+script = ExtResource("script")
+display_name = "Shotgun 2"
+weight_t = 3.0
+hp = 250.0
+kind = 0
+slot = 0
+fire_rate = 2.0
+damage = 7.0
+stagger_points = 3.0
+stagger_cap_per_shot = 18.0
+pellets = 9
+range_m = 270.0
+effective_range_m = 135.0
+projectile_speed = 300.0
+spread_deg = 4.0
+recoil_up_deg = 2.2
+recoil_side_deg = 0.8
+model_kick_back = 0.45
+model_kick_up_deg = 6.0
+shake_trauma = 0.2
+shake_kick = 0.1
+magazine = 10
+reserve_magazines = 5
+reload_time = 2.5
+rest_transform = Transform3D(0.9444027, -0.0352315, -0.3268981, 0.2265841, 0.7901926, 0.5694342, 0.2382504, -0.611845, 0.754243, 1.9732782, 0.9281362, -1.1898853)
+aim_anchor = Vector3(1.5688, 1.6871, -0.9863)
+right_pole_rest = Vector3(0.4000, -1.0000, 0.5000)
+right_pole_aim = Vector3(0.4000, -1.0000, 0.5000)
+scene = ExtResource("scene")
