@@ -1,9 +1,10 @@
 class_name BeamRepeaterWeapon
 extends GunWeapon
 ## A two-hand rapid-fire beam rifle (Beam Rifle 2, user choice 2026-11-01: rapid shots, no charge). While the
-## trigger is held and the rifle is raised, it fires short beam bolts at data.fire_rate per second, from its
-## muzzles in turn. A bolt hits at once along the aim (no travel time) up to data.range_m. Each bolt adds heat
+## trigger is held and the rifle is raised, it fires short beam bolts at data.fire_rate per second, from the
+## middle barrel (Muzzle; user request 2026-11-01), or from muzzle_paths in turn when set. A bolt hits at once along the aim (no travel time) up to data.range_m. Each bolt adds heat
 ## (data.heat_per_use); at full heat the rifle overheats and fires again when it has cooled to zero.
+## The glow meshes (the two rail bores) flash red at each shot (user request 2026-11-01).
 ## It is a GunWeapon, so the drop, the dual-gun rules and the AI treat it like a gun.
 
 const BEAM := preload("res://scenes/effects/beam_shot.tscn")
@@ -14,6 +15,8 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 @export_flags_3d_physics var collision_mask: int = 29
 ## Muzzles that fire in turn, one bolt each. Empty = the Muzzle marker.
 @export var muzzle_paths: Array[NodePath] = []
+## Meshes that flash red at each shot.
+@export var glow_paths: Array[NodePath] = []
 ## Thickness of a bolt's beam, in meters.
 @export var bolt_width: float = 0.25
 ## Seconds a bolt's beam takes to fade.
@@ -24,6 +27,7 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 var _muzzles: Array[Node3D] = []
 var _next_muzzle: int = 0
 var _last_mark: float = 0.0
+var _glow := ShotGlow.new()
 
 
 func _ready() -> void:
@@ -33,6 +37,14 @@ func _ready() -> void:
 			_muzzles.append(muzzle)
 	if _muzzles.is_empty() and _muzzle != null:
 		_muzzles.append(_muzzle)
+	# Many shots in a row keep the glow up: a short hold and fade.
+	_glow.hold = 0.05
+	_glow.fade = 0.3
+	add_child(_glow)
+	var meshes: Array[MeshInstance3D] = []
+	for path in glow_paths:
+		meshes.append(get_node(path) as MeshInstance3D)
+	_glow.setup(meshes)
 
 
 func _fire() -> void:
@@ -55,6 +67,7 @@ func _fire() -> void:
 	beam.duration = bolt_fade
 	controller.get_world().add_child(beam)
 	beam.show_beam(origin, end)
+	_glow.flash()
 	_after_shot()
 
 

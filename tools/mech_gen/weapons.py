@@ -416,6 +416,19 @@ if __name__ == "__main__":
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
         "aim_twist_deg": 25.0, "aim_tilt_deg": 4.0, "zoom_fov": 43.4},
         "res://scenes/weapons/beam_rifle_2.tscn")
+    # Beam Rifle 3 (user picture 2026-11-01, models/guides/beam_rifle_3_ref.png; hand-made scene
+    # scenes/weapons/beam_rifle_3.tscn, BeamCannonWeapon): a PPC-like bolt after a 0.3 s charge, 3 s cool down
+    # (fire_rate 1/3), no heat. The Beam Rifle hold (the left hand markers sit 0.123 m lower in the scene).
+    res("data/weapons/beam_rifle_3.tres", {"display_name": '"Beam Rifle 3"', "weight_t": 4.0, "hp": 300.0,
+        "kind": 1, "two_handed": "true", "fire_rate": 0.33333, "damage": 200.0, "stagger_points": 40.0, "stagger_cap_per_shot": 40.0,
+        "spread_deg": 0.1, "projectile_speed": 450.0, "range_m": 300.0, "effective_range_m": 150.0,
+        "recoil_up_deg": 3.0, "recoil_side_deg": 0.6, "model_kick_back": 0.6, "model_kick_up_deg": 8.0,
+        "shake_trauma": 0.25, "shake_kick": 0.2, "heat_per_use": 0.0, "heat_cooling": 10.0, "overheat_cooling": 25.0,
+        "rest_transform": xf_rows(br_rows, br_rest), "aim_anchor": v3(br_anchor),
+        "right_pole_rest": v3((1.0, -0.6, 0.4)), "right_pole_aim": v3((1.0, -0.6, 0.3)),
+        "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
+        "aim_twist_deg": 25.0, "aim_tilt_deg": 4.0, "zoom_fov": 43.4},
+        "res://scenes/weapons/beam_rifle_3.tscn")
     # Pile bunker: on the forearm like the auto cannon (user, 2026-10-12): the fist (weapon root) at the
     # drawing's hand places, elbow 45 deg at neutral, 90 deg when aiming.
     # The forearm turns out like the auto cannon's (CANNON_OUT_DEG), so the clamps clear the thigh.

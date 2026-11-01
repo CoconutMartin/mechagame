@@ -5,7 +5,7 @@
 
 [node name="BeamRifle2" type="Node3D"]
 script = ExtResource("script")
-muzzle_paths = Array[NodePath]([NodePath("MuzzleTop"), NodePath("MuzzleBottom")])
+glow_paths = Array[NodePath]([NodePath("Model/RailTopBore"), NodePath("Model/RailTopBoreRing"), NodePath("Model/RailBottomBore"), NodePath("Model/RailBottomBoreRing")])
 
 [node name="Model" parent="." instance=ExtResource("model")]
 
