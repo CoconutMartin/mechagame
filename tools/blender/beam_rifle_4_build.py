@@ -258,6 +258,8 @@ BORE_Y = 552   # The one barrel (between the picture's two barrels).
 UPPER_SEGS = [(48, 210), (216, 395), (401, 560)]
 # The lower armor runs to the muzzle brake, as long as the barrel (user 2026-11-01), in the upper armor's segments.
 LOWER_SEGS = [(50, 210), (216, 395), (401, 560)]
+# Light bars: dark at rest (the glow reads amber in daylight), as long as the body bar. Length (picture pixels): the body segment's bar, from its raised back top (x 436) to its vents.
+BAR_LEN = 560 - 36 - 436
 # Bottom of the lower armor: as thick as the upper armor (58 picture pixels, user 2026-11-01).
 LOWER_BOTTOM = 618
 # Left hand places (Godot z): rest, aim (the hand pad; 0.6 m ahead of the Beam Rifle's, user 2026-11-01: "Move the
@@ -304,12 +306,15 @@ def build():
         # the charge, body -> midsection -> barrel): a raised grey bar in a dark housing, from the front of the
         # segment to the three short vents near its back.
         bar_top = min(top0, top1) if i < 2 else 456
-        bx0, bx1 = (x0 + 10, x1 - 36) if i < 2 else (436, x1 - 36)
+        # All three bars as long as the body segment's bar (user 2026-11-01), each ending just before its vents.
+        bx1 = x1 - 36
+        bx0 = bx1 - BAR_LEN
         pchamfer(f"BarHousing{i}", D, bx0 - 3, bx1 + 3, bar_top - 3, bar_top + 2, 0.30, 1.5, bevel=0.004)
-        pchamfer(f"LightBar{i}", GR, bx0, bx1, bar_top - 6.5, bar_top, 0.20, 2, bevel=0.006)
+        pchamfer(f"LightBar{i}", D, bx0, bx1, bar_top - 6.5, bar_top, 0.20, 2, bevel=0.006)
+        # Three short vents behind the bar, on every segment (the body segment's sit on its raised back top).
         for k in range(3):
             vx = x1 - 30 + k * 6
-            pbox(f"UpperVent{i}_{k}", D, vx, vx + 3, upper_top(vx) - 1.5, upper_top(vx) + 2, 0.30, bevel=0.0)
+            pbox(f"UpperVent{i}_{k}", D, vx, vx + 3, bar_top - 1.5, bar_top + 2, 0.30, bevel=0.0)
     pbox("FrontVent", D, 46, 50, 492, 514, 0.34, bevel=0.0)
 
     # Lower armor (barrel section): three white segments as thick as the upper armor (user 2026-11-01), with raised

@@ -19,9 +19,9 @@ const SHOT := preload("res://scenes/weapons/particle_shot.tscn")
 @export_range(0.1, 1.0) var min_shot_scale: float = 0.45
 ## Light bar meshes in the order they light: body, midsection, barrel.
 @export var bar_paths: Array[NodePath] = []
-@export var bar_color: Color = Color(1.0, 0.38, 0.0)
-## Glow of a fully lit bar.
-@export var bar_energy: float = 1.6
+@export var bar_color: Color = Color(1.0, 0.42, 0.02)
+## Glow of a fully lit bar (for the bloom; the bars are unshaded, their color goes from dark to bar_color).
+@export var bar_energy: float = 1.0
 ## Mesh that flashes at the shot (the muzzle ring), its color, and the seconds fully lit and fading.
 @export var muzzle_glow_path: NodePath
 @export var muzzle_glow_color: Color = Color(1.0, 0.38, 0.0)
@@ -43,12 +43,18 @@ var discharge_left: float = 0.0
 ## Charge of the shot that waits or left last.
 var _shot_charge: float = 0.0
 var _bars: Array[StandardMaterial3D] = []
+## The bars' own (dark) color at rest.
+var _bar_rest_color: Array[Color] = []
 var _muzzle_glow := ShotGlow.new()
 
 
 func _ready() -> void:
 	for path in bar_paths:
-		_bars.append(ShotGlow.glow_material(get_node(path) as MeshInstance3D, bar_color))
+		var material := ShotGlow.glow_material(get_node(path) as MeshInstance3D, bar_color)
+		# Unshaded: the sun on a lit bar washed the amber out to peach (Godot screenshots 2026-11-01).
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_bars.append(material)
+		_bar_rest_color.append(material.albedo_color)
 	_muzzle_glow.color = muzzle_glow_color
 	_muzzle_glow.hold = muzzle_glow_hold
 	_muzzle_glow.fade = muzzle_glow_fade
@@ -165,6 +171,8 @@ func _show() -> void:
 			# Charging: one bar after another, body first.
 			lit = clampf(level * count - i, 0.0, 1.0)
 		_bars[i].emission_energy_multiplier = bar_energy * lit
+		# The bar's own color goes from dark to amber (unshaded, so this is the color on screen).
+		_bars[i].albedo_color = _bar_rest_color[i].lerp(bar_color, lit)
 
 
 func get_status_text() -> String:
