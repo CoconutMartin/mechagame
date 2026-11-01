@@ -255,9 +255,11 @@ RISE = 0.05
 BORE_Y = 552   # The one barrel (between the picture's two barrels).
 # Upper armor segments of the barrel section (picture x, front to back), dark gaps between them.
 UPPER_SEGS = [(48, 210), (216, 395), (401, 560)]
-LOWER_SEGS = [(110, 300), (306, 560)]
-# Left hand places of the Beam Rifle hold (Godot z): rest, aim (the hand pad), low aim.
-LEFT_REST_Z, LEFT_AIM_Z, LEFT_LOW_Z = -5.0835, -4.1835, -2.734
+# The lower armor runs to the muzzle brake, as long as the barrel (user 2026-11-01), in the upper armor's segments.
+LOWER_SEGS = [(50, 210), (216, 395), (401, 560)]
+# Left hand places (Godot z): rest, aim (the hand pad; 0.6 m ahead of the Beam Rifle's, user 2026-11-01: "Move the
+# left hand a bit more forward when holding the rifle while aiming"), low aim.
+LEFT_REST_Z, LEFT_AIM_Z, LEFT_LOW_Z = -5.0835, -4.7835, -2.734
 
 
 def upper_top(x):
@@ -309,12 +311,12 @@ def build():
     for i, (x0, x1) in enumerate(LOWER_SEGS):
         outline = [(x0, 560), (x1, 558), (x1, 585), (x0, 585)]
         if i == 0:
-            outline = [(x0 + 10, 562), (x1, 560), (x1, 585), (x0 + 22, 585), (x0, 575)]
+            outline = [(x0 + 4, 562), (x1, 560), (x1, 585), (x0 + 12, 585), (x0, 576), (x0, 566)]
         pprism(f"LowerArmor{i}", W, outline, ARMOR_W)
-        p0, p1 = x0 + (24 if i == 0 else 8), x1 - 8
+        p0, p1 = x0 + (16 if i == 0 else 8), x1 - 8
         pchamfer(f"LowerPanel{i}", W, p0, p1, 566, 580, ARMOR_W + RISE, 3, bevel=0.01)
         ppin(f"LowerDot{i}", p1 - 8, 573, (ARMOR_W + RISE) / 2)
-    pbox("LowerSpine", D, 112, 560, 560, 580, ARMOR_W - 0.08, bevel=0.008)
+    pbox("LowerSpine", D, 54, 560, 560, 580, ARMOR_W - 0.08, bevel=0.008)
     pad_x = XZ(LEFT_AIM_Z)
     pbox("HandPad", D, pad_x - 14, pad_x + 14, 582, 590, 0.46, bevel=0.01)
     for k, x in enumerate((pad_x - 9, pad_x + 9)):

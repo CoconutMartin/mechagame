@@ -30,7 +30,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.146, -0.3998, -4.7785)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.146, -0.3998, -4.7785)
 
 [node name="GripLeftAim" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.185, -0.4848, -3.9915)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.185, -0.4848, -4.5915)
 
 [node name="GripLeftAimLow" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.145, -0.1198, -2.664)
@@ -49,7 +49,7 @@ metadata/grip_radius = 0.15
 metadata/hand_reach = true
 
 [node name="GripSocketLeftAim" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -0.3818, -4.1835)
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, -0.3818, -4.7835)
 metadata/grip_radius = 0.15
 metadata/hand_reach = true
 
