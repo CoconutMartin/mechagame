@@ -10,8 +10,8 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/godot/test_part_models.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
-## Meshes per slot for SGG-101 (key 1; SGGv2 with its added armor since 2026-10-31). HLY_MESHES: the Haliya build of 2026-10-31 (removed; LOADOUT=2 needs a key 2 loadout).
-const SGG_MESHES := {&"head": 7, &"core": 10, &"arm_left": 10, &"arm_right": 10, &"legs": 33}
+## Meshes per slot for SGG-101 (key 1). SGGv2 (out of the game since 2026-11-01) had head 7, core 10, arms 10, legs 33. HLY_MESHES: the Haliya build of 2026-10-31 (removed; LOADOUT=2 needs a key 2 loadout).
+const SGG_MESHES := {&"head": 2, &"core": 2, &"arm_left": 5, &"arm_right": 5, &"legs": 13}
 const HLY_MESHES := {&"head": 8, &"core": 13, &"arm_left": 27, &"arm_right": 27, &"legs": 36}
 
 var _failures := 0

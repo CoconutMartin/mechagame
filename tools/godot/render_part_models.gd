@@ -2,7 +2,7 @@ extends SceneTree
 ## Pictures of the player mech built from its part files (DESIGN "Swappable mech parts"): front, three-quarter,
 ## side and back at rest, then the same four views in a walk. Other mechs are hidden. Each part slot can get a
 ## tint (TINT=1) to show where one part ends and the next starts. The map's objects are hidden; a plain ground is added. xvfb:
-## SKIN=<n> picks the skin first (MechSkinChoice: 0 Basic, 1 PS1, 2 Realistic, 3 Navy Orange).
+## SKIN=<n> picks the skin first (MechSkinChoice: 0 Basic, 1 PS1, 2 Realistic).
 ## CAM_HEIGHT and CAM_DIST (m) move the camera for close pictures (default 5.2 and 24).
 ## LOADOUT=<n> shows the loadout of key n (PREFIX names the pictures).
 ##   RENDER_OUT=/tmp/x xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --rendering-driver opengl3 \
