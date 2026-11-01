@@ -13,13 +13,13 @@ const BOLT := preload("res://scenes/weapons/ppc_bolt.tscn")
 
 ## Seconds from the trigger to the shot.
 @export var charge_time: float = 0.3
-## Barrel ring meshes, back to front.
+## Meshes that glow with the charge: the barrel rings (back to front) and the rails along the open barrel.
 @export var ring_paths: Array[NodePath] = []
 ## Prong tip meshes that glow red at a shot.
 @export var prong_paths: Array[NodePath] = []
-@export var ring_color: Color = Color(1.0, 0.45, 0.05)
+@export var ring_color: Color = Color(1.0, 0.28, 0.0)
 ## Ring glow when fully charged.
-@export var ring_energy: float = 4.0
+@export var ring_energy: float = 2.0
 ## Seconds the ring glow takes to fade after the shot.
 @export var ring_fade: float = 0.5
 ## True: the rings stay lit while the rifle is ready to fire (after the cool down).

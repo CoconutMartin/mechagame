@@ -20,7 +20,8 @@ by LEFT_DROP (the scene).
 Axes: Blender +Y = forward (Godot -Z), +Z = up, +X = left side of the gun.
 Origin: the first Beam Rifle's butt place (frame u 1728), on the bore axis.
 Empties: GripRight, GripLeft, Muzzle (the barrel front, where the bolt leaves).
-Glow meshes for the weapon scene: Ring0..Ring6 (back to front), ProngTipTop, ProngTipBottom.
+Glow meshes for the weapon scene: Ring0..Ring6 (back to front), UpperRail and LowerRail (the rails along
+the open barrel, grey at rest, glow with the rings), ProngTipTop, ProngTipBottom.
 """
 import math, os
 import bpy
@@ -264,7 +265,7 @@ def build():
     pprism("UpperArmor", W, [(244, 88), (652, 88), (670, 104), (670, 134), (242, 134), (232, 124), (232, 100)], ARMOR_W)
     pchamfer("UpperPanel", W, 262, 640, 97, 126, ARMOR_W + RISE, 6, bevel=0.012)
     pbox("UpperSeam", GR, 270, 632, 128, 130.5, ARMOR_W + 0.012, bevel=0.0)
-    pbox("UpperRail", D, 242, 650, 132, 146, ARMOR_W - 0.08, bevel=0.008)
+    pbox("UpperRail", R, 242, 650, 132, 146, ARMOR_W - 0.08, bevel=0.008)
     for k in range(4):
         x = 330 + k * 16
         pbox(f"UpperVent{k}", D, x, x + 8, 86, 91, 0.30, bevel=0.0)
@@ -286,7 +287,7 @@ def build():
     pprism("LowerArmor", W, [(242, 262), (700, 262), (700, 305), (244, 305), (232, 295), (232, 272)], ARMOR_W)
     pchamfer("LowerPanel", W, 262, 680, 272, 296, ARMOR_W + RISE, 6, bevel=0.012)
     pbox("LowerSeam", GR, 270, 672, 268, 270.5, ARMOR_W + 0.012, bevel=0.0)
-    pbox("LowerRail", D, 242, 650, 248, 264, ARMOR_W - 0.08, bevel=0.008)
+    pbox("LowerRail", R, 242, 650, 248, 264, ARMOR_W - 0.08, bevel=0.008)
     pbox("LowerGap", D, 690, 770, 262, 302, ARMOR_W - 0.06, bevel=0.008)
     pdisc("GapBolt", GR, 728, 283, 7, ARMOR_W - 0.04)
     pprism("LowerArmor2", W, [(762, 262), (975, 262), (990, 275), (990, 295), (975, 305), (738, 305)], ARMOR_W)
