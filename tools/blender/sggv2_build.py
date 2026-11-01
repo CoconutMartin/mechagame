@@ -1,7 +1,7 @@
 """SGGv2: SGG-101 with more body, heft and character (user request 2026-10-31).
 
 Opens the user's SGG file (models/new_mech/new_mech_exploded.blend, not changed), and:
-  1. Heft: thickens the torso, pelvis, arms and legs about their bones (the length along the bone stays, so the
+  1. Heft: thickens the torso, pelvis, arms and legs about their bones (forearms and thighs keep their size) (the length along the bone stays, so the
      joints, the grips and every animation stay the same).
   2. Character: adds faceted armor in SGG's own palette (olive armor, darker olive accent panels, dark grey frame,
      orange lamps): shoulder flares, forearm guards, a chest plate and collar, side plates, a groin plate, thigh
@@ -33,13 +33,14 @@ OUT_BLEND = os.path.join(ROOT, "models/sggv2/sggv2.blend")
 OUT_PARTS = os.path.join(ROOT, "models/mechs/sgg")
 RIG = "MechRig"
 
-## Thickening per mesh: (bone, factor across the bone).
+## Thickening per mesh: (bone, factor along the bone's x axis (sideways), factor along its z axis (front-back)).
+## Forearms and thighs keep their size: with the arms down they nearly touch (test_clip_self); their plates add the bulk.
 HEFT = {
-    "Torso": ("torso", 1.08), "Pelvis": ("pelvis", 1.08),
-    "Arm_L_01": ("upper_arm_L", 1.1), "Arm_R_01": ("upper_arm_R", 1.1),
-    "Arm_L_02": ("forearm_L", 1.12), "Arm_R_02": ("forearm_R", 1.12),
-    "Leg_L_01": ("thigh_L", 1.12), "Leg_R_02": ("thigh_R", 1.12),
-    "Leg_L_02": ("shin_L", 1.12), "Leg_R_03": ("shin_R", 1.12),
+    "Torso": ("torso", 1.08, 1.08), "Pelvis": ("pelvis", 1.08, 1.08),
+    "Arm_L_01": ("upper_arm_L", 1.1, 1.1), "Arm_R_01": ("upper_arm_R", 1.1, 1.1),
+    "Arm_L_02": ("forearm_L", 1.0, 1.0), "Arm_R_02": ("forearm_R", 1.0, 1.0),
+    "Leg_L_01": ("thigh_L", 1.0, 1.0), "Leg_R_02": ("thigh_R", 1.0, 1.0),
+    "Leg_L_02": ("shin_L", 1.1, 1.12), "Leg_R_03": ("shin_R", 1.1, 1.12),
 }
 ## Mesh names per side.
 THIGH = {"L": "Leg_L_01", "R": "Leg_R_02"}
@@ -156,14 +157,14 @@ def axis_sign(bone, world_dir, axis):
     return 1.0 if col.dot(Vector(world_dir)) >= 0 else -1.0
 
 
-def thicken(mesh_name, bone, factor):
+def thicken(mesh_name, bone, factor_x, factor_z):
     obj = bpy.data.objects[mesh_name]
     m = bone_matrix(bone)
     inv = m.inverted()
     to_obj = obj.matrix_world.inverted()
     for v in obj.data.vertices:
         p = inv @ (obj.matrix_world @ v.co)
-        p = Vector((p.x * factor, p.y, p.z * factor))
+        p = Vector((p.x * factor_x, p.y, p.z * factor_z))
         v.co = to_obj @ (m @ p)
 
 
@@ -338,8 +339,8 @@ def main():
     for p in rig.pose.bones:
         p.matrix_basis = Matrix.Identity(4)
     bpy.context.view_layer.update()
-    for mesh_name, (bone, factor) in HEFT.items():
-        thicken(mesh_name, bone, factor)
+    for mesh_name, (bone, factor_x, factor_z) in HEFT.items():
+        thicken(mesh_name, bone, factor_x, factor_z)
     build_head()
     build_core()
     build_arms()

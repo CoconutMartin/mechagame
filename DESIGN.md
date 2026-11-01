@@ -727,7 +727,7 @@ Match the eye color with the accent."
 
 Model (`tools/blender/sggv2_build.py`, saves `models/sggv2/sggv2.blend`, exports `models/mechs/sgg/sgg_<part>.glb`;
 the user's `models/new_mech/new_mech_exploded.blend` stays as it was):
-- Heft: torso and pelvis 1.08x, upper arms 1.1x, forearms, thighs and shins 1.12x across their bones (the length
+- Heft: torso and pelvis 1.08x, upper arms 1.1x, shins 1.1x sideways and 1.12x front to back, across their bones; forearms and thighs keep their size (thicker ones touched with the arms down in test_clip_self; their plates add the bulk). test_clip_self not run again on this version (stopped). (the length
   along each bone stays, so the joints, grips and animations stay).
 - 43 new faceted pieces in SGG's palette (small 4x4 color textures: olive armor, darker olive accent panels, dark
   grey frame, orange lamps), each rigid on one bone: shoulder flares, forearm guards and elbow lamps, a chest plate
