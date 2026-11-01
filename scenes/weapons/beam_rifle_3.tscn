@@ -32,7 +32,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.185, -0.5998, -3.9915)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.145, -0.2768, -2.664)
 
 [node name="Muzzle" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6.3546)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6.3818)
 
 [node name="GripSocketRight" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.91355, 0.40674, 0, -0.40674, 0.91355, 0, -0.6165, -1.8835)

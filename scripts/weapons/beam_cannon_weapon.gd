@@ -4,7 +4,9 @@ extends GunWeapon
 ## While the trigger is held, the rifle is raised and it is ready, it charges for charge_time, then fires one
 ## heavy energy bolt (scenes/weapons/ppc_bolt.tscn) from the barrel. The shot cannot be stopped once the charge
 ## starts (only a knock-down, a drop or a lost arm stop it). Then it cools down for 1 / data.fire_rate seconds.
-## The barrel rings light one after another while it cools down and are all bright orange when it is ready; the
+## The barrel rings are grey at rest; during the charge they all light up to bright orange (fully lit at the shot),
+## then fade (user 2026-11-01: "All rings glow when fully charged, greyish at rest"; glow_when_ready keeps them lit
+## while it is ready). The
 ## two prong tips at the muzzle glow red at each shot. No heat (heat_per_use 0).
 
 const BOLT := preload("res://scenes/weapons/ppc_bolt.tscn")
@@ -16,11 +18,12 @@ const BOLT := preload("res://scenes/weapons/ppc_bolt.tscn")
 ## Prong tip meshes that glow red at a shot.
 @export var prong_paths: Array[NodePath] = []
 @export var ring_color: Color = Color(1.0, 0.45, 0.05)
-## Ring glow when ready. While it cools down the rings light one by one at ring_cooling_part of it.
-@export var ring_energy: float = 3.0
-@export_range(0.0, 1.0) var ring_cooling_part: float = 0.3
-## Ring glow during the charge, x ring_energy.
-@export var ring_charge_boost: float = 1.6
+## Ring glow when fully charged.
+@export var ring_energy: float = 4.0
+## Seconds the ring glow takes to fade after the shot.
+@export var ring_fade: float = 0.5
+## True: the rings stay lit while the rifle is ready to fire (after the cool down).
+@export var glow_when_ready: bool = false
 ## Red glow of the prongs at a shot: strength, seconds fully lit, seconds to fade.
 @export var prong_energy: float = 5.0
 @export var prong_hold: float = 0.2
@@ -30,6 +33,8 @@ const BOLT := preload("res://scenes/weapons/ppc_bolt.tscn")
 var charge_left: float = -1.0
 
 var _rings: Array[StandardMaterial3D] = []
+## Seconds since the last shot.
+var _since_shot: float = 100.0
 var _prongs := ShotGlow.new()
 
 
@@ -53,6 +58,7 @@ func is_busy() -> bool:
 
 
 func _update(delta: float) -> void:
+	_since_shot += delta
 	var lost := controller.mech.is_fallen or controller.mech.is_wrecked or not controller.holds(self)
 	if charge_left >= 0.0:
 		if lost:
@@ -63,6 +69,7 @@ func _update(delta: float) -> void:
 				charge_left = -1.0
 				_fire()
 				_prongs.flash()
+				_since_shot = 0.0
 	elif not lost and trigger_held and can_use() and controller.weapon_pose.aim_amount >= 0.9:
 		charge_left = charge_time
 	_show()
@@ -94,18 +101,15 @@ func readiness() -> float:
 
 
 func _show() -> void:
-	var ready_part := readiness()
-	var count := _rings.size()
-	for i in count:
-		var energy := 0.0
-		if charge_left >= 0.0:
-			energy = ring_energy * ring_charge_boost
-		elif ready_part >= 1.0:
-			energy = ring_energy
-		else:
-			# One ring after another, back to front, while it cools down.
-			energy = ring_energy * ring_cooling_part * clampf(ready_part * count - i, 0.0, 1.0)
-		_rings[i].emission_energy_multiplier = energy
+	var level := 0.0
+	if charge_left >= 0.0:
+		level = 1.0 - charge_left / maxf(charge_time, 0.01)
+	elif _since_shot < ring_fade:
+		level = 1.0 - _since_shot / maxf(ring_fade, 0.01)
+	elif glow_when_ready and readiness() >= 1.0:
+		level = 1.0
+	for ring in _rings:
+		ring.emission_energy_multiplier = ring_energy * level
 
 
 ## A charge stops when the weapon is turned off or leaves the scene (a broken arm, a drop).
