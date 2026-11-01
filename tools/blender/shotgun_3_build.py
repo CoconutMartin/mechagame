@@ -181,6 +181,21 @@ def head(i, angle_deg, pivot):
         r = HEAD_R0 + 0.12 + k * 0.11
         gbox(f"HeadLamp{i}_{k}", BL, radial * r + Vector((0.0, 0.0, HEAD_Z0 - 0.006)), (0.1, 0.075, 0.012), basis, 0.0,
              pivot)
+    # More character (user 2026-11-01): a raised grey frame round the front lamps, a dark seam before the red cap, two
+    # bolts on the front face, a dark fin on the back face, slots on the sides.
+    gbox(f"HeadLampFrame{i}", GR, radial * (HEAD_R0 + 0.23) + Vector((0.0, 0.0, HEAD_Z0 - 0.003)), (0.16, 0.38, 0.008),
+         basis, 0.0, pivot)
+    gbox(f"HeadSeam{i}", D, radial * (HEAD_R1 - 0.115) + z, (HEAD_W + 0.03, 0.012, depth + 0.03), basis, 0.0, pivot)
+    for k, r in enumerate((HEAD_R0 + 0.05, HEAD_R1 - 0.15)):
+        for s_side in (-1.0, 1.0):
+            gbox(f"HeadBolt{i}_{k}_{int(s_side > 0)}", GR, radial * r + tangent * s_side * 0.095
+                 + Vector((0.0, 0.0, HEAD_Z0 - 0.008)), (0.035, 0.035, 0.01), basis, 0.0, pivot)
+    gbox(f"HeadFin{i}", D, radial * (rc - 0.02) + Vector((0.0, 0.0, HEAD_Z1 + 0.04)), (0.06, length - 0.14, 0.08), basis,
+         0.008, pivot)
+    for s_side in (-1.0, 1.0):
+        for k in range(3):
+            gbox(f"HeadSlot{i}_{int(s_side > 0)}_{k}", D, radial * (HEAD_R0 + 0.12 + k * 0.08) + tangent * s_side * (HEAD_W / 2 + 0.018)
+                 + z, (0.01, 0.04, depth * 0.55), basis, 0.0, pivot)
     for k in range(2):
         gbox(f"HeadLampOut{i}_{k}", BL, radial * (HEAD_R1 + 0.012) + Vector((0.0, 0.0, zc - 0.1 + k * 0.2)),
              (0.1, 0.012, 0.07), basis, 0.0, pivot)
@@ -204,15 +219,15 @@ def build():
     gtube("Barrel", D, GZ(200), GZ(400), 0.21)
     for k, x in enumerate((215, 245, 275)):
         gtube(f"BarrelRing{k}", GR, GZ(x), GZ(x + 10), 0.225, bevel=0.003)
-    box("Frame", D, 300, 720, 470, 600, 0.46)
+    box("Frame", D, 300, 720, 470, 600, 0.52)
     prism("UpperArmor", LT, [(250, 500), (300, 470), (440, 456), (470, 470), (560, 470), (560, 500), (440, 505),
-                             (300, 510)], 0.52)
-    prism("RedPanel", RD, [(300, 512), (430, 506), (442, 520), (432, 556), (300, 560), (288, 546)], 0.5)
-    prism("LowerArmor", LT, [(160, 562), (390, 562), (400, 575), (390, 600), (175, 600), (160, 588)], 0.5)
+                             (300, 510)], 0.58)
+    prism("RedPanel", RD, [(300, 512), (430, 506), (442, 520), (432, 556), (300, 560), (288, 546)], 0.6)
+    prism("LowerArmor", LT, [(160, 562), (390, 562), (400, 575), (390, 600), (175, 600), (160, 588)], 0.58)
     for k in range(2):
         x = 205 + k * 18
-        prism(f"BlueSlit{k}", BL, [(x + 8, 578), (x + 14, 578), (x + 6, 596), (x, 596)], 0.512, bevel=0.0)
-    box("SideRail", GR, 300, 560, 520, 528, 0.52, bevel=0.0)
+        prism(f"BlueSlit{k}", BL, [(x + 8, 578), (x + 14, 578), (x + 6, 596), (x, 596)], 0.592, bevel=0.0)
+    box("SideRail", GR, 300, 560, 520, 528, 0.59, bevel=0.0)
 
     # Glowing cell under the barrel with grey caps, and a grey pipe back to the receiver.
     gtube("Cell", BL, GZ(390), GZ(490), 0.085, center=(0.0, GY(610)), bevel=0.0)
@@ -235,18 +250,18 @@ def build():
 
     # Rear: light grey upper armor, a slate panel, the lower receiver, trigger guard and trigger.
     prism("RearArmor", LT, [(560, 470), (700, 470), (720, 482), (860, 482), (870, 494), (860, 516), (720, 516), (700, 528),
-                            (560, 528)], 0.5)
-    box("SlatePanel", SL, 600, 690, 540, 562, 0.48, bevel=0.008)
-    box("LowerReceiver", D, 400, 720, 562, 612, 0.4)
+                            (560, 528)], 0.56)
+    box("SlatePanel", SL, 600, 690, 540, 562, 0.54, bevel=0.008)
+    box("LowerReceiver", D, 400, 720, 562, 612, 0.44)
     box("TriggerGuard", D, 640, 720, 612, 642, 0.2, bevel=0.01)
     box("Trigger", RD, 668, 678, 612, 634, 0.06, bevel=0.0)
 
     # Skeleton stock: top bar, rear upright with a blue strip, a diagonal brace to the grip, a dark pad.
     prism("StockTop", SL, [(720, 482), (930, 482), (950, 470), (980, 470), (980, 520), (930, 520), (720, 518)], 0.36)
-    prism("StockUpright", SL, [(930, 470), (990, 470), (990, 650), (960, 660), (930, 640)], 0.38)
-    box("StockStrip", BL, 952, 966, 530, 620, 0.39, bevel=0.0)
+    prism("StockUpright", SL, [(930, 470), (990, 470), (990, 650), (960, 660), (930, 640)], 0.42)
+    box("StockStrip", BL, 952, 966, 530, 620, 0.432, bevel=0.0)
     prism("StockBrace", D, [(758, 596), (800, 596), (945, 628), (945, 660), (920, 662)], 0.32)
-    box("StockPad", D, 986, 1000, 472, 648, 0.4, bevel=0.01)
+    box("StockPad", D, 986, 1004, 468, 652, 0.46, bevel=0.012)
 
     # Pistol grip: the first Shotgun's place and size (dark), a red front stripe, a light grey back cap.
     top = Vector((0.0, -0.2, -1.7))
@@ -258,9 +273,85 @@ def build():
     gbox("GripBack", LT, top + axis * 0.82 + back * 0.08, (0.22, 0.28, 0.1), grip_basis, 0.012)
     gbox("GripBase", D, top + axis * 0.98, (0.24, 0.07, 0.3), grip_basis, 0.015)
 
+    details()
+
     # Markers.
     empty("Muzzle", (0.0, 0.0, GZ(36)))
     empty("GripRight", (-0.2, -0.62287, -1.7261))
+
+
+def side_bolt(name, mat, x, y, width, size=0.045):
+    """A small square bolt head on both side faces (picture x, y; the faces at +-width / 2)."""
+    for k, sx in enumerate((width / 2, -width / 2)):
+        gbox(f"{name}_{k}", mat, (sx, GY(y), GZ(x)), (0.02, size, size), None, 0.0)
+
+
+def details():
+    """More character and body (user 2026-11-01: "Beautify it, add a bit more character and body")."""
+    # Hub: four dark ribs between the heads behind them, bolts round the front lens, a light grey ring on the hub.
+    for k, a_deg in enumerate((0.0, 90.0, 180.0, 270.0)):
+        a = math.radians(a_deg)
+        radial = Vector((math.cos(a), math.sin(a), 0.0))
+        tangent = Vector((-math.sin(a), math.cos(a), 0.0))
+        gbox(f"HubRib{k}", D, radial * 0.32 + Vector((0.0, 0.0, GZ(168))), (0.06, 0.1, 0.34),
+             (tangent, radial, Vector((0.0, 0.0, 1.0))), 0.008)
+    gtube("HubRing", LT, GZ(178), GZ(188), 0.3, bevel=0.004)
+    # Barrel shroud: light grey half shells with dark slots over the barrel, front and back collars.
+    prism("ShroudTop", LT, [(205, 500), (290, 500), (300, 508), (300, 520), (205, 520)], 0.4, bevel=0.01)
+    for k in range(4):
+        x = 215 + k * 18
+        box(f"ShroudSlot{k}", D, x, x + 8, 498, 503, 0.24, bevel=0.0)
+    for k, x in enumerate((198, 296)):
+        gtube(f"ShroudCollar{k}", GR, GZ(x), GZ(x + 8), 0.235, bevel=0.003)
+    # Upper armor: a raised panel with a seam and bolts; red panel: a dark inset and a light grey edge strip.
+    prism("UpperPanel", LT, [(312, 486), (440, 474), (460, 484), (548, 484), (548, 498), (440, 500), (312, 504)], 0.62,
+          bevel=0.008)
+    box("UpperSeam", GR, 310, 548, 507, 509, 0.592, bevel=0.0)
+    for k, x in enumerate((330, 530)):
+        side_bolt(f"UpperBolt{k}", GR, x, 494, 0.62)
+    prism("RedInset", D, [(318, 524), (410, 520), (418, 530), (410, 546), (318, 548)], 0.612, bevel=0.0)
+    box("RedEdge", LT, 300, 430, 557, 561, 0.612, bevel=0.0)
+    # Lower armor: a raised panel and bolts; lower receiver ribs; a magazine block below it.
+    prism("LowerPanel", LT, [(250, 568), (380, 568), (388, 576), (380, 592), (250, 592)], 0.62, bevel=0.008)
+    for k, x in enumerate((180, 370)):
+        side_bolt(f"LowerBolt{k}", GR, x, 590, 0.58)
+    for k in range(6):
+        x = 520 + k * 16
+        box(f"ReceiverRib{k}", GR, x, x + 6, 566, 606, 0.452, bevel=0.0)
+    box("Magazine", GR, 540, 610, 612, 650, 0.3, bevel=0.012)
+    box("MagazineBase", D, 536, 614, 650, 658, 0.32, bevel=0.006)
+    # Cell cage: three dark bars across the glowing cell.
+    for k, x in enumerate((410, 440, 470)):
+        gtube(f"CellBar{k}", D, GZ(x), GZ(x + 5), 0.095, center=(0.0, GY(610)), bevel=0.0)
+    # Carry frame: grip rings, a longer blue strip, a red tab at the front.
+    for k in range(4):
+        x = 470 + k * 26
+        box(f"CarryRing{k}", GR, x, x + 10, 430, 452, 0.195, bevel=0.003)
+    box("CarryTab", RD, 382, 400, 446, 470, 0.19, bevel=0.004)
+    # Rear armor: dark vents and a blue lamp; the slate panel gets bolts.
+    for k in range(4):
+        x = 740 + k * 14
+        box(f"RearVent{k}", D, x, x + 6, 490, 510, 0.572, bevel=0.0)
+    box("RearLamp", BL, 820, 840, 494, 500, 0.574, bevel=0.0)
+    for k, x in enumerate((608, 682)):
+        side_bolt(f"PanelBolt{k}", GR, x, 551, 0.54)
+    # Stock: a light grey plate on the upright, slots in the top bar, bolts, pad ribs.
+    prism("UprightPlate", LT, [(936, 540), (984, 540), (984, 632), (962, 640), (936, 626)], 0.44, bevel=0.008)
+    for k in range(4):
+        x = 760 + k * 36
+        box(f"StockSlot{k}", D, x, x + 20, 494, 506, 0.372, bevel=0.0)
+    for k, y in enumerate((486, 640)):
+        side_bolt(f"StockBolt{k}", GR, 960, y, 0.42)
+    for k in range(6):
+        y = 486 + k * 28
+        box(f"PadRib{k}", GR, 998, 1008, y, y + 5, 0.38, bevel=0.0)
+    # Grip: finger ridges on its front face.
+    top = Vector((0.0, -0.2, -1.7))
+    axis = Vector((0.0, -0.9397, 0.342))
+    back = Vector((0.0, 0.342, 0.9397))
+    for k in range(3):
+        gbox(f"GripRidge{k}", D, top + axis * (0.38 + 0.13 * k) - back * 0.13, (0.215, 0.025, 0.02),
+             (Vector((1.0, 0.0, 0.0)), axis * -1.0, back), 0.0)
 
 
 def main():
