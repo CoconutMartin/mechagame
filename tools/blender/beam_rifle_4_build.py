@@ -306,9 +306,14 @@ def build():
         # the charge, body -> midsection -> barrel): a raised grey bar in a dark housing, from the front of the
         # segment to the three short vents near its back.
         bar_top = min(top0, top1) if i < 2 else 456
-        # All three bars as long as the body segment's bar (user 2026-11-01), each ending just before its vents.
-        bx1 = x1 - 36
-        bx0 = bx1 - BAR_LEN
+        # All three bars as long as the body segment's bar (user 2026-11-01). The body bar ends just before its vents;
+        # the midsection and barrel bars sit in the middle of their segments (user 2026-11-01: "Center the light bars").
+        if i == 2:
+            bx1 = x1 - 36
+            bx0 = bx1 - BAR_LEN
+        else:
+            bx0 = (x0 + x1) / 2 - BAR_LEN / 2
+            bx1 = bx0 + BAR_LEN
         pchamfer(f"BarHousing{i}", D, bx0 - 3, bx1 + 3, bar_top - 3, bar_top + 2, 0.30, 1.5, bevel=0.004)
         pchamfer(f"LightBar{i}", D, bx0, bx1, bar_top - 6.5, bar_top, 0.20, 2, bevel=0.006)
         # Three short vents behind the bar, on every segment (the body segment's sit on its raised back top).
