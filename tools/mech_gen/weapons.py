@@ -403,6 +403,19 @@ if __name__ == "__main__":
         "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
         "aim_twist_deg": 25.0, "aim_tilt_deg": 4.0, "zoom_fov": 43.4},
         "res://scenes/weapons/beam_rifle.tscn")
+    # Beam Rifle 2 (user picture 2026-11-01, models/guides/beam_rifle_2_ref.png; hand-made scene
+    # scenes/weapons/beam_rifle_2.tscn, BeamRepeaterWeapon): rapid beam bolts with heat, no charge (user choice).
+    # The grip and lower rail sit where the Beam Rifle's do, so it uses the Beam Rifle hold.
+    res("data/weapons/beam_rifle_2.tres", {"display_name": '"Beam Rifle 2"', "weight_t": 3.2, "hp": 300.0,
+        "kind": 1, "two_handed": "true", "fire_rate": 4.0, "damage": 30.0, "stagger_points": 4.0, "stagger_cap_per_shot": 4.0,
+        "spread_deg": 0.25, "range_m": 200.0, "effective_range_m": 100.0,
+        "recoil_up_deg": 0.4, "recoil_side_deg": 0.2, "model_kick_back": 0.15, "model_kick_up_deg": 1.5,
+        "shake_trauma": 0.04, "shake_kick": 0.03, "heat_per_use": 6.0, "heat_cooling": 8.0, "overheat_cooling": 25.0,
+        "rest_transform": xf_rows(br_rows, br_rest), "aim_anchor": v3(br_anchor),
+        "right_pole_rest": v3((1.0, -0.6, 0.4)), "right_pole_aim": v3((1.0, -0.6, 0.3)),
+        "left_pole_rest": v3((-1.0, -0.5, 0.3)), "left_pole_aim": v3((-0.4, -1.0, 0.0)),
+        "aim_twist_deg": 25.0, "aim_tilt_deg": 4.0, "zoom_fov": 43.4},
+        "res://scenes/weapons/beam_rifle_2.tscn")
     # Pile bunker: on the forearm like the auto cannon (user, 2026-10-12): the fist (weapon root) at the
     # drawing's hand places, elbow 45 deg at neutral, 90 deg when aiming.
     # The forearm turns out like the auto cannon's (CANNON_OUT_DEG), so the clamps clear the thigh.
