@@ -5,8 +5,11 @@ extends SkeletonModifier3D
 ##   The stagger points of one hit pick the clip (small, medium, large; HitClip.min_stagger; user
 ##   choice 2026-10-16: big hits flinch bigger, the arcade stagger spec "B"). All hits in the same frame
 ##   count as one hit (a missile blast, a shotgun blast). Environment damage picks by damage.
-##   Full body: the clip has the whole body and the legs stop (the mech stands while it plays). A
-##   skid or lunge keeps its slide (Mech ignores root motion then); the clip plays over it.
+##   User request 2026-11-02: a normal hit never interrupts the mech. The flinch is a visual on the
+##   torso and head at half strength (hit_flinch); the legs, the pelvis, walking, firing and every
+##   action go on. Only a full stagger bar interrupts (SkeletalStaggerAnimation: the stun and the
+##   knock-down). With interrupt_on_hit on, the old rule returns: the clip has the whole body and
+##   the legs stop while it plays (a skid or lunge keeps its slide; Mech ignores root motion then).
 ## A bigger hit restarts the reaction with its bigger clip. A hit of the same size or smaller does not
 ## restart it; after a clip it plays again only after the cooldown.
 ## The clip pose is scaled by the clip's strength and held inside the joint limits (user request
@@ -23,6 +26,16 @@ extends SkeletonModifier3D
 ## Optional. No hit clip starts while a melee attack plays (user decision 2026-10-15: the attack
 ## keeps its step; stuns and knock-downs still end it).
 @export var melee: SkeletalMeleeAnimation
+## Off (user request 2026-11-02, "mech should not get interrupted by every hit"): a weapon hit plays
+## its flinch clip only on the upper body bones (upper_body_bones) at hit_flinch strength, and never
+## stops the legs (no root motion) or any action. On: the old full-body clip that stops the legs.
+@export var interrupt_on_hit: bool = false
+## Strength of a weapon hit's flinch when interrupt_on_hit is off, 0 to 1 of the clip (user request
+## 2026-11-02: 50% less reaction).
+@export_range(0.0, 1.0) var hit_flinch: float = 0.5
+## The bones a flinch moves when interrupt_on_hit is off. Pelvis and legs are not in the list: they
+## belong to walking and the foot planting. The arms keep holding the weapon.
+@export var upper_body_bones: Array[String] = ["torso", "head"]
 ## Smallest first.
 @export var clips: Array[HitClip] = [
 	preload("res://data/hits/small.tres"),
@@ -90,7 +103,9 @@ func _ready() -> void:
 		var list := []
 		for track in each.animation.get_track_count():
 			var bone := String(each.animation.track_get_path(track).get_concatenated_subnames())
-			if bone not in SkeletalDodgeAnimation.ARM_BONES:
+			if bone in SkeletalDodgeAnimation.ARM_BONES:
+				continue
+			if interrupt_on_hit or bone in upper_body_bones:
 				list.append([track, each.animation.track_get_type(track), bone])
 		_tracks[each] = list
 	health.damaged.connect(_on_damaged)
@@ -149,10 +164,10 @@ func _physics_process(delta: float) -> void:
 		_chip_hits += 1
 		_chip_age = 0.0
 		if _chip_hits >= maxi(chip_hits_per_flinch, 1) and clips.size() > 0:
-			if _try_start(clips[0], false):
+			if _try_start(clips[0], false, 1.0 if interrupt_on_hit else hit_flinch):
 				_chip_hits = 0
 	if _pending > 0.0:
-		_try_start(pick_stagger(_pending), false)
+		_try_start(pick_stagger(_pending), false, 1.0 if interrupt_on_hit else hit_flinch)
 	elif _accumulated >= accumulated_threshold and clips.size() > 0:
 		if _try_start(clips[0], true, accumulated_flinch):
 			_accumulated = 0.0
@@ -172,14 +187,14 @@ func _physics_process(delta: float) -> void:
 		_time = clip.animation.length
 		_end()
 		return
-	# Full body: the legs stop (not for a flinch from the environment).
-	if not _environment_only:
+	# Full body: the legs stop (only with interrupt_on_hit, and not for a flinch from the environment).
+	if _stops_legs():
 		mech.root_motion_active = true
 		mech.root_motion_velocity = Vector3.ZERO
 
 
 ## environment: the damage came from the environment (a weak flinch at the given strength; a real hit
-## replaces it, and a stronger flinch replaces a weaker one). Returns true when the clip starts.
+## replaces it, and a stronger flinch replaces a weaker one). strength is the share of the clip that plays. Returns true when the clip starts.
 func _try_start(chosen: HitClip, environment: bool, strength: float = 1.0) -> bool:
 	if chosen == null or mech.is_fallen or not mech.is_on_floor():
 		return false
@@ -202,10 +217,15 @@ func _try_start(chosen: HitClip, environment: bool, strength: float = 1.0) -> bo
 	return true
 
 
+## True when the playing clip stops the legs (the old full-body rule).
+func _stops_legs() -> bool:
+	return interrupt_on_hit and not _environment_only
+
+
 func _end() -> void:
 	is_playing = false
 	_cooldown_left = cooldown
-	if not _environment_only:
+	if _stops_legs():
 		mech.root_motion_active = false
 		mech.root_motion_velocity = Vector3.ZERO
 
@@ -217,6 +237,8 @@ func _cut() -> void:
 	is_playing = false
 	_cooldown_left = cooldown
 	# A dodge clip sets its own root motion; the hop (no clip) needs it off.
+	if not _stops_legs():
+		return
 	if mech.dodge == null or mech.dodge.animation == null or not mech.dodge.animation.is_playing:
 		mech.root_motion_active = false
 		mech.root_motion_velocity = Vector3.ZERO
@@ -226,7 +248,7 @@ func _cut() -> void:
 func _freeze() -> void:
 	_frozen_weight = _weight()
 	_frozen = true
-	if is_playing:
+	if is_playing and _stops_legs():
 		mech.root_motion_active = false
 		mech.root_motion_velocity = Vector3.ZERO
 
@@ -244,7 +266,7 @@ func _weight() -> float:
 
 
 func _process_modification_with_delta(_delta: float) -> void:
-	var weight := smoothstep(0.0, 1.0, _weight()) * (_flinch_strength if _environment_only else 1.0)
+	var weight := smoothstep(0.0, 1.0, _weight()) * _flinch_strength
 	if weight <= 0.0:
 		return
 	var skeleton := get_skeleton()

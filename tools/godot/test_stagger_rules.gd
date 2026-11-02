@@ -10,7 +10,9 @@ extends SceneTree
 ## The stagger points are not scaled by the range, so the rules hold at any distance inside the weapon's max
 ## range; the test runs near (RANGE_NEAR) and the Auto Cannon also far (RANGE_FAR, inside its 112.5 m optimal).
 ## A part of the test works on the stability API with the real weapon values (no map). Exits with code 1 on
-## any failure. Headless:
+## any failure. User rule 2026-11-02: only a full bar interrupts the mech. Below the full bar the hit flinch
+## may play but never stops the legs (Mech.root_motion_active stays off); the stun and the knock-down at a
+## full bar still stop it. Headless:
 ##   godot --headless --path . --script res://tools/godot/test_stagger_rules.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
@@ -35,6 +37,10 @@ var _knocks: int = 0
 ## True once the stagger reaction played since the last _calm (it is checked every frame).
 var _saw_stagger: bool = false
 var _saw_down: bool = false
+## True when a flinch clip played / when the legs were stopped outside a stun or knock-down since the last _calm.
+var _saw_flinch: bool = false
+var _legs_stopped: bool = false
+var _enemy_hits: SkeletalHitAnimation
 
 
 func _initialize() -> void:
@@ -50,6 +56,10 @@ func _frames(count: int) -> void:
 				_saw_down = true
 			elif _stagger.is_staggered():
 				_saw_stagger = true
+			elif _dummy != null and _dummy.root_motion_active:
+				_legs_stopped = true
+		if _enemy_hits != null and _enemy_hits.is_playing:
+			_saw_flinch = true
 
 
 func _check(ok: bool, text: String) -> void:
@@ -82,6 +92,7 @@ func _run() -> void:
 	_meter = _dummy.health.stability
 	_stagger = _dummy.find_child("StaggerAnimation", true, false) as SkeletalStaggerAnimation
 	_check(_meter != null and _stagger != null, "the enemy mech has a stagger meter and the stagger animation")
+	_enemy_hits = _dummy.find_child("HitAnimation", true, false) as SkeletalHitAnimation
 	if _meter == null or _stagger == null:
 		quit(1)
 		return
@@ -195,6 +206,8 @@ func _calm(max_frames: int = 1500) -> void:
 	_knocks = 0
 	_saw_stagger = false
 	_saw_down = false
+	_saw_flinch = false
+	_legs_stopped = false
 
 
 ## Holds a button until `count` hits landed on the enemy mech (or the time is up), then releases it.
@@ -223,6 +236,7 @@ func _auto_cannon(distance: float) -> void:
 	_check(_hits == 2 and _staggers == 0 and not _is_staggering() and _knocks == 0,
 			"Auto Cannon %.0f m: 2 hits in %.1f s: no stagger (hits %d, staggers %d, meter %.0f)" % [from_muzzle, time, _hits, _staggers, _meter.value])
 	_check(absf(_meter.value - 68.0) < 1.0, "Auto Cannon: the meter holds the 2 hits (68, got %.1f)" % _meter.value)
+	_check(not _legs_stopped, "Auto Cannon %.0f m: 2 hits below a full bar: the legs were never stopped (flinch played: %s)" % [from_muzzle, _saw_flinch])
 	# The 3rd shot, 4 s after the 2nd.
 	time = await _fire_until("use_right_arm", 3, 20.0)
 	await _frames(20)
