@@ -4,7 +4,8 @@ extends SceneTree
 ## aux equipment in the back pack's 1 aux slot).
 ##   Catalog: the garage aux list has the pulse scans and both drone mods.
 ##   Swarm: with the swarm mod in the aux slot (no pulse scan then), one launch sends all 6 drones; none comes back.
-##   Recall: a pair attacks a dummy 100 m ahead, flies back and docks (the drone model on the pack at its dock again,
+##   Recall: a pair attacks a dummy 100 m ahead (3 bursts, a move after each; the last move is the way home),
+##   flies back and docks (the drone model on the pack at its dock again,
 ##   6 on the pack); a drone on its second flight explodes after its attack; a returning drone shot down is gone.
 ##   The HUD line names the mod. Cool down (user rule): no launch while drones fly, then 10 s from when the last one
 ##   is back, with the HUD showing ACTIVE and the seconds. No drone step passes through a wall or building.
@@ -169,6 +170,11 @@ func _recall_test(recall: DroneModData) -> void:
 		await _frames(1)
 		for k in 2:
 			if is_instance_valid(drones[k]) and drones[k].phase == AttackDrone.Phase.RETURN:
+				if not returned[k]:
+					# Saucer rule (user 2026-11-02): 3 bursts = 3 position changes; the way home is the last one.
+					_check(drones[k].bursts_fired == 3 and drones[k].shifts_done == 3,
+							"recall: drone %d fired 3 bursts and made 3 moves (the last one is the way home): %d, %d"
+							% [k, drones[k].bursts_fired, drones[k].shifts_done])
 				returned[k] = true
 		waited = i
 		if launcher.docked_count() == 6:

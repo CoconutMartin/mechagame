@@ -3,13 +3,18 @@ extends AnimatableBody3D
 ## One flying attack drone (user design 2026-10-31; values in DroneData). DroneLauncher takes a drone model node
 ## (Drone<n>) off the back pack and gives it to launch. The drone pops out of its dock and flies to a firing place
 ## on its flank of the target (flank -1 or 1: a launched pair takes both flanks, a pincer). A firing place is
-## within the gun range of the target's lock point, sees it and aims at it at most 45 degrees up (a mech on a roof
+## within the gun range of the target's lock point, sees it and is at most 45 degrees below it (a mech on a roof
 ## above the ceiling too); when the target goes behind cover, the drone seeks
 ## a new place (the other flank only when its own has none); a place it finds no way to is dropped too. It flies at
-## most 12.5 m over the ground, over low buildings and around tall ones, and never touches them (DroneNavigator). At the place it stops and fires its bursts from its
-## hub (DroneMuzzle<n>); from the first shot it does not move again (user rule). It fires only while it sees the
-## target. At max_flight_s, after its last burst, or when the target is gone, it explodes; with the recall mod
-## (return_home) it flies back to its dock instead and DroneLauncher can launch it again. Shot down at 0 HP
+## most 12.5 m over the ground, over low buildings and around tall ones, and never touches them (DroneNavigator).
+## Saucer (user 2026-11-02): the disc flies level (its axis vertical) with a slight bank into its speed, a hover
+## bob on the model only and a slow spin about the vertical axis. Its barrel is the port in the rim
+## (DroneMuzzle<n>): when the drone attacks, the body turns so the port faces the target. At the place it fires a
+## burst, then glides to a new place (at least shift_distance_min from the old one, same flank, in range and in
+## sight) and fires the next: 3 bursts = 3 position changes (user rule 2026-11-02, replaces "it does not move
+## after the first shot"). It fires only while it sees the target and the port points at it. At max_flight_s,
+## after its last move, or when the target is gone, it explodes; with the recall mod (return_home) the way home
+## is its last move and DroneLauncher can launch it again. Shot down at 0 HP
 ## (layer 4, "hitboxes": weapons call on_hit).
 
 signal finished(drone: AttackDrone)
@@ -17,6 +22,8 @@ signal finished(drone: AttackDrone)
 signal docked(drone: AttackDrone, model: Node3D)
 
 enum Phase { LAUNCH, APPROACH, FIRE, RETURN }
+## Steps of the FIRE phase: AIM (the port turns to the target), BURST (rounds), SHIFT (glide to a new place).
+enum Step { AIM, BURST, SHIFT }
 
 const BULLET := preload("res://scenes/weapons/bullet.tscn")
 const EXPLOSION := preload("res://scenes/effects/explosion.tscn")
@@ -35,6 +42,10 @@ var age: float = 0.0
 var fire_start_age: float = -1.0
 ## Bursts started so far.
 var bursts_fired: int = 0
+## Position changes done so far (a move after a burst counts when the drone is at its new place).
+var shifts_done: int = 0
+## What the drone does in the FIRE phase.
+var step: Step = Step.AIM
 ## The firing place the drone flies to (relative places follow the target until the fire starts).
 var goal: Vector3 = Vector3.ZERO
 ## True when goal is a firing place that sees the target.
@@ -56,6 +67,16 @@ var return_time: float = 0.0
 var _spin: Node3D
 var _muzzle: Node3D
 var _phase_time: float = 0.0
+var _step_time: float = 0.0
+## Heading of the body (rotation about up; -Z forward), the spin of the disc on top of it, the lean (degrees, x and
+## z of the lean direction), the phase of the hover bob and the side of the pack the drone came from.
+var _yaw: float = 0.0
+var _spin_angle: float = 0.0
+var _lean: Vector2 = Vector2.ZERO
+var _bob_phase: float = 0.0
+var _side: float = 1.0
+## The model's rotation on the pack, relative to the body at the launch (the pop out turns it flat).
+var _dock_quat: Quaternion = Quaternion.IDENTITY
 var _shot_wait: float = 0.0
 var _target_point: Vector3 = Vector3.ZERO
 ## Goal minus the target point (the place moves with the target until the fire starts).
@@ -64,6 +85,8 @@ var _recheck_left: float = 0.0
 var _nav: DroneNavigator
 ## Places (relative to the target) the drone found no way to; it does not pick them again.
 var _avoid: PackedVector3Array = PackedVector3Array()
+## Places (relative to the target) the drone fired a burst from; a new place is away from all of them.
+var _used: PackedVector3Array = PackedVector3Array()
 var _model: Node3D
 
 
@@ -90,16 +113,21 @@ static func launch(world: Node, model: Node3D, side: float, mech: Mech, aim_targ
 	world.add_child(drone)
 	var start := model.global_transform
 	drone.global_position = start.origin
-	# The spinner turns the disc about its axis; the body faces its -Z at the target, the hub on -Z.
+	# The body only turns about up (heading) and leans; the spinner on it turns the disc about up. The model lies
+	# flat in the spinner: its X axis (the disc axis) is up and its port (-Z) is the spinner's forward.
 	drone._spin = Node3D.new()
 	drone._spin.name = "Spin"
 	drone.add_child(drone._spin)
 	model.reparent(drone._spin, false)
-	model.transform = Transform3D(Basis(Vector3.UP, side * PI / 2.0), Vector3.ZERO)
 	drone._model = model
 	drone._muzzle = model.find_child("DroneMuzzle*", true, false) as Node3D
+	drone._side = side
 	var out := start.basis.x.normalized() * side
-	drone.global_basis = Basis.looking_at(out, Vector3.UP)
+	drone._yaw = atan2(-out.x, -out.z)
+	drone._bob_phase = randf() * TAU
+	drone.global_basis = Basis(Vector3.UP, drone._yaw)
+	drone._dock_quat = Quaternion((drone.global_basis.inverse() * start.basis).orthonormalized())
+	drone._pose_model()
 	drone.velocity = out * drone_data.launch_speed + Vector3.UP * 4.0
 	if mech != null:
 		drone.velocity += mech.velocity
@@ -142,32 +170,36 @@ func _physics_process(delta: float) -> void:
 			_approach(delta)
 		Phase.FIRE:
 			_fire_phase(delta)
-	if phase != Phase.FIRE:
-		_nav.move(delta)
-	_face(delta)
+	_nav.move(delta)
+	_pose(delta)
 
 
 func _approach(delta: float) -> void:
+	_steer_to_place(delta, maxf(data.approach_time - age, 0.15))
+	# Fire from here when the place is reached (or the drone is already in range and sees the target).
+	var close := global_position.distance_to(goal) < data.arrive_distance
+	if (close or age >= data.approach_time) and _can_shoot_from(global_position):
+		_start_fire()
+
+
+## Steers to the firing place (it moves with the target). The target may go behind cover: the place is checked now
+## and then, and a new one is sought when it is lost or when there is no way to it. seconds: the time constant of
+## the glide (the drone is there in about this time on a clear way).
+func _steer_to_place(delta: float, seconds: float) -> void:
 	goal = _target_point + _goal_offset
-	# The target may go behind cover: check the place now and then, and seek a new one when it is lost.
 	_recheck_left -= delta
 	if _recheck_left <= 0.0:
 		_recheck_left = data.recheck_time
 		if not has_place or not DroneNavigator.sees(self, goal, _target_point):
 			_pick_place()
 			goal = _target_point + _goal_offset
-	var time_left := maxf(data.approach_time - age, 0.15)
-	_nav.steer_to(goal, time_left, delta)
+	_nav.steer_to(goal, seconds, delta)
 	# No way to the place (shut in under the ceiling): drop it and seek another.
 	if _nav.blocked_time >= data.unreachable_time:
 		_avoid.append(_goal_offset)
 		_nav.blocked_time = 0.0
 		_pick_place()
 		goal = _target_point + _goal_offset
-	# Fire from here when the place is reached (or the drone is already in range and sees the target).
-	var close := global_position.distance_to(goal) < data.arrive_distance
-	if (close or age >= data.approach_time) and _can_shoot_from(global_position):
-		_start_fire()
 
 
 ## A firing place: within the gun range and in sight of the target point (DroneData).
@@ -178,28 +210,67 @@ func _can_shoot_from(place: Vector3) -> bool:
 
 func _start_fire() -> void:
 	_set_phase(Phase.FIRE)
-	velocity = Vector3.ZERO
+	step = Step.AIM
+	_step_time = 0.0
 	fire_start_age = age
 	bursts_fired = 0
+	shifts_done = 0
 
 
-## From the first shot the drone holds its place (user rule): a burst every cycle_time, rounds only while it sees
-## the target in range.
+## The FIRE phase (user rule 2026-11-02): aim the port at the target, fire a burst, glide to a new place, again.
+## Rounds leave only while the drone sees the target in range and the port points at it.
 func _fire_phase(delta: float) -> void:
-	var cycle := int(_phase_time / maxf(data.cycle_time, 0.05))
-	if cycle >= data.bursts:
+	_step_time += delta
+	match step:
+		Step.AIM:
+			_hover(delta)
+			if _aim_error_deg() <= data.aim_tolerance_deg or _step_time >= data.aim_max_s:
+				step = Step.BURST
+				_step_time = 0.0
+				_shot_wait = 0.0
+				bursts_fired += 1
+				_used.append(global_position - _target_point)
+		Step.BURST:
+			_hover(delta)
+			_shot_wait -= delta
+			while _shot_wait <= 0.0 and _step_time < data.burst_time:
+				_shot_wait += 1.0 / maxf(data.gun.fire_rate, 0.1)
+				if _can_shoot_from(global_position) and _aim_error_deg() <= data.aim_tolerance_deg:
+					_fire()
+			if _step_time >= data.burst_time:
+				_end_burst()
+		Step.SHIFT:
+			_shift(delta)
+
+
+## The drone brakes (the glide ends smoothly) while it aims and fires.
+func _hover(delta: float) -> void:
+	velocity = velocity.lerp(Vector3.ZERO, clampf(delta * data.steer, 0.0, 1.0))
+
+
+## After a burst the drone moves. With the recall mod the way home after the last burst is that move.
+func _end_burst() -> void:
+	if bursts_fired >= data.bursts and return_home and _can_dock():
+		shifts_done += 1
 		_end_attack()
 		return
-	if cycle + 1 > bursts_fired:
-		bursts_fired = cycle + 1
-		_shot_wait = 0.0
-	if fmod(_phase_time, data.cycle_time) >= data.burst_time:
+	step = Step.SHIFT
+	_step_time = 0.0
+	_recheck_left = data.recheck_time
+	_pick_shift_place()
+
+
+## Glides to the new place; the next burst (or the end of the attack after the last move) starts there.
+func _shift(delta: float) -> void:
+	_steer_to_place(delta, data.shift_pace)
+	if global_position.distance_to(goal) >= data.shift_arrive and _step_time < data.shift_max_s:
 		return
-	_shot_wait -= delta
-	while _shot_wait <= 0.0:
-		_shot_wait += 1.0 / maxf(data.gun.fire_rate, 0.1)
-		if _can_shoot_from(global_position):
-			_fire()
+	shifts_done += 1
+	if shifts_done >= data.bursts:
+		_end_attack()
+		return
+	step = Step.AIM
+	_step_time = 0.0
 
 
 ## The attack is over: back to the dock (recall mod), or it explodes.
@@ -230,13 +301,7 @@ func _return(delta: float) -> void:
 		return
 	_nav.steer_to(home, maxf(distance / data.max_speed, 0.15), delta)
 	_nav.move(delta)
-	# Face the way it flies.
-	var look := velocity if velocity.length() > 0.5 else home - global_position
-	if look.length() > 0.1:
-		var dir := look.normalized()
-		var wanted := Basis.looking_at(dir, Vector3.UP if absf(dir.y) < 0.99 else Vector3.BACK)
-		global_basis = global_basis.slerp(wanted, clampf(delta * 8.0, 0.0, 1.0)).orthonormalized()
-	_spin.rotate_object_local(Vector3.FORWARD, deg_to_rad(data.spin_deg_per_s) * delta)
+	_pose(delta)
 
 
 ## Puts the model back on the pack (its place before the launch) and removes the flying body.
@@ -268,24 +333,77 @@ func _pick_place() -> void:
 		_goal_offset = (global_position - _target_point).normalized() * data.attack_distance_max
 
 
+## Picks the next firing place of the same flank, at least shift_distance_min from where the drone is. When there is
+## none, the drone keeps its place.
+func _pick_shift_place() -> void:
+	var from := launcher_mech.global_position if is_instance_valid(launcher_mech) else global_position
+	var place := DroneNavigator.find_place(self, data, _target_point, from, flank, global_position, _avoid,
+			global_position, data.shift_distance_min, _used)
+	has_place = place.is_finite()
+	_goal_offset = (place if has_place else global_position) - _target_point
+	goal = _target_point + _goal_offset
+
+
 func _read_target_point() -> Vector3:
 	return target.get_lock_point() if target.has_method(&"get_lock_point") else target.global_position
 
 
-## The hub faces the target (the flight direction during the launch); the disc spins about its axis.
-func _face(delta: float) -> void:
-	var look := (_target_point - global_position) if phase != Phase.LAUNCH else velocity
-	if look.length() > 0.1:
-		var dir := look.normalized()
-		# It tilts up at most max_tilt_up_deg (user rule).
-		var up_limit := deg_to_rad(data.max_tilt_up_deg)
-		var flat := Vector2(dir.x, dir.z)
-		if flat.length() > 0.001 and atan2(dir.y, flat.length()) > up_limit:
-			var f := flat.normalized() * cos(up_limit)
-			dir = Vector3(f.x, sin(up_limit), f.y)
-		var wanted := Basis.looking_at(dir, Vector3.UP if absf(dir.y) < 0.99 else Vector3.BACK)
-		global_basis = global_basis.slerp(wanted, clampf(delta * 10.0, 0.0, 1.0)).orthonormalized()
-	_spin.rotate_object_local(Vector3.FORWARD, deg_to_rad(data.spin_deg_per_s) * delta)
+## Degrees between the port's heading and the target (level; the port does not tilt up to aim).
+func _aim_error_deg() -> float:
+	var port := -_spin.global_basis.z
+	var to := _target_point - global_position
+	port.y = 0.0
+	to.y = 0.0
+	if port.length() < 0.01 or to.length() < 0.1:
+		return 0.0
+	return rad_to_deg(port.angle_to(to))
+
+
+## The saucer pose: the body turns about up toward where it flies (the target while it attacks) and leans into its
+## speed; the disc spins slowly about up until the drone attacks, then the spin returns to zero so the port faces
+## the target; the model hovers up and down.
+func _pose(delta: float) -> void:
+	var flat := Vector2(velocity.x, velocity.z)
+	var turn := 1.0 - exp(-data.turn_rate * delta)
+	if phase == Phase.FIRE:
+		var to := _target_point - global_position
+		if Vector2(to.x, to.z).length() > 0.5:
+			_yaw = lerp_angle(_yaw, atan2(-to.x, -to.z), turn)
+		_spin_angle = lerp_angle(_spin_angle, 0.0, turn)
+	else:
+		if flat.length() > 1.0:
+			_yaw = lerp_angle(_yaw, atan2(-flat.x, -flat.y), turn)
+		_spin_angle = wrapf(_spin_angle + deg_to_rad(data.spin_deg_per_s) * delta, -PI, PI)
+	var lean_wanted := (flat * (data.max_bank_deg / maxf(data.bank_full_speed, 0.1))).limit_length(data.max_bank_deg)
+	_lean = _lean.lerp(lean_wanted, 1.0 - exp(-data.bank_smooth * delta))
+	var tilt := Basis.IDENTITY
+	if _lean.length() > 0.01:
+		# Up leans toward the lean direction: a turn about (up x direction).
+		tilt = Basis(Vector3.UP.cross(Vector3(_lean.x, 0.0, _lean.y)).normalized(), deg_to_rad(_lean.length()))
+	global_basis = tilt * Basis(Vector3.UP, _yaw)
+	_spin.rotation = Vector3(0.0, _spin_angle, 0.0)
+	_pose_model()
+
+
+## The model in the spinner: flat (its X axis up, the port forward) with the hover bob. The pop out turns it from
+## its way on the pack to flat; the way home turns it back to its dock pose.
+func _pose_model() -> void:
+	if not is_instance_valid(_model):
+		return
+	var flat_q := Quaternion(Basis(Vector3.BACK, _side * PI / 2.0))
+	var k := 1.0
+	var q := flat_q
+	if phase == Phase.LAUNCH:
+		k = smoothstep(0.0, 1.0, _phase_time / maxf(data.launch_time, 0.05))
+		q = _dock_quat.slerp(flat_q, k)
+	elif phase == Phase.RETURN and is_instance_valid(home_parent) and is_instance_valid(dock):
+		var distance := global_position.distance_to(dock.global_position)
+		k = clampf((distance - data.dock_distance) / 3.0, 0.0, 1.0)
+		var home_world := (home_parent.global_basis * home_transform.basis).orthonormalized()
+		var home_q := Quaternion((_spin.global_basis.inverse() * home_world).orthonormalized())
+		q = home_q.slerp(flat_q, k)
+	_model.basis = Basis(q)
+	_model.position = Vector3(0.0, sin(age * TAU * data.bob_hz + _bob_phase) * data.bob_height * k, 0.0)
 
 
 func _fire() -> void:

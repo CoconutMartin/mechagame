@@ -1,10 +1,12 @@
 extends SceneTree
 ## Drone Pack test (2026-10-31, user picture and rules). Model: the pack is in the garage catalog (1 aux slot, no
 ## bonus) and holds 6 drones, 3 stacked on one axle per side (Drone1..3 left, outer first; Drone4..6 right). Each
-## Drone<n> holds its disc meshes and a DroneMuzzle, sits on DroneDock<n>, and no mech mesh point is inside a disc
-## at rest. Flight (user rules): T locks a dummy 100 m ahead; the release launches a pair. In the open the pair
-## takes both flanks, stops at a firing place within 20 m that sees the dummy, does not move from the first shot,
-## fires 3 bursts, hits, and is gone at 5 s. A low wall (6 m) in the way: the drones fly over it. A tall wall
+## Drone<n> holds its disc meshes and a DroneMuzzle on the rim (the port, user 2026-11-02), sits on DroneDock<n>,
+## and no mech mesh point is inside a disc at rest. Flight (user rules): T locks a dummy 100 m ahead; the release
+## launches a pair. In the open the pair takes both flanks and flies like a saucer (the disc level, leaning at most
+## 15 degrees), reaches a firing place within 20 m that sees the dummy, fires 3 bursts with the port facing the
+## dummy, moves to a new place after each burst (3 bursts = 3 position changes, user 2026-11-02, replaces "does not
+## move from the first shot"), hits, and is gone by max_flight_s. A low wall (6 m) in the way: the drones fly over it. A tall wall
 ## (40 m) in the way: they fly around it. Cover after the release (the dummy moves into a U of 30 m walls, open toward
 ## the mech): the drones seek a place that sees it and hit. No drone step passes through a wall or building, no drone touches one
 ## (its hit sphere stays free), and no drone is over 12.5 m above the ground. A dummy on a 15 m roof (over the
@@ -126,8 +128,18 @@ func _model_checks(mech: Mech, model: Node3D) -> void:
 		if drone == null or dock == null:
 			continue
 		var meshes := drone.find_children("*", "MeshInstance3D", true, false)
-		_check(meshes.size() >= 15 and drone.find_child("DroneMuzzle*", true, false) != null,
+		var muzzle := drone.find_child("DroneMuzzle*", true, false) as Node3D
+		_check(meshes.size() >= 15 and muzzle != null,
 				"Drone%d holds its disc meshes (%d) and a muzzle" % [i + 1, meshes.size()])
+		# The barrel is a port in the rim (side of the disc): the muzzle is on the rim circle, level with the disc
+		# plane, and away from both faces' centers.
+		if muzzle != null:
+			var local := drone.global_transform.affine_inverse() * muzzle.global_position
+			_check(absf(local.x) < 0.02 and Vector2(local.y, local.z).length() > 0.40
+					and Vector2(local.y, local.z).length() < 0.5,
+					"Drone%d muzzle is on the rim (radius %.2f m, off axis %.3f m)" % [i + 1,
+					Vector2(local.y, local.z).length(), local.x])
+			_check(drone.find_child("DronePortTube*", true, false) != null, "Drone%d has the port tube" % (i + 1))
 		_check(drone.global_position.distance_to(dock.global_position) < 0.01, "Drone%d sits on its dock" % (i + 1))
 		var side := (drone.global_position - mech.global_position).dot(mech.global_basis.x)
 		_check(absf(side) > 0.7 and signf(side) == (-1.0 if i < 3 else 1.0),
@@ -183,13 +195,18 @@ func _wall(center: Vector3, size: Vector3, facing: Vector3) -> StaticBody3D:
 	return wall
 
 
-## Watches a launched pair until both are gone. Returns per drone: [fire_start_age, bursts, end_age, moved after
-## the first shot (m), distance to the target at the first shot, flank sign of the firing place, flank].
+## Watches a launched pair until both are gone. Returns per drone: [fire_start_age, bursts, end_age, farthest from
+## the first shot place (m), distance to the target at the first shot, flank sign of the firing place, flank,
+## degrees up to the target at the first shot, position changes done (read when the drone ends), positions at the
+## start of each burst, worst heading error of the port at a burst start (degrees), worst lean of the body
+## (degrees), worst angle between the disc axis and up (degrees), farthest distance to the target at a burst start].
 func _watch(drones: Array[AttackDrone], dummy: TargetDummy, right: Vector3, shot_path: String = "") -> Array:
 	var out := []
 	for k in drones.size():
-		out.append([-1.0, 0, -1.0, 0.0, -1.0, 0.0, drones[k].flank, 0.0])
+		out.append([-1.0, 0, -1.0, 0.0, -1.0, 0.0, drones[k].flank, 0.0, 0, [], 0.0, 0.0, 0.0, 0.0])
+		drones[k].finished.connect(func(d: AttackDrone) -> void: out[k][8] = d.shifts_done)
 	var fire_pos := {}
+	var last_burst := {}
 	for f in 420:
 		await _frames(1)
 		var alive := false
@@ -209,6 +226,16 @@ func _watch(drones: Array[AttackDrone], dummy: TargetDummy, right: Vector3, shot
 					var to := dummy.get_lock_point() - d.global_position
 					out[k][7] = rad_to_deg(atan2(to.y, Vector2(to.x, to.z).length()))
 				out[k][3] = maxf(out[k][3], d.global_position.distance_to(fire_pos[k]))
+				if d.step == AttackDrone.Step.BURST and last_burst.get(k, 0) != d.bursts_fired:
+					last_burst[k] = d.bursts_fired
+					out[k][9].append(d.global_position)
+					out[k][10] = maxf(out[k][10], d._aim_error_deg())
+					out[k][13] = maxf(out[k][13], d.global_position.distance_to(dummy.get_lock_point()))
+			# Saucer: the body leans at most about 15 degrees and the disc axis (model X) stays near vertical.
+			out[k][11] = maxf(out[k][11], rad_to_deg(d.global_basis.y.angle_to(Vector3.UP)))
+			if d.phase != AttackDrone.Phase.LAUNCH and is_instance_valid(d._model):
+				var axis_angle := d._model.global_basis.x.angle_to(Vector3.UP)
+				out[k][12] = maxf(out[k][12], rad_to_deg(minf(axis_angle, PI - axis_angle)))
 		if OS.has_environment("DRONE_TRACE") and f % 15 == 0:
 			for k in drones.size():
 				var d := drones[k]
@@ -281,13 +308,23 @@ func _flight_tests(mech: Mech) -> void:
 	var result := await _watch(drones, dummy, right, OS.get_environment("DRONE_SHOT"))
 	for k in 2:
 		var r: Array = result[k]
-		print("open, drone %d: fires at %.2f s from %.1f m, %d bursts, moved %.2f m after the first shot, gone at %.2f s"
-				% [k, r[0], r[4], r[1], r[3], r[2]])
+		print("open, drone %d: fires at %.2f s from %.1f m, %d bursts, %d position changes, farthest %.2f m from the first place, gone at %.2f s, lean %.1f, disc %.1f, port error %.1f"
+				% [k, r[0], r[4], r[1], r[8], r[3], r[2], r[11], r[12], r[10]])
 		_check(r[0] > 1.8 and r[0] < 2.8, "open: drone %d fires about 2 s after the launch (%.2f s)" % [k, r[0]])
 		_check(r[4] > 0.0 and r[4] <= 20.0, "open: drone %d fires from within 20 m (%.1f m)" % [k, r[4]])
-		_check(r[3] < 0.05, "open: drone %d does not move after its first shot (%.2f m)" % [k, r[3]])
 		_check(r[1] == 3, "open: drone %d fires 3 bursts (%d)" % [k, r[1]])
-		_check(r[2] <= 5.05, "open: drone %d is gone by 5 s (%.2f s)" % [k, r[2]])
+		_check(r[8] == 3, "open: drone %d changes position 3 times, once after each burst (%d)" % [k, r[8]])
+		var places: Array = r[9]
+		var spread := places.size() == 3
+		for a in places.size():
+			for b in range(a + 1, places.size()):
+				spread = spread and (places[a] as Vector3).distance_to(places[b]) > 2.5
+		_check(spread, "open: drone %d fires its 3 bursts from 3 different places (%d)" % [k, places.size()])
+		_check(r[13] <= 20.0, "open: drone %d fires every burst from within 20 m (%.1f m)" % [k, r[13]])
+		_check(r[10] <= 16.0, "open: drone %d has the port facing the dummy at each burst (%.1f degrees)" % [k, r[10]])
+		_check(r[11] <= 15.0, "open: drone %d leans at most 15 degrees (%.1f)" % [k, r[11]])
+		_check(r[12] <= 15.0, "open: drone %d flies level, disc axis near vertical (%.1f degrees)" % [k, r[12]])
+		_check(r[2] <= 8.05, "open: drone %d is gone by max_flight_s (%.2f s)" % [k, r[2]])
 		_check(r[5] == r[6], "open: drone %d fires from its own flank (a pincer)" % k)
 	print("open: dummy damage from one pair: %.0f" % (hp_before - dummy.hp))
 	_check(dummy.hp < hp_before, "open: the drones hit the dummy")
