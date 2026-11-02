@@ -334,9 +334,12 @@ func _contact_normal(pos: Vector3, radius: float) -> Vector3:
 ## A firing place for a drone on its flank (-1 left, 1 right of the line from_pos -> center, seen from from_pos):
 ## within the gun range of center, in sight of it, in free air, over the ground and under the ceiling. Tries the
 ## flank angles of DroneData first, then the whole flank, then the other flank. Picks the valid place nearest to
-## near. Vector3.INF = none found.
+## near. A place nearer than min_away to away_from (a world place, Vector3.INF = none) or to a place of used
+## (offsets from center: the places the drone fired from) is skipped: the drone moves to a new place after each
+## burst. Vector3.INF = none found.
 static func find_place(drone: AttackDrone, data: DroneData, center: Vector3, from_pos: Vector3, flank: float,
-		near: Vector3, avoid: PackedVector3Array = PackedVector3Array()) -> Vector3:
+		near: Vector3, avoid: PackedVector3Array = PackedVector3Array(), away_from: Vector3 = Vector3.INF,
+		min_away: float = 0.0, used: PackedVector3Array = PackedVector3Array()) -> Vector3:
 	var back := from_pos - center
 	back.y = 0.0
 	back = back.normalized() if back.length() > 0.1 else Vector3.BACK
@@ -352,6 +355,9 @@ static func find_place(drone: AttackDrone, data: DroneData, center: Vector3, fro
 			var place := center + back.rotated(Vector3.UP, angle) * randf_range(data.attack_distance_min,
 					data.attack_distance_max) + Vector3.UP * randf_range(data.height_min, data.height_max)
 			place.y = minf(place.y, top)
+			if away_from.is_finite() and (place.distance_to(away_from) < min_away \
+					or _near_any(place - center, used, min_away)):
+				continue
 			if not _good_place(drone, data, place, center) or _near_any(place - center, avoid, data.avoid_radius):
 				continue
 			var d := place.distance_to(near)

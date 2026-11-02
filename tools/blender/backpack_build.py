@@ -1590,13 +1590,46 @@ def seam(name, mat, a, b, y0, y1, width=0.022):
     return obj
 
 
+def cut(obj, cutter):
+    """Cuts the cutter's shape out of obj (a boolean difference, applied at once)."""
+    mod = obj.modifiers.new("PortCut", "BOOLEAN")
+    mod.operation = "DIFFERENCE"
+    mod.solver = "EXACT"
+    mod.object = cutter
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+    return obj
+
+
+def tube_y(name, mat, y0, y1, r_out, r_in, sides=8, x=0.0, z=0.0):
+    """A hollow tube along +Y from y0 to y1 (outer radius r_out, bore r_in), centered on (x, z)."""
+    bm = bmesh.new()
+    rings = []
+    for y, r in ((y0, r_out), (y1, r_out), (y1, r_in), (y0, r_in)):
+        ring = []
+        for k in range(sides):
+            a = 2 * math.pi * (k + 0.5) / sides
+            ring.append(bm.verts.new((x + math.cos(a) * r, y, z + math.sin(a) * r)))
+        rings.append(ring)
+    for i in range(4):
+        a, b = rings[i], rings[(i + 1) % 4]
+        for k in range(sides):
+            j = (k + 1) % sides
+            bm.faces.new([a[k], a[j], b[j], b[k]])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return finish(new_object(name, bm), mat, 0.0)
+
+
 def build_drone(n, sx, t, cx, cy, cz):
     """One drone disc (user 2026-10-31: "the circle thing on the side should be detachable, we'll make it to an
     attack drone"): the empty Drone<n> at the disc center is the parent of every disc part, so the game can take the
-    whole drone off the pack (AttackDrone flies it). Its X axis is the disc axis; the outer face (the hub is the gun
-    muzzle, empty DroneMuzzle<n>) is at +sx. Parts: a 16 sided rim with dark grooves and amber edge marks, a steel
+    whole drone off the pack (AttackDrone flies it). Its X axis is the disc axis; the outer face (a sensor hub) is
+    at +sx. User 2026-11-02 ("the drones should fly like a saucer. add an opening at the side that would act like
+    the barrel"): the barrel is a port in the rim on the +Y side (a notch with a short recessed steel tube, dark
+    inside, amber lights beside it); the empty DroneMuzzle<n> sits at its mouth on the rim. In flight the disc lies
+    flat (its X axis up) with the port forward. Parts: a 16 sided rim with dark grooves and amber edge marks, a steel
     band, an outer face with a raised dark ring, amber ring lights, a gunmetal plate with two seam lines and a hub,
-    a sensor window on the back of the rim, an inner hub plate on the axle side. sx = -1 (left) or 1 (right)."""
+    a sensor window on the back of the rim (-Y), an inner hub plate on the axle side. sx = -1 (left) or 1 (right)."""
     G, GD, F, K, S, A = "bp_gun", "bp_gun_dark", "bp_frame", "bp_dark", "bp_steel", "bp_amber"
     r, th = t["disc"]
     root = empty(f"Drone{n}", (0.0, 0.0, 0.0))
@@ -1606,10 +1639,28 @@ def build_drone(n, sx, t, cx, cy, cz):
     def x(v):
         return sx * v
 
-    parts.append(cyl_x(f"DroneRim{n}", G, x(-hx), x(hx), r, sides=16, bevel=0.018))
-    parts.append(cyl_x(f"DroneBand{n}", GD, x(-hx + 0.03), x(hx - 0.03), r + 0.012, sides=16, bevel=0.0))
+    # The port: a notch in the rim on the +Y side (the rim has a flat face there), cut out of the rim, band and
+    # grooves.
+    apothem = r * math.cos(math.pi / 16)
+    cutter = block(f"DronePortCut{n}", F, -0.04, 0.04, 0.27, r + 0.1, -0.07, 0.07, bevel=0.0)
+    rim = cut(cyl_x(f"DroneRim{n}", G, x(-hx), x(hx), r, sides=16, bevel=0.0), cutter)
+    rim_bevel = rim.modifiers.new("Bevel", "BEVEL")
+    rim_bevel.width = 0.018
+    rim_bevel.segments = 1
+    rim_bevel.limit_method = "ANGLE"
+    rim_bevel.angle_limit = math.radians(35)
+    parts.append(rim)
+    parts.append(cut(cyl_x(f"DroneBand{n}", GD, x(-hx + 0.03), x(hx - 0.03), r + 0.012, sides=16, bevel=0.0), cutter))
     for j, v in enumerate((-hx + 0.024, hx - 0.024)):
-        parts.append(cyl_x(f"DroneGroove{n}_{j}", F, x(v - 0.008), x(v + 0.008), r + 0.016, sides=16))
+        parts.append(cut(cyl_x(f"DroneGroove{n}_{j}", F, x(v - 0.008), x(v + 0.008), r + 0.016, sides=16), cutter))
+    bpy.data.objects.remove(cutter)
+    # Dark floor of the notch, a short recessed steel barrel tube with a dark bore, amber lights beside the port.
+    parts.append(block(f"DronePortWell{n}", K, -0.039, 0.039, 0.268, 0.285, -0.069, 0.069, bevel=0.0))
+    parts.append(tube_y(f"DronePortTube{n}", S, 0.285, apothem - 0.03, 0.034, 0.021, sides=8))
+    parts.append(prism(f"DronePortBore{n}", K, 0.285, 0.3, 0.022, 0.022, sides=8, bevel=0.0))
+    for j, sz in enumerate((-1.0, 1.0)):
+        parts.append(block(f"DronePortLight{n}_{j}", A, -0.012, 0.012, apothem - 0.004, apothem + 0.02,
+                           sz * 0.105 - 0.012, sz * 0.105 + 0.012, bevel=0.0))
     # Amber marks on the band, every 90 degrees from 45.
     for j in range(4):
         a = math.radians(45 + 90 * j)
@@ -1634,8 +1685,7 @@ def build_drone(n, sx, t, cx, cy, cz):
         parts.append(line)
     parts.append(cyl_x(f"DroneHubRing{n}", K, x(hx + 0.03), x(hx + 0.045), 0.06, sides=16))
     parts.append(cyl_x(f"DroneHub{n}", S, x(hx + 0.04), x(hx + 0.055), 0.034, sides=12))
-    parts.append(cyl_x(f"DroneBore{n}", F, x(hx + 0.052), x(hx + 0.058), 0.018, sides=8))
-    parts.append(empty(f"DroneMuzzle{n}", (x(hx + 0.06), 0.0, 0.0)))
+    parts.append(empty(f"DroneMuzzle{n}", (0.0, apothem + 0.005, 0.0)))
     # Sensor window on the back of the rim (toward -Y), with a steel lens.
     parts.append(block(f"DroneSensor{n}", K, -0.035, 0.035, -r - 0.03, -r + 0.03, -0.05, 0.05, chamfer=0.01,
                        bevel=0.0))
