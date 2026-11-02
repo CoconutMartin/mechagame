@@ -4,8 +4,10 @@ extends GunWeapon
 ## pellets (data.pellets, rounded to a square: 9 = 3 x 3) on a horizontal rectangle of pattern_half_deg, with one rune
 ## card look (PulseShot, user reference 2026-11-01) that flies with them. The three emitter heads open fully at each
 ## shot and close to their neutral place after; the emitter ring and the arc between the heads flash blue.
-## data.fire_rate 2 = two shots a second. Uses a magazine like the other guns (a one-hand gun is raised only when its
-## kind is GUN).
+## data.fire_rate 2 = two shots a second. Uses heat (data.heat_gun, user choice 2026-11-02: pulse weapons have no
+## ammo), but its kind stays GUN (a one-hand gun is raised only when its kind is GUN). Each pellet is a crackling orb with
+## a lightning trail (PulsePelletLook), lightning jumps between neighbor pellets (PulseArcWeb), and a hit makes a
+## PulseImpact.
 
 const PELLET := preload("res://scenes/weapons/pulse_pellet.tscn")
 
@@ -111,6 +113,21 @@ func pattern_points() -> Array[Vector2]:
 	return points
 
 
+## Pellet index pairs the arc web joins: each pair of nearest neighbors on the pattern (grid rows and columns; the X
+## arms from the center out).
+func pattern_links(points: Array[Vector2]) -> Array[Vector2i]:
+	var links: Array[Vector2i] = []
+	var nearest := INF
+	for i in points.size():
+		for j in range(i + 1, points.size()):
+			nearest = minf(nearest, points[i].distance_to(points[j]))
+	for i in points.size():
+		for j in range(i + 1, points.size()):
+			if points[i].distance_to(points[j]) <= nearest * 1.05:
+				links.append(Vector2i(i, j))
+	return links
+
+
 func _fire() -> void:
 	consume()
 	var origin := _muzzle.global_position
@@ -126,7 +143,10 @@ func _fire() -> void:
 	var half := _pattern_half_deg()
 	var spread := Vector2(tan(deg_to_rad(half.x)), tan(deg_to_rad(half.y)))
 	var exclude := controller.mech.get_hit_exclude()
-	for point in pattern_points():
+	var points := pattern_points()
+	var web := PulseArcWeb.new()
+	web.links = pattern_links(points)
+	for point in points:
 		var direction := (aim + side * point.x * spread.x + up * point.y * spread.y).normalized()
 		var pellet := PELLET.instantiate() as Bullet
 		pellet.velocity = direction * data.projectile_speed
@@ -138,6 +158,8 @@ func _fire() -> void:
 		controller.get_world().add_child(pellet)
 		pellet.global_position = origin
 		pellet.look_at(origin + direction, Vector3.UP if absf(direction.y) < 0.99 else Vector3.FORWARD)
+		web.pellets.append(pellet)
+	controller.get_world().add_child(web)
 	var look := PulseShot.new()
 	look.velocity = aim * data.projectile_speed
 	look.half_deg = half

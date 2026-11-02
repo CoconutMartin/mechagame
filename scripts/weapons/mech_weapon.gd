@@ -80,7 +80,7 @@ func rebind(new_controller: WeaponController) -> void:
 
 
 func uses_heat() -> bool:
-	return data.kind == WeaponData.Kind.BEAM_RIFLE or data.kind == WeaponData.Kind.BLADE
+	return data.heat_gun or data.kind == WeaponData.Kind.BEAM_RIFLE or data.kind == WeaponData.Kind.BLADE
 
 
 ## WeaponController calls this every physics frame.

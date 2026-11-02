@@ -91,6 +91,12 @@ func _run() -> void:
 	_check(pellets.size() == 9 and on_x, "9 pellets on an X, corner to corner of the rectangle (%d)" % pellets.size())
 	var looks := current_scene.find_children("*", "PulseShot", true, false)
 	_check(looks.size() == 1 and (looks[0] as PulseShot).cross, "one X pulse look")
+	_check(gun.uses_heat() and gun.heat > 0.0, "the pulse shot adds heat, no ammo (%.0f)" % gun.heat)
+	var webs := current_scene.find_children("*", "PulseArcWeb", true, false)
+	_check(webs.size() == 1 and (webs[0] as PulseArcWeb).links.size() == 8,
+			"one arc web on the X links (%d)" % ((webs[0] as PulseArcWeb).links.size() if webs.size() > 0 else -1))
+	var with_look := _pellets().filter(func(n: Node) -> bool: return n.get_node_or_null("Look") is PulsePelletLook)
+	_check(with_look.size() == _pellets().size(), "every pellet has the electric look (%d)" % with_look.size())
 	var top := gun.spin_speed
 	await _frames(30)
 	_check(gun.spin_speed < top - 100.0 and gun.spin_speed > 0.0, "the heads slow down after the shot (%.0f -> %.0f deg/s)" % [top, gun.spin_speed])

@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/effects/pulse_impact.gd" id="impact"]
+
+[node name="PulseImpact" type="Node3D"]
+script = ExtResource("impact")

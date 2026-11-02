@@ -70,6 +70,9 @@ enum Slot { ARM, BACK }
 @export var reload_time: float = 3.5
 
 @export_group("Heat")
+## Uses heat in place of ammo although its kind is GUN (pulse guns: Shotgun 2 and 3, user choice 2026-11-02).
+## Beam rifles and blades always use heat.
+@export var heat_gun: bool = false
 ## Heat added per use (beam weapons). Full heat is 100.
 @export var heat_per_use: float = 34.0
 ## Heat lost per second while not overheated.

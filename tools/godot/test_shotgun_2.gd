@@ -56,16 +56,20 @@ func _run() -> void:
 	_check(pellets == 9, "one shot = 9 pellets (%d)" % pellets)
 	_check(looks == 1, "one square pulse look per shot (%d)" % looks)
 	_check(arc.visible, "the arc shows at the shot")
+	_check(gun.uses_heat() and gun.heat > 0.0, "the pulse shot adds heat, no ammo (%.0f)" % gun.heat)
+	var webs := current_scene.find_children("*", "PulseArcWeb", true, false)
+	_check(webs.size() == 1 and (webs[0] as PulseArcWeb).links.size() == 12,
+			"one arc web on the grid links (%d)" % ((webs[0] as PulseArcWeb).links.size() if webs.size() > 0 else -1))
+	var with_look := _pellets().filter(func(n: Node) -> bool: return n.get_node_or_null("Look") is PulsePelletLook)
+	_check(with_look.size() == _pellets().size(), "every pellet has the electric look (%d)" % with_look.size())
 	var ring := ((gun.get_node("Model/EmitterRing") as MeshInstance3D).material_override as StandardMaterial3D).emission_energy_multiplier
 	_check(ring > 1.0, "the emitter ring flashes (%.2f)" % ring)
-	# The heads are fully open for one instant (open_time): keep the highest value over the first frames.
-	var peak_open := 0.0
-	var open_out := 0.0
-	for i in 10:
-		await _frames(1)
-		if gun.head_open_amount() > peak_open:
-			peak_open = gun.head_open_amount()
-			open_out = _out(gun, tip, muzzle)
+	# The heads are fully open for one instant (open_time): set the clock there so frame timing cannot miss it.
+	await _frames(1)
+	gun._since_shot = gun.open_time
+	gun._process(0.0)
+	var peak_open: float = gun.head_open_amount()
+	var open_out := _out(gun, tip, muzzle)
 	_check(peak_open > 0.9, "the heads are fully open just after the shot (%.2f)" % peak_open)
 	_check(open_out > rest_out + 0.15, "the top head's front moves out from the bore (%.2f -> %.2f m)" % [rest_out, open_out])
 	# The pellets fly on a square: compare their spread across and up.
