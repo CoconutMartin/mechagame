@@ -58,9 +58,15 @@ func _run() -> void:
 	_check(arc.visible, "the arc shows at the shot")
 	var ring := ((gun.get_node("Model/EmitterRing") as MeshInstance3D).material_override as StandardMaterial3D).emission_energy_multiplier
 	_check(ring > 1.0, "the emitter ring flashes (%.2f)" % ring)
-	await _frames(4)
-	var open_out := _out(gun, tip, muzzle)
-	_check(gun.head_open_amount() > 0.9, "the heads are fully open just after the shot (%.2f)" % gun.head_open_amount())
+	# The heads are fully open for one instant (open_time): keep the highest value over the first frames.
+	var peak_open := 0.0
+	var open_out := 0.0
+	for i in 10:
+		await _frames(1)
+		if gun.head_open_amount() > peak_open:
+			peak_open = gun.head_open_amount()
+			open_out = _out(gun, tip, muzzle)
+	_check(peak_open > 0.9, "the heads are fully open just after the shot (%.2f)" % peak_open)
 	_check(open_out > rest_out + 0.15, "the top head's front moves out from the bore (%.2f -> %.2f m)" % [rest_out, open_out])
 	# The pellets fly on a square: compare their spread across and up.
 	var xs: Array[float] = []
