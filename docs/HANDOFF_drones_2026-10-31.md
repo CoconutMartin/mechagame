@@ -38,7 +38,7 @@ user rule, rounds 1 to 5 and phase B, with the user's words) and "Reminders for 
 ## How the drone code works
 
 - Model: `tools/blender/backpack_build.py -- drone` (`build_drone_pack`, `build_drone`; helpers `cyl_x`, `seam`).
-  Nodes: `Drone1..6` (all disc meshes under one node, X = disc axis), `DroneMuzzle<n>` (hub), `DroneDock1..6`, `Aux1`.
+  Nodes: `Drone1..6` (all disc meshes under one node, X = disc axis), `DroneMuzzle<n>` (since 2026-11-02 at the port in the rim; was the hub), `DroneDock1..6`, `Aux1`.
 - Data: `data/parts/backpacks/backpack_drone.tres` (`BackPackPart.drone`), `data/equipment/attack_drone.tres`
   (`DroneData`: lock, flight, ceiling, tilt, path grid, attack, HP 60, cool down), `data/weapons/drone_gun.tres`,
   `data/equipment/drone_recall.tres` and `drone_swarm.tres` (`DroneModData`).
