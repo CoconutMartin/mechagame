@@ -1,9 +1,12 @@
 extends SceneTree
-## Boost Pack test (2026-10-31, user: "during boost, the outlets on the fins should glow and expel wind"). The
-## player carries the Boost Pack: it is in the garage catalog with 1 aux slot and a boost bonus; its model has
-## Outlet1..4 (wind out of the back) and OutletGlow1..4. Standing: no glow, no wind. Boosting (Shift + W held):
-## glow and wind on every outlet, the louver flaps open. After the boost: both stop, the flaps close. Other packs get no outlets. Exits with code 1 on a
-## failure. Headless (optional BOOST_SHOT=<png> with a window: a picture while boosting):
+## Boost Pack test (2026-10-31, user: "during boost, the outlets on the fins should glow and expel wind"; 2026-11-02:
+## gust of wind, nozzle heat, petals in the jump charge, realistic fire). The player carries the Boost Pack: it is in
+## the garage catalog with 1 aux slot and a boost bonus; its model has Outlet1..4 (exhaust out of the back) and
+## OutletGlow1..4. Standing: no fire, no wind, cold nozzles. Boosting (Shift + W held): a fire plume, a gust of
+## streaks and heat on every outlet, the louver flaps open. After the boost: the fire and wind stop, the nozzles cool
+## down, the flaps close. Jump charge: the Quad Booster petals close down, then snap open at the launch (the Boost
+## Pack louvers crack open). Other packs get no outlets. Exits with code 1 on a failure. Headless (optional
+## BOOST_SHOT=<png> with a window: a picture while boosting):
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/test_boost_pack.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
@@ -25,6 +28,14 @@ func _frames(count: int) -> void:
 	for i in count:
 		await physics_frame
 		await process_frame
+
+
+## Waits until the mech stands on the ground again.
+func _wait_landing(mech: Mech) -> void:
+	for i in 400:
+		await _frames(1)
+		if mech.is_on_floor() and i > 5:
+			break
 
 
 func _check(ok: bool, text: String) -> void:
@@ -57,8 +68,11 @@ func _run() -> void:
 		# The wind leaves backward (mech +Z is back).
 		var back := outlet.global_basis.y.normalized().dot(mech.global_basis.z.normalized())
 		_check(back > 0.8, "Outlet%d blows backward (%.2f)" % [i + 1, back])
-		_check(glow != null and glow.material_overlay == outlets._glow_material, "OutletGlow%d has the glow" % (i + 1))
-	_check(outlets.amount < 0.01 and not outlets._winds[0].emitting, "standing: no glow, no wind")
+		_check(glow != null and glow.material_overlay != null, "OutletGlow%d has the heat glow" % (i + 1))
+	_check(outlets.amount < 0.01 and not outlets._winds[0].emitting and outlets.thrust < 0.01
+			and outlets.get_heat() < 0.01 and not outlets.get_plumes()[0].visible, "standing: no fire, no wind, cold")
+	var gust := outlets._winds[0]
+	_check(gust.mesh.material is ShaderMaterial and gust.particle_flag_align_y, "the wind is a gust of streaks (not round puffs)")
 	var flaps := mech.get_node_or_null(^"BackPackFlaps") as BackPackFlaps
 	_check(flaps != null and flaps.get_flaps().size() >= 20, "louver flaps on the outlets (%d)" %
 			(flaps.get_flaps().size() if flaps != null else 0))
@@ -121,9 +135,15 @@ func _run() -> void:
 	var all_wind := true
 	for wind in outlets._winds:
 		all_wind = all_wind and wind.emitting
-	_check(boosted, "boosting: full glow (%.2f)" % outlets.amount)
+	_check(boosted, "boosting: full thrust state (%.2f)" % outlets.amount)
 	_check(all_wind, "boosting: wind from every outlet")
 	await _frames(20)
+	var all_fire := true
+	for plume in outlets.get_plumes():
+		all_fire = all_fire and plume.visible
+	_check(all_fire and outlets.thrust > 0.7, "boosting: a fire plume on every outlet (thrust %.2f)" % outlets.thrust)
+	var heat_on := outlets.get_heat()
+	_check(heat_on > 0.05 and outlets.get_nozzle_heat().get_color().a > 0.0, "boosting: the outlets heat up (%.2f)" % heat_on)
 	var turned := rad_to_deg(closed.y.angle_to(flap.basis.y))
 	_check(flaps.amount > 0.99 and absf(turned - flaps.open_angle_deg) < 2.0,
 			"boosting: flaps open (%.0f degrees)" % turned)
@@ -132,8 +152,21 @@ func _run() -> void:
 	Input.action_release("boost")
 	Input.action_release("move_forward")
 	await _frames(90)
-	_check(outlets.amount < 0.01 and not outlets._winds[0].emitting, "after the boost: glow and wind stop")
+	_check(outlets.amount < 0.01 and not outlets._winds[0].emitting and outlets.thrust < 0.01
+			and not outlets.get_plumes()[0].visible, "after the boost: fire and wind stop")
+	_check(outlets.get_heat() < heat_on or heat_on < 0.01, "after the boost: the outlets cool down (%.2f to %.2f)" %
+			[heat_on, outlets.get_heat()])
 	_check(flaps.amount < 0.01 and flap.basis.is_equal_approx(closed), "after the boost: flaps closed")
+	# Jump charge: the louvers crack open a little (they cannot close any further), then open fully at the launch.
+	Input.action_press("jump")
+	await _frames(75)
+	var cracked := rad_to_deg((closed.inverse() * flap.basis).get_euler().x)
+	_check(mech.jump_charge.is_charging and cracked > 3.0 and cracked < flaps.open_angle_deg * 0.5,
+			"jump charge: the louvers crack open (%.0f degrees)" % cracked)
+	Input.action_release("jump")
+	await _frames(20)
+	_check(not mech.is_on_floor() and flaps.amount > 0.8, "jump launch: the louvers snap open (%.2f)" % flaps.amount)
+	await _wait_landing(mech)
 	# Other packs have no outlets.
 	loadout.back_pack = load(OTHER_PACK) as BackPackPart
 	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
@@ -171,7 +204,7 @@ func _run() -> void:
 			await _frames(1)
 			if mech.is_boosting and outlets.amount > 0.95:
 				break
-		_check(outlets.amount > 0.95 and outlets._winds[3].emitting, "Quad Booster boosting: glow and wind")
+		_check(outlets.amount > 0.95 and outlets._winds[3].emitting, "Quad Booster boosting: fire and wind")
 		if petal != null:
 			await _frames(20)
 			var opened := rad_to_deg(petal_closed.y.angle_to(petal.basis.y))
@@ -184,6 +217,26 @@ func _run() -> void:
 		await _frames(90)
 		if petal != null:
 			_check(petal.basis.is_equal_approx(petal_closed), "after the boost: the nozzles close")
+		_check(outlets.get_nozzle_heat().has_parts() and outlets.get_heat() < 1.0, "the Quad Booster nozzles have heat parts")
+		# Jump charge: the petals close down as the charge builds.
+		Input.action_press("jump")
+		await _frames(75)
+		var closing := rad_to_deg((petal_closed.inverse() * petal.basis).get_euler().x) if petal != null else 0.0
+		_check(mech.jump_charge.is_charging and petals.squeeze > 0.4 and closing < -5.0 and closing > petals.get_charge_angle(0) - 0.5,
+				"jump charge: the petals close down (%.0f degrees, squeeze %.2f)" % [closing, petals.squeeze])
+		var charge_shot := OS.get_environment("CHARGE_SHOT")
+		if charge_shot != "":
+			root.get_viewport().get_texture().get_image().save_png(charge_shot)
+		var heat_before := outlets.get_heat()
+		Input.action_release("jump")
+		await _frames(15)
+		_check(not mech.is_on_floor() and petals.amount > 0.8 and petals.squeeze < 0.05,
+				"jump launch: the petals snap open (open %.2f, squeeze %.2f)" % [petals.amount, petals.squeeze])
+		_check(outlets.thrust > 0.5 and outlets.get_plumes()[0].visible, "jump launch: the jump jets fire (thrust %.2f)" % outlets.thrust)
+		_check(outlets.get_heat() > heat_before, "jump launch: the jump jets heat the nozzles (%.2f to %.2f)" % [heat_before, outlets.get_heat()])
+		await _wait_landing(mech)
+		await _frames(90)
+		_check(petal.basis.is_equal_approx(petal_closed), "after the jump: the petals rest again")
 	# The Power Pack (energy support): energy capacity bonus, its model on the mech, no boost outlets.
 	var power := load(POWER_PACK) as BackPackPart
 	_check(power in catalog.back_packs and power.get_mod_stat() == ModData.Stat.ENERGY_CAPACITY
@@ -250,7 +303,8 @@ func _run() -> void:
 			await _frames(1)
 			if mech.is_boosting and outlets.amount > 0.95:
 				break
-		_check(outlets.amount > 0.95 and outlets._winds[1].emitting, "Jet Pack boosting: glow and wind")
+		_check(outlets.amount > 0.95 and outlets._winds[1].emitting and outlets.get_plumes()[1].visible,
+				"Jet Pack boosting: fire and wind")
 		var jet_shot := OS.get_environment("JET_SHOT")
 		if jet_shot != "":
 			root.get_viewport().get_texture().get_image().save_png(jet_shot)
