@@ -458,8 +458,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	# A slot with no name is deleted (user request 2026-11-02: delete Shift+2, the coded punch).
 	if clips.get_clip_name(number) == "":
 		return
+	# Not marked as handled: with two Pile Bunkers both switch (user report 2026-11-02: the right one kept clip 1).
+	# LoadoutSwitcher ignores number keys with Shift.
 	clip_number = number
-	get_viewport().set_input_as_handled()
 
 
 ## Starts the punch clip on the whole body (false: no clip, or the mech cannot play it now).
