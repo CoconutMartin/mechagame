@@ -69,6 +69,22 @@ static func apply(skeleton: Skeleton3D, amount: float, lean_deg: float, torso_le
 		skeleton.set_bone_pose_rotation(torso, torso_local.basis.orthonormalized().get_rotation_quaternion())
 
 
+## The leg as it is now (bones, lengths, ankle place, foot turn, hip place in the pelvis) for other leg poses
+## (SkeletalKneelPose). names: the thigh, shin and foot bone names.
+static func read_leg(skeleton: Skeleton3D, names: Array) -> Dictionary:
+	var typed: Array[StringName] = []
+	for bone_name in names:
+		typed.append(StringName(bone_name))
+	return _leg(skeleton, typed)
+
+
+## Two-bone leg solve (see _solve) for other leg poses: the pelvis at pelvis_pose, the ankle at ankle, the
+## foot at foot_basis, the knee toward pole (skeleton space). leg comes from read_leg().
+static func solve_leg(skeleton: Skeleton3D, pelvis_pose: Transform3D, leg: Dictionary, ankle: Vector3, foot_basis: Basis,
+		pole: Vector3) -> void:
+	_solve(skeleton, pelvis_pose, leg, ankle, foot_basis, pole)
+
+
 ## Hip-to-ankle length for an inner knee angle.
 static func _reach(upper: float, lower: float, knee_deg: float) -> float:
 	return sqrt(upper * upper + lower * lower - 2.0 * upper * lower * cos(deg_to_rad(knee_deg)))

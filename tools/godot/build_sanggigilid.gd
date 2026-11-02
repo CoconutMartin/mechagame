@@ -337,6 +337,12 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	jump_pose.mech = root
 	jump_pose.jump_charge = root.get_node("MechJumpCharge") as MechJumpCharge
 	jump_pose.landing_recovery = root.get_node("MechLandingRecovery") as MechLandingRecovery
+	# The Ctrl kneel (user report 2026-11-02: only the camera lowered) after the jump pose, before the arm rig.
+	var kneel_pose := SkeletalKneelPose.new()
+	kneel_pose.name = "KneelPose"
+	visual.add_child(kneel_pose)
+	kneel_pose.model = model
+	kneel_pose.mech = root
 	var rig := SkeletalArmRig.new()
 	rig.name = "ArmRig"
 	visual.add_child(rig)
@@ -378,6 +384,13 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	hit_animation.health = root.get_node("MechHealth") as MechHealth
 	hit_animation.arm_rig = rig
 	hit_animation.melee = melee_animation
+	# A flinch clip has the whole body: while one plays, the kneel puts the hips and legs back on.
+	var kneel_hold := SkeletalKneelPose.new()
+	kneel_hold.name = "KneelPoseHit"
+	visual.add_child(kneel_hold)
+	kneel_hold.model = model
+	kneel_hold.mech = root
+	kneel_hold.after_hit_clip = true
 	# Stuns and knock-downs after the hit reactions (they take over from them).
 	var stagger_animation := SkeletalStaggerAnimation.new()
 	stagger_animation.name = "StaggerAnimation"
@@ -395,6 +408,14 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	death_animation.health = root.get_node("MechHealth") as MechHealth
 	death_animation.arm_rig = rig
 	var weapon_pose := weapon_animation.get_node("WeaponPose") as WeaponPose
+	# The head stays steady while a weapon is aimed or fires (user request 2026-11-02): after every pose and clip.
+	var head_steady := SkeletalHeadSteady.new()
+	head_steady.name = "HeadSteady"
+	visual.add_child(head_steady)
+	head_steady.model = model
+	head_steady.mech = root
+	head_steady.weapon_pose = weapon_pose
+	head_steady.weapons = root.get_node("WeaponController") as WeaponController
 	weapon_pose.aim_anchor = torso.get_node("AimAnchor")
 	var bounce := WeaponBounce.new()
 	bounce.name = "WeaponBounce"
@@ -515,6 +536,8 @@ func _wrist_pin(skeleton: Skeleton3D, side: String, model: Node3D) -> Vector3:
 func _set_camera(root: Mech) -> void:
 	var rig := root.get_node("CameraRig") as MechCameraRig
 	rig.pivot_height = 7.3
+	# The camera goes down with the body of the kneel (SkeletalKneelPose: the head comes down about 2.4 m; the rig scales this by the mech size, 1.05).
+	rig.kneel_height_drop = 2.29
 	rig.start_pitch_deg = 0.1
 	var arm := root.get_node("CameraRig/Pitch/SpringArm") as SpringArm3D
 	arm.position.x = 6.75

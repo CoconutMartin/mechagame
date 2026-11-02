@@ -1,7 +1,8 @@
 class_name MechKneel
 extends Node
 ## Press Ctrl to kneel: right knee on the ground, left foot forward. Press Ctrl again, or W, to stand.
-## The mech cannot move, boost, or charge a jump while it kneels.
+## The mech cannot move, boost, or charge a jump while it kneels. This node only holds the amount (0 to 1); the body
+## pose is SkeletalKneelPose (a skeleton modifier), the camera drop is MechCameraRig.kneel_height_drop.
 
 @export var mech: Mech
 @export var input: MechInput
