@@ -30,6 +30,9 @@ enum Slot { ARM, BACK }
 ## Max range in meters (user choice 2026-10-16: MechWarrior Online ranges): a bullet, beam or missile ends
 ## here (the damage reaches 0), and the lock-on reaches this far. Past it the crosshair stays white.
 @export var range_m: float = 1500.0
+## Screen disruption each hit on the player's mech adds (0 = none; electric pulse weapons, user request 2026-11-02;
+## ScreenDisruption, 1 = full). Per pellet for a shotgun.
+@export var screen_disruption: float = 0.0
 ## Optimal range in meters (MWO "Range"): full damage up to it, then linear down to 0 at range_m.
 ## 0 = no falloff (full damage up to range_m).
 @export var effective_range_m: float = 0.0

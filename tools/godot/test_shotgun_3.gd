@@ -29,13 +29,14 @@ func _now() -> float:
 	return Time.get_ticks_msec() / 1000.0
 
 
-func _equip(switcher: LoadoutSwitcher, file: String) -> MechWeapon:
+func _equip(switcher: LoadoutSwitcher, file: String, left: bool = false) -> MechWeapon:
 	var loadout := switcher.current_loadout.duplicate() as Loadout
-	loadout.weapon_right = load(file) as WeaponData
-	loadout.weapon_left = null
+	loadout.weapon_right = null if left else load(file) as WeaponData
+	loadout.weapon_left = load(file) as WeaponData if left else null
 	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
 	await _frames(60)
-	return (switcher.mech.find_child("WeaponController", true, false) as WeaponController).right_weapon
+	var weapons := switcher.mech.find_child("WeaponController", true, false) as WeaponController
+	return weapons.left_weapon if left else weapons.right_weapon
 
 
 func _pellets() -> Array[Node]:
@@ -68,7 +69,7 @@ func _run() -> void:
 	Input.action_press("use_right_arm")
 	var t0 := _now()
 	await _frames(6)
-	_check(gun.spin_speed > 0.0 and absf(spinner.rotation.z - spun) > 0.01, "the heads spin while held (%.0f deg/s)" % gun.spin_speed)
+	_check(absf(spinner.rotation.z - spun) < 0.001, "the heads stay still while held (no spin)")
 	_check(times.is_empty(), "no shot before 0.2 s")
 	while times.is_empty() and _now() - t0 < 2.0:
 		await _frames(1)
@@ -97,9 +98,12 @@ func _run() -> void:
 			"one arc web on the X links (%d)" % ((webs[0] as PulseArcWeb).links.size() if webs.size() > 0 else -1))
 	var with_look := _pellets().filter(func(n: Node) -> bool: return n.get_node_or_null("Look") is PulsePelletLook)
 	_check(with_look.size() == _pellets().size(), "every pellet has the electric look (%d)" % with_look.size())
-	var top := gun.spin_speed
+	await _frames(int(ceil(gun.snap_time * 60.0)) + 2)
+	var snapped := rad_to_deg(gun.snap_angle())
+	_check(absf(snapped - gun.snap_deg) < 0.5, "the heads snap %.0f deg at the shot (%.1f)" % [gun.snap_deg, snapped])
+	var held := spinner.rotation.z
 	await _frames(30)
-	_check(gun.spin_speed < top - 100.0 and gun.spin_speed > 0.0, "the heads slow down after the shot (%.0f -> %.0f deg/s)" % [top, gun.spin_speed])
+	_check(absf(spinner.rotation.z - held) < 0.001, "the heads hold still after the snap")
 	await _frames(60)
 	_check(times.size() == 1, "holding on fires no more (%d shots)" % times.size())
 	Input.action_release("use_right_arm")
@@ -110,6 +114,15 @@ func _run() -> void:
 		await _frames(1)
 	Input.action_release("use_right_arm")
 	_check(times.size() == 2, "a new press fires again (%.2f s after the press)" % (times[1] - t1 if times.size() == 2 else -1.0))
+
+	# Left hand (user report 2026-11-02: Shotgun 3 did not fire in the left arm).
+	var left_gun := await _equip(switcher, "res://data/weapons/shotgun_3.tres", true)
+	var left_shots := [0]
+	left_gun.fired.connect(func() -> void: left_shots[0] += 1)
+	Input.action_press("use_left_arm")
+	await _frames(60)
+	Input.action_release("use_left_arm")
+	_check(left_shots[0] == 1, "Shotgun 3 fires once in the left hand (%d)" % left_shots[0])
 
 	# The first Shotgun: one shot per press.
 	var shotgun := await _equip(switcher, "res://data/weapons/shotgun.tres")

@@ -419,6 +419,10 @@ func is_hand_free(is_right: bool) -> bool:
 
 ## True when this weapon is in a hand (not on the ground, not on the way).
 func holds(weapon: MechWeapon) -> bool:
+	# The left view has no weapon slots of its own: its host (the parent controller) knows the hands (user report
+	# 2026-11-02: Shotgun 3 did not fire in the left hand).
+	if left_arm_view and get_parent() is WeaponController:
+		return (get_parent() as WeaponController).holds(weapon)
 	return weapon != null and (weapon == right_weapon or weapon == left_weapon)
 
 

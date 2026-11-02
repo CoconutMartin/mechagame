@@ -94,6 +94,9 @@ func _impact(point: Vector3, normal: Vector3, hit_body: Object = null) -> void:
 		else:
 			effect.look_at(point + normal, Vector3.FORWARD)
 	var hit_damage := get_damage(point)
+	if weapon_data != null and weapon_data.screen_disruption > 0.0 and hit_body != null:
+		if ScreenDisruption.hits_player(hit_body):
+			ScreenDisruption.hit(self, weapon_data.screen_disruption)
 	if hit_body != null and hit_body.has_method(&"on_hit"):
 		hit_body.on_hit(hit_damage, point - velocity.normalized() * 10.0)
 		if weapon_data != null and weapon_data.stagger_points > 0.0:

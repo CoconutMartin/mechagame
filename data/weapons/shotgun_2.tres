@@ -30,6 +30,7 @@ rest_transform = Transform3D(0.9444027, -0.0352315, -0.3268981, 0.2265841, 0.790
 aim_anchor = Vector3(1.5688, 1.6871, -0.9863)
 right_pole_rest = Vector3(0.4000, -1.0000, 0.5000)
 right_pole_aim = Vector3(0.4000, -1.0000, 0.5000)
+screen_disruption = 0.12
 heat_gun = true
 heat_per_use = 18.0
 heat_cooling = 16.0
