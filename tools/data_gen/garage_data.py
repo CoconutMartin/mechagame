@@ -31,9 +31,7 @@ SANGGIGILID = {
 # Back packs (user decision 2026-10-31, replace the FCS slot): file, name, weight, HP, aux slots,
 # bonus (BackPackPart.Bonus: 1 energy, 2 HP, 3 boost), bonus percent.
 BACK_PACKS = [
-    ("backpack_light", "Light Pack", 0.4, 120.0, 1, 3, 6.0),
-    ("backpack_medium", "Aux Pack", 0.8, 200.0, 2, 1, 10.0),
-    ("backpack_heavy", "Heavy Pack", 1.6, 320.0, 3, 2, 5.0),
+    # Light, Aux and Heavy Packs removed (user request 2026-11-02).
     # Ammo Pack (user picture 2026-10-31): no aux slot, no bonus, six ammo canisters (ammo_canisters, written below).
     ("backpack_ammo", "Ammo Pack", 2.4, 260.0, 0, 0, 0.0),
     # Missile Pack (user picture 2026-10-31): four canisters for missile pods only (canister_kinds, written below).

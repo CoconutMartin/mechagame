@@ -26,11 +26,17 @@ var _position_tracks := {}
 var _ground := {}
 ## Hip height above the soles when standing at rest (m).
 var stand_height: float = 6.0
+## Part collisions (user request 2026-11-02, the Pile Bunker leap: the landing clip put the head into the chest): the
+## clips turn the head at most this far from its rest (swing, twist; degrees), like the melee clips
+## (SkeletalMeleeAnimation.head_clip_limit). Swing below 0 = no limit.
+var head_limit: Vector2 = Vector2(0.0, 25.0)
+var _head: int = -1
 
 
 func setup(target: Skeleton3D) -> void:
 	skeleton = target
 	pelvis = skeleton.find_bone(PELVIS)
+	_head = skeleton.find_bone(&"head")
 	for names: Array in LEG_BONES:
 		var leg := {
 			"thigh": skeleton.find_bone(names[0]), "shin": skeleton.find_bone(names[1]),
@@ -103,6 +109,9 @@ func _sample_at(clip: AirClip, time: float) -> Dictionary:
 	var tracks: Dictionary = _tracks[animation]
 	for bone: int in tracks:
 		out[bone] = animation.rotation_track_interpolate(tracks[bone], time)
+	if out.has(_head) and head_limit.x >= 0.0:
+		var rest := skeleton.get_bone_rest(_head).basis.get_rotation_quaternion()
+		out[_head] = JointLimits.clamp_with(rest, out[_head] as Quaternion, head_limit)
 	return out
 
 

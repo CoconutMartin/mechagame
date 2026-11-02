@@ -27,6 +27,11 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 ## Punch: arm reaching forward.
 @export var punch_position: Vector3 = Vector3(2.1, 1.4, -4.0)
 @export var punch_direction: Vector3 = Vector3(-0.05, 0.0, -1.0)
+## Charge pose (user request 2026-11-02: "arms and shoulders keep changing positions, keep them stable; forearm flat"):
+## the fist pulled back beside the chest, the forearm level and the stake forward. Held still while the stake powers up
+## and the mech walks.
+@export var charge_position: Vector3 = Vector3(2.4, 1.4, -2.3)
+@export var charge_direction: Vector3 = Vector3(0.0, 0.0, -1.0)
 
 ## Model place on the right forearm (elbow space: -Y runs down the forearm to the fist, -X is the
 ## outer side, +Z is the top of the forearm). Far enough down the forearm and out that the clamps
@@ -138,6 +143,27 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export var power_shake_min: float = 0.03
 @export var power_shake_max: float = 0.12
 
+@export_group("Walk while charging")
+## While the stake powers up the mech can walk (user request 2026-11-02), at this part of its walk speed; no run or boost.
+@export var charge_walk_speed_scale: float = 0.6
+## Old behavior: the "Idle - pilebunker charging" clip loops on the whole body during the power-up (the arms move with
+## it, and the mech stands still). Off since 2026-11-02 (the fixed charge pose).
+@export var charge_clip_loop: bool = false
+
+@export_group("Leap")
+## Release with punch clip 1 (or no clip): the mech leaps at the target while the arm swings, and the stakes hit at the
+## end of the leap (user request 2026-11-02: replaces the slide). Peak height of the leap (m).
+@export var leap_height: float = 2.2
+## Longest leap (m). Below 0: the forward dodge length (Space twice + W, the dodge clip step_forward), as asked.
+@export var leap_max_distance: float = -1.0
+## Parts of the flight time: the arm holds the wind-up until swing_start, then swings to the punch by swing_end
+## (speeding up); the contact check starts at contact_start.
+@export_range(0.0, 1.0) var leap_swing_start: float = 0.35
+@export_range(0.0, 1.0) var leap_swing_end: float = 0.95
+@export_range(0.0, 1.0) var leap_contact_start: float = 0.6
+## The clips that leap (PileBunkerClips numbers). Other clips keep the charge glide and their own clip.
+@export var leap_clip_numbers: PackedInt32Array = PackedInt32Array([1])
+
 @export_group("Charge")
 ## The charge goes toward the mech aim point (the blue ring) and stops this far from it (flat
 ## distance from the mech center), so the punch reaches it. In meters.
@@ -147,7 +173,7 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export var punch_reach: float = 4.9
 @export var punch_cone_deg: float = 60.0
 
-enum State { IDLE, POWER, CHARGE, WINDUP, PUNCH, HOLD, RECOVER, CLIP }
+enum State { IDLE, POWER, CHARGE, WINDUP, PUNCH, HOLD, RECOVER, CLIP, LEAP }
 
 var state: State = State.IDLE
 ## 0 = stake in, 1 = stake fully out.
@@ -161,6 +187,9 @@ var _time: float = 0.0
 var _guard := Transform3D.IDENTITY
 var _windup := Transform3D.IDENTITY
 var _punch := Transform3D.IDENTITY
+var _charge := Transform3D.IDENTITY
+## Flight time of the current leap (s).
+var _leap_time: float = 1.0
 ## 0 = normal pose, 1 = action pose.
 var _pose_weight: float = 0.0
 ## Action pose now (between guard, wind-up and punch).
@@ -236,6 +265,7 @@ func _make_poses() -> void:
 	_guard = _pose_from(guard_position, guard_direction)
 	_windup = _pose_from(windup_position, windup_direction)
 	_punch = _pose_from(punch_position, punch_direction)
+	_charge = _pose_from(charge_position, charge_direction)
 	_action = _guard
 
 
@@ -252,6 +282,7 @@ func cancel() -> void:
 	if state == State.IDLE:
 		return
 	controller.mech.is_lunging = false
+	controller.mech.melee_charge_speed_scale = 1.0
 	if not is_left:
 		controller.mech_shield.force_up = false
 	if state == State.CLIP or (is_instance_valid(_melee) and _melee.is_external_busy(self)):
@@ -359,6 +390,8 @@ func _update(delta: float) -> void:
 				_next(State.RECOVER)
 		State.CLIP:
 			_update_clip(delta)
+		State.LEAP:
+			_update_leap()
 		State.RECOVER:
 			_pose_weight = move_toward(_pose_weight, 0.0, delta / _lower_time())
 			_twist = punch_twist_deg * smoothstep(0.0, 1.0, _pose_weight)
@@ -366,6 +399,7 @@ func _update(delta: float) -> void:
 			if _time >= recover_time or _pose_weight <= 0.0:
 				state = State.IDLE
 	_update_stake(delta)
+	controller.mech.melee_charge_speed_scale = charge_walk_speed_scale if state == State.POWER else 1.0
 	# Charge with the shield up. The lunge moves the mech, so the shield does not slow it down.
 	if not is_left:
 		controller.mech_shield.force_up = state == State.CHARGE
@@ -421,6 +455,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	var number := key.keycode - KEY_0
 	if number < 1 or number > 5:
 		return
+	# A slot with no name is deleted (user request 2026-11-02: delete Shift+2, the coded punch).
+	if clips.get_clip_name(number) == "":
+		return
 	clip_number = number
 	get_viewport().set_input_as_handled()
 
@@ -448,6 +485,8 @@ func _start_clip() -> bool:
 ## The charging clip (user upload 2026-10-30) loops on the whole body while the stake powers up and the mech
 ## charges; the punch clip then blends in from it.
 func _start_charge_loop() -> void:
+	if not charge_clip_loop:
+		return
 	if not is_instance_valid(_melee):
 		_melee = controller.mech.find_child("MeleeAnimation", true, false) as SkeletalMeleeAnimation
 	if _melee == null or punch_clip() == null:
@@ -535,7 +574,7 @@ func _update_power(delta: float) -> void:
 	if has_energy:
 		power = minf(power + delta / power_time, 1.0)
 	_pose_weight = move_toward(_pose_weight, 1.0, delta * guard_speed)
-	_action = _guard.interpolate_with(_windup, 0.35 * power)
+	_action = _charge
 	_twist = lerpf(0.0, charge_twist_deg, smoothstep(0.0, 1.0, _pose_weight))
 	if controller.camera_shake != null:
 		controller.camera_shake.hold_shake(lerpf(power_shake_min, power_shake_max, power))
@@ -544,15 +583,15 @@ func _update_power(delta: float) -> void:
 
 
 func _update_stake(delta: float) -> void:
-	if has_fired and (state == State.PUNCH or state == State.HOLD or (state == State.CLIP and _since_fire < hold_time)):
+	if has_fired and (state in [State.PUNCH, State.HOLD, State.LEAP] or (state == State.CLIP and _since_fire < hold_time)):
 		stake_out = move_toward(stake_out, 1.0, delta / stake_out_time)
 	else:
 		stake_out = move_toward(stake_out, 0.0, delta / stake_back_time)
 	var cocked := -cock_distance * power if state in [State.POWER, State.CHARGE, State.WINDUP] \
-			or (state == State.CLIP and not has_fired) else 0.0
+			or (state in [State.CLIP, State.LEAP] and not has_fired) else 0.0
 	_stake.position = _stake_rest + Vector3(0.0, 0.0, -stake_travel * stake_out - cocked)
 	_glow.level = power if state in [State.POWER, State.CHARGE, State.WINDUP, State.PUNCH] \
-			or (state == State.CLIP and not has_fired) else 0.0
+			or (state in [State.CLIP, State.LEAP] and not has_fired) else 0.0
 	_update_spin(delta)
 	_update_claws(delta)
 
@@ -562,7 +601,7 @@ func _update_stake(delta: float) -> void:
 func _update_claws(delta: float) -> void:
 	if _claws.is_empty():
 		return
-	var open := state == State.RECOVER or (state in [State.PUNCH, State.HOLD, State.CLIP]
+	var open := state == State.RECOVER or (state in [State.PUNCH, State.HOLD, State.CLIP, State.LEAP]
 			and (has_fired or _clip_missed))
 	if open:
 		_claw_open = move_toward(_claw_open, 1.0, delta / maxf(claw_open_time, 0.01))
@@ -577,7 +616,7 @@ func _update_claws(delta: float) -> void:
 func _update_spin(delta: float) -> void:
 	if spin_speed_deg == 0.0:
 		return
-	var spinning := not has_fired and (state in [State.POWER, State.CHARGE, State.WINDUP, State.PUNCH, State.HOLD]
+	var spinning := not has_fired and (state in [State.POWER, State.CHARGE, State.WINDUP, State.PUNCH, State.HOLD, State.LEAP]
 			or (state == State.CLIP and not _clip_missed))
 	if spinning:
 		_spin = move_toward(_spin, 1.0, delta / maxf(spin_up_time, 0.01))
@@ -589,6 +628,10 @@ func _update_spin(delta: float) -> void:
 
 func _start() -> void:
 	var mech := controller.mech
+	mech.melee_charge_speed_scale = 1.0
+	if punch_clip() == null or clip_number in leap_clip_numbers:
+		_start_leap()
+		return
 	_aim_point = controller.mech_aim.aim_point
 	var to_point := _aim_point - mech.global_position
 	to_point.y = 0.0
@@ -602,6 +645,66 @@ func _start() -> void:
 	_cooldown = 1.0 / maxf(data.fire_rate, 0.01)
 	has_fired = false
 	_next(State.CHARGE)
+
+
+## The leap at the target (user request 2026-11-02): the mech jumps toward the blue ring, stopping stop_distance short
+## of it, no farther than the forward dodge; the arm swings during the flight so the stakes hit at its end.
+func _start_leap() -> void:
+	var mech := controller.mech
+	_aim_point = controller.mech_aim.aim_point
+	if is_instance_valid(_melee) and _melee.is_external_busy(self):
+		_melee.stop_external(self)
+	var ik := controller.holding_arm_ik()
+	if ik.target == null and _saved_target != null:
+		ik.target = _saved_target
+	var to_point := _aim_point - mech.global_position
+	to_point.y = 0.0
+	var direction := to_point.normalized()
+	if direction.is_zero_approx():
+		var aim := controller.mech_aim.aim_direction
+		direction = Vector3(aim.x, 0.0, aim.z).normalized()
+	var distance := clampf(to_point.length() - stop_distance, 0.0, leap_reach())
+	var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") * mech.gravity_scale
+	var up_speed := sqrt(2.0 * gravity * maxf(leap_height, 0.1))
+	_leap_time = 2.0 * up_speed / gravity
+	mech.velocity.y = up_speed
+	mech.start_lunge(direction, distance / _leap_time, distance)
+	_cooldown = 1.0 / maxf(data.fire_rate, 0.01)
+	has_fired = false
+	_next(State.LEAP)
+
+
+## The longest leap (m): leap_max_distance, or the forward dodge length.
+func leap_reach() -> float:
+	if leap_max_distance >= 0.0:
+		return leap_max_distance
+	var dodge := controller.mech.dodge
+	if dodge != null and dodge.animation != null and dodge.animation.step_forward != null:
+		return dodge.animation.step_forward.distance
+	return dodge.distance if dodge != null else 12.0
+
+
+## In the leap: the wind-up, then the swing to the aimed punch; the stakes fire on contact; on the landing the punch
+## holds (HOLD, then RECOVER as after the coded punch).
+func _update_leap() -> void:
+	var t := clampf(_time / maxf(_leap_time, 0.01), 0.0, 1.0)
+	_pose_weight = 1.0
+	_punch = _aimed_punch()
+	if t < leap_swing_start:
+		var k := smoothstep(0.0, 1.0, t / maxf(leap_swing_start, 0.01))
+		_action = _charge.interpolate_with(_windup, k)
+		_twist = lerpf(charge_twist_deg, windup_twist_deg, k)
+	else:
+		var k := pow(clampf((t - leap_swing_start) / maxf(leap_swing_end - leap_swing_start, 0.01), 0.0, 1.0), 1.5)
+		_action = _windup.interpolate_with(_punch, k)
+		_twist = lerpf(windup_twist_deg, punch_twist_deg, k)
+	if not has_fired and t >= leap_contact_start:
+		_check_contact()
+	var landed := _time > 0.15 and controller.mech.is_on_floor()
+	if landed or _time > _leap_time + 0.4:
+		controller.mech.is_lunging = false
+		_action = _punch
+		_next(State.HOLD)
 
 
 ## Fires the stake when the nose touches something: a ray along the punch line (fist toward the
@@ -698,6 +801,8 @@ func get_status_text() -> String:
 			text += "  POWER %d%%" % roundi(power * 100.0)
 		State.CHARGE:
 			text += "  CHARGE"
+		State.LEAP:
+			text += "  HIT" if has_fired else "  LEAP"
 		State.WINDUP, State.PUNCH:
 			text += "  PUNCH"
 		State.CLIP:

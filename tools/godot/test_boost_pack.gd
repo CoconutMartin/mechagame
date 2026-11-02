@@ -8,7 +8,7 @@ extends SceneTree
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
 const PACK := "res://data/parts/backpacks/backpack_boost.tres"
-const OTHER_PACK := "res://data/parts/backpacks/backpack_medium.tres"
+const OTHER_PACK := "res://data/parts/backpacks/backpack_field.tres"
 const QUAD_PACK := "res://data/parts/backpacks/backpack_quad.tres"
 const POWER_PACK := "res://data/parts/backpacks/backpack_power.tres"
 const FIELD_PACK := "res://data/parts/backpacks/backpack_field.tres"

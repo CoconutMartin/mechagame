@@ -2,7 +2,8 @@ class_name PileBunkerClips
 extends Resource
 ## The Pile Bunker punch clips by number (user request 2026-10-29: "bind each animation to a number 1 - 5", for more
 ## Pile Bunker weapons): slot n (1 to 5) is entry n - 1. A Pile Bunker picks one with PileBunkerWeapon.clip_number;
-## Shift + 1 to 5 switches the player's Pile Bunker clip in play (tests). An empty slot (null) plays the coded punch.
+## Shift + 1 to 5 switches the player's Pile Bunker clip in play (tests). Slot 1 (no clip used: the leap punch, 2026-11-02);
+## a slot with an empty name is deleted (slot 2, user request 2026-11-02) and Shift + its number does nothing.
 
 ## Names for the HUD, one per slot.
 @export var names: PackedStringArray = []

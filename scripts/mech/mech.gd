@@ -205,6 +205,9 @@ var _push_pending: float = 0.0
 var _push_velocity: Vector3 = Vector3.ZERO
 ## True during a blade lunge (the boosters push the mech toward the target).
 var is_lunging: bool = false
+## A melee weapon powers up (Pile Bunker, user request 2026-11-02: walk while charging): the walk target speed is
+## scaled by this, and there is no run or boost. 1 = normal.
+var melee_charge_speed_scale: float = 1.0
 var _lunge_direction: Vector3 = Vector3.ZERO
 var _lunge_speed: float = 0.0
 var _lunge_left: float = 0.0
@@ -553,7 +556,7 @@ func _update_boost(delta: float) -> void:
 	if is_on_floor():
 		wants_boost = input.boost_held and has_input and is_boost_ready() \
 				and not landing_recovery.is_recovering() and not jump_charge.is_charging and not kneel.is_kneeling \
-				and not dodge.is_busy() and not is_bracing
+				and not dodge.is_busy() and not is_bracing and melee_charge_speed_scale >= 1.0
 	else:
 		# Shift + a move key fires the boosters in the air. A move key alone uses free steering.
 		wants_boost = input.boost_held and has_input
@@ -562,7 +565,8 @@ func _update_boost(delta: float) -> void:
 	# Shift held after the walk steps: run until boost is ready.
 	is_running = is_on_floor() and not is_boosting and input.boost_held and has_input \
 			and _walk_steps >= boost_start_steps and not landing_recovery.is_recovering() \
-			and not jump_charge.is_charging and not kneel.is_kneeling and not is_bracing
+			and not jump_charge.is_charging and not kneel.is_kneeling and not is_bracing \
+			and melee_charge_speed_scale >= 1.0
 	if not is_running and not is_boosting:
 		# The run steps start again from zero before the next boost.
 		_run_steps_done = 0
@@ -654,7 +658,7 @@ func _update_horizontal(delta: float) -> void:
 		target = _limit_for_shield(wish * get_run_speed())
 		rate = acceleration
 	else:
-		target = _limit_for_shield(wish * _get_walk_speed(wish))
+		target = _limit_for_shield(wish * _get_walk_speed(wish) * melee_charge_speed_scale)
 		rate = _get_exit_deceleration() if is_exiting_boost and on_floor else acceleration
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)

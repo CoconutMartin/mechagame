@@ -9,7 +9,7 @@
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_booster.tres" id="booster"]
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_generator.tres" id="generator"]
 [ext_resource type="Resource" path="res://data/weapons/beam_rifle.tres" id="beam_rifle"]
-[ext_resource type="Resource" path="res://data/parts/backpacks/backpack_medium.tres" id="back_pack"]
+[ext_resource type="Resource" path="res://data/parts/backpacks/backpack_field.tres" id="back_pack"]
 [ext_resource type="Resource" path="res://data/equipment/pulse_scan_g2.tres" id="pulse_scan"]
 
 [resource]
