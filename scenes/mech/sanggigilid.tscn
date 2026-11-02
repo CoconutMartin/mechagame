@@ -14,6 +14,8 @@
 [ext_resource type="Script" path="res://scripts/animation/skeletal_aim_stance.gd" id="12_24fdn"]
 [ext_resource type="Script" path="res://scripts/animation/skeletal_jump_pose.gd" id="13_me5m8"]
 [ext_resource type="Script" path="res://scripts/animation/skeletal_arm_rig.gd" id="14_tn8qr"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_kneel_pose.gd" id="kneel_pose_1"]
+[ext_resource type="Script" path="res://scripts/animation/skeletal_head_steady.gd" id="head_steady_1"]
 [ext_resource type="Script" path="res://scripts/animation/skeletal_dodge_animation.gd" id="15_jrx5d"]
 [ext_resource type="Script" path="res://scripts/animation/skeletal_melee_animation.gd" id="16_jc2vq"]
 [ext_resource type="Script" path="res://scripts/animation/skeletal_hit_animation.gd" id="17_tjmys"]
@@ -235,6 +237,19 @@ landing_recovery = NodePath("../../MechLandingRecovery")
 leg_bones_left = PackedStringArray("thigh_L", "shin_L", "foot_L")
 leg_bones_right = PackedStringArray("thigh_R", "shin_R", "foot_R")
 
+[node name="KneelPose" type="SkeletonModifier3D" parent="Visual" unique_id=1403902741 node_paths=PackedStringArray("model", "mech")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+active = true
+influence = 1.0
+script = ExtResource("kneel_pose_1")
+model = NodePath("../Model")
+mech = NodePath("../..")
+
 [node name="ArmRig" type="SkeletonModifier3D" parent="Visual" unique_id=1531823328 node_paths=PackedStringArray("model", "torso", "shoulder_left", "shoulder_right", "ik_left", "ik_right", "weapon_pose", "torso_pose", "weapons", "stance", "jump_pose", "shoulder_mounts")]
 unique_name_in_owner = false
 process_mode = 0
@@ -345,6 +360,20 @@ health = NodePath("../../MechHealth")
 arm_rig = NodePath("../ArmRig")
 melee = NodePath("../MeleeAnimation")
 
+[node name="KneelPoseHit" type="SkeletonModifier3D" parent="Visual" unique_id=1403902743 node_paths=PackedStringArray("model", "mech")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+active = true
+influence = 1.0
+script = ExtResource("kneel_pose_1")
+model = NodePath("../Model")
+mech = NodePath("../..")
+after_hit_clip = true
+
 [node name="StaggerAnimation" type="SkeletonModifier3D" parent="Visual" unique_id=1759893005 node_paths=PackedStringArray("model", "mech", "health", "arm_rig")]
 unique_name_in_owner = false
 process_mode = 0
@@ -416,6 +445,21 @@ script = ExtResource("21_smi74")
 thumb_azimuths = PackedFloat32Array(0, 30, 60, 90, 120)
 thumb_elevations = PackedFloat32Array(-30, -60, -80)
 thumb_rolls = PackedFloat32Array(30, 90, 150, 210)
+
+[node name="HeadSteady" type="SkeletonModifier3D" parent="Visual" unique_id=1403902742 node_paths=PackedStringArray("model", "mech", "weapon_pose", "weapons")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+rotation_edit_mode = 0
+rotation_order = 2
+top_level = false
+visible = true
+visibility_parent = NodePath("")
+active = true
+influence = 1.0
+script = ExtResource("head_steady_1")
+model = NodePath("../Model")
+mech = NodePath("../..")
+weapon_pose = NodePath("../../WeaponAnimation/WeaponPose")
+weapons = NodePath("../../WeaponController")
 
 [node name="AccessoryFollow" type="SkeletonModifier3D" parent="Visual" unique_id=946171408 node_paths=PackedStringArray("model")]
 unique_name_in_owner = false
@@ -499,6 +543,7 @@ script = ExtResource("34_0hk3n")
 target = NodePath("..")
 free_aim = NodePath("FreeAim")
 pivot_height = 7.3
+kneel_height_drop = 2.29
 class_tuning = SubResource("Resource_mhvyg")
 start_pitch_deg = 0.1
 
