@@ -6,6 +6,7 @@
 [node name="BeamRifle2" type="Node3D"]
 script = ExtResource("script")
 glow_paths = Array[NodePath]([NodePath("Model/RailTopBore"), NodePath("Model/RailTopBoreRing"), NodePath("Model/RailBottomBore"), NodePath("Model/RailBottomBoreRing")])
+heat_glow_paths = Array[NodePath]([NodePath("Model/CoilCore"), NodePath("Model/Fin0"), NodePath("Model/Fin1"), NodePath("Model/Fin2"), NodePath("Model/Fin3"), NodePath("Model/Fin4"), NodePath("Model/Fin5")])
 
 [node name="Model" parent="." instance=ExtResource("model")]
 

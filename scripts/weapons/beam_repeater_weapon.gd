@@ -8,6 +8,9 @@ extends GunWeapon
 ## Beam Rifle 4 uses it as a sniper beam (user choice 2026-11-01): one heavy beam per shot, a long wait between
 ## shots (data.fire_rate), no heat (data.heat_per_use 0: the HUD shows READY or COOLING), the muzzle ring flashing
 ## orange.
+## Heat glow (user 2026-11-02: the black ribbed coil on the barrel "should turn bright red when it reaches max heat
+## levels"): heat_glow_paths meshes (the six barrel fins) go from dark at no heat, through a dull deep red, to bright red
+## at full heat and overheat, and cool back down with the heat.
 ## It is a GunWeapon, so the drop, the dual-gun rules and the AI treat it like a gun.
 
 const BEAM := preload("res://scenes/effects/beam_shot.tscn")
@@ -24,6 +27,17 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 @export var glow_color: Color = Color(1.0, 0.08, 0.04)
 @export var glow_hold: float = 0.05
 @export var glow_fade: float = 0.3
+## Meshes that glow with the heat (Beam Rifle 2: the ribbed coil on the barrel, Model/Fin0..5). Empty = none.
+@export var heat_glow_paths: Array[NodePath] = []
+## Glow color at the lowest visible heat (dull, deep red) and at full heat (bright red).
+@export var heat_color_low: Color = Color(0.45, 0.02, 0.0)
+@export var heat_color_high: Color = Color(1.0, 0.04, 0.02)
+## Glow strength at full heat. Kept low: strong emission washes out to yellow or peach in Godot.
+@export var heat_energy_max: float = 2.2
+## Curve of the glow strength over the heat (0 to 1): 1 = linear, above 1 = dim until the heat is high.
+@export_range(0.5, 4.0) var heat_energy_power: float = 1.6
+## Color curve over the heat: 1 = linear, below 1 = the bright red comes sooner.
+@export_range(0.5, 4.0) var heat_color_power: float = 1.3
 ## Thickness of a bolt's beam, in meters.
 @export var bolt_width: float = 0.25
 ## Seconds a bolt's beam takes to fade.
@@ -35,6 +49,8 @@ var _muzzles: Array[Node3D] = []
 var _next_muzzle: int = 0
 var _last_mark: float = 0.0
 var _glow := ShotGlow.new()
+var _heat_glow: Array[StandardMaterial3D] = []
+var _heat_rest: Array[Color] = []
 
 
 func _ready() -> void:
@@ -52,6 +68,35 @@ func _ready() -> void:
 	for path in glow_paths:
 		meshes.append(get_node(path) as MeshInstance3D)
 	_glow.setup(meshes)
+	for path in heat_glow_paths:
+		var material := ShotGlow.glow_material(get_node(path) as MeshInstance3D, heat_color_low)
+		_heat_glow.append(material)
+		_heat_rest.append(material.albedo_color)
+	_show_heat()
+
+
+func _update(delta: float) -> void:
+	super._update(delta)
+	_show_heat()
+
+
+## The heat glow level now, 0 (cold) to 1 (full heat).
+func heat_level() -> float:
+	return clampf(heat / 100.0, 0.0, 1.0) if data != null and uses_heat() else 0.0
+
+
+func _show_heat() -> void:
+	if _heat_glow.is_empty():
+		return
+	var level := heat_level()
+	var color := heat_color_low.lerp(heat_color_high, pow(level, heat_color_power))
+	var energy := heat_energy_max * pow(level, heat_energy_power)
+	for i in _heat_glow.size():
+		var material := _heat_glow[i]
+		material.emission = color
+		material.emission_energy_multiplier = energy
+		# The surface itself turns deep red too, so the sun does not wash the glow out to grey.
+		material.albedo_color = _heat_rest[i].lerp(color * 0.35, level)
 
 
 func _fire() -> void:

@@ -246,6 +246,9 @@ def build():
     for i in range(6):
         u = 966 + i * 14
         tube(f"Fin{i}", GR, u, u + 6, 21, bevel=0.004)
+    # Coil core between the fins: a dark sleeve that the game lights with the heat (user 2026-11-02: the ribbed coil
+    # turns red at max heat; BeamRepeaterWeapon.heat_glow_paths: CoilCore and Fin0..5).
+    tube("CoilCore", D, 964, 1046, 16, bevel=0.0)
     tube("CellCollar0", D, 1050, 1078, 19)
     box("Cell", O, 1078, 1132, 226, 256, 0.24, bevel=0.008)
     for i, u in enumerate((1092, 1116)):

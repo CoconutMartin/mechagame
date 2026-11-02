@@ -33,6 +33,10 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 @export var release_shake: float = 0.075
 ## Extra screen shake and aim jitter at full charge = weapon data values x this value.
 @export var full_charge_kick: float = 2.0
+## Very slight aim kick when a charged beam starts (user 2026-11-02: "very slight recoil when firing charged shot"):
+## degrees up and sideways at full charge, less with less charge. The big kick still comes when the beam ends.
+@export var start_kick_up_deg: float = 0.35
+@export var start_kick_side_deg: float = 0.1
 ## Meshes that light up one after another while charging (back to front), and the emitter lens.
 @export var coil_paths: Array[NodePath] = [^"Coil0", ^"Coil1", ^"Coil2"]
 @export var emitter_path: NodePath = ^"Emitter"
@@ -136,6 +140,9 @@ func _start_discharge() -> void:
 	_end_kick = kick
 	if controller.camera_shake != null:
 		controller.camera_shake.add_shake(data.shake_trauma * kick * release_shake, data.shake_kick * kick * release_shake)
+	if controller.mech_aim != null and (start_kick_up_deg > 0.0 or start_kick_side_deg > 0.0):
+		# The same kick scale as the weapon's recoil settings; a tap gets almost none.
+		controller.mech_aim.kick_aim(start_kick_up_deg * charge, start_kick_side_deg * charge, 0.3)
 	fired.emit()
 
 

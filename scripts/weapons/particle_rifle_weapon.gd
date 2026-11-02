@@ -1,10 +1,13 @@
 class_name ParticleRifleWeapon
 extends GunWeapon
 ## A two-hand charged particle rifle (Beam Rifle 4, user request 2026-11-01). Hold the trigger to charge (charge_time
-## for a full charge; the rifle stays at the low ready and the mech may move while it charges), release it to fire: the mech stops and braces
-## (WeaponController.shoulder_brace, like the Shoulder Cannon), then one large particle shot leaves the muzzle
-## (scenes/weapons/particle_shot.tscn: a slow glowing projectile, not a beam). A part charge fires a smaller,
-## weaker shot. After any shot the rifle cools down for 1 / data.fire_rate seconds (3 s), so a full cycle is 6 s.
+## for a full charge; the rifle stays at the low ready and the mech may move while it charges), release it to fire:
+## the shot leaves on the release frame (user 2026-11-02: "remove this delay so when trigger is released, the
+## projectile is released as well"; it no longer waits for the stop, the brace and the raise). The shot is one large
+## particle projectile (scenes/weapons/particle_shot.tscn: a slow glowing projectile, not a beam) that starts at the
+## muzzle and flies toward the aim point, also when the rifle is not raised. A part charge fires a smaller, weaker
+## shot. After any shot the rifle cools down for 1 / data.fire_rate seconds (6 s since 2026-11-02: the old 3 s plus 3
+## s more), so a full cycle is 3 s of charge and 6 s of cool down.
 ## Light bars (bar_paths, body -> midsection -> barrel): they light one after another as the charge grows; at the
 ## shot all of them are fully lit whatever the charge, then they fade together over the cool down. No light =
 ## ready to fire.
@@ -27,20 +30,16 @@ const SHOT := preload("res://scenes/weapons/particle_shot.tscn")
 @export var muzzle_glow_color: Color = Color(1.0, 0.38, 0.0)
 @export var muzzle_glow_hold: float = 0.1
 @export var muzzle_glow_fade: float = 0.6
-## The mech must be slower than this (m/s) for the shot to leave.
-@export var max_fire_speed: float = 0.5
 ## A full shot pushes the mech back this far (m); a part charge pushes less.
 @export var push_back_m: float = 1.0
 
 ## 0 to 1 while the trigger is held.
 var charge: float = 0.0
-## True while a released shot waits for the brace.
-var armed: bool = false
-## 1 while a released shot waits for the brace, else 0 (AiPilot reads it like BeamRifleWeapon.discharge_left:
+## Always 0: a shot leaves at the release, so none waits (AiPilot reads it like BeamRifleWeapon.discharge_left:
 ## no new charge while it is above 0).
 var discharge_left: float = 0.0
 
-## Charge of the shot that waits or left last.
+## Charge of the shot that left last.
 var _shot_charge: float = 0.0
 var _bars: Array[StandardMaterial3D] = []
 ## The bars' own (dark) color at rest.
@@ -71,51 +70,39 @@ func is_release_charge_weapon() -> bool:
 	return true
 
 
-## True while charging or while a shot waits (WeaponController keeps it the active weapon).
+## True while charging (WeaponController keeps it the active weapon).
 func is_busy() -> bool:
-	return trigger_held or armed
+	return trigger_held
 
 
-## Raised only while a shot waits (the rifle comes up for the shot); the charge is at the low ready.
+## Never raised: the charge and the shot happen at the low ready (the default would raise it while the trigger is held).
 func holds_raised() -> bool:
-	return armed
-
-
-## The charge happens at the low ready, so the mech may walk while it charges (user 2026-11-01; the sniping stance
-## of the two-hand rifles locks walking only while the rifle is raised: RMB, or the shot).
-func raise_on_trigger() -> bool:
 	return false
 
 
-## A released shot asks the mech to stop and brace (WeaponController.shoulder_brace).
-func wants_brace() -> bool:
-	return armed
+## The charge happens at the low ready, so the mech may walk while it charges (user 2026-11-01; the sniping stance
+## of the two-hand rifles locks walking only while the rifle is raised: RMB).
+func raise_on_trigger() -> bool:
+	return false
 
 
 func _update(delta: float) -> void:
 	var lost := controller.mech.is_fallen or controller.mech.is_wrecked or not controller.holds(self)
 	if lost:
 		charge = 0.0
-		armed = false
-	elif armed:
-		# The shot waits until the brace is set, the mech stands still and the rifle is raised.
-		var brace := controller.shoulder_brace
-		if brace != null and brace.is_set() and is_stopped() and controller.weapon_pose.aim_amount >= 0.9:
-			_fire()
 	elif trigger_held and can_use():
 		charge = minf(charge + delta / maxf(charge_time, 0.01), 1.0)
 	elif trigger_released() and charge > 0.0:
-		armed = true
+		# The shot leaves on the release frame.
 		_shot_charge = charge
 		charge = 0.0
+		_fire()
 	else:
 		charge = 0.0
-	discharge_left = 1.0 if armed else 0.0
 	_show()
 
 
 func _fire() -> void:
-	armed = false
 	consume()
 	var power := lerpf(min_power, 1.0, _shot_charge)
 	var origin := _muzzle.global_position
@@ -140,17 +127,9 @@ func _fire() -> void:
 	controller.get_world().add_child(shot)
 	shot.global_position = origin
 	shot.look_at(origin + direction, Vector3.UP if absf(direction.y) < 0.99 else Vector3.FORWARD)
-	if controller.shoulder_brace != null:
-		controller.shoulder_brace.shot()
 	controller.mech.push_back(push_back_m * power)
 	_muzzle_glow.flash()
 	_after_shot()
-
-
-## True while the mech stands still on the ground.
-func is_stopped() -> bool:
-	var mech := controller.mech
-	return mech.is_on_floor() and mech.get_horizontal_speed() < max_fire_speed
 
 
 ## Cool down left as a part of the full cool down (1 just after a shot, 0 when ready).
@@ -161,7 +140,7 @@ func cooling() -> float:
 func _show() -> void:
 	var count := _bars.size()
 	var cool := cooling()
-	var level := charge if not armed else _shot_charge
+	var level := charge
 	for i in count:
 		var lit := 0.0
 		if cool > 0.0:
@@ -176,8 +155,6 @@ func _show() -> void:
 
 
 func get_status_text() -> String:
-	if armed:
-		return "BRACING  %d%%" % roundi(_shot_charge * 100.0)
 	if charge > 0.0:
 		return "CHARGE %s %d%%" % [_bar(charge), roundi(charge * 100.0)]
 	if cooling() > 0.0:

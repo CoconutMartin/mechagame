@@ -7,6 +7,7 @@
 script = ExtResource("script")
 ring_paths = Array[NodePath]([NodePath("Model/Ring0"), NodePath("Model/Ring1"), NodePath("Model/Ring2"), NodePath("Model/Ring3"), NodePath("Model/Ring4"), NodePath("Model/Ring5"), NodePath("Model/Ring6"), NodePath("Model/UpperRail"), NodePath("Model/LowerRail")])
 prong_paths = Array[NodePath]([NodePath("Model/ProngTipTop"), NodePath("Model/ProngTipBottom")])
+sequence_count = 7
 
 [node name="Model" parent="." instance=ExtResource("model")]
 

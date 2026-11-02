@@ -6,8 +6,9 @@ extends GunWeapon
 ## starts (only a knock-down, a drop or a lost arm stop it). Then it cools down for 1 / data.fire_rate seconds.
 ## The barrel rings are grey at rest; during the charge they all light up to bright orange (fully lit at the shot),
 ## then fade (user 2026-11-01: "All rings glow when fully charged, greyish at rest"; glow_when_ready keeps them lit
-## while it is ready). The
-## two prong tips at the muzzle glow red at each shot. No heat (heat_per_use 0).
+## while it is ready). User 2026-11-02: the rings light one after another from the back ring to the front ring and then
+## the prong tips (orange) during the charge, not together; after the shot the glow fades over ring_fade (1 s) and
+## the cannon cannot fire until the fade ends. The prong tips flash red at each shot. No heat (heat_per_use 0).
 
 const BOLT := preload("res://scenes/weapons/ppc_bolt.tscn")
 
@@ -17,11 +18,14 @@ const BOLT := preload("res://scenes/weapons/ppc_bolt.tscn")
 @export var ring_paths: Array[NodePath] = []
 ## Prong tip meshes that glow red at a shot.
 @export var prong_paths: Array[NodePath] = []
+## The first sequence_count entries of ring_paths (the rings, back to front) light one after another during the
+## charge, then the prong tips; the others (the rails) rise with the charge. 0 = all together (the first look).
+@export var sequence_count: int = 0
 @export var ring_color: Color = Color(1.0, 0.28, 0.0)
 ## Ring glow when fully charged.
 @export var ring_energy: float = 2.0
-## Seconds the ring glow takes to fade after the shot.
-@export var ring_fade: float = 0.5
+## Seconds the glow takes to fade after the shot. No new shot starts before it ends (user 2026-11-02).
+@export var ring_fade: float = 1.0
 ## True: the rings stay lit while the rifle is ready to fire (after the cool down).
 @export var glow_when_ready: bool = false
 ## Red glow of the prongs at a shot: strength, seconds fully lit, seconds to fade.
@@ -44,6 +48,8 @@ func _ready() -> void:
 	_prongs.energy = prong_energy
 	_prongs.hold = prong_hold
 	_prongs.fade = prong_fade
+	_prongs.base_color = ring_color
+	_prongs.base_energy = ring_energy
 	add_child(_prongs)
 	var prongs: Array[MeshInstance3D] = []
 	for path in prong_paths:
@@ -70,7 +76,7 @@ func _update(delta: float) -> void:
 				_fire()
 				_prongs.flash()
 				_since_shot = 0.0
-	elif not lost and trigger_held and can_use() and controller.weapon_pose.aim_amount >= 0.9:
+	elif not lost and trigger_held and can_use() and _since_shot >= ring_fade and controller.weapon_pose.aim_amount >= 0.9:
 		charge_left = charge_time
 	_show()
 
@@ -101,15 +107,29 @@ func readiness() -> float:
 
 
 func _show() -> void:
+	# level: the overall glow (charge progress, then the fade after the shot, or lit while ready).
 	var level := 0.0
-	if charge_left >= 0.0:
-		level = 1.0 - charge_left / maxf(charge_time, 0.01)
+	var progress := 0.0
+	var charging := charge_left >= 0.0
+	if charging:
+		progress = 1.0 - charge_left / maxf(charge_time, 0.01)
+		level = progress
 	elif _since_shot < ring_fade:
 		level = 1.0 - _since_shot / maxf(ring_fade, 0.01)
 	elif glow_when_ready and readiness() >= 1.0:
 		level = 1.0
-	for ring in _rings:
-		ring.emission_energy_multiplier = ring_energy * level
+	var in_sequence := mini(sequence_count, _rings.size()) if sequence_count > 0 else 0
+	# Rings back to front, then the prong tips: a wave over the charge (stage i is lit when the wave passed it).
+	var wave := progress * (in_sequence + 1)
+	var tip_level := level
+	for i in _rings.size():
+		var ring_level := level
+		if charging and i < in_sequence:
+			ring_level = clampf(wave - i, 0.0, 1.0)
+		_rings[i].emission_energy_multiplier = ring_energy * ring_level
+	if charging and in_sequence > 0:
+		tip_level = clampf(wave - in_sequence, 0.0, 1.0)
+	_prongs.set_base(tip_level)
 
 
 ## A charge stops when the weapon is turned off or leaves the scene (a broken arm, a drop).
