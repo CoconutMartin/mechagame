@@ -430,10 +430,10 @@ if __name__ == "__main__":
         "aim_twist_deg": 25.0, "aim_tilt_deg": 4.0, "zoom_fov": 43.4},
         "res://scenes/weapons/beam_rifle_3.tscn")
     # Beam Rifle 4 (user picture 2026-11-01, models/guides/beam_rifle_4_ref.png, 10 m, one barrel; hand-made scene
-    # scenes/weapons/beam_rifle_4.tscn, ParticleRifleWeapon): hold to charge (3 s), release, the mech stops, one large
-    # particle shot; 3 s cool down (fire_rate 1/3), no heat. The Beam Rifle hold (left hand markers moved in the scene).
+    # scenes/weapons/beam_rifle_4.tscn, ParticleRifleWeapon): hold to charge (3 s), release = one large particle shot at
+    # once (2026-11-02); 6 s cool down (fire_rate 1/6), no heat. The Beam Rifle hold (left hand markers moved in the scene).
     res("data/weapons/beam_rifle_4.tres", {"display_name": '"Beam Rifle 4"', "weight_t": 5.5, "hp": 300.0,
-        "kind": 1, "two_handed": "true", "fire_rate": 0.33333, "damage": 450.0, "stagger_points": 80.0, "stagger_cap_per_shot": 80.0,
+        "kind": 1, "two_handed": "true", "fire_rate": 0.16667, "damage": 450.0, "stagger_points": 80.0, "stagger_cap_per_shot": 80.0,
         "spread_deg": 0.0, "projectile_speed": 220.0, "range_m": 450.0, "effective_range_m": 300.0,
         "recoil_up_deg": 5.0, "recoil_side_deg": 0.6, "model_kick_back": 0.9, "model_kick_up_deg": 8.0,
         "shake_trauma": 0.22, "shake_kick": 0.2, "heat_per_use": 0.0, "heat_cooling": 10.0, "overheat_cooling": 25.0,
