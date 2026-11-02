@@ -29,16 +29,24 @@ var thrust: float = 0.0
 
 
 func _physics_process(delta: float) -> void:
-	var target := 0.0
-	var airborne := not mech.is_on_floor()
-	if mech.is_boosting or mech.is_lunging:
-		target = air_thrust if airborne or mech.is_lunging else ground_boost_thrust
-	elif airborne and mech.velocity.y > 0.0:
-		target = air_thrust  # Jump jets or dodge hop going up.
-	if dodge != null and dodge.is_dodging and not dodge.is_rolling():
-		target = maxf(target, air_thrust)
+	var target := target_thrust(mech, dodge, ground_boost_thrust, air_thrust)
 	var speed := ignite_speed if target > thrust else fade_speed
 	thrust = move_toward(thrust, target, speed * delta)
+
+
+## The thrust a mech wants now (0 = none): boosting or lunging (ground_thrust on the ground, air_thrust in the air),
+## rising on the jump jets and the dodge hop (air_thrust). Shared by the fire of the pack boosters
+## (BackPackOutlets) and their moving parts (BackPackFlaps).
+static func target_thrust(target_mech: Mech, target_dodge: MechDodge, ground_thrust: float, air_thrust: float) -> float:
+	var target := 0.0
+	var airborne := not target_mech.is_on_floor()
+	if target_mech.is_boosting or target_mech.is_lunging:
+		target = air_thrust if airborne or target_mech.is_lunging else ground_thrust
+	elif airborne and target_mech.velocity.y > 0.0:
+		target = air_thrust  # Jump jets or dodge hop going up.
+	if target_dodge != null and target_dodge.is_dodging and not target_dodge.is_rolling():
+		target = maxf(target, air_thrust)
+	return target
 
 
 ## Flames off at once (before the animation nodes stop, for a fall or death).
