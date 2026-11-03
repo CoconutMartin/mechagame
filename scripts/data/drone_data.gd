@@ -108,9 +108,13 @@ extends Resource
 ## to it with this time constant (s; smaller = faster glide), is there at shift_arrive (m), and fires the next
 ## burst after shift_max_s (s) at most, there or not.
 @export var shift_distance_min: float = 5.0
-@export var shift_pace: float = 0.35
-@export var shift_arrive: float = 0.8
-@export var shift_max_s: float = 1.4
+@export var shift_pace: float = 0.06
+@export var shift_arrive: float = 0.1
+@export var shift_max_s: float = 0.5
+## Quick hop after a burst (user 2026-11-03: "drone move distance = 1 meter, quick movements, maximum flight during
+## this movement is 0.5 sec"): the drone moves this far (m) to one side, up or down, with a clear path and the target
+## still in sight. 0 = pick a new firing place shift_distance_min away instead.
+@export var shift_hop: float = 1.0
 ## Distance from the target's lock point (m), random in this range (inside the gun's 20 m range, user rule).
 @export var attack_distance_min: float = 9.0
 @export var attack_distance_max: float = 15.0

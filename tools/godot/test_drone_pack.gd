@@ -318,8 +318,14 @@ func _flight_tests(mech: Mech) -> void:
 		var spread := places.size() == 3
 		for a in places.size():
 			for b in range(a + 1, places.size()):
-				spread = spread and (places[a] as Vector3).distance_to(places[b]) > 2.5
+				spread = spread and (places[a] as Vector3).distance_to(places[b]) > 0.5
+		# Quick 1 m hops (user 2026-11-03): each next place about shift_hop from the one before.
+		var hops := true
+		for a in range(1, places.size()):
+			var hop := (places[a] as Vector3).distance_to(places[a - 1])
+			hops = hops and hop > 0.5 and hop < 2.0
 		_check(spread, "open: drone %d fires its 3 bursts from 3 different places (%d)" % [k, places.size()])
+		_check(hops, "open: drone %d hops about 1 m between bursts" % k)
 		_check(r[13] <= 20.0, "open: drone %d fires every burst from within 20 m (%.1f m)" % [k, r[13]])
 		_check(r[10] <= 16.0, "open: drone %d has the port facing the dummy at each burst (%.1f degrees)" % [k, r[10]])
 		_check(r[11] <= 15.0, "open: drone %d leans at most 15 degrees (%.1f)" % [k, r[11]])

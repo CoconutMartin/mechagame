@@ -10,7 +10,7 @@ extends AnimatableBody3D
 ## Saucer (user 2026-11-02): the disc flies level (its axis vertical) with a slight bank into its speed, a hover
 ## bob on the model only and a slow spin about the vertical axis. Its barrel is the port in the rim
 ## (DroneMuzzle<n>): when the drone attacks, the body turns so the port faces the target. At the place it fires a
-## burst, then glides to a new place (at least shift_distance_min from the old one, same flank, in range and in
+## burst, then hops shift_hop (1 m, at most shift_max_s 0.5 s; user 2026-11-03) or glides to a new place (at least shift_distance_min from the old one, same flank, in range and in
 ## sight) and fires the next: 3 bursts = 3 position changes (user rule 2026-11-02, replaces "it does not move
 ## after the first shot"). It fires only while it sees the target and the port points at it. At max_flight_s,
 ## after its last move, or when the target is gone, it explodes; with the recall mod (return_home) the way home
@@ -336,12 +336,36 @@ func _pick_place() -> void:
 ## Picks the next firing place of the same flank, at least shift_distance_min from where the drone is. When there is
 ## none, the drone keeps its place.
 func _pick_shift_place() -> void:
+	if data.shift_hop > 0.0 and _pick_hop():
+		return
 	var from := launcher_mech.global_position if is_instance_valid(launcher_mech) else global_position
 	var place := DroneNavigator.find_place(self, data, _target_point, from, flank, global_position, _avoid,
 			global_position, data.shift_distance_min, _used)
 	has_place = place.is_finite()
 	_goal_offset = (place if has_place else global_position) - _target_point
 	goal = _target_point + _goal_offset
+
+
+## A quick hop of shift_hop to one side, up or down (in random order), with a clear path and the target still in
+## sight. False when none works.
+func _pick_hop() -> bool:
+	var to := _target_point - global_position
+	to.y = 0.0
+	var side := to.normalized().cross(Vector3.UP) if to.length() > 0.1 else Vector3.RIGHT
+	var choices: Array[Vector3] = [side, -side, Vector3.UP, Vector3.DOWN, (side + Vector3.UP).normalized(),
+			(-side + Vector3.UP).normalized()]
+	choices.shuffle()
+	for direction in choices:
+		var place := global_position + direction * data.shift_hop
+		# Not back onto an earlier burst place.
+		if DroneNavigator._near_any(place - _target_point, _used, data.shift_hop * 0.5):
+			continue
+		if DroneNavigator.clear(self, global_position, place, data.sight_mask) and _can_shoot_from(place):
+			has_place = true
+			_goal_offset = place - _target_point
+			goal = place
+			return true
+	return false
 
 
 func _read_target_point() -> Vector3:
