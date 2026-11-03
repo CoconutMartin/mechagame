@@ -27,10 +27,20 @@ var _meshes: Array[MeshInstance3D] = []
 
 
 ## Finds the nozzle parts of a pack model (an object with no parts when the model has none).
-static func attach(pack_model: Node3D) -> NozzleHeat:
+static func attach(pack_model: Node3D, heat_ramp: Gradient = null) -> NozzleHeat:
 	var nozzle_heat := NozzleHeat.new()
+	nozzle_heat.ramp = heat_ramp
 	nozzle_heat._setup(pack_model)
 	return nozzle_heat
+
+
+## A blue heat ramp (the Boost Pack's light blue panel fire, 2026-11-03): dark, deep blue, light blue, white-blue.
+static func blue_ramp() -> Gradient:
+	var blue := Gradient.new()
+	blue.offsets = PackedFloat32Array([0.0, 0.25, 0.6, 1.0])
+	blue.colors = PackedColorArray([Color(0.02, 0.06, 0.3, 0.0), Color(0.05, 0.18, 0.7, 0.35),
+			Color(0.25, 0.6, 1.2, 0.7), Color(0.7, 0.9, 1.4, 0.9)])
+	return blue
 
 
 func _setup(model: Node3D) -> void:

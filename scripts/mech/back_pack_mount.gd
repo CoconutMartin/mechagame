@@ -71,7 +71,7 @@ func _attach_model(skeleton: Skeleton3D, pack_data: BackPackPart) -> void:
 		if canister != null:
 			_canisters.append(canister)
 	# Boost outlets (Boost Pack): glow, wind and louver flaps that open while boosting.
-	BackPackOutlets.attach(mech, model)
+	BackPackOutlets.attach(mech, model, pack)
 	BackPackFlaps.attach(mech, model)
 	BackPackEnergyBar.attach(mech, model)
 	# Attack drones (Drone Pack): T locks, release launches.

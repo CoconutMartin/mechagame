@@ -31,6 +31,8 @@ extends Node
 @export var flicker: float = 0.16
 ## Plume length at full thrust, in outlet radii (the radius comes from the OutletGlow plate).
 @export var plume_length_per_radius: float = 18.0
+## Panel flame length at full thrust (m; packs with BackPackPart.panel_flame).
+@export var panel_flame_length: float = 2.0
 ## Light energy at full thrust (0 = no light).
 @export var light_energy: float = 0.5
 ## Gust streaks per second per outlet at full boost.
@@ -55,26 +57,30 @@ var thrust: float = 0.0
 
 var _model: Node3D
 var _winds: Array[CPUParticles3D] = []
-var _plumes: Array[BoosterPlume] = []
+## The fire per outlet: BoosterPlume, or BoosterPanelFlame for a panel pack (both have set_thrust).
+var _plumes: Array[Node3D] = []
+var _part: BackPackPart
 var _heat: NozzleHeat
 var _dust: BoosterDust
 var _light: OmniLight3D
 
 
 ## Adds the outlets for a pack model (null when the model has no Outlet1 node).
-static func attach(target: Mech, pack_model: Node3D) -> BackPackOutlets:
+static func attach(target: Mech, pack_model: Node3D, part: BackPackPart = null) -> BackPackOutlets:
 	if target == null or pack_model == null or pack_model.find_child("Outlet1", true, false) == null:
 		return null
 	var outlets := BackPackOutlets.new()
 	outlets.name = "BackPackOutlets"
 	outlets.mech = target
 	outlets._model = pack_model
+	outlets._part = part
 	target.add_child(outlets)
 	return outlets
 
 
 func _ready() -> void:
-	_heat = NozzleHeat.attach(_model)
+	var panel := _part != null and _part.panel_flame
+	_heat = NozzleHeat.attach(_model, NozzleHeat.blue_ramp() if panel else null)
 	_dust = BoosterDust.attach(self)
 	var center := Vector3.ZERO
 	var count := 0
@@ -86,14 +92,18 @@ func _ready() -> void:
 		var radius := _outlet_radius(i)
 		_winds.append(BoosterGust.make(outlet, radius, wind_rate, wind_speed, wind_spread_deg, wind_life,
 				wind_streak_length, wind_streak_width, wind_color))
-		_plumes.append(BoosterPlume.attach(outlet, radius, radius * plume_length_per_radius))
+		if panel:
+			var plate := _model.find_child("OutletGlow%d" % i, true, false) as MeshInstance3D
+			_plumes.append(BoosterPanelFlame.attach(outlet, plate, _part.flame_color, panel_flame_length))
+		else:
+			_plumes.append(BoosterPlume.attach(outlet, radius, radius * plume_length_per_radius))
 		center += outlet.position + outlet.basis.y * radius * 4.0
 		count += 1
 		i += 1
 	if light_energy > 0.0 and count > 0:
 		_light = OmniLight3D.new()
 		_light.name = "BoosterLight"
-		_light.light_color = Color(1.0, 0.55, 0.2)
+		_light.light_color = _part.flame_color if panel else Color(1.0, 0.55, 0.2)
 		_light.omni_range = 6.0
 		_light.shadow_enabled = false
 		_light.position = center / count
@@ -135,7 +145,7 @@ func _physics_process(delta: float) -> void:
 
 func _process(_delta: float) -> void:
 	for plume in _plumes:
-		plume.set_thrust(thrust, randf_range(-flicker, flicker))
+		plume.call(&"set_thrust", thrust, randf_range(-flicker, flicker))
 	if _light != null:
 		_light.visible = thrust > 0.02
 		_light.light_energy = light_energy * thrust * randf_range(0.85, 1.15)
@@ -163,5 +173,5 @@ func get_dust() -> BoosterDust:
 
 
 ## The exhaust plumes, one per outlet (for tests).
-func get_plumes() -> Array[BoosterPlume]:
+func get_plumes() -> Array[Node3D]:
 	return _plumes

@@ -23,6 +23,10 @@ enum Bonus { NONE, ENERGY, HP, BOOST }
 func canister_fits(weapon: WeaponData) -> bool:
 	return canister_kinds.is_empty() or weapon == null or weapon.kind in canister_kinds
 ## The stat this back pack improves.
+## Booster fire from the whole outlet panel (BoosterPanelFlame) instead of a round plume per outlet (Boost Pack, user
+## request 2026-11-03), and its color.
+@export var panel_flame: bool = false
+@export var flame_color: Color = Color(0.45, 0.8, 1.0)
 @export var bonus: Bonus = Bonus.NONE
 ## Size of the bonus in percent (6 = 6% more).
 @export var bonus_percent: float = 0.0

@@ -11,4 +11,6 @@ hp = 240.0
 aux_slots = 1
 bonus = 3
 bonus_percent = 12.0
+panel_flame = true
+flame_color = Color(0.45, 0.8, 1, 1)
 scene = ExtResource("scene")
