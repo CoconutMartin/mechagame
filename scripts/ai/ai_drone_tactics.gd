@@ -3,7 +3,8 @@ extends Node
 ## Attack drones for an AI pilot (user rule 2026-10-31: "AI can use drones, shoot drones if efficient, try to take
 ## cover if it cannot shoot down drones"). AIPilot makes it and calls it every physics frame.
 ##   Launch: with a drone pack (DroneLauncher), when it has seen its target for the lock time, the target is in
-##   lock range and in sight, and its last drones are gone (or wait_between_launches has passed).
+##   lock range and in sight, the launcher allows a launch (DroneLauncher.can_launch: since 2026-11-04 no cool down and no wait for
+##   its last drones, "for now") and wait_between_launches has passed.
 ##   Threat: enemy drones that fly at this mech. It shoots the nearest one when that is efficient: its right weapon
 ##   is a gun with rounds, the drone is in its range and in sight, and the gun kills it in kill_time_max seconds
 ##   (counting the chance its spread hits the small drone: a heavy rifle or an auto cannon does, an SMG or a
@@ -81,7 +82,7 @@ func update_launch(target: Node3D, sees: bool, delta: float) -> void:
 		return
 	var in_range := mech.global_position.distance_to(target.global_position) <= launcher.data.lock_range_m
 	_lock_seen = _lock_seen + delta if sees and in_range else 0.0
-	if _lock_seen < launcher.data.lock_time or _launch_wait > 0.0 or not launcher.flying.is_empty():
+	if _lock_seen < launcher.data.lock_time or _launch_wait > 0.0 or not launcher.can_launch():
 		return
 	var count := launcher.launch(target)
 	if count > 0:

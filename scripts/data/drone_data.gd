@@ -16,9 +16,17 @@ extends Resource
 @export var lock_box_deg: float = 8.0
 ## Seconds to lock a target.
 @export var lock_time: float = 0.5
-## Seconds after the last drone of a launch is gone or back on its dock before the next launch (user rule
-## 2026-10-31: 10 s; no launch while drones of the mech are in the air).
-@export var cooldown_s: float = 10.0
+## Seconds after the last drone of a launch is gone or back on its dock before the next launch. User 2026-11-04:
+## 0 "for now" (cool down off). It was 10 s (user rule 2026-10-31); set 10 to bring it back.
+@export var cooldown_s: float = 0.0
+## User 2026-11-04: "unlimited use for now". True: the pack never runs out. A launch sends copies of the drone
+## models and the real ones stay on the pack (hidden for launch_time while the copies pop out), a recall drone
+## flies home every time, and the HUD count stays full. False: the old rules (the drones leave the pack; the recall
+## mod gives flights_per_drone flights).
+@export var unlimited: bool = true
+## True: no launch while drones of the mech are in the air (user rule 2026-10-31). User 2026-11-04: false "for now"
+## (a launch can go whenever T is released with a lock).
+@export var one_launch_at_a_time: bool = false
 ## Drones per launch (taken left and right in turn). 2 = one pair.
 @export_range(1, 12) var drones_per_launch: int = 2
 
@@ -57,6 +65,10 @@ extends Resource
 ## aim_max_s seconds of turning at the latest.
 @export var aim_tolerance_deg: float = 15.0
 @export var aim_max_s: float = 0.6
+## Squad sync (user 2026-11-04: "drones switching places and firing should be synchronized"): the drones of one
+## launch start each burst together. A drone that aimed waits this long (s) at most for the others of its squad;
+## after that it fires and the late ones join at their next burst.
+@export var sync_wait_max_s: float = 0.5
 
 ## Layers that block the drone's flight and sight (1 = world, 5 = buildings).
 @export_flags_3d_physics var sight_mask: int = 17
@@ -85,6 +97,20 @@ extends Resource
 ## return_max_s seconds.
 @export var dock_distance: float = 1.0
 @export var return_max_s: float = 10.0
+## The way home keeps off the mech's body (user 2026-11-04: "drones clip through the body when returning"): a
+## cylinder of this radius (m) around the mech (the arms reach 3.5 m) is flown around, on a circle return_orbit_margin
+## (m) outside the drone's hit sphere. Only the last leg goes in: from a stage point return_stage_distance (m) behind
+## the dock along the pack's back normal, straight to the dock. The last leg starts inside a cone behind the dock
+## (half width return_cone_base + return_cone_slope * distance behind it). return_lookahead_deg: how far ahead on
+## the circle the drone steers (degrees).
+## False = the old way home: straight to the dock, through the body (kept to compare in the tests).
+@export var return_avoid_body: bool = true
+@export var return_body_radius: float = 4.0
+@export var return_orbit_margin: float = 0.8
+@export var return_stage_distance: float = 3.5
+@export var return_cone_base: float = 0.6
+@export var return_cone_slope: float = 0.25
+@export var return_lookahead_deg: float = 30.0
 
 @export_group("Attack")
 ## The drone fires from a place this close to its goal (m).
