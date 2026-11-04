@@ -125,6 +125,8 @@ if __name__ == "__main__":
     aim_anchor = (aim_anchor[0] + 0.15, aim_anchor[1], aim_anchor[2])
     res("data/weapons/auto_cannon.tres", "res://scenes/weapons/auto_cannon.tscn", {
         "display_name": '"Auto Cannon"', "weight_t": 3.5, "hp": 300.0, **FIRING, "fire_rate": 0.25, "slot": 0,
+        # A quick tap fires once the cannon is up (user request 2026-11-04, WeaponData.queue_tap).
+        "queue_tap": "true",
         "model_kick_back": 1.2, "model_kick_up_deg": 6.0,
         # 3 hits 4 s apart stagger (user rule 2026-10-22): the meter holds between shots.
         "stagger_hold_s": 4.6,
