@@ -99,6 +99,14 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export_range(1, 5) var clip_number: int = 3
 ## The clip's contact ray starts this far behind the nose, along the stakes (m).
 @export var clip_contact_back: float = 2.0
+## Aim at the crosshair during the clip (user request 2026-11-04: "animate the mech so that the pilebunker edge moves
+## towards the crosshair, all model collision considered"): the arm turns so the nose moves toward the crosshair, by
+## clip_aim_strength, at most clip_aim_max_deg; it comes in over clip_aim_lead seconds before the strike window, holds
+## through it and goes over clip_aim_release seconds after the window or the hit.
+@export var clip_aim_strength: float = 1.0
+@export var clip_aim_max_deg: float = 40.0
+@export var clip_aim_lead: float = 0.25
+@export var clip_aim_release: float = 0.25
 
 @export_group("Model")
 ## The parts in the model (paths from the weapon root): the stake that slides out, the nose (front of
@@ -565,6 +573,25 @@ func clip_hold_target() -> Node3D:
 	if state == State.CLIP or (is_instance_valid(_melee) and _melee.is_external_busy(self)):
 		return _saved_target
 	return null
+
+
+## The clip aim for SkeletalMeleeAnimation (empty when none): which arm, the crosshair point (world), the nose in the
+## forearm bone's frame, the weight now and the largest turn.
+func clip_aim() -> Dictionary:
+	if state != State.CLIP or clip_aim_strength <= 0.0 or not is_instance_valid(_bone_attach) or not is_instance_valid(_melee):
+		return {}
+	var clip := punch_clip()
+	var time := _melee.external_time(self)
+	if clip == null or clip.strikes.size() == 0 or time < 0.0:
+		return {}
+	var window := clip.strikes[0]
+	var weight := smoothstep(window.x - clip_aim_lead, window.x, time) \
+			* (1.0 - smoothstep(window.y, window.y + clip_aim_release, time))
+	if has_fired:
+		weight *= 1.0 - clampf(_since_fire / maxf(clip_aim_release, 0.01), 0.0, 1.0)
+	var nose := (_bone_attach.global_transform.affine_inverse() * _nose.global_transform).origin
+	return {"right": not is_left, "point": controller.mech_aim.aim_point, "nose": nose,
+			"weight": weight * clip_aim_strength, "max_deg": clip_aim_max_deg}
 
 
 ## Contact during the clip: a ray along the stakes from behind the nose to contact_reach past it.

@@ -908,6 +908,11 @@ func _process_modification_with_delta(_delta: float) -> void:
 		_temper_height(skeleton, pelvis_bone, stand_pelvis, weight)
 	_clamp_feet(skeleton)
 	# Part collisions (user request 2026-10-30): the arms the clip drives keep off the body and the legs.
+	# A Pile Bunker clip aims the stake at the crosshair (before the keep-off, so the body stays clear).
+	if arm_rig != null and is_instance_valid(_external) and _external.has_method(&"clip_aim"):
+		var aim: Dictionary = _external.call(&"clip_aim")
+		if not aim.is_empty():
+			arm_rig.aim_clip_arm(aim.right, aim.point, aim.nose, float(aim.weight) * weight, aim.max_deg)
 	if arm_rig != null:
 		arm_rig.keep_clip_arms_off(not keep_right, not keep_left, weight)
 	if arm_rig != null:

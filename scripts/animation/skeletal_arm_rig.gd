@@ -1148,6 +1148,33 @@ func _body_distance(point: Vector3) -> float:
 
 ## Melee clips: each arm the clip drives (right, left) turns out until its points keep clear of the chest, the
 ## pelvis and the legs (clip_keep_off). Call after the clip pose is set (a modifier after this one).
+## Pile Bunker clips (user request 2026-11-04: "when releasing the pilebunker, animate the mech so that the pilebunker
+## edge moves towards the crosshair, all model collision considered"): turns the upper arm about the shoulder so the
+## nose (nose_local, in the forearm bone's frame) moves onto the line from the shoulder to point (world), by weight
+## (0 to 1) of the turn, at most max_deg. Call it before keep_clip_arms_off, which then keeps the arm off the body.
+func aim_clip_arm(right: bool, point: Vector3, nose_local: Vector3, weight: float, max_deg: float) -> void:
+	if weight <= 0.0 or _sides.size() < 2:
+		return
+	var side := _sides[1 if right else 0] as Dictionary
+	var upper: int = side.upper
+	var upper_pose := _skeleton.get_bone_global_pose(upper).orthonormalized()
+	var fore_pose := _skeleton.get_bone_global_pose(side.fore as int)
+	var shoulder := upper_pose.origin
+	var nose := fore_pose * nose_local
+	var target := _skeleton.global_transform.affine_inverse() * point
+	var from := nose - shoulder
+	var to := target - shoulder
+	if from.length() < 0.1 or to.length() < 0.1:
+		return
+	var axis := from.cross(to)
+	if axis.length() < 0.0001:
+		return
+	var angle := minf(from.angle_to(to), deg_to_rad(max_deg)) * clampf(weight, 0.0, 1.0)
+	var turn := Basis(axis.normalized(), angle)
+	var parent_pose := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(upper))
+	_skeleton.set_bone_pose_rotation(upper, (parent_pose.basis.orthonormalized().inverse() * (turn * upper_pose.basis)).get_rotation_quaternion())
+
+
 ## weight: the clip's blend weight now; the turn is scaled by it, so it fades out with the clip (no snap at the end).
 func keep_clip_arms_off(drive_right: bool, drive_left: bool, weight: float = 1.0) -> void:
 	if not clip_keep_off or _sides.size() < 2:
