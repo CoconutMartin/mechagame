@@ -1169,8 +1169,37 @@ func aim_clip_arm(right: bool, point: Vector3, nose_local: Vector3, weight: floa
 	var axis := from.cross(to)
 	if axis.length() < 0.0001:
 		return
-	var angle := minf(from.angle_to(to), deg_to_rad(max_deg)) * clampf(weight, 0.0, 1.0)
-	var turn := Basis(axis.normalized(), angle)
+	var full := minf(from.angle_to(to), deg_to_rad(max_deg)) * clampf(weight, 0.0, 1.0)
+	# Collisions: the arm's points (hand, forearm armor, elbow half of the upper arm armor, the nose) may not come nearer
+	# the body boxes and the leg lines than in the clip pose itself (or than the clearances): the largest share of the
+	# turn that keeps that wins.
+	var points := _keep_off_points(side)
+	points.append(fore_pose.origin)
+	points.append(nose)
+	for corner: Vector3 in _armor_corners(side, right, "02", side.fore as int):
+		points.append(fore_pose * corner)
+	for corner: Vector3 in _armor_corners(side, right, "01", upper):
+		points.append(upper_pose * corner)
+	var legs := _leg_segments()
+	var skin := _skeleton.global_transform
+	var unit := axis.normalized()
+	var room := func(angle: float) -> float:
+		var turn := Basis(unit, angle)
+		var nearest := INF
+		for arm_point in points:
+			var moved := shoulder + turn * (arm_point - shoulder)
+			nearest = minf(nearest, minf(_leg_distance(skin * moved, legs) - clip_leg_clearance,
+					_body_distance(moved) - clip_body_clearance))
+		return nearest
+	var floor_room := minf(room.call(0.0), 0.0)
+	var angle := 0.0
+	for share: float in [1.0, 0.75, 0.5, 0.25]:
+		if room.call(full * share) >= floor_room - 0.01:
+			angle = full * share
+			break
+	if angle == 0.0:
+		return
+	var turn := Basis(unit, angle)
 	var parent_pose := _skeleton.get_bone_global_pose(_skeleton.get_bone_parent(upper))
 	_skeleton.set_bone_pose_rotation(upper, (parent_pose.basis.orthonormalized().inverse() * (turn * upper_pose.basis)).get_rotation_quaternion())
 
