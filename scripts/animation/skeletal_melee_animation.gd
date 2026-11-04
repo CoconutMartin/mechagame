@@ -570,7 +570,7 @@ func _physics_process(delta: float) -> void:
 	elif not hold:
 		_time = minf(_time + delta * _attack.speed_scale, _end_time)
 	var speed := maxf(_attack.get_travel_between(before, _time) / maxf(delta, 0.0001), 0.0)
-	if _target != null:
+	if _target != null or _external_turns_travel():
 		_direction = _clip_direction()
 	mech.root_motion_active = true
 	mech.root_motion_velocity = _keep_away(_direction * speed + _lunge_direction * _lunge_velocity)
@@ -581,6 +581,14 @@ func _physics_process(delta: float) -> void:
 		_finish(true)
 	elif _time >= _end_time:
 		_hold_weight = maxf(_hold_weight - delta / _lower_time(), 0.0)
+
+
+## True when the external clip's owner turns the mech during the clip and wants the clip's travel to turn with it (the
+## Pile Bunker body turn, user request 2026-11-04): the travel then follows the heading instead of keeping the direction
+## the clip started in.
+func _external_turns_travel() -> bool:
+	return is_instance_valid(_external) and _external.has_method(&"clip_travel_follows_heading") \
+			and _external.call(&"clip_travel_follows_heading")
 
 
 ## Removes the part of the motion toward any mech closer than the attack's keep_away_distance.
@@ -961,6 +969,19 @@ func _sole_height(skeleton: Skeleton3D, foot: int) -> float:
 			Vector3(-sole_half_width, toe_length, -sole_depth), Vector3(sole_half_width, toe_length, -sole_depth)]:
 		low = minf(low, (sole * corner).y)
 	return low
+
+
+## Height (m) of the lowest sole above the ground in the pose now (0 when a foot is down or there is no skeleton). The
+## Pile Bunker asks it when it cuts a clip, to land only from the air (user request 2026-11-04).
+func lowest_sole_height() -> float:
+	var skeleton := get_skeleton()
+	if skeleton == null:
+		return 0.0
+	var foot_l := skeleton.find_bone("foot_L")
+	var foot_r := skeleton.find_bone("foot_R")
+	if foot_l < 0 or foot_r < 0:
+		return 0.0
+	return maxf(minf(_sole_height(skeleton, foot_l), _sole_height(skeleton, foot_r)), 0.0)
 
 
 ## The attack's air and crouch shares (MeleeAttack.air_share, crouch_share): with both soles off the ground the
