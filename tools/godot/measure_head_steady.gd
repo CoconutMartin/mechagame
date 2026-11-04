@@ -8,7 +8,9 @@ extends SceneTree
 ##   neck : the head's turn against the torso bone (degrees): the largest
 ## and the aim jitter of the same run. Exit code 1 when a weapon's largest per-frame turn is above MAX_STEP_DEG.
 ## Environment: DISABLE=1 (HeadSteady off: the old head), KICK=1 (a camera kick every 12 frames: 2 degrees to alternate sides, 1 degree up), WEAPONS (comma list of data/weapons names, default heavy_rifle,smg,shotgun,beam_rifle),
-##   PITCH (degrees, default -30), FRAMES (default 240), MAX_STEP_DEG (default 0.6), KNEEL=1 (kneel first).
+##   PITCH (degrees, default -30), FRAMES (default 240), MAX_STEP_DEG (default 0.6), KNEEL=1 (kneel first),
+##   SKIP (frames after the trigger press that are not sampled; default 0: the head turns into the barrel while the gun comes
+##   up, user request 2026-11-04 "head parallel to the barrel in ADS", so use SKIP=40 to measure the steadiness after that).
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/measure_head_steady.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
@@ -127,7 +129,8 @@ func _run() -> void:
 		rig._pitch_spring.value = deg_to_rad(pitch)
 		await _frames(60)
 		rig._target_pitch = deg_to_rad(pitch)
-		_sampling = true
+		var skip := int(OS.get_environment("SKIP")) if OS.get_environment("SKIP") != "" else 0
+		_sampling = skip <= 0
 		var jitter := 0.0
 		var weapon := (player.get_node("WeaponController") as WeaponController).right_weapon
 		_shots = 0
@@ -138,6 +141,9 @@ func _run() -> void:
 			steady.active = false
 		for i in frames:
 			await _frames(1)
+			if i == skip:
+				_sampling = true
+				_have_last = false
 			# KICK=1: a muzzle kick of 2 degrees to alternate sides and 1 degree up every 12 frames (a fast gun).
 			if OS.has_environment("KICK") and i % 12 == 0:
 				rig._target_yaw += deg_to_rad(2.0) * (1.0 if (i / 12) % 2 == 0 else -1.0)

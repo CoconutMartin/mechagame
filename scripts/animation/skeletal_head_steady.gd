@@ -13,6 +13,12 @@ extends SkeletonModifier3D
 ## kicks and the hip jolts do not pass; a real turn follows within a fraction of a second), the elevation is a
 ## small share of the torso's elevation, limited and filtered, and the head stays level (no roll). It blends in and
 ## out, and it lets go during a dodge, melee attack, hit reaction, stagger and death: those clips own the head.
+## Parallel to the barrel (user request 2026-11-04: "head: should be parallel with the direction of all firearm during
+## ADS"): while the aim key is held and a firearm is raised, the head looks along that gun's barrel (the muzzle's -Z, a
+## little low-passed so the recoil kick does not jerk the head) instead of the torso heading and the small elevation share.
+## The aimed gun is the active weapon when it has a muzzle, else the raised hand weapon. The elevation is limited
+## (parallel_max_down_deg, parallel_max_up_deg, against the torso's own elevation) and the neck may tilt more than
+## max_neck_tilt_deg (parallel_neck_tilt_deg), so a steep aim does not sink the head into the chest (tools/godot/test_head_clip.gd).
 ## Skeleton space: +Z is the front, +Y is up. A skeleton modifier must be a child of the Skeleton3D; this node
 ## moves itself there at start. Keep it after every other pose node (before AccessoryFollow).
 
@@ -47,18 +53,43 @@ extends SkeletonModifier3D
 ## (the sniping stance) takes the head along within this limit.
 @export var max_neck_tilt_deg: float = 4.0
 
+@export_group("Parallel to the barrel")
+## Off: the head keeps the steady hold only (heading of the torso, small elevation).
+@export var parallel_to_barrel: bool = true
+## How fast the head turns into and out of the parallel look (1 / seconds).
+@export var parallel_blend_speed: float = 5.0
+## Filter time (s) of the barrel direction the head follows (the recoil kick of a shot is mostly lost in it).
+@export var parallel_filter_time: float = 0.15
+## While the head is parallel to the barrel it may look this far (degrees) below and above the torso's own elevation. More
+## sinks the head into the chest hull (tools/godot/test_head_clip.gd, measured with a one-hand gun aimed 30 degrees down and
+## 12 degrees up: 6 down and 3 up stay within the 10 percent of the rest hollow, 7 down and 6 up do not). The sniping stance
+## bends the torso with the aim, so a two-hand rifle follows its barrel fully within these limits; a one-hand gun (the torso
+## stays level) is followed to this limit only.
+@export var parallel_max_down_deg: float = 5.0
+@export var parallel_max_up_deg: float = 3.0
+## The neck may tilt this much (degrees) from the torso's up axis while the head is parallel to the barrel (max_neck_tilt_deg
+## otherwise): a safety net a little past the two limits above.
+@export var parallel_neck_tilt_deg: float = 7.0
+
 @export_group("Bones")
 @export var head_bone: StringName = &"head"
 @export var torso_bone: StringName = &"torso"
 
 ## The hold now (0 = the animation has the head, 1 = steady). For tests.
 var amount: float = 0.0
+## The parallel look now (0 = steady hold only, 1 = along the barrel). For tests.
+var parallel_amount: float = 0.0
+## The torso's own elevation now (radians; the limits of the parallel look are against it). For tests.
+var torso_elevation: float = 0.0
 
 var _yaw: float = 0.0
 var _pitch: float = 0.0
 var _started: bool = false
 var _since_trigger: float = 99.0
 var _clips: Array[Node] = []
+## The barrel heading and elevation the head follows (filtered), radians.
+var _barrel_yaw: float = 0.0
+var _barrel_pitch: float = 0.0
 
 
 func _ready() -> void:
@@ -99,6 +130,42 @@ func _clip_busy() -> bool:
 	return false
 
 
+## The barrel direction (world) of the aimed firearm, or ZERO. The aim key must be held. The aimed gun is the active
+## weapon when it has a muzzle (a shoulder gun or a hand gun), else the raised right or left hand weapon.
+func barrel_direction() -> Vector3:
+	if not parallel_to_barrel or weapons == null or mech == null or mech.input == null or not mech.input.aim_held:
+		return Vector3.ZERO
+	var candidates: Array[MechWeapon] = []
+	if weapons.active != null and is_instance_valid(weapons.active):
+		candidates.append(weapons.active)
+	candidates.append(weapons.right_weapon)
+	candidates.append(weapons.left_weapon)
+	for weapon in candidates:
+		if weapon == null or not is_instance_valid(weapon) or weapon.is_melee() or not _is_raised(weapon):
+			continue
+		var muzzle := _muzzle_of(weapon)
+		if muzzle != null and muzzle.is_inside_tree():
+			return -muzzle.global_basis.z.normalized()
+	return Vector3.ZERO
+
+
+## True while the weapon is up: a hand weapon at its aim pose, a back weapon while it is the active one.
+func _is_raised(weapon: MechWeapon) -> bool:
+	if weapon == weapons.right_weapon:
+		return weapon_pose != null and weapon_pose.aim_amount > 0.5
+	if weapon == weapons.left_weapon:
+		return weapons.left_pose != null and weapons.left_pose.aim_amount > 0.5
+	return weapon == weapons.active and (weapon.trigger_held or weapon.is_busy())
+
+
+## The muzzle node of a gun (its own node: a forearm gun's model hangs on the forearm), else a node named Muzzle.
+static func _muzzle_of(weapon: MechWeapon) -> Node3D:
+	var own: Variant = weapon.get("_muzzle")
+	if own is Node3D:
+		return own as Node3D
+	return weapon.find_child("Muzzle", true, false) as Node3D
+
+
 func _process_modification_with_delta(delta: float) -> void:
 	var skeleton := get_skeleton()
 	var head := skeleton.find_bone(head_bone)
@@ -116,6 +183,7 @@ func _process_modification_with_delta(delta: float) -> void:
 		return
 	var yaw_world := atan2(forward.x, forward.z) + skeleton_yaw
 	var pitch_now := atan2(forward.y, flat.length())
+	torso_elevation = pitch_now
 	if not _started or amount <= 0.0:
 		# Not holding: follow the torso at once, so the hold starts from where the head looks.
 		_yaw = yaw_world
@@ -128,11 +196,28 @@ func _process_modification_with_delta(delta: float) -> void:
 		_yaw = wrapf(_yaw + clampf(step, -limit, limit), -PI, PI)
 		var pitch_goal := clampf(pitch_now * pitch_share, deg_to_rad(-max_down_deg), deg_to_rad(max_up_deg))
 		_pitch = lerpf(_pitch, pitch_goal, 1.0 - exp(-delta / maxf(pitch_filter_time, 0.001)))
+	# Parallel to the barrel: the barrel's heading and elevation (filtered), blended in while the aim key is held.
+	var barrel := barrel_direction()
+	var barrel_wanted := barrel != Vector3.ZERO and amount > 0.0
+	var barrel_yaw := atan2(barrel.x, barrel.z)
+	var barrel_pitch := asin(clampf(barrel.y, -1.0, 1.0))
+	if barrel_wanted:
+		if parallel_amount <= 0.0:
+			_barrel_yaw = barrel_yaw
+			_barrel_pitch = barrel_pitch
+		else:
+			var follow := 1.0 - exp(-delta / maxf(parallel_filter_time, 0.001))
+			_barrel_yaw = wrapf(_barrel_yaw + wrapf(barrel_yaw - _barrel_yaw, -PI, PI) * follow, -PI, PI)
+			_barrel_pitch = lerpf(_barrel_pitch, barrel_pitch, follow)
+	parallel_amount = move_toward(parallel_amount, 1.0 if barrel_wanted else 0.0, parallel_blend_speed * delta)
 	if amount <= 0.0:
 		return
+	var look := smoothstep(0.0, 1.0, parallel_amount)
+	var yaw_used := wrapf(_yaw + wrapf(_barrel_yaw - _yaw, -PI, PI) * look, -PI, PI)
+	var pitch_used := lerpf(_pitch, clampf(_barrel_pitch, pitch_now - deg_to_rad(parallel_max_down_deg), pitch_now + deg_to_rad(parallel_max_up_deg)), look)
 	# The head's level frame: forward along the filtered heading and elevation, up as the world up.
-	var yaw_skeleton := _yaw - skeleton_yaw
-	var aim := Vector3(sin(yaw_skeleton) * cos(_pitch), sin(_pitch), cos(yaw_skeleton) * cos(_pitch))
+	var yaw_skeleton := yaw_used - skeleton_yaw
+	var aim := Vector3(sin(yaw_skeleton) * cos(pitch_used), sin(pitch_used), cos(yaw_skeleton) * cos(pitch_used))
 	var up := (skeleton.global_basis.orthonormalized().inverse() * Vector3.UP).normalized()
 	var head_up := (up - aim * up.dot(aim)).normalized()
 	var target_frame := Basis(head_up.cross(aim), head_up, aim)
@@ -144,7 +229,7 @@ func _process_modification_with_delta(delta: float) -> void:
 	var steady := (parent.inverse() * target_frame * local_frame.inverse()).get_rotation_quaternion()
 	# The neck: a free turn about the head's up axis, a limited tilt (swing-twist split of the turn from the rest pose).
 	var rest_local := skeleton.get_bone_rest(head).basis.get_rotation_quaternion()
-	steady = rest_local * _limit_tilt(rest_local.inverse() * steady, up_local.normalized(), deg_to_rad(max_neck_tilt_deg))
+	steady = rest_local * _limit_tilt(rest_local.inverse() * steady, up_local.normalized(), deg_to_rad(lerpf(max_neck_tilt_deg, parallel_neck_tilt_deg, look)))
 	var from := skeleton.get_bone_pose_rotation(head)
 	skeleton.set_bone_pose_rotation(head, from.slerp(steady, smoothstep(0.0, 1.0, amount)))
 
