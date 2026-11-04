@@ -1,8 +1,9 @@
 class_name DroneStatus
 extends Label
 ## Attack drone line at the bottom right of the screen, over the pulse scan line: "T DRONES 6/6" (drones on the
-## pack / total), the drone mod (RECALL or SWARM), "ACTIVE" while drones fly, the cool down seconds, "LOCKED" while
-## T holds a lock, "0/6" when none are left. Hidden
+## pack / total), the drone mod (RECALL or SWARM), "ACTIVE" while drones fly, the cool down seconds (user 2026-11-04:
+## no cool down and unlimited use "for now": the pack always shows 6/6 and no seconds), "LOCKED" while T holds a
+## lock, "0/6" when none are left (the pack is gone). Hidden
 ## without a drone pack. DebugHud makes it and gives it the mech.
 
 ## Distance from the bottom and right screen edges, in pixels (over the scan line).

@@ -14,7 +14,9 @@ extends SceneTree
 ## explodes (an AI drone). AI: an AI enemy with the Drone Pack launches drones at the player; it shoots enemy
 ## drones at it with a heavy rifle (it hits the small drones); with an SMG (its spread misses them: not efficient)
 ## it takes cover; with a beam rifle it charges and shoots them. "One hit" and charged shots hit 75% of the time
-## (the roll), a miss aims past the drone. Exits with code 1 on a failure.
+## (the roll), a miss aims past the drone. User 2026-11-04: the pair starts each burst and each hop within 0.05 s of
+## each other (squad sync); no cool down and unlimited use "for now" (a release launches a pair and the pack stays
+## full; the old rules are tested in test_drone_mods.gd). Exits with code 1 on a failure.
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/test_drone_pack.gd
 ## DRONE_SHOT=<png> with a window: a picture of the attack in the open. DRONE_TRACE=1 prints the drone flights,
 ## touches and steps through walls; AI_TRACE=1 prints the AI against the drones (heavy rifle).
@@ -199,14 +201,16 @@ func _wall(center: Vector3, size: Vector3, facing: Vector3) -> StaticBody3D:
 ## the first shot place (m), distance to the target at the first shot, flank sign of the firing place, flank,
 ## degrees up to the target at the first shot, position changes done (read when the drone ends), positions at the
 ## start of each burst, worst heading error of the port at a burst start (degrees), worst lean of the body
-## (degrees), worst angle between the disc axis and up (degrees), farthest distance to the target at a burst start].
+## (degrees), worst angle between the disc axis and up (degrees), farthest distance to the target at a burst start,
+## the ages at which each burst started, the ages at which each hop (the move after a burst) started].
 func _watch(drones: Array[AttackDrone], dummy: TargetDummy, right: Vector3, shot_path: String = "") -> Array:
 	var out := []
 	for k in drones.size():
-		out.append([-1.0, 0, -1.0, 0.0, -1.0, 0.0, drones[k].flank, 0.0, 0, [], 0.0, 0.0, 0.0, 0.0])
+		out.append([-1.0, 0, -1.0, 0.0, -1.0, 0.0, drones[k].flank, 0.0, 0, [], 0.0, 0.0, 0.0, 0.0, [], []])
 		drones[k].finished.connect(func(d: AttackDrone) -> void: out[k][8] = d.shifts_done)
 	var fire_pos := {}
 	var last_burst := {}
+	var last_hop := {}
 	for f in 420:
 		await _frames(1)
 		var alive := false
@@ -231,6 +235,10 @@ func _watch(drones: Array[AttackDrone], dummy: TargetDummy, right: Vector3, shot
 					out[k][9].append(d.global_position)
 					out[k][10] = maxf(out[k][10], d._aim_error_deg())
 					out[k][13] = maxf(out[k][13], d.global_position.distance_to(dummy.get_lock_point()))
+					out[k][14].append(d.age)
+				if d.step == AttackDrone.Step.SHIFT and last_hop.get(k, 0) != d.bursts_fired:
+					last_hop[k] = d.bursts_fired
+					out[k][15].append(d.age)
 			# Saucer: the body leans at most about 15 degrees and the disc axis (model X) stays near vertical.
 			out[k][11] = maxf(out[k][11], rad_to_deg(d.global_basis.y.angle_to(Vector3.UP)))
 			if d.phase != AttackDrone.Phase.LAUNCH and is_instance_valid(d._model):
@@ -296,7 +304,8 @@ func _flight_tests(mech: Mech) -> void:
 	release.pressed = false
 	Input.parse_input_event(release)
 	await _frames(2)
-	_check(launcher.flying.size() == 2 and launcher.docked_count() == 4, "release launches a pair (%d flying, %d left)"
+	# User 2026-11-04, "for now": unlimited use, the copies fly and the pack stays full (6 of 6).
+	_check(launcher.flying.size() == 2 and launcher.docked_count() == 6, "release launches a pair, the pack stays full (%d flying, %d left)"
 			% [launcher.flying.size(), launcher.docked_count()])
 	if launcher.flying.size() != 2:
 		return
@@ -334,6 +343,24 @@ func _flight_tests(mech: Mech) -> void:
 		_check(r[12] <= 15.0, "open: drone %d flies level, disc axis near vertical (%.1f degrees)" % [k, r[12]])
 		_check(r[2] <= 8.05, "open: drone %d is gone by max_flight_s (%.2f s)" % [k, r[2]])
 		_check(r[5] == r[6], "open: drone %d fires from its own flank (a pincer)" % k)
+	# Squad sync (user 2026-11-04): the pair starts each burst together and hops together.
+	var burst_gap := 0.0
+	var hop_gap := 0.0
+	var a_bursts: Array = result[0][14]
+	var b_bursts: Array = result[1][14]
+	var a_hops: Array = result[0][15]
+	var b_hops: Array = result[1][15]
+	for i in mini(a_bursts.size(), b_bursts.size()):
+		burst_gap = maxf(burst_gap, absf(float(a_bursts[i]) - float(b_bursts[i])))
+	for i in mini(a_hops.size(), b_hops.size()):
+		hop_gap = maxf(hop_gap, absf(float(a_hops[i]) - float(b_hops[i])))
+	var round2 := func(list: Array) -> Array: return list.map(func(t: float) -> float: return snappedf(t, 0.01))
+	print("open: burst starts %s and %s, hop starts %s and %s" % [round2.call(a_bursts), round2.call(b_bursts),
+			round2.call(a_hops), round2.call(b_hops)])
+	_check(a_bursts.size() == 3 and b_bursts.size() == 3 and burst_gap <= 0.05,
+			"open: the pair starts each burst together (largest gap %.3f s, %d and %d bursts)" % [burst_gap, a_bursts.size(), b_bursts.size()])
+	_check(a_hops.size() == 3 and b_hops.size() == 3 and hop_gap <= 0.05,
+			"open: the pair hops together (largest gap %.3f s, %d and %d hops)" % [hop_gap, a_hops.size(), b_hops.size()])
 	print("open: dummy damage from one pair: %.0f" % (hp_before - dummy.hp))
 	_check(dummy.hp < hp_before, "open: the drones hit the dummy")
 	await _frames(2)

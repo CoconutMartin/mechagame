@@ -3,11 +3,15 @@ extends Node
 ## Launches the attack drones of a drone back pack (user design 2026-10-31). The player holds T (action
 ## drone_launch) to lock a target: the "lockable" target nearest the mech aim inside the lock box, in range and in
 ## sight, locks after lock_time. Release T with a lock: drones_per_launch drones leave the pack, taken left and right
-## in turn, outer first (a pair holds opposite flanks of the target, a pincer; AttackDrone). Release without a
-## lock: nothing. One launch at a time (user rule 2026-10-31): no launch while this mech's drones are in the air,
-## then a cool down (DroneData.cooldown_s, 10 s) from when the last one is gone or docked. Drones do not come back, unless the back pack's aux slot holds a drone mod (DroneModData, read at
-## each launch): RECALL: each drone flies back to its dock after its attack and can launch again (flights_per_drone
-## in all); SWARM: one launch sends every drone on the pack. BackPackMount adds it when the pack has DroneData and
+## in turn, outer first (a pair holds opposite flanks of the target, a pincer; AttackDrone). The drones of a launch
+## are one squad (DroneSquad: they fire and hop together). Release without a lock: nothing. User 2026-11-04, "for
+## now": no cool down (DroneData.cooldown_s 0), no limit on use (DroneData.unlimited: a launch sends copies of the
+## drone models, the real ones stay on the pack) and a launch can go while drones are in the air
+## (DroneData.one_launch_at_a_time false). With these off again: one launch at a time (user rule 2026-10-31), then
+## a cool down from when the last drone is gone or docked, and the drones leave the pack. Drones do not come back,
+## unless the back pack's aux slot holds a drone mod (DroneModData, read at each launch): RECALL: each drone flies
+## back to its dock after its attack and can launch again (flights_per_drone in all; unlimited: every time);
+## SWARM: one launch sends every drone on the pack. BackPackMount adds it when the pack has DroneData and
 ## Drone<n> nodes. An AI pilot calls launch itself (AIDroneTactics).
 
 signal launched(count: int)
@@ -139,10 +143,10 @@ func get_mod() -> DroneModData:
 	return DroneMod.find_data(mech)
 
 
-## True when a launch can go now: drones on the pack, none of this mech's drones in the air (user rule: no launch
-## while other drones are active) and the cool down over.
+## True when a launch can go now: drones on the pack, the cool down over (DroneData.cooldown_s, 0 for now) and, with
+## DroneData.one_launch_at_a_time, none of this mech's drones in the air.
 func can_launch() -> bool:
-	return docked_count() > 0 and flying.is_empty() and cooldown_left <= 0.0
+	return docked_count() > 0 and cooldown_left <= 0.0 and (flying.is_empty() or not data.one_launch_at_a_time)
 
 
 ## True while this mech's drones are in the air (attacking or flying back).
@@ -151,7 +155,7 @@ func is_active() -> bool:
 
 
 func _start_cooldown() -> void:
-	cooldown_left = data.cooldown_s
+	cooldown_left = maxf(data.cooldown_s, 0.0)
 
 
 ## Launches drones_per_launch drones (every drone on the pack with the swarm mod) at target, when can_launch.
@@ -164,6 +168,7 @@ func launch(target: Node3D) -> int:
 	var recall := mod != null and mod.kind == DroneModData.Kind.RECALL
 	var count := docked_count() if swarm else mini(data.drones_per_launch, docked_count())
 	var world := get_tree().current_scene if get_tree().current_scene != null else get_tree().root
+	var squad := DroneSquad.new(data)
 	for i in count:
 		var take_left := _next_left
 		if docked_left.is_empty():
@@ -171,22 +176,37 @@ func launch(target: Node3D) -> int:
 		elif docked_right.is_empty():
 			take_left = true
 		_next_left = not take_left
-		var model: Node3D = docked_left.pop_front() if take_left else docked_right.pop_front()
+		var list := docked_left if take_left else docked_right
+		var model: Node3D = list.pop_front()
 		var side := -1.0 if take_left else 1.0
 		var id := model.get_instance_id()
 		var home_parent := model.get_parent() as Node3D
 		var home_transform := model.transform
+		var flying_model := model
+		var copy := data.unlimited
+		if copy:
+			# The real model stays on the pack (it goes to the end of its side's order); a copy flies.
+			list.append(model)
+			flying_model = model.duplicate() as Node3D
+			flying_model.name = "DroneCopy"
+			home_parent.add_child(flying_model)
+			flying_model.transform = home_transform
+			model.visible = false
+			get_tree().create_timer(maxf(data.launch_time, 0.05)).timeout.connect(_show_model.bind(model))
 		# Flights left after this one (1 flight without the recall mod).
 		var left: int = int(_flights_left.get(id, mod.flights_per_drone if recall else 1)) - 1
-		_flights_left[id] = left
+		if not copy:
+			_flights_left[id] = left
 		# A pincer: each drone takes the flank of its side; left and right in turn give a pair both flanks.
-		var drone := AttackDrone.launch(world, model, side, mech, target, side, data)
-		drone.return_home = recall and left > 0
+		var drone := AttackDrone.launch(world, flying_model, side, mech, target, side, data)
+		drone.is_copy = copy
+		drone.return_home = recall and (left > 0 or copy)
 		drone.dock = _docks.get(id) as Node3D
 		drone.home_parent = home_parent
 		drone.home_transform = home_transform
 		drone.docked.connect(_on_docked)
 		drone.finished.connect(_on_finished)
+		squad.add(drone)
 		flying.append(drone)
 	if count > 0:
 		launched.emit(count)
@@ -200,8 +220,16 @@ func _on_finished(drone: AttackDrone) -> void:
 		_start_cooldown()
 
 
+## The real drone model is on the pack again (unlimited packs hide it while its copy pops out).
+func _show_model(model: Node3D) -> void:
+	if is_instance_valid(model):
+		model.visible = true
+
+
 ## A drone is back on its dock (recall mod): it can launch again.
-func _on_docked(_drone: AttackDrone, model: Node3D) -> void:
+func _on_docked(drone: AttackDrone, model: Node3D) -> void:
+	if drone.is_copy:
+		return
 	var dock := _docks.get(model.get_instance_id()) as Node3D
 	var side := (dock if dock != null else model).position.x
 	if side < 0.0:

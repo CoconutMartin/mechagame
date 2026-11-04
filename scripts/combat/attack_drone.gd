@@ -15,7 +15,10 @@ extends AnimatableBody3D
 ## after the first shot"). It fires only while it sees the target and the port points at it. At max_flight_s,
 ## after its last move, or when the target is gone, it explodes; with the recall mod (return_home) the way home
 ## is its last move and DroneLauncher can launch it again. Shot down at 0 HP
-## (layer 4, "hitboxes": weapons call on_hit).
+## (layer 4, "hitboxes": weapons call on_hit; also while it flies home).
+## Squad (user 2026-11-04): the drones of one launch start each burst together (DroneSquad) and so hop together.
+## Way home (user 2026-11-04): it flies around the mech's body (a cylinder, DroneData.return_body_radius) to a stage
+## point behind the dock along the pack's back normal, then straight in; the body is never crossed.
 
 signal finished(drone: AttackDrone)
 ## A returning drone (recall mod) is back on its dock; model is on the pack again.
@@ -63,6 +66,14 @@ var home_parent: Node3D
 var home_transform: Transform3D = Transform3D.IDENTITY
 ## Seconds of the way back.
 var return_time: float = 0.0
+## True when the model is a copy of a pack drone (DroneData.unlimited): at the dock it is removed, the real one is
+## on the pack.
+var is_copy: bool = false
+## The drones launched together (null = alone) and whether the squad no longer waits for this one.
+var squad: DroneSquad
+var sync_free: bool = false
+## True when the FIRE phase is at the AIM step and the port is on the target (or the aim time ran out).
+var aim_done: bool = false
 
 var _spin: Node3D
 var _muzzle: Node3D
@@ -88,6 +99,9 @@ var _avoid: PackedVector3Array = PackedVector3Array()
 ## Places (relative to the target) the drone fired a burst from; a new place is away from all of them.
 var _used: PackedVector3Array = PackedVector3Array()
 var _model: Node3D
+## The dock's last place and speed on the way home (the dock moves with the mech).
+var _dock_last: Vector3 = Vector3.INF
+var _dock_velocity: Vector3 = Vector3.ZERO
 
 
 ## Makes a flying drone from model (a Drone<n> node on the pack) in world. side: -1 = the model's outer face
@@ -215,6 +229,7 @@ func _start_fire() -> void:
 	fire_start_age = age
 	bursts_fired = 0
 	shifts_done = 0
+	aim_done = false
 	# A hard stop at the firing place (it may still fly fast when the approach time ran out).
 	velocity *= data.shift_stop_keep
 
@@ -226,11 +241,15 @@ func _fire_phase(delta: float) -> void:
 	match step:
 		Step.AIM:
 			_hover(delta)
-			if _aim_error_deg() <= data.aim_tolerance_deg or _step_time >= data.aim_max_s:
+			aim_done = _aim_error_deg() <= data.aim_tolerance_deg or _step_time >= data.aim_max_s
+			# The squad starts a burst together: wait for the others (a short time at most).
+			if aim_done and (squad == null or squad.may_start_burst(self, bursts_fired, delta)):
 				step = Step.BURST
 				_step_time = 0.0
 				_shot_wait = 0.0
 				bursts_fired += 1
+				sync_free = false
+				aim_done = false
 				_used.append(global_position - _target_point)
 		Step.BURST:
 			_hover(delta)
@@ -243,6 +262,17 @@ func _fire_phase(delta: float) -> void:
 				_end_burst()
 		Step.SHIFT:
 			_shift(delta)
+
+
+## For the squad: this drone's part in the barrier before burst number index (0-based).
+func burst_state(index: int) -> DroneSquad.State:
+	if phase == Phase.RETURN or sync_free or is_queued_for_deletion():
+		return DroneSquad.State.PASSED
+	if phase != Phase.FIRE:
+		return DroneSquad.State.NOT_READY
+	if bursts_fired > index:
+		return DroneSquad.State.PASSED
+	return DroneSquad.State.READY if step == Step.AIM and aim_done else DroneSquad.State.NOT_READY
 
 
 ## The drone brakes (the glide ends smoothly) while it aims and fires.
@@ -276,6 +306,7 @@ func _shift(delta: float) -> void:
 		return
 	step = Step.AIM
 	_step_time = 0.0
+	aim_done = false
 
 
 ## The attack is over: back to the dock (recall mod), or it explodes.
@@ -292,8 +323,8 @@ func _can_dock() -> bool:
 			and is_instance_valid(launcher_mech) and not launcher_mech.is_wrecked
 
 
-## Flies back to the dock (around buildings, under the ceiling) and docks there. Lost when the dock is gone or the
-## way takes longer than return_max_s.
+## Flies back to the dock (around buildings, under the ceiling, around the mech's body) and docks there. Lost when
+## the dock is gone or the way takes longer than return_max_s. It stays a hit target on the way (same hit sphere).
 func _return(delta: float) -> void:
 	return_time += delta
 	if not _can_dock() or return_time > data.return_max_s:
@@ -304,18 +335,139 @@ func _return(delta: float) -> void:
 	if distance <= data.dock_distance:
 		_dock()
 		return
-	_nav.steer_to(home, maxf(distance / data.max_speed, 0.15), delta)
-	_nav.move(delta)
+	if not data.return_avoid_body:
+		_nav.steer_to(home, maxf(distance / data.max_speed, 0.15), delta)
+		_nav.move(delta)
+		_pose(delta)
+		return
+	# The dock moves with the mech: the drone leads its aim by the dock's speed (a turning mech has a fast dock).
+	if _dock_last.is_finite() and delta > 0.0:
+		_dock_velocity = _dock_velocity.lerp((home - _dock_last) / delta, 0.5)
+	_dock_last = home
+	var back := dock_back()
+	var behind := (global_position - home).dot(back)
+	var lateral := ((global_position - home) - back * behind).length()
+	# The last leg: inside the cone behind the dock, straight to the dock.
+	var final_leg := behind > 0.3 and lateral <= data.return_cone_base + data.return_cone_slope * behind
+	if final_leg:
+		_fly_to(home, maxf(distance / data.max_speed, 0.15), delta, true)
+		_nav.move(delta)
+	else:
+		var stage := _stage_point(home, back) + _dock_velocity * 0.15
+		var waypoint := body_waypoint(global_position, stage)
+		var waypoint_distance := global_position.distance_to(waypoint)
+		var seconds := maxf(waypoint_distance / data.max_speed, 0.15) if waypoint.is_equal_approx(stage) \
+				else waypoint_distance / data.max_speed
+		if DroneNavigator.sweep(self, global_position, waypoint, data.hit_radius + data.skin, data.sight_mask) >= 1.0:
+			_fly_to(waypoint, seconds, delta, waypoint.is_equal_approx(stage))
+		else:
+			_nav.steer_to(waypoint, seconds, delta)
+		_nav.move(delta)
+		_keep_off_body()
 	_pose(delta)
 
 
-## Puts the model back on the pack (its place before the launch) and removes the flying body.
+## Speed toward point: there in about seconds, at most max_speed, plus the dock's speed when follow_dock.
+func _fly_to(point: Vector3, seconds: float, delta: float, follow_dock: bool) -> void:
+	var wanted := ((point - global_position) / maxf(seconds, 0.05)).limit_length(data.max_speed)
+	if follow_dock:
+		wanted += _dock_velocity
+	velocity = velocity.lerp(wanted, clampf(delta * data.steer, 0.0, 1.0))
+
+
+## The pack's back normal at the dock (world; the dock's +Z axis, the side away from the mech).
+func dock_back() -> Vector3:
+	if is_instance_valid(dock) and dock.is_inside_tree():
+		return dock.global_basis.z.normalized()
+	return launcher_mech.global_basis.z.normalized() if is_instance_valid(launcher_mech) else Vector3.BACK
+
+
+## The point behind the dock the last leg starts from: return_stage_distance along the back normal, nearer when a
+## wall is in the way.
+func _stage_point(home: Vector3, back: Vector3) -> Vector3:
+	var distance := data.return_stage_distance
+	for i in 3:
+		var stage := home + back * distance
+		if DroneNavigator.clear(self, home, stage, data.sight_mask):
+			return stage
+		distance *= 0.6
+	return home + back * distance
+
+
+## The axis of the body cylinder (world, flat) and its radii: the clear radius (body + hit sphere) and the circle
+## the drone flies on.
+func _body_axis() -> Vector3:
+	return launcher_mech.global_position if is_instance_valid(launcher_mech) else dock.global_position
+
+
+func body_clear_radius() -> float:
+	return data.return_body_radius + data.hit_radius
+
+
+## Where to steer on the way to the stage point so the drone keeps off the body cylinder: the stage point itself
+## when the line to it is clear of the cylinder, else a point on the circle around it, ahead in the shorter turn
+## (a tangent point from far away, at least return_lookahead_deg ahead near it). The point changes each frame.
+func body_waypoint(from: Vector3, stage: Vector3) -> Vector3:
+	var center := _body_axis()
+	var c := Vector2(center.x, center.z)
+	var p := Vector2(from.x, from.z)
+	var s := Vector2(stage.x, stage.z)
+	var clear_radius := body_clear_radius()
+	if _segment_distance(c, p, s) >= clear_radius + 0.05:
+		return stage
+	var orbit := clear_radius + data.return_orbit_margin
+	var dist := maxf(p.distance_to(c), 0.01)
+	var from_angle := (p - c).angle()
+	var stage_angle := (s - c).angle()
+	var turn := angle_difference(from_angle, stage_angle)
+	var ahead := maxf(acos(clampf(orbit / dist, 0.0, 1.0)), deg_to_rad(data.return_lookahead_deg))
+	var angle := stage_angle
+	var share := 1.0
+	if absf(turn) > ahead:
+		angle = from_angle + signf(turn) * ahead
+		share = ahead / absf(turn)
+	var on_circle := c + Vector2.from_angle(angle) * orbit
+	return Vector3(on_circle.x, lerpf(from.y, stage.y, share), on_circle.y)
+
+
+## Shortest distance from point c to the segment a -> b (flat).
+static func _segment_distance(c: Vector2, a: Vector2, b: Vector2) -> float:
+	var ab := b - a
+	var length_squared := ab.length_squared()
+	if length_squared < 0.0001:
+		return a.distance_to(c)
+	var t := clampf((c - a).dot(ab) / length_squared, 0.0, 1.0)
+	return (a + ab * t).distance_to(c)
+
+
+## Hard guard: the drone's center is never inside the body cylinder outside the last leg (a detour around a
+## building, a turn of the mech can push it in).
+func _keep_off_body() -> void:
+	var center := _body_axis()
+	var flat := Vector2(global_position.x - center.x, global_position.z - center.z)
+	var clear_radius := body_clear_radius()
+	if flat.length() >= clear_radius or global_position.y > center.y + 11.0 or global_position.y < center.y - 2.0:
+		return
+	var out := flat.normalized() if flat.length() > 0.01 else Vector2.from_angle(atan2(dock_back().z, dock_back().x))
+	var pushed := Vector2(center.x, center.z) + out * clear_radius
+	global_position = Vector3(pushed.x, global_position.y, pushed.y)
+	var into := velocity.x * out.x + velocity.z * out.y
+	if into < 0.0:
+		velocity.x -= out.x * into
+		velocity.z -= out.y * into
+
+
+## Puts the model back on the pack (its place before the launch) and removes the flying body. A copy (unlimited
+## pack) is removed; the real drone model is on the pack.
 func _dock() -> void:
 	if not is_instance_valid(_model):
 		_explode()
 		return
-	_model.reparent(home_parent, false)
-	_model.transform = home_transform
+	if is_copy:
+		_model.queue_free()
+	else:
+		_model.reparent(home_parent, false)
+		_model.transform = home_transform
 	docked.emit(self, _model)
 	finished.emit(self)
 	queue_free()
