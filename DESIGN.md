@@ -714,6 +714,12 @@ mech on the SGG joints"). Kept for the upload:
 - For the upload: a skirt or sleeve mesh is weighted to its accessory bone; the part files come from
   `export_mech_parts.py` (collections Head, Core, Arm_L, Arm_R, Legs on MechRig).
 
+Haliya model from "Haliya 4k.png" (user request 2026-11-05): `tools/blender/haliya_ref_build.py` builds the model in
+Blender and it is saved as `D:\Pictures\Mechs\Haliya\haliya_hly101_from_4k.blend` (outside the repo). The picture sets the
+proportions, so its joints differ from MechRig (for example the left elbow is at (1.89, 0.45, 6.5); MechRig has
+(2.47, -0.05, 7.17)). Pieces are parented to joint empties in the part collections; it has no armature and is not in the
+game. The rest pose has the head straight; the picture shows the head turned about 20 degrees.
+
 Open points for later parts: the wrist pin (measured from the SGG forearm mesh `Arm_<side>_02` at build time) and
 the jointed hand scenes (`mech_hand_r/l.tscn`) are SGG values; an arm part of another mech needs its own (ArmPart
 fields, phase 2 or 3). The hit part data (`sanggigilid_hit_parts.tres`) names bones, so it fits every part on the
@@ -1483,6 +1489,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - "Align shoulders and arm swings during holding war hammer and baton with shoulder and arm swings with fists": the holding arm followed the walk clip (its shoulder block rose and tilted). Now `WeaponController._swings_like_fist` (a HAMMER-kind weapon in the right hand): when it does not swing, the arm takes the fist hang target (`_update_fist_arms`, `fist_hang_target`) and its IK runs, so `SkeletalArmRig` gives it the relaxed hang and the stride swing like a fist arm (level block); the weapon rides the hand. During a swing the target is null and the clip has the arm as before. Test: test_melee_combo, test_stability, test_weapon_hands, test_hit_reactions 0 failures; renders `render_rifle.gd` RIFLE_RIGHT=hammer / baton, RIFLE_ACTIONS=move_forward, views far, far_front.
 
 ## Reminders for the user
+- Open (2026-11-05, built): check the Haliya Blender model against the picture (`D:\Pictures\Mechs\Haliya\haliya_hly101_from_4k.blend`). Say if it should go on MechRig and into the game; its joints differ from MechRig.
 - Open (2026-11-02, built): play test the Ctrl kneel pose (right knee down, left foot forward, the camera with it) and the steady head while aiming (RMB) and firing (see "Ctrl kneel pose and steady head").
 - Open (2026-11-02, built): play test the booster fire, gust, nozzle heat and petal charge on the Quad Booster, Boost Pack and Jet Pack (see "Booster fire"); say if the plume length, brightness, light, heat speed or petal angle should change.
 - Open (2026-11-04, built): play test the Pile Bunker round (Shift+3 cut and fade, Shift+4 Hook with the Pile Bunker arm, no other-arm twitch, the shorter run, Shift+1 gone). Open: the left Hook misses at 12 m; the clips still put the arms and the magazine into the body in places.
