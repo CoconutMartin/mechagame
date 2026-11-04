@@ -213,6 +213,8 @@ var _saved_target: Node3D
 var _since_fire: float = 0.0
 ## True when the clip's strike window ended with no hit.
 var _clip_missed: bool = false
+## Fall height (m) of the soft landing due when the cut clip has faded (0 = none).
+var _landing_due: float = 0.0
 ## Drill spin now (0 to 1 of spin_speed_deg) and its angle (radians).
 var _spin: float = 0.0
 var _spin_angle: float = 0.0
@@ -517,10 +519,10 @@ func _update_clip(delta: float) -> void:
 	if has_fired:
 		_since_fire += delta
 		if clip.cut_after_hit >= 0.0 and _since_fire >= clip.cut_after_hit and time >= 0.0:
-			_melee.stop_external(self, true)
+			_cut_clip(clip)
 	elif _clip_missed and clip.cut_after_hit >= 0.0 and time >= 0.0 and clip.strikes.size() > 0 \
 			and time >= clip.strikes[0].y + clip.cut_after_hit:
-		_melee.stop_external(self, true)
+		_cut_clip(clip)
 	elif time >= 0.0 and clip.strikes.size() > 0:
 		var window := clip.strikes[0]
 		if time >= window.x and time <= window.y:
@@ -536,8 +538,20 @@ func _update_clip(delta: float) -> void:
 		_end_clip()
 
 
-## The arm takes the weapon's grip again and the weapon is idle.
+## Cuts the clip (MeleeAttack.cut_after_hit): it fades into the pose under it, with a soft landing when it was cut in
+## the air (cut_landing_height).
+func _cut_clip(clip: MeleeAttack) -> void:
+	_landing_due = clip.cut_landing_height
+	_melee.stop_external(self, true, _landing_due > 0.0)
+
+
+## The arm takes the weapon's grip again and the weapon is idle. A clip cut in the air lands now (the fall fade is over:
+## the feet are down).
 func _end_clip() -> void:
+	var recovery := controller.mech.landing_recovery
+	if _landing_due > 0.0 and recovery != null and not controller.mech.is_fallen:
+		recovery.start_landing(_landing_due)
+	_landing_due = 0.0
 	var ik := controller.holding_arm_ik()
 	if ik.target == null:
 		ik.target = _saved_target

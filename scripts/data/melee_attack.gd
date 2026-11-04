@@ -45,6 +45,9 @@ extends Resource
 ## smooth the move to the neutral position"): seconds after the stake hits (or after the strike window on a miss) when
 ## the clip stops and fades into the pose under it over blend_out x lower_time_scale. Below 0 = the clip plays to its end.
 @export var cut_after_hit: float = -1.0
+## A clip cut in the air (cut_after_hit) ends in a soft landing (user 2026-11-04): the landing crouch of a fall of this
+## height (m) starts at the cut and shows as the clip fades. 0 = none.
+@export var cut_landing_height: float = 0.0
 
 
 ## Play time, in seconds.

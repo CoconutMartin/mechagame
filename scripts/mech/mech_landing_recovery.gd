@@ -75,6 +75,18 @@ func _on_landed(_fall_speed: float) -> void:
 	time_left = duration
 
 
+## A landing from a fall of height (m) with no real fall (user request 2026-11-04: the Pile Bunker clip 3 cut in the
+## air ends in a soft landing): the same depth and no-control time as a fall of that height.
+func start_landing(height: float) -> void:
+	fall_height = height
+	if height < min_height:
+		duration = short_fall_delay
+	else:
+		var scaled := reference_delay * (mech.mass_tons / reference_mass) * (height / reference_height)
+		duration = clampf(scaled, short_fall_delay, max_delay)
+	time_left = duration
+
+
 ## The landing after a dodge step (no fall): the same no-control time as a short fall, with the
 ## smallest landing crouch. The mech walks its momentum out meanwhile (Mech landing steps).
 func start_short_landing() -> void:

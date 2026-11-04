@@ -196,6 +196,8 @@ var _blend_left: float = 0.0
 var _hit := {}
 ## Blend out after the attack: the pose is held at _time and fades over _lower_time().
 var _fade_left: float = 0.0
+## True while the fade is a fall (stop_external with fall).
+var _fall_fade: bool = false
 ## Clip weight while the swing is held open for the combo window after its clip ended (1 = full pose).
 var _hold_weight: float = 1.0
 ## Shown weight (smoothed) of the swing before at the chain start (it was lowering in its combo hold).
@@ -254,6 +256,7 @@ func get_combo_wait() -> float:
 ## travel but no strikes, no target glide and no chain: the owner does its own hit. False when the mech cannot
 ## attack now or a swing plays.
 func play_external(attack: MeleeAttack, owner: Node, loop: bool = false) -> bool:
+	_fall_fade = false
 	if is_playing or not _can_attack():
 		return false
 	_external = owner
@@ -295,9 +298,11 @@ func is_external_busy(owner: Node) -> bool:
 
 ## Stops owner's external clip: at once (the attack was cancelled), or with fade the pose holds and fades into the pose
 ## under it (a cut clip).
-func stop_external(owner: Node, fade: bool = false) -> void:
+## With fall the fade drops like a fall from the top (slow, then faster, no slow-down at the end; a clip cut in the air).
+func stop_external(owner: Node, fade: bool = false, fall: bool = false) -> void:
 	if _external == owner and is_playing:
 		_finish(fade)
+		_fall_fade = fade and fall
 
 
 ## The mouse button of a melee weapon was pressed: starts the first swing of a chain for the move key.
@@ -802,6 +807,14 @@ func _weight() -> float:
 	return clampf(_time / _attack.speed_scale / maxf(_attack.blend_in, 0.01), 0.0, 1.0)
 
 
+## The clip weight on the body: smoothed, or for a fall fade the height of a fall from the top (1 - t^2).
+func _shown_weight() -> float:
+	if _fall_fade and not is_playing:
+		var left := clampf(_weight(), 0.0, 1.0)
+		return 1.0 - (1.0 - left) * (1.0 - left)
+	return smoothstep(0.0, 1.0, _weight())
+
+
 ## True while the last swing's pose fades out after the attack ended.
 func is_fading() -> bool:
 	return not is_playing and _fade_left > 0.0
@@ -842,7 +855,7 @@ func _clip_rotation(attack: MeleeAttack, track: int, time: float, bone_name: Str
 
 
 func _process_modification_with_delta(_delta: float) -> void:
-	var weight := smoothstep(0.0, 1.0, _weight())
+	var weight := _shown_weight()
 	_switch_ankle_pitch(weight <= 0.0)
 	if weight <= 0.0:
 		return
