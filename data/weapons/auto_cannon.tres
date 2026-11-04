@@ -10,6 +10,7 @@ weight_t = 3.5
 hp = 300.0
 kind = 0
 fire_rate = 0.25
+queue_tap = true
 damage = 165.0
 stagger_points = 34.0
 stagger_hold_s = 4.6

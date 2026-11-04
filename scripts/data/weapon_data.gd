@@ -27,6 +27,10 @@ enum Slot { ARM, BACK }
 ## True: one shot per trigger press, no automatic fire while it is held (shotguns; user rule 2026-11-01: "Shotguns
 ## need manual shooting every time, no auto fire"). A press while the gun is still rising fires once it is up.
 @export var semi_auto: bool = false
+## True: a quick tap fires one round. The press waits (the gun stays raised) until the gun is raised and ready, up to
+## GunWeapon.tap_queue_s after the button is let go (user request 2026-11-04: "autocannon should fire when triggered,
+## when able"). Holding keeps the normal fire. False: the shot needs the button down at the moment the gun is up.
+@export var queue_tap: bool = false
 ## Max range in meters (user choice 2026-10-16: MechWarrior Online ranges): a bullet, beam or missile ends
 ## here (the damage reaches 0), and the lock-on reaches this far. Past it the crosshair stays white.
 @export var range_m: float = 1500.0

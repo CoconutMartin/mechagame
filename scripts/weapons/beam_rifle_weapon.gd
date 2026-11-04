@@ -3,9 +3,12 @@ extends MechWeapon
 ## A two-hand beam sniper rifle. RMB aims down sight (zoom). Hold LMB to charge (charge_time to
 ## full), release LMB to fire. A charged shot is a sustained beam (like a Kamehameha): it keeps
 ## firing along the mech aim for up to discharge_time seconds (full charge), hits every tick and
-## shakes the screen; the aim kicks up when the beam ends (user report 2026-10-15: a kick while the
-## beam fired lifted it off the target, so the charged shot did almost no damage). Damage and beam width grow with the charge. A quick tap fires
-## a short shot. Uses heat: overheats after a few shots, then cools to zero.
+## shakes the screen. While it fires, the weapon recoils all the time (it is pushed back, climbs and shakes) and the
+## aim drifts up and wanders a little with a fast tremor, so the crosshair moves and the player pulls it back
+## (user request 2026-11-04). The old aim kick when the beam ended is spread over the beam. The drift is small
+## (user report 2026-10-15: a big kick while the beam fired lifted it off the target: 67 damage instead of 472).
+## Damage and beam width grow with the charge. A quick tap fires a short shot. Uses heat: overheats after a few
+## shots, then cools to zero.
 
 const BEAM := preload("res://scenes/effects/beam_shot.tscn")
 const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
@@ -37,21 +40,47 @@ const MARK := preload("res://scenes/effects/bullet_mark.tscn")
 ## degrees up and sideways at full charge, less with less charge. The big kick still comes when the beam ends.
 @export var start_kick_up_deg: float = 0.35
 @export var start_kick_side_deg: float = 0.1
+## Beam recoil on the weapon and the aim, all scaled by the charge: lerp(drift_min_scale, 1, charge).
+@export_group("Beam recoil")
+## Aim climb while the beam fires, in degrees per second at full charge (2.0 s beam = 2.0 deg with 1.0).
+@export var drift_up_deg_per_s: float = 1.0
+## How much the climb speed varies, as a part of it (0.6 = from 0.4 to 1.6 times). Smooth noise.
+@export var drift_up_wander: float = 0.6
+## Side drift speed in degrees per second at most (smooth noise, left and right).
+@export var drift_side_deg_per_s: float = 0.4
+## Fast aim tremor size in degrees (up and side), at full charge. It comes and goes, it does not add up.
+@export var drift_tremor_deg: float = 0.2
+## Speed of the slow climb and side wander (waves per second).
+@export var drift_wander_hz: float = 0.7
+## Speed of the tremor (waves per second). The aim kick smooths fast waves, so keep it low.
+@export var drift_tremor_hz: float = 3.0
+## Drift, tremor and weapon recoil of a tap (no charge) as a part of the full charge value.
+@export_range(0.0, 1.0) var drift_min_scale: float = 0.3
+## Weapon model push back while the beam fires, in meters at full charge.
+@export var model_back_m: float = 0.3
+## Weapon model muzzle climb while the beam fires, in degrees at full charge.
+@export var model_climb_deg: float = 3.0
+## Weapon model shake while the beam fires, in degrees at full charge.
+@export var model_shake_deg: float = 0.8
+## The aim kick when the beam ends as a part of the old kick (weapon data recoil x charge). 0 = none: the kick is
+## spread over the beam as the drift.
+@export_range(0.0, 1.0) var end_kick_scale: float = 0.0
+@export_group("")
 ## Meshes that light up one after another while charging (back to front), and the emitter lens.
 @export var coil_paths: Array[NodePath] = [^"Coil0", ^"Coil1", ^"Coil2"]
 @export var emitter_path: NodePath = ^"Emitter"
 ## The 3 charge indicator lamps (lamp 1 first), lit by the charge level. Empty = no indicator.
 @export var lamp_paths: Array[NodePath] = []
 
-## 0 to 1 while LMB is held.
-## Aim kick of the shot, given when the beam ends.
 ## Shot id of the beam that fires now (its stagger cap, MechStability).
 var _stagger_shot: int = 0
 ## Even stagger (WeaponData.stagger_cap_per_shot above 0): points this beam may still give, and the
 ## points of each tick that hits (the full beam's points over all its ticks).
 var _stagger_left: float = 0.0
 var _stagger_tick: float = 0.0
+## Aim kick of the shot, given when the beam ends (end_kick_scale of the old kick; 0 = none).
 var _end_kick: float = 0.0
+## 0 to 1 while LMB is held.
 var charge: float = 0.0
 ## Seconds left in the beam discharge. 0 = not firing.
 var discharge_left: float = 0.0
@@ -63,12 +92,19 @@ var _power: float = 0.0
 var _tick: float = 0.0
 var _beam: BeamShot = null
 var _last_mark: float = 0.0
+## Seconds since the beam started, for the drift noise.
+var _drift_time: float = 0.0
+## Aim tremor of the last frame (degrees); only its change moves the aim.
+var _tremor_last := Vector2.ZERO
+var _noise := FastNoiseLite.new()
 
 @onready var _muzzle: Node3D = $Muzzle
 @onready var _glow := ChargeGlow.new()
 
 
 func _ready() -> void:
+	_noise.frequency = 1.0
+	_noise.seed = randi()
 	# The barrel coils and the emitter lens light up with the charge.
 	add_child(_glow)
 	var coils: Array[MeshInstance3D] = []
@@ -136,8 +172,12 @@ func _start_discharge() -> void:
 	_beam.hold = true
 	controller.get_world().add_child(_beam)
 	var kick := lerpf(1.0, full_charge_kick, charge)
-	# The aim kick waits for the end of the beam (_end_kick), so the beam stays on the target.
-	_end_kick = kick
+	# The aim does not kick at once: it drifts a little all through the beam (_drift_aim), so the beam stays near the
+	# target. Only end_kick_scale gives a kick when the beam ends.
+	_end_kick = kick * end_kick_scale
+	_drift_time = 0.0
+	_noise.seed = randi()
+	_tremor_last = _tremor(_recoil_scale())
 	if controller.camera_shake != null:
 		controller.camera_shake.add_shake(data.shake_trauma * kick * release_shake, data.shake_kick * kick * release_shake)
 	if controller.mech_aim != null and (start_kick_up_deg > 0.0 or start_kick_side_deg > 0.0):
@@ -148,6 +188,7 @@ func _start_discharge() -> void:
 
 func _update_discharge(delta: float) -> void:
 	discharge_left -= delta
+	_drift_aim(delta)
 	var origin := _muzzle.global_position
 	var direction := (controller.mech_aim.aim_point - origin).normalized()
 	var end := origin + direction * data.range_m
@@ -185,6 +226,36 @@ func _update_discharge(delta: float) -> void:
 		_end_discharge()
 
 
+## Beam recoil scale from the charge of the shot: drift_min_scale at no charge, 1 at full charge.
+func _recoil_scale() -> float:
+	return lerpf(drift_min_scale, 1.0, _fired_charge)
+
+
+## Fast aim tremor at the drift time, in degrees (smooth noise, up and side).
+func _tremor(scale: float) -> Vector2:
+	var t := _drift_time * drift_tremor_hz
+	return Vector2(_noise.get_noise_2d(t, 200.0), _noise.get_noise_2d(t, 300.0)) * 2.0 * drift_tremor_deg * scale
+
+
+## While the beam fires: the aim climbs and wanders (smooth noise) with a small tremor, and the weapon model is
+## pushed back, climbs and shakes. The aim push is a real kick (MechAim.drift_aim), so the beam goes where the
+## crosshair goes and the player has to pull the crosshair back.
+func _drift_aim(delta: float) -> void:
+	var scale := _recoil_scale()
+	_drift_time += delta
+	var t := _drift_time * drift_wander_hz
+	var wander := _noise.get_noise_2d(t, 0.0) * 2.0
+	var up_rate := drift_up_deg_per_s * maxf(1.0 + drift_up_wander * wander, 0.0) * scale
+	var side_rate := drift_side_deg_per_s * clampf(_noise.get_noise_2d(t, 100.0) * 2.0, -1.0, 1.0) * scale
+	var tremor := _tremor(scale)
+	var step := tremor - _tremor_last
+	_tremor_last = tremor
+	if controller.mech_aim != null:
+		controller.mech_aim.drift_aim(side_rate * delta + step.x, up_rate * delta + step.y)
+	if controller.weapon_recoil != null:
+		controller.weapon_recoil.set_sustain(model_back_m * scale, model_climb_deg * scale, model_shake_deg * scale)
+
+
 ## True when the beam gives its stagger points evenly over its ticks (no per-shot id, so the points of the
 ## ticks do not add up to a knock-down).
 func _even_stagger() -> bool:
@@ -212,7 +283,7 @@ func _stop_beam() -> void:
 	_beam = null
 
 
-## The beam ends: the aim kick comes now and the beam fades.
+## The beam ends: the beam fades (and the end kick comes, if end_kick_scale gives one).
 func _end_discharge() -> void:
 	controller.torso_pose.action_shake = 0.0
 	if _end_kick > 0.0:

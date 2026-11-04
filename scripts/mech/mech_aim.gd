@@ -148,6 +148,19 @@ func kick_aim(up_deg: float = -1.0, side_deg: float = -1.0, jitter_scale: float 
 		camera_rig.free_aim.kick(up_deg, side_deg, jitter_scale)
 
 
+## A small push on the aim, in degrees, added every physics frame by a weapon that fires for a long time (the charged
+## beam drifts and jitters while it fires). It is a kick: it moves the crosshair like a shot's recoil, it stays where it
+## is put and the player pulls it back with the mouse. Signed, unlike kick_aim (the side of a kick is random there).
+## Scaled by the stance like a kick (kneeling, shield, arm recoil control). side_deg positive = left, up_deg positive = up.
+## No effect for an AI pilot (it aims at its target, not through the crosshair).
+func drift_aim(side_deg: float, up_deg: float) -> void:
+	if camera_rig == null or camera_rig.free_aim == null:
+		return
+	var free_aim := camera_rig.free_aim
+	# FreeAim has no signed kick of its own yet; the push goes into the same pending kick that kick() fills.
+	free_aim._pending_kick += Vector2(side_deg, up_deg) * free_aim.get_recoil_scale()
+
+
 ## Screen position of the camera crosshair, in pixels.
 func get_crosshair_screen_point() -> Vector2:
 	var size := camera.get_viewport().get_visible_rect().size
