@@ -27,8 +27,9 @@ extends Node3D
 ## 2026-10-15: "the camera is fighting me"; before, the aim ran up to 135 degrees ahead and the view
 ## kept turning for seconds).
 @export var max_torso_lead_deg: float = 15.0
-## Vertical mouse aim speed = mouse sensitivity x this value. 0.3 = 70% slower than horizontal.
-@export var pitch_sensitivity_scale: float = 0.3
+## Vertical mouse aim speed = mouse sensitivity x this value. 0.15 since 2026-11-04 (user: "reduce crosshair vertical
+## sensitivity by 50%"; was 0.3).
+@export var pitch_sensitivity_scale: float = 0.15
 ## Horizontal mouse aim speed = mouse sensitivity x this value (2.0 since 2026-10-24, user request; was 3.0, 1.5).
 @export var yaw_sensitivity_scale: float = 2.0
 ## Arrow keys (aim_left / aim_right / aim_up / aim_down) aim like a mouse moving this many pixels per

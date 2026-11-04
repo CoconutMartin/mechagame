@@ -1691,3 +1691,4 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - 2026-11-02 (user): Shotgun 2 and 3 are pulse weapons: heat, no ammo (`WeaponData.heat_gun`); electric pellets, arcs between pellets, electric hits.
 - 2026-11-02 (user): Pile Bunker charge is a fixed coded pose with walking (60% speed); the release leaps (no slide), at most the forward dodge length; Shift+2 deleted; clip 3 jump +70%. Light, Aux and Heavy Packs removed; the default loadout has the Field Pack.
 - 2026-11-02 (user): attack drones fly like a saucer, shoot from a rim port, and move after every burst (replaces "no move after the first shot"); max_flight_s 8.
+- 2026-11-04 (user): vertical mouse aim 50% slower (`MechCameraRig.pitch_sensitivity_scale` 0.3 -> 0.15); torso twist twice as fast (`Mech.turn_speed_deg` 44.1 -> 88.2, `turn_acceleration_deg` 321.3 -> 642.6). The horizontal mouse sensitivity is unchanged.
