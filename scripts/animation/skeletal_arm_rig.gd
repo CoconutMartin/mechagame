@@ -142,6 +142,24 @@ extends SkeletonModifier3D
 @export var pile_bunker_leg_clearance: float = 1.2
 ## Share of the stride swing's elbow bend for a Pile Bunker arm.
 @export_range(0.0, 1.0) var pile_bunker_elbow_swing_scale: float = 0.5
+@export_group("Forearm gun aim")
+## A gun worn on the forearm (the Auto Cannon) points along the forearm, from the elbow to the fist, so the arm decides where
+## the barrel goes (user request 2026-11-04: "shooting while kneeling with autocannon: make the forearm/shoulder adjust so that
+## the firearm aligns with the crosshair"). WeaponPose aims the grip at the aim point from the shoulder, and the barrel was
+## 3 degrees off standing and 6 kneeling (the body is lower and leans), more at short range. While the gun is raised this turns
+## the fist target about the elbow, then solves the arm again, so the barrel lies on the line from the muzzle to the aim point
+## (the line the shots fly). Off: the old hold.
+@export var align_forearm_gun: bool = true
+## Solve passes per frame (the muzzle moves with the turn, so one pass is not exact).
+@export_range(1, 6) var align_passes: int = 3
+## Largest turn of the forearm for this (degrees).
+@export var align_max_deg: float = 30.0
+## Nearer aim points (m, muzzle to aim point) are not aligned (the angle grows without limit up close).
+@export var align_min_distance: float = 6.0
+## While the weapon recoils more than this (meters back, WeaponRecoil.get_offset) the turn of the last still frame is kept,
+## so the shot's model kick is not corrected away.
+@export var align_recoil_limit: float = 0.02
+
 @export_group("Clip keep-off")
 ## Melee clips (user request 2026-10-30: "add part collisions for the punching/fist/pilebunker animations"): after
 ## the clip pose (SkeletalMeleeAnimation calls keep_clip_arms_off), an arm the clip drives turns out to the side
@@ -215,6 +233,12 @@ var _mount_offsets: Array = []
 ## pile bunker (user rule 2026-10-15), index 1: the right weapon.
 var _weapon_base: Array[Transform3D] = [Transform3D.IDENTITY, Transform3D.IDENTITY]
 var _weapon_moved: Array[Transform3D] = [Transform3D.IDENTITY, Transform3D.IDENTITY]
+## The turn of the fist target about the elbow the forearm gun alignment found on the last still frame, per side (0 = left,
+## 1 = right). It stays while the weapon recoils.
+var _align_turn: Array[Quaternion] = [Quaternion.IDENTITY, Quaternion.IDENTITY]
+## The barrel-to-shot angle (degrees) before and after the alignment on the last frame, per side. For tests.
+var align_error_before_deg: Array[float] = [0.0, 0.0]
+var align_error_after_deg: Array[float] = [0.0, 0.0]
 ## The relaxed arm swing of this mech (found on first use; Mech adds it at runtime).
 var _free_swing: FreeArmSwing
 ## Lower raise of the animated arms now (0 = standing, 1 = moving).
@@ -535,6 +559,7 @@ func _solve_arms_once(active: Array[Dictionary]) -> void:
 	if right_ik != null:
 		_restore_weapon(weapons.right_weapon if weapons != null else null, 1)
 		_solve_one(right_ik, right_side, swing_limit(true))
+		_align_forearm_gun(weapons.right_weapon if weapons != null else null, right_ik, right_side, swing_limit(true), 1)
 		_move_weapon_to_hand(weapons.right_weapon if weapons != null else null, right_ik, 1)
 	if left_ik == null:
 		return
@@ -542,6 +567,7 @@ func _solve_arms_once(active: Array[Dictionary]) -> void:
 	var left_gun := _left_gun()
 	_restore_weapon(left_gun, 0)
 	_solve_one(left_ik, left_side, swing_limit(false))
+	_align_forearm_gun(left_gun as MechWeapon, left_ik, left_side, swing_limit(false), 0)
 	_move_weapon_to_hand(left_gun, left_ik, 0)
 	var weapon := weapons.right_weapon if weapons != null else null
 	if right_ik == null or weapon == null or not weapon.is_ancestor_of(left_ik.target):
@@ -552,6 +578,67 @@ func _solve_arms_once(active: Array[Dictionary]) -> void:
 	weapon.global_position += gap
 	_weapon_moved[1] = weapon.transform
 	_solve_one(right_ik, right_side, swing_limit(true))
+
+
+## Forearm gun: turns the fist target about the elbow, and solves the arm again, until the barrel (the muzzle's -Z, which is the
+## forearm's direction) lies on the line from the muzzle to the aim point. Works on the arm as solved for the pose (the caller
+## solved it). side: the arm's side dictionary; slot: 0 = left, 1 = right.
+func _align_forearm_gun(weapon: MechWeapon, ik: TwoBoneIK, side: Dictionary, limit: float, slot: int) -> void:
+	align_error_before_deg[slot] = 0.0
+	align_error_after_deg[slot] = 0.0
+	if not align_forearm_gun or weapons == null or weapon == null or not is_instance_valid(weapon) or not weapon.is_forearm_gun() \
+			or weapons.mech_aim == null or ik.mid_joint == null:
+		_align_turn[slot] = Quaternion.IDENTITY
+		return
+	var muzzle := weapon.get("_muzzle") as Node3D
+	var pose := weapons.left_pose if slot == 0 else weapons.weapon_pose
+	if muzzle == null or pose == null:
+		return
+	# Full only with the gun up; coming up or down it blends (the rest hold is not aimed at the aim point).
+	var weight := smoothstep(0.7, 1.0, pose.aim_amount)
+	if weight <= 0.0:
+		_align_turn[slot] = Quaternion.IDENTITY
+		return
+	var recoil := weapons.left_recoil if slot == 0 else weapons.weapon_recoil
+	if recoil != null and recoil.get_offset().origin.length() > align_recoil_limit:
+		# The shot's kick: keep the turn of the last still frame.
+		_turn_target_about_elbow(weapon, ik, _align_turn[slot])
+		_solve_one(ik, side, limit)
+		return
+	var total := Quaternion.IDENTITY
+	var max_angle := deg_to_rad(align_max_deg)
+	# The muzzle must be measured on the arm as it will be posed: the forearm bone's own roll moves the barrel line sideways.
+	_pose_arm(side)
+	for pass_index in align_passes:
+		var line := weapons.mech_aim.aim_point - muzzle.global_position
+		if line.length() < align_min_distance:
+			break
+		var barrel := -muzzle.global_basis.z
+		var turn := Quaternion(barrel.normalized(), line.normalized())
+		if pass_index == 0:
+			align_error_before_deg[slot] = rad_to_deg(turn.get_angle())
+		turn = Quaternion.IDENTITY.slerp(turn, weight)
+		var combined := turn * total
+		if combined.get_angle() > max_angle:
+			combined = Quaternion.IDENTITY.slerp(combined, max_angle / combined.get_angle())
+			turn = combined * total.inverse()
+		_turn_target_about_elbow(weapon, ik, turn)
+		total = combined
+		_solve_one(ik, side, limit)
+		_pose_arm(side)
+	_align_turn[slot] = total
+	var rest := weapons.mech_aim.aim_point - muzzle.global_position
+	if rest.length() >= align_min_distance:
+		align_error_after_deg[slot] = rad_to_deg((-muzzle.global_basis.z).angle_to(rest))
+
+
+## Moves the weapon so its fist target (the IK target, a child) turns by q about the elbow (the weapon keeps its own turn).
+func _turn_target_about_elbow(weapon: Node3D, ik: TwoBoneIK, q: Quaternion) -> void:
+	if q.is_equal_approx(Quaternion.IDENTITY) or ik.target == null or not weapon.is_ancestor_of(ik.target):
+		return
+	var elbow := ik.mid_joint.global_position
+	var from := ik.target.global_position
+	weapon.global_position += elbow + q * (from - elbow) - from
 
 
 ## One arm to its target: the hinge solve, or the free IK with the elbow tuck and the swing limit.

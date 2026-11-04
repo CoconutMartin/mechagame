@@ -117,7 +117,15 @@ var offset: Vector2 = Vector2.ZERO
 ## Where the mech aim really points, in degrees (smoothed offset plus jitter). MechAim uses it.
 var aim_offset: Vector2 = Vector2.ZERO
 
+## The signed kick (degrees, x = left, y = up, with the stance scale) the last kick() call added.
+var last_kick: Vector2 = Vector2.ZERO
+
 var _pending_kick: Vector2 = Vector2.ZERO
+## Auto return after a kick (return_last_kick): what is still to be pulled back (degrees), the seconds before it starts,
+## and how fast it goes (1 / seconds).
+var _return_left: Vector2 = Vector2.ZERO
+var _return_delay: float = 0.0
+var _return_rate: float = 0.0
 var _smoothed: Vector2 = Vector2.ZERO
 var _jitter: float = 0.0
 var _time: float = 0.0
@@ -157,6 +165,7 @@ func _physics_process(delta: float) -> void:
 		_camera_kick += back + over - _kick_offset
 	else:
 		_camera_kick += take
+	_apply_return(delta)
 	_jitter = maxf(_jitter - jitter_fade * delta, 0.0)
 	# Noise values are mostly within +/- 0.5, so x2 gives about the full jitter size. The noise is
 	# smooth by itself, so it goes on top of the smoothed ring.
@@ -232,8 +241,50 @@ func kick(up_deg: float = -1.0, side_deg: float = -1.0, jitter_scale: float = 1.
 	var scale := get_recoil_scale()
 	var up := up_deg if up_deg >= 0.0 else recoil_up_deg
 	var side := side_deg if side_deg >= 0.0 else recoil_side_deg
-	_pending_kick += Vector2(randf_range(-side, side), up) * scale
+	last_kick = Vector2(randf_range(-side, side), up) * scale
+	_pending_kick += last_kick
 	_jitter = minf(_jitter + jitter_per_shot_deg * scale * jitter_scale, max_jitter_deg * scale * maxf(jitter_scale, 1.0))
+
+
+## A gentle automatic return after the last kick (Beam Rifle 4, user request 2026-11-04: "a small auto crosshair
+## correction after shooting"): after delay seconds the crosshair kick shrinks by share of that kick (0.7 = 70%), smoothly,
+## about 95% of it within time seconds. The player still pulls back the rest. It never takes the crosshair past the point
+## the mouse already brought it back to (the pull stops where the kick on that axis is gone). Call it right after kick().
+func return_last_kick(share: float, time: float, delay: float = 0.0) -> void:
+	_return_left += -last_kick * clampf(share, 0.0, 1.0)
+	_return_delay = maxf(delay, 0.0)
+	# exp(-3) = 0.05: 95% of the pull is done after `time`.
+	_return_rate = 3.0 / maxf(time, 0.05)
+
+
+## One step of the automatic return: the pull comes off the crosshair kick (the dead zone box: off the ring position;
+## no crosshair kick: off the camera kick), never past zero on an axis.
+func _apply_return(delta: float) -> void:
+	if _return_left == Vector2.ZERO:
+		return
+	if _return_delay > 0.0:
+		_return_delay -= delta
+		return
+	var step := _return_left * (1.0 - exp(-_return_rate * delta))
+	_return_left -= step
+	if not _has_box() and not kick_moves_crosshair:
+		_camera_kick += step
+	else:
+		var held: Vector2 = offset if _has_box() else _kick_offset
+		for axis in 2:
+			# The pull only reduces what is there: no push past zero where the player has already corrected.
+			if held[axis] * step[axis] >= 0.0:
+				_return_left[axis] = 0.0
+				step[axis] = 0.0
+			elif absf(step[axis]) > absf(held[axis]):
+				step[axis] = -held[axis]
+				_return_left[axis] = 0.0
+		if _has_box():
+			offset = _clamp_to_box(offset + step)
+		else:
+			_kick_offset += step
+	if _return_left.length() < 0.001:
+		_return_left = Vector2.ZERO
 
 
 ## Steady aim shake from the boosters, in degrees (with the stance multiplier).

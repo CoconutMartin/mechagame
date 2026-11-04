@@ -32,6 +32,15 @@ const SHOT := preload("res://scenes/weapons/particle_shot.tscn")
 @export var muzzle_glow_fade: float = 0.6
 ## A full shot pushes the mech back this far (m); a part charge pushes less.
 @export var push_back_m: float = 1.0
+@export_group("Aim return")
+## After a shot the crosshair comes back by this part of the kick on its own (user request 2026-11-04: "add a small auto
+## crosshair correction after shooting"); the player corrects the rest. 0 = no return.
+@export_range(0.0, 1.0) var aim_return_share: float = 0.7
+## Seconds in which the return is done (95% of it).
+@export var aim_return_time: float = 0.45
+## Seconds after the shot before the return starts (the kick rises in about 0.2 s, so it reaches nearly its full height first).
+@export var aim_return_delay: float = 0.2
+@export_group("")
 
 ## 0 to 1 while the trigger is held.
 var charge: float = 0.0
@@ -130,6 +139,13 @@ func _fire() -> void:
 	controller.mech.push_back(push_back_m * power)
 	_muzzle_glow.flash()
 	_after_shot()
+
+
+## The kick of the shot, then the gentle automatic return of the crosshair (a part of the kick comes back).
+func _after_shot() -> void:
+	super()
+	if aim_return_share > 0.0:
+		controller.mech_aim.return_last_kick(aim_return_share, aim_return_time, aim_return_delay)
 
 
 ## Cool down left as a part of the full cool down (1 just after a shot, 0 when ready).
