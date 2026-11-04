@@ -13,9 +13,10 @@ Check "Reminders for the user" in DESIGN.md. Remind the user of each open item w
 The game has one mech: SGG-101 Sagigilid (in-game name since 2026-10-14; files and code keep the old
 name "sanggigilid"). Rigged, `scenes/mech/sanggigilid.tscn`, built by `tools/godot/build_sanggigilid.gd`.
 All work goes to it. The other mechs were deleted. Mech names: `docs/mech_names.md`.
-Update (user, 2026-10-31): parts are swappable (DESIGN "Swappable mech parts"). Every mech uses the SGG-101
-joints and the one mech scene; its parts are files on that rig. Haliya HLY-101 comes next as a user upload
-(the Claude-built Haliya was removed 2026-10-31).
+Update (user, 2026-10-31): parts are swappable (DESIGN "Swappable mech parts"). A mech's parts are files on its rig.
+Update (user, 2026-11-05): there will be 3 rigs: light, medium (SGG-101 `MechRig`) and heavy. Every mech uses one of
+the 3 rigs. Haliya HLY-101 is a light mech; the light and heavy rigs are not built yet. Haliya's model is
+`models/haliya/haliya.blend`, built by `tools/blender/haliya_ref_build.py`.
 
 ## PS1 skin (user rule, 2026-10-11)
 

@@ -672,7 +672,8 @@ User brief: assemble the four AI-made parts in `models/medium/` (head, torso, le
 User: "Make it so that parts are swappable, no tearing, parts with collision." User answers (2026-10-31):
 - Slots: head, torso (core), left arm, right arm, legs. Parts come from every mech; each mech has 1 variant.
 - Every mech uses the same joints: the SGG-101 rig `MechRig` (56 bones, their names and rest places) is the
-  joint standard, so every animation plays on every mech.
+  joint standard, so every animation plays on every mech. Changed 2026-11-05 (user): there will be 3 rigs, light, medium
+  (`MechRig`) and heavy. Open: whether parts and animations carry across the 3 rigs.
 - Each part is separate objects with rigid parenting (one bone per mesh at full weight; the hands use the finger
   bones). The child part owns the joint piece between two parts: the head brings the neck joint, the core the
   waist joint, each arm its shoulder ball, elbow and hand, the legs the pelvis, hip balls and knees.
@@ -724,8 +725,8 @@ strip; a tan heel plate; rear skirt plates (the long blade lies between the tan 
 Off MechRig (user 2026-11-05: "remove from mech rig", a light mech "a little smaller in frame"): Haliya keeps the
 proportions of the pictures and has no armature. `tools/blender/haliya_ref_build.py` builds it and it is saved as
 `models/haliya/haliya.blend` (pieces on joint empties, `MODEL_SCALE` 0.95). The MechRig fit (`haliya_rig_fit.py`, commit
-dc8ce00) is gone. Open for the game: this conflicts with "every mech uses the SGG-101 joints"; Haliya needs its own rig
-or animations before it can move in the game, and its parts do not swap with SGG parts.
+dc8ce00) is gone. Haliya is a light mech: it needs the light rig (not built yet) and animations on it before it can move
+in the game.
 
 Open points for later parts: the wrist pin (measured from the SGG forearm mesh `Arm_<side>_02` at build time) and
 the jointed hand scenes (`mech_hand_r/l.tscn`) are SGG values; an arm part of another mech needs its own (ArmPart
@@ -1496,7 +1497,7 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - "Align shoulders and arm swings during holding war hammer and baton with shoulder and arm swings with fists": the holding arm followed the walk clip (its shoulder block rose and tilted). Now `WeaponController._swings_like_fist` (a HAMMER-kind weapon in the right hand): when it does not swing, the arm takes the fist hang target (`_update_fist_arms`, `fist_hang_target`) and its IK runs, so `SkeletalArmRig` gives it the relaxed hang and the stride swing like a fist arm (level block); the weapon rides the hand. During a swing the target is null and the clip has the arm as before. Test: test_melee_combo, test_stability, test_weapon_hands, test_hit_reactions 0 failures; renders `render_rifle.gd` RIFLE_RIGHT=hammer / baton, RIFLE_ACTIONS=move_forward, views far, far_front.
 
 ## Reminders for the user
-- Open (2026-11-05, built): check the Haliya model in Blender against the pictures (`models/haliya/haliya.blend`, off MechRig, 0.95 size). Decide how it moves in the game: its own rig and animations, or no game use yet.
+- Open (2026-11-05, built): check the Haliya model in Blender against the pictures (`models/haliya/haliya.blend`, off MechRig, 0.95 size). Next for the game: the light rig. Say if parts and animations should carry across the 3 rigs.
 - Open (2026-11-02, built): play test the Ctrl kneel pose (right knee down, left foot forward, the camera with it) and the steady head while aiming (RMB) and firing (see "Ctrl kneel pose and steady head").
 - Open (2026-11-02, built): play test the booster fire, gust, nozzle heat and petal charge on the Quad Booster, Boost Pack and Jet Pack (see "Booster fire"); say if the plume length, brightness, light, heat speed or petal angle should change.
 - Open (2026-11-04, built): play test the Pile Bunker round (Shift+3 cut and fade, Shift+4 Hook with the Pile Bunker arm, no other-arm twitch, the shorter run, Shift+1 gone). Open: the left Hook misses at 12 m; the clips still put the arms and the magazine into the body in places.
@@ -1595,7 +1596,8 @@ scripts/combat/     mech_health.gd, part_hitbox.gd, part_breaker.gd, mech_death.
 - 2026-11-01 (user): set SGGv2 aside for now (the work pauses; the build stays).
 - 2026-10-31 (user): SGGv2: more body, heft and character (thicker limbs and torso, added armor); paint skin Navy Orange (navy armor, orange accents, eyes in the accent color), replacing the first paint Black Red.
 - 2026-10-31 (user): SGGv2 paint skin "Black Red": black armor, red accents, dark grey frame, orange lamp; a garage skin option for the body.
-- 2026-11-05 (user): Haliya stays off MechRig, with the proportions of the pictures and a little smaller in frame (light mech). This is an exception to the shared joints; how it moves in the game is open.
+- 2026-11-05 (user): 3 rigs: light, medium (SGG `MechRig`) and heavy. Every mech uses one of them.
+- 2026-11-05 (user): Haliya stays off MechRig, with the proportions of the pictures and a little smaller in frame (light mech).
 - 2026-10-31 (user): remove the Claude-built Haliya from the game; the user uploads the Haliya model.
 - 2026-10-31 (user): Haliya HLY-101 (user picture) is a second mech on the SGG joints, its parts swap with SGG parts; skirt and sleeves move with follow scripts (accessory bones); the current split SGG is saved as git tag `sggv2`.
 - 2026-10-31 (user): swappable parts: head, core, arms, legs, from every mech (1 variant each), on the SGG-101 joint standard; rigid parenting, the child part owns the joint piece; simple collision shapes as now; a test part to try the swap. Phase 1 (split SGG into a rig file and 5 part files) built.
