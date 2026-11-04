@@ -215,6 +215,8 @@ func _start_fire() -> void:
 	fire_start_age = age
 	bursts_fired = 0
 	shifts_done = 0
+	# A hard stop at the firing place (it may still fly fast when the approach time ran out).
+	velocity *= data.shift_stop_keep
 
 
 ## The FIRE phase (user rule 2026-11-02): aim the port at the target, fire a burst, glide to a new place, again.
@@ -266,6 +268,9 @@ func _shift(delta: float) -> void:
 	if global_position.distance_to(goal) >= data.shift_arrive and _step_time < data.shift_max_s:
 		return
 	shifts_done += 1
+	if data.shift_hop > 0.0:
+		# A quick hop ends with a hard stop, so the drone does not coast past the new place.
+		velocity *= data.shift_stop_keep
 	if shifts_done >= data.bursts:
 		_end_attack()
 		return
@@ -346,19 +351,28 @@ func _pick_shift_place() -> void:
 	goal = _target_point + _goal_offset
 
 
-## A quick hop of shift_hop to one side, up or down (in random order), with a clear path and the target still in
-## sight. False when none works.
+## A quick hop of shift_hop to one side, up, down or a diagonal (in random order; then half as far), with a clear
+## path, under the ceiling and the target still in sight. False when none works.
 func _pick_hop() -> bool:
 	var to := _target_point - global_position
 	to.y = 0.0
 	var side := to.normalized().cross(Vector3.UP) if to.length() > 0.1 else Vector3.RIGHT
 	var choices: Array[Vector3] = [side, -side, Vector3.UP, Vector3.DOWN, (side + Vector3.UP).normalized(),
-			(-side + Vector3.UP).normalized()]
+			(-side + Vector3.UP).normalized(), (side + Vector3.DOWN).normalized(), (-side + Vector3.DOWN).normalized()]
 	choices.shuffle()
+	# The full hop first, then a half hop, before the long glide.
+	var tries: Array[Vector3] = []
 	for direction in choices:
-		var place := global_position + direction * data.shift_hop
+		tries.append(direction * data.shift_hop)
+	for direction in choices:
+		tries.append(direction * data.shift_hop * 0.5)
+	for offset in tries:
+		var place := global_position + offset
 		# Not back onto an earlier burst place.
 		if DroneNavigator._near_any(place - _target_point, _used, data.shift_hop * 0.5):
+			continue
+		# Under the ceiling (an up hop over it would be cut short).
+		if place.y > _nav.ceiling_at(place) - data.hit_radius - data.skin:
 			continue
 		if DroneNavigator.clear(self, global_position, place, data.sight_mask) and _can_shoot_from(place):
 			has_place = true

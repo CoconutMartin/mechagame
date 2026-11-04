@@ -128,6 +128,10 @@ func _outlet_radius(index: int) -> float:
 
 
 func _on_dodge_started() -> void:
+	# No fire for a dodge step or roll (a dodge clip; user 2026-11-04: "remove boost fire when dodge stepping"); only
+	# the hop (no clip) bursts.
+	if mech.dodge != null and mech.dodge.is_rolling():
+		return
 	thrust = maxf(thrust, dodge_burst)
 
 

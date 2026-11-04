@@ -157,6 +157,20 @@ func _run() -> void:
 	_check(outlets.get_heat() < heat_on or heat_on < 0.01, "after the boost: the outlets cool down (%.2f to %.2f)" %
 			[heat_on, outlets.get_heat()])
 	_check(flaps.amount < 0.01 and flap.basis.is_equal_approx(closed), "after the boost: flaps closed")
+	# A dodge step (a dodge clip) shows no boost fire (user 2026-11-04).
+	mech.dodge._start()
+	var step_fire := false
+	for i in 30:
+		await _frames(1)
+		step_fire = step_fire or outlets.thrust > 0.02 or outlets.get_plumes()[0].visible
+	_check(mech.dodge.is_rolling() or not mech.dodge.is_dodging, "the dodge plays a step clip")
+	_check(not step_fire, "a dodge step shows no boost fire")
+	await _wait_landing(mech)
+	for i in 240:
+		if not mech.dodge.is_busy() and not mech.landing_recovery.is_recovering():
+			break
+		await _frames(1)
+	await _frames(30)
 	# Jump charge: the louvers crack open a little (they cannot close any further), then open fully at the launch.
 	Input.action_press("jump")
 	await _frames(75)

@@ -112,9 +112,11 @@ extends Resource
 @export var shift_arrive: float = 0.1
 @export var shift_max_s: float = 0.5
 ## Quick hop after a burst (user 2026-11-03: "drone move distance = 1 meter, quick movements, maximum flight during
-## this movement is 0.5 sec"): the drone moves this far (m) to one side, up or down, with a clear path and the target
+## this movement is 0.5 sec"; 2026-11-04: "increase drone hop by 1.5 meters", 2.5 m): the drone moves this far (m) to one side, up or down, with a clear path and the target
 ## still in sight. 0 = pick a new firing place shift_distance_min away instead.
-@export var shift_hop: float = 1.0
+@export var shift_hop: float = 2.5
+## Part of the speed kept at the end of a hop (0 = a dead stop, 1 = it coasts on).
+@export_range(0.0, 1.0) var shift_stop_keep: float = 0.15
 ## Distance from the target's lock point (m), random in this range (inside the gun's 20 m range, user rule).
 @export var attack_distance_min: float = 9.0
 @export var attack_distance_max: float = 15.0
