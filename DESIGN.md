@@ -729,6 +729,9 @@ dc8ce00) is gone. Haliya is a light mech: it needs the light rig (not built yet)
 Stance (user 2026-11-05, "Haliya back 3-4.png"): upright, with the knees and ankles nearly under the hips and the arms in the
 plane of the body. The back depths, thigh depth, knee wheel, calf, shin and round ankle wheels follow that picture too.
 
+Back profile (user 2026-11-05, red line in "3d model side view.PNG"): the chest back, waist, rear pelvis plate, rear skirt
+plates and thigh backs have more depth and reach the line. Forefoot 25% smaller (`FOREFOOT_SCALE` 0.75).
+
 Three rigs (user 2026-11-05): parts swap across the light, medium and heavy rigs, and all 3 play the same animations. Not built.
 To design first: the same bone names and parent chain on all 3 rigs, how one animation plays on different bone lengths, and how
 a part from one rig fits the joints of another (for example a heavy arm on a light torso).
