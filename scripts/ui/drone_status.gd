@@ -54,6 +54,9 @@ func _process(_delta: float) -> void:
 	if launcher.held and launcher.locked != null:
 		line += "  LOCKED"
 		tint = lock_color
+	elif launcher.held and launcher.target_out_of_range():
+		line += "  OUT OF RANGE"
+		tint = wait_color
 	if line != text:
 		text = line
 	add_theme_color_override(&"font_color", tint)

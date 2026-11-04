@@ -259,6 +259,21 @@ func _find_candidate() -> Node3D:
 	return best
 
 
+## True when a lockable target sits in the lock box but farther than lock_range_m (for the HUD line).
+func target_out_of_range() -> bool:
+	var aim := _aim()
+	if aim == null:
+		return false
+	for node in get_tree().get_nodes_in_group(&"lockable"):
+		var target := node as Node3D
+		if target == null or target == mech or not target.is_inside_tree():
+			continue
+		if mech.global_position.distance_to(target.global_position) > data.lock_range_m \
+				and _angle_from_aim(target) <= data.lock_box_deg:
+			return true
+	return false
+
+
 ## True when target can be (box = true: is inside the lock box and) locked: in range and in sight.
 func _can_lock(target: Node3D, box: bool) -> bool:
 	if not is_instance_valid(target) or target == mech or not target.is_inside_tree():

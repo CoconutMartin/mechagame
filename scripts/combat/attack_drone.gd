@@ -10,7 +10,7 @@ extends AnimatableBody3D
 ## Saucer (user 2026-11-02): the disc flies level (its axis vertical) with a slight bank into its speed, a hover
 ## bob on the model only and a slow spin about the vertical axis. Its barrel is the port in the rim
 ## (DroneMuzzle<n>): when the drone attacks, the body turns so the port faces the target. At the place it fires a
-## burst, then hops shift_hop (1 m, at most shift_max_s 0.5 s; user 2026-11-03) or glides to a new place (at least shift_distance_min from the old one, same flank, in range and in
+## burst, then hops about shift_hop (4.5 m, random direction and length, at most shift_max_s 0.5 s; user 2026-11-03) or glides to a new place (at least shift_distance_min from the old one, same flank, in range and in
 ## sight) and fires the next: 3 bursts = 3 position changes (user rule 2026-11-02, replaces "it does not move
 ## after the first shot"). It fires only while it sees the target and the port points at it. At max_flight_s,
 ## after its last move, or when the target is gone, it explodes; with the recall mod (return_home) the way home
@@ -503,21 +503,27 @@ func _pick_shift_place() -> void:
 	goal = _target_point + _goal_offset
 
 
-## A quick hop of shift_hop to one side, up, down or a diagonal (in random order; then half as far), with a clear
-## path, under the ceiling and the target still in sight. False when none works.
+## A quick hop after a burst (user 2026-11-04: 4.5 m, "more random placements"): a random direction in the plane
+## across the line of sight (any angle: sideways, up, down, diagonals) with some random forward or back part, a random
+## length from shift_hop_min to shift_hop_max, with a clear path, under the ceiling, the target in sight and in range,
+## and not back onto an earlier burst place. After shift_hop_tries random tries it tries half hops. False when none works.
 func _pick_hop() -> bool:
 	var to := _target_point - global_position
-	to.y = 0.0
-	var side := to.normalized().cross(Vector3.UP) if to.length() > 0.1 else Vector3.RIGHT
-	var choices: Array[Vector3] = [side, -side, Vector3.UP, Vector3.DOWN, (side + Vector3.UP).normalized(),
-			(-side + Vector3.UP).normalized(), (side + Vector3.DOWN).normalized(), (-side + Vector3.DOWN).normalized()]
-	choices.shuffle()
-	# The full hop first, then a half hop, before the long glide.
+	var forward := to.normalized() if to.length() > 0.1 else Vector3.FORWARD
+	var side := forward.cross(Vector3.UP)
+	if side.length() < 0.1:
+		side = Vector3.RIGHT
+	side = side.normalized()
+	var up := side.cross(forward).normalized()
 	var tries: Array[Vector3] = []
-	for direction in choices:
-		tries.append(direction * data.shift_hop)
-	for direction in choices:
-		tries.append(direction * data.shift_hop * 0.5)
+	for i in data.shift_hop_tries:
+		var angle := randf() * TAU
+		var direction := side * cos(angle) + up * sin(angle) \
+				+ forward * randf_range(-data.shift_hop_depth, data.shift_hop_depth)
+		tries.append(direction.normalized() * randf_range(data.shift_hop_min, data.shift_hop_max))
+	for i in data.shift_hop_tries:
+		var angle := randf() * TAU
+		tries.append((side * cos(angle) + up * sin(angle)) * data.shift_hop_min * 0.5)
 	for offset in tries:
 		var place := global_position + offset
 		# Not back onto an earlier burst place.
