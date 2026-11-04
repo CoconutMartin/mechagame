@@ -1,6 +1,9 @@
 extends SceneTree
 ## Beam Rifle 1 to 4 test (user requests 2026-11-01 and 2026-11-02).
-## Beam Rifle 1 (BeamRifleWeapon): a very slight aim kick when a charged beam starts.
+## Beam Rifle 1 (BeamRifleWeapon): a very slight aim kick when a charged beam starts. User request 2026-11-04: while the
+## charged beam fires the weapon recoils all the time (pushed back, climbs, shakes) and the aim drifts up and wanders with
+## a small tremor, so the crosshair moves; no big kick when the beam ends; a held target (the player does nothing) still
+## takes most of the damage of a drift-free beam. The damage numbers are printed.
 ## Beam Rifle 3 (BeamCannonWeapon): rings and side rails grey at rest; during the 0.3 s charge the rings light one after
 ## another from the back ring to the front ring, then the prong tips; all lit at the shot, then they fade over 1 s;
 ## no shot before the fade ends; one PPC bolt from the middle barrel; the prong tips red at a shot; 3 s cool down.
@@ -83,6 +86,137 @@ func _fin(rifle: Node) -> StandardMaterial3D:
 	return (rifle.get_node("Model/Fin0") as MeshInstance3D).material_override as StandardMaterial3D
 
 
+## One full charged beam of Beam Rifle 1 at the dummy with the player doing nothing. Returns the damage the dummy took, the
+## aim drift (degrees from the aim before the beam: up at the end, the most side and up on the way), the biggest aim change
+## in one frame, the aim change in the 10 frames after the beam ended, and the weapon model recoil seen.
+func _beam_run(rifle: BeamRifleWeapon, dummy: TargetDummy) -> Dictionary:
+	var free_aim := rifle.controller.mech_aim.camera_rig.free_aim
+	while (rifle.heat > 0.0 or rifle.overheated) and _now() < 400.0:
+		await _frames(1)
+	free_aim._kick_offset = Vector2.ZERO
+	free_aim._kick_shown = Vector2.ZERO
+	free_aim._pending_kick = Vector2.ZERO
+	await _frames(20)
+	dummy.hp = dummy.max_hp
+	Input.action_press("use_left_arm")
+	var t := _now()
+	while rifle.charge < 1.0 and _now() - t < 4.0:
+		await _frames(1)
+	var start := free_aim.aim_offset
+	var recoil := rifle.controller.weapon_recoil
+	var result := {"up": 0.0, "up_max": 0.0, "side_max": 0.0, "step_max": 0.0, "end_step": 0.0, "model_back": 0.0,
+			"model_pitch_min": 0.0, "model_pitch_max": 0.0, "model_yaw_range": 0.0}
+	var last := start
+	var yaw_min := 0.0
+	var yaw_max := 0.0
+	Input.action_release("use_left_arm")
+	# The beam starts within a few frames of the release.
+	for i in 10:
+		await _frames(1)
+		if rifle.discharge_left > 0.0:
+			break
+	while rifle.discharge_left > 0.0 and _now() - t < 12.0:
+		await _frames(1)
+		var now_offset := free_aim.aim_offset - start
+		result["up_max"] = maxf(result["up_max"], now_offset.y)
+		result["side_max"] = maxf(result["side_max"], absf(now_offset.x))
+		result["step_max"] = maxf(result["step_max"], (free_aim.aim_offset - last).length())
+		last = free_aim.aim_offset
+		var offset := recoil.get_offset()
+		var pitch := rad_to_deg(offset.basis.get_euler().x)
+		var yaw := rad_to_deg(offset.basis.get_euler().y)
+		result["model_back"] = maxf(result["model_back"], offset.origin.z)
+		result["model_pitch_min"] = minf(result["model_pitch_min"], pitch)
+		result["model_pitch_max"] = maxf(result["model_pitch_max"], pitch)
+		yaw_min = minf(yaw_min, yaw)
+		yaw_max = maxf(yaw_max, yaw)
+	result["model_yaw_range"] = yaw_max - yaw_min
+	result["up"] = (free_aim.aim_offset - start).y
+	var before_end := free_aim.aim_offset
+	await _frames(10)
+	result["end_step"] = (free_aim.aim_offset - before_end).length()
+	await _frames(20)
+	result["damage"] = dummy.max_hp - dummy.hp
+	return result
+
+
+## The recoil of a charged beam (user request 2026-11-04) against a target dummy straight on the crosshair, the player
+## doing nothing. A drift-free beam (all drift and model recoil values 0) is the "before" number.
+func _beam_drift_checks(rifle: BeamRifleWeapon, distance: float, size: Vector3) -> void:
+	var aim := rifle.controller.mech_aim
+	# The ring without any leftover kick of an earlier beam.
+	var free_aim := aim.camera_rig.free_aim
+	free_aim._kick_offset = Vector2.ZERO
+	free_aim._kick_shown = Vector2.ZERO
+	free_aim._pending_kick = Vector2.ZERO
+	await _frames(30)
+	var ring := aim.get_ring_screen_point()
+	var from := aim.camera.project_ray_origin(ring)
+	var direction := aim.camera.project_ray_normal(ring)
+	var dummy := TargetDummy.new()
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = size
+	shape.shape = box
+	dummy.add_child(shape)
+	dummy.collision_layer = 2 | 8
+	dummy.max_hp = 100000.0
+	current_scene.add_child(dummy)
+	# `distance` m along the ring ray, in front of any wall the ray reaches first.
+	var query := PhysicsRayQueryParameters3D.create(from, from + direction * distance, 29, rifle.controller.mech.get_hit_exclude())
+	var wall := rifle.get_world_3d().direct_space_state.intersect_ray(query)
+	var center := from + direction * distance if wall.is_empty() else (wall.position as Vector3) - direction * 3.0
+	dummy.global_position = center
+	await _frames(5)
+	# Before: no drift, no model recoil.
+	var saved := [rifle.drift_up_deg_per_s, rifle.drift_side_deg_per_s, rifle.drift_tremor_deg, rifle.model_back_m,
+			rifle.model_climb_deg, rifle.model_shake_deg]
+	rifle.drift_up_deg_per_s = 0.0
+	rifle.drift_side_deg_per_s = 0.0
+	rifle.drift_tremor_deg = 0.0
+	rifle.model_back_m = 0.0
+	rifle.model_climb_deg = 0.0
+	rifle.model_shake_deg = 0.0
+	var before: Dictionary = await _beam_run(rifle, dummy)
+	rifle.drift_up_deg_per_s = saved[0]
+	rifle.drift_side_deg_per_s = saved[1]
+	rifle.drift_tremor_deg = saved[2]
+	rifle.model_back_m = saved[3]
+	rifle.model_climb_deg = saved[4]
+	rifle.model_shake_deg = saved[5]
+	var runs: Array[Dictionary] = []
+	for i in 3:
+		runs.append(await _beam_run(rifle, dummy))
+	var gap := dummy.global_position.distance_to(from)
+	print("INFO beam at a dummy %.0f m away (a %.0f x %.0f m box, the crosshair on its middle), the player does nothing: damage %.0f before (no drift); with drift %.0f, %.0f, %.0f" % [
+			gap, size.x, size.y, before["damage"], runs[0]["damage"], runs[1]["damage"], runs[2]["damage"]])
+	_check(before["damage"] > 380.0, "the drift-free full beam does most of its 450 damage on the dummy at %.0f m (%.0f)" % [gap, before["damage"]])
+	var worst := INF
+	var least_up := INF
+	var most_up := 0.0
+	var most_step := 0.0
+	var side := 0.0
+	var end_step := 0.0
+	for run in runs:
+		worst = minf(worst, run["damage"])
+		least_up = minf(least_up, run["up"])
+		most_up = maxf(most_up, run["up"])
+		most_step = maxf(most_step, run["step_max"])
+		side = maxf(side, run["side_max"])
+		end_step = maxf(end_step, run["end_step"])
+	_check(worst > before["damage"] * 0.6, "a held target still takes most of the damage with the drift (worst %.0f of %.0f)" % [worst, before["damage"]])
+	_check(least_up > 0.6 and most_up < 6.0, "the aim climbs a few degrees over the beam (%.2f to %.2f deg up)" % [least_up, most_up])
+	_check(side > 0.1, "the aim also moves sideways (up to %.2f deg)" % side)
+	_check(most_step < 0.35, "no jump: the aim never moves more than %.2f deg in one frame (must be below 0.35)" % most_step)
+	_check(end_step < 0.8, "no big kick when the beam ends (%.2f deg in the next 10 frames)" % end_step)
+	_check(runs[0]["model_back"] > 0.1, "the weapon is pushed back while the beam fires (%.2f m)" % runs[0]["model_back"])
+	_check(runs[0]["model_pitch_max"] - runs[0]["model_pitch_min"] > 0.3 and runs[0]["model_yaw_range"] > 0.2,
+			"the weapon shakes while the beam fires (pitch range %.2f deg, yaw range %.2f deg)" % [
+			runs[0]["model_pitch_max"] - runs[0]["model_pitch_min"], runs[0]["model_yaw_range"]])
+	_check(runs[0]["model_back"] > before["model_back"] + 0.05, "more model recoil than with the values at 0 (%.2f m against %.2f m)" % [runs[0]["model_back"], before["model_back"]])
+	dummy.queue_free()
+
+
 func _run() -> void:
 	TestMode.settings().free_energy = true
 	change_scene_to_file("res://maps/urban_small/urban_small.tscn")
@@ -109,6 +243,8 @@ func _run() -> void:
 		_check(rifle1.discharge_left > 0.0, "the charged beam fires")
 		_check(start_kick > 0.05 and start_kick < 1.0, "a very slight aim kick when the charged beam starts (%.2f deg up)" % start_kick)
 		await _frames(150)
+		await _beam_drift_checks(rifle1, 40.0, Vector3(4.0, 10.0, 4.0))
+		await _beam_drift_checks(rifle1, 40.0, Vector3(3.0, 5.0, 3.0))
 		Input.action_release("aim")
 
 	# Beam Rifle 3.
