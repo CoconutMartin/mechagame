@@ -14,8 +14,8 @@ var BUNKER := OS.get_environment("BUNKER") if OS.has_environment("BUNKER") else 
 const POWER_FRAMES := 60
 const MAX_FRAMES := 480
 
-## Cases: name, side ("R" or "L"), target distance in m.
-const CASES := [["right_12", "R", 12.0], ["right_20", "R", 20.0], ["left_12", "L", 12.0], ["left_20", "L", 20.0],
+## Cases: name, side ("R" or "L"), target distance in m (15 m, not 20 m, since 2026-11-04: the run before the strike is 6.4 m).
+const CASES := [["right_12", "R", 12.0], ["right_15", "R", 15.0], ["left_12", "L", 12.0], ["left_15", "L", 15.0],
 		["both_right_12", "BR", 12.0], ["both_left_12", "BL", 12.0], ["right_miss", "R", 45.0]]
 
 var _failures: int = 0
