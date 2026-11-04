@@ -719,6 +719,9 @@ Blender and it is saved as `D:\Pictures\Mechs\Haliya\haliya_hly101_from_4k.blend
 proportions, so its joints differ from MechRig (for example the left elbow is at (1.89, 0.45, 6.5); MechRig has
 (2.47, -0.05, 7.17)). Pieces are parented to joint empties in the part collections; it has no armature and is not in the
 game. The rest pose has the head straight; the picture shows the head turned about 20 degrees.
+Back from "Haliya Back.PNG" (user request 2026-11-05): tan neck strip, spine plate and rear pelvis plate; dark octagon blocks
+beside the spine; tan on the back of the upper arm and forearm; a narrow black knee wheel with a tan calf block; a black shin
+strip; a tan heel plate; rear skirt plates (the long blade lies between the tan plates). Foot splay 10 degrees (was 20).
 On MechRig (user choice 2026-11-05): `tools/blender/haliya_rig_fit.py` builds that model again, moves each piece onto
 its bone and saves `models/haliya/haliya.blend` (MechRig with the accessory bones and all 13 actions; part files not
 exported, not in the game yet). The chest is 0.35 m taller and the pelvis, arms and legs changed to reach the joints, so the

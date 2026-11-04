@@ -62,6 +62,9 @@ def append_rig():
     old = bpy.data.objects.get(RIG)
     if old is not None:
         bpy.data.objects.remove(old)
+    # A second run in one session must not add a second copy of every action.
+    for action in list(bpy.data.actions):
+        bpy.data.actions.remove(action)
     with bpy.data.libraries.load(RIG_SOURCE, link=False) as (src, dst):
         dst.objects = [RIG]
         dst.actions = list(src.actions)

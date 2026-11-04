@@ -1,4 +1,5 @@
-"""Builds the Haliya HLY-101 model from the user picture "D:/Pictures/Mechs/Haliya/Haliya 4k.png".
+"""Builds the Haliya HLY-101 model from the user pictures "D:/Pictures/Mechs/Haliya/Haliya 4k.png" (front three
+quarter view) and "Haliya Back.PNG" (the back).
 
 Run in Blender: exec(open(r"D:/EMCMII/GitHub/mechagame/tools/blender/haliya_ref_build.py").read())
 Blender space: Z up, the mech faces -Y, its left side is +X. Meters, about 10 m tall, feet on Z = 0.
@@ -33,7 +34,7 @@ KNEE = Vector((1.20, 0.60, 3.12))
 ANKLE = Vector((1.34, 1.05, 0.85))
 ## Foot origin on the ground, under the instep; the heel post stands under the ankle.
 FOOT_BASE = Vector((1.48, 0.55, 0.0))
-FOOT_SPLAY = math.radians(20.0)
+FOOT_SPLAY = math.radians(10.0)
 DISC_CENTER = Vector((0.0, -0.40, 9.20))
 DISC_TILT = math.radians(14.0)
 
@@ -220,9 +221,9 @@ def build_head(b):
         (-0.52, -0.36, z0 - 0.42), (0.52, -0.36, z0 - 0.42), (-0.50, 0.22, z0 - 0.52), (0.50, 0.22, z0 - 0.52),
     ])
     # Center plate on the back of the cranium.
-    b.hull("Head_back_plate", part, "head", "hly_joint", [
-        (-0.20, 0.30, z0 + 0.48), (0.20, 0.30, z0 + 0.48), (-0.20, 0.56, z0 + 0.10), (0.20, 0.56, z0 + 0.10),
-        (-0.18, 0.56, z0 - 0.28), (0.18, 0.56, z0 - 0.28), (-0.18, 0.30, z0 - 0.45), (0.18, 0.30, z0 - 0.45),
+    b.hull("Head_back_plate", part, "head", "hly_armor", [
+        (-0.24, 0.30, z0 + 0.46), (0.24, 0.30, z0 + 0.46), (-0.28, 0.58, z0 + 0.20), (0.28, 0.58, z0 + 0.20),
+        (-0.28, 0.58, z0 - 0.18), (0.28, 0.58, z0 - 0.18), (-0.20, 0.30, z0 - 0.42), (0.20, 0.30, z0 - 0.42),
     ])
     # Jaw block and the neck under it.
     b.hull("Head_jaw", part, "head", "hly_joint", [
@@ -234,8 +235,8 @@ def build_head(b):
         (-0.30, -0.20, z0 - 1.02), (0.30, -0.20, z0 - 1.02), (-0.30, 0.25, z0 - 1.02), (0.30, 0.25, z0 - 1.02),
     ])
     b.hull("Head_neck_back", part, "head", "hly_joint", [
-        (-0.40, 0.15, 9.04), (0.40, 0.15, 9.04), (-0.34, 0.56, 8.96), (0.34, 0.56, 8.96),
-        (-0.42, 0.15, 8.42), (0.42, 0.15, 8.42), (-0.36, 0.56, 8.50), (0.36, 0.56, 8.50),
+        (-0.40, 0.15, 9.04), (0.40, 0.15, 9.04), (-0.34, 0.48, 8.96), (0.34, 0.48, 8.96),
+        (-0.42, 0.15, 8.42), (0.42, 0.15, 8.42), (-0.36, 0.48, 8.50), (0.36, 0.48, 8.50),
     ])
     for side, tag in ((1, "L"), (-1, "R")):
         # Pivot on the side of the head.
@@ -245,12 +246,12 @@ def build_head(b):
         tip = Vector((1.65, 0.62, 9.82))
         root_mid = Vector((0.92, 0.10, 9.48))
         b.hull("Head_horn_root_" + tag, part, "head", "hly_armor", [
-            (0.50, -0.20, 9.04), (0.50, 0.32, 9.06), (0.52, -0.10, 9.62), (0.52, 0.30, 9.60),
-            root_mid + Vector((-0.02, -0.26, -0.34)), root_mid + Vector((0.08, 0.20, -0.30)),
+            (0.50, -0.20, 8.86), (0.50, 0.40, 8.86), (0.52, -0.10, 9.62), (0.52, 0.30, 9.60),
+            root_mid + Vector((-0.02, -0.26, -0.40)), root_mid + Vector((0.08, 0.20, -0.42)),
             root_mid + Vector((-0.05, -0.20, 0.20)), root_mid + Vector((0.02, 0.26, 0.20)),
         ], side=side)
         b.hull("Head_horn_tip_" + tag, part, "head", "hly_armor", [
-            root_mid + Vector((-0.02, -0.26, -0.34)), root_mid + Vector((0.08, 0.20, -0.30)),
+            root_mid + Vector((-0.02, -0.26, -0.40)), root_mid + Vector((0.08, 0.20, -0.42)),
             root_mid + Vector((-0.05, -0.20, 0.20)), root_mid + Vector((0.02, 0.26, 0.20)),
             tip,
         ], side=side, bevel=0.012)
@@ -273,10 +274,24 @@ def build_core(b):
         (-0.29, -0.78, 6.93), (0.29, -0.78, 6.93), (-0.21, -0.66, 6.56), (0.21, -0.66, 6.56),
         (-0.29, -0.40, 6.93), (0.29, -0.40, 6.93), (-0.21, -0.40, 6.56), (0.21, -0.40, 6.56),
     ])
-    # Spine on the back.
-    b.hull("Core_spine", part, "torso", dark, [
-        (-0.32, 0.35, 8.32), (0.32, 0.35, 8.32), (-0.34, 0.66, 8.00), (0.34, 0.66, 8.00),
-        (-0.34, 0.66, 7.25), (0.34, 0.66, 7.25), (-0.30, 0.40, 7.00), (0.30, 0.40, 7.00),
+    # Back: a tan strip up the neck and the large tan plate on the spine, with a center facet.
+    b.hull("Core_spine_neck", part, "torso", tan, [
+        (-0.21, 0.40, 8.78), (0.21, 0.40, 8.78), (-0.21, 0.60, 8.72), (0.21, 0.60, 8.72),
+        (-0.21, 0.66, 8.13), (0.21, 0.66, 8.13), (-0.21, 0.40, 8.13), (0.21, 0.40, 8.13),
+    ])
+    b.hull("Core_spine_upper", part, "torso", tan, [
+        (-0.30, 0.48, 8.16), (0.30, 0.48, 8.16), (-0.32, 0.72, 8.06), (0.32, 0.72, 8.06),
+        (-0.32, 0.76, 7.58), (0.32, 0.76, 7.58), (-0.32, 0.48, 7.58), (0.32, 0.48, 7.58),
+    ])
+    b.hull("Core_spine_lower", part, "torso", tan, [
+        (-0.32, 0.76, 7.56), (0.32, 0.76, 7.56), (-0.32, 0.48, 7.56), (0.32, 0.48, 7.56),
+        (-0.20, 0.82, 7.50), (0.20, 0.82, 7.50), (-0.18, 0.76, 7.00), (0.18, 0.76, 7.00),
+        (-0.32, 0.68, 7.08), (0.32, 0.68, 7.08), (-0.23, 0.62, 6.71), (0.23, 0.62, 6.71),
+        (-0.23, 0.40, 6.71), (0.23, 0.40, 6.71),
+    ])
+    b.hull("Core_waist_back", part, "torso", dark, [
+        (-0.22, 0.28, 6.74), (0.22, 0.28, 6.74), (-0.22, 0.50, 6.74), (0.22, 0.50, 6.74),
+        (-0.22, 0.28, 6.22), (0.22, 0.28, 6.22), (-0.22, 0.50, 6.22), (0.22, 0.50, 6.22),
     ])
     b.hull("Core_neck_seat", part, "torso", joint, [
         (-0.40, -0.40, 8.20), (0.40, -0.40, 8.20), (-0.40, 0.42, 8.20), (0.40, 0.42, 8.20),
@@ -287,6 +302,22 @@ def build_core(b):
             (0.28, -0.35, 8.24), (0.28, 0.40, 8.24), (0.90, -0.25, 8.24), (0.90, 0.35, 8.24),
             (0.98, -0.60, 7.72), (0.98, 0.45, 7.72), (1.10, 0.05, 7.42), (0.72, -0.52, 7.22), (0.72, 0.42, 7.22),
             (0.25, -0.86, 7.65), (0.25, -0.76, 7.10), (0.25, 0.55, 7.10), (0.25, 0.58, 8.00),
+        ], side=side)
+        # Back: an octagon block on each side of the spine, a step above it, an arc from the neck to the shoulder.
+        b.hull("Core_back_block_" + tag, part, "torso", dark, [
+            (0.36, 0.55, 8.22), (0.90, 0.55, 8.22), (0.36, 0.68, 8.12), (0.92, 0.68, 8.12),
+            (1.00, 0.60, 7.90), (1.00, 0.66, 7.62), (0.34, 0.70, 7.60), (0.34, 0.68, 7.05),
+            (0.96, 0.56, 7.20), (0.82, 0.52, 6.86), (0.40, 0.58, 6.84),
+            (0.34, 0.30, 8.22), (1.00, 0.30, 7.90), (0.96, 0.30, 7.20), (0.40, 0.30, 6.84),
+        ], side=side)
+        b.hull("Core_back_step_" + tag, part, "torso", dark, [
+            (0.44, 0.40, 8.35), (0.80, 0.40, 8.35), (0.44, 0.60, 8.33), (0.80, 0.60, 8.33),
+            (0.44, 0.40, 8.15), (0.80, 0.40, 8.15), (0.44, 0.62, 8.15), (0.80, 0.62, 8.15),
+        ], side=side)
+        b.hull("Core_neck_arc_" + tag, part, "torso", dark, [
+            (0.42, 0.10, 8.68), (0.62, 0.10, 8.68), (0.42, 0.48, 8.66), (0.62, 0.48, 8.66),
+            (0.85, 0.10, 8.30), (0.85, 0.48, 8.30), (0.85, 0.10, 8.12), (0.85, 0.48, 8.12),
+            (0.42, 0.10, 8.30), (0.42, 0.48, 8.30),
         ], side=side)
         b.hull("Core_collar_front_" + tag, part, "torso", tan, [
             (0.28, -0.88, 7.90), (0.38, -0.98, 7.72), (0.78, -0.42, 8.30), (0.78, -0.30, 8.42),
@@ -333,7 +364,18 @@ def build_core(b):
         (-0.30, 0.0, 6.20), (0.30, 0.0, 6.20), (-0.30, 0.0, 5.40), (0.30, 0.0, 5.40),
         (-0.14, 0.0, 4.90), (0.14, 0.0, 4.90),
     ])
+    b.hull("Core_pelvis_back", part, "pelvis", tan, [
+        (-0.22, 0.40, 6.25), (0.22, 0.40, 6.25), (-0.22, 0.60, 6.22), (0.22, 0.60, 6.22),
+        (-0.31, 0.72, 5.85), (0.31, 0.72, 5.85), (-0.31, 0.76, 5.05), (0.31, 0.76, 5.05),
+        (-0.20, 0.66, 4.74), (0.20, 0.66, 4.74), (-0.31, 0.40, 5.85), (0.31, 0.40, 5.85),
+        (-0.31, 0.40, 5.05), (0.31, 0.40, 5.05), (-0.20, 0.40, 4.74), (0.20, 0.40, 4.74),
+        (-0.16, 0.82, 5.80), (0.16, 0.82, 5.80), (-0.16, 0.84, 5.10), (0.16, 0.84, 5.10),
+    ])
     for side, tag in ((1, "L"), (-1, "R")):
+        b.hull("Core_hip_back_" + tag, part, "pelvis", dark, [
+            (0.30, 0.35, 5.95), (0.30, 0.62, 5.95), (0.30, 0.35, 5.60), (0.30, 0.62, 5.60),
+            (0.74, 0.35, 6.25), (0.74, 0.55, 6.25), (0.74, 0.35, 5.90), (0.74, 0.55, 5.90),
+        ], side=side)
         b.hull("Core_hip_shell_" + tag, part, "pelvis", dark, [
             (0.30, -0.36, 6.56), (0.30, 0.36, 6.56), (0.60, -0.30, 6.50), (0.60, 0.30, 6.50),
             (0.30, -0.42, 6.15), (0.30, 0.42, 6.15), (0.60, -0.30, 6.05), (0.60, 0.30, 6.05),
@@ -377,9 +419,10 @@ def build_arm(b, side, tag):
            box_section(at, 0.50, 0.19, 0.18, cu=0.02, cv=-0.10, ch=0.06)
            + box_section(at, 0.68, 0.23, 0.21, cu=0.02, cv=-0.10, ch=0.07)
            + box_section(at, 0.90, 0.23, 0.19, cu=0.02, cv=-0.10, ch=0.07), side=side)
-    b.hull("Arm_upper_back_" + tag, part, upper, dark,
-           box_section(at, 0.30, 0.26, 0.16, cu=0.0, cv=0.20, ch=0.05)
-           + box_section(at, 0.88, 0.24, 0.14, cu=0.0, cv=0.18, ch=0.05), side=side)
+    b.hull("Arm_upper_back_" + tag, part, upper, tan,
+           box_section(at, 0.40, 0.21, 0.15, cu=0.02, cv=0.17, ch=0.05)
+           + box_section(at, 0.62, 0.24, 0.17, cu=0.02, cv=0.18, ch=0.05)
+           + box_section(at, 0.90, 0.21, 0.13, cu=0.02, cv=0.17, ch=0.05), side=side)
 
     # Elbow: a black roller between two blocks.
     b.rings("Arm_elbow_" + tag, part, fore, joint, ELBOW - Vector((0.30, 0, 0)), (1, 0, 0),
@@ -396,9 +439,9 @@ def build_arm(b, side, tag):
     b.hull("Arm_fore_tan_low_" + tag, part, fore, tan,
            box_section(at, 0.655, 0.31, 0.28, cv=-0.04, ch=0.09)
            + box_section(at, 0.95, 0.23, 0.22, cv=-0.04, ch=0.09), side=side)
-    b.hull("Arm_fore_back_" + tag, part, fore, dark,
-           box_section(at, 0.20, 0.17, 0.12, cv=0.30, ch=0.05)
-           + box_section(at, 0.62, 0.16, 0.10, cv=0.28, ch=0.05), side=side)
+    b.hull("Arm_fore_back_" + tag, part, fore, tan,
+           box_section(at, 0.20, 0.24, 0.10, cv=0.20, ch=0.04)
+           + box_section(at, 0.62, 0.25, 0.10, cv=0.20, ch=0.04), side=side)
     b.hull("Arm_wrist_" + tag, part, fore, joint,
            box_section(at, 0.92, 0.17, 0.17, ch=0.05) + box_section(at, 1.06, 0.14, 0.14, ch=0.04), side=side)
 
@@ -494,11 +537,11 @@ def build_leg(b, side, tag):
     b.hull("Legs_thigh_top_" + tag, part, thigh, dark, [
         (0.50, -0.56, 5.76), (0.80, -0.56, 5.74), (0.45, -0.78, 5.42), (0.98, -0.78, 5.40),
         (0.47, -0.78, 4.42), (1.08, -0.78, 4.34), (1.25, -0.45, 5.34), (1.42, -0.38, 4.34),
-        (0.52, 0.34, 5.72), (1.00, 0.34, 5.70), (0.50, 0.42, 4.42), (1.45, 0.42, 4.34),
+        (0.52, 0.30, 5.72), (0.97, 0.30, 5.70), (0.52, 0.42, 5.43), (1.20, 0.42, 5.43), (0.52, 0.42, 4.42), (1.45, 0.42, 4.34),
     ], side=side)
     b.hull("Legs_thigh_low_" + tag, part, thigh, dark, [
         (0.47, -0.78, 4.40), (1.08, -0.78, 4.32), (1.42, -0.38, 4.32), (0.60, -0.62, 3.50), (1.05, -0.62, 3.44),
-        (1.40, -0.25, 3.46), (0.50, 0.42, 4.40), (1.45, 0.42, 4.32), (0.62, 0.30, 3.62), (1.40, 0.30, 3.56),
+        (1.40, -0.25, 3.46), (0.52, 0.42, 4.40), (1.45, 0.42, 4.32), (0.64, 0.30, 3.20), (1.36, 0.30, 3.20),
     ], side=side)
     # Inner tan face of the thigh and the column under the block.
     b.hull("Legs_thigh_inner_" + tag, part, thigh, tan, [
@@ -506,20 +549,20 @@ def build_leg(b, side, tag):
         (0.56, -0.40, 3.52), (0.80, -0.42, 3.50), (0.56, 0.20, 3.52), (0.80, 0.20, 3.50),
     ], side=side)
     b.hull("Legs_thigh_frame_" + tag, part, thigh, dark,
-           box_section(limb_frame(HIP, KNEE), 0.75, 0.26, 0.30, ch=0.08)
-           + box_section(limb_frame(HIP, KNEE), 1.0, 0.27, 0.30, ch=0.08), side=side)
+           box_section(limb_frame(HIP, KNEE), 0.75, 0.26, 0.24, cv=-0.14, ch=0.08)
+           + box_section(limb_frame(HIP, KNEE), 1.0, 0.23, 0.20, cv=-0.16, ch=0.08), side=side)
 
     # Knee: a roller with round caps.
-    b.rings("Legs_knee_" + tag, part, shin, joint, KNEE - Vector((0.62, 0, 0)), (1, 0, 0),
-            [(0.0, 0.18), (0.03, 0.28), (1.21, 0.28), (1.24, 0.18)], sides=20, side=side)
+    b.rings("Legs_knee_" + tag, part, shin, joint, KNEE - Vector((0.34, 0, 0)), (1, 0, 0),
+            [(0.0, 0.18), (0.03, 0.27), (0.65, 0.27), (0.68, 0.18)], sides=20, side=side)
 
     at = limb_frame(KNEE, ANKLE)
     b.hull("Legs_knee_block_" + tag, part, shin, dark,
-           box_section(at, -0.10, 0.28, 0.34, cv=-0.08, ch=0.10) + box_section(at, 0.10, 0.34, 0.38, cv=-0.08, ch=0.10),
+           box_section(at, -0.10, 0.22, 0.26, cv=-0.16, ch=0.10) + box_section(at, 0.10, 0.26, 0.30, cv=-0.16, ch=0.10),
            side=side)
     # Shin column.
     b.hull("Legs_shin_" + tag, part, shin, dark,
-           box_section(at, 0.10, 0.28, 0.30, ch=0.06) + box_section(at, 0.50, 0.25, 0.27, ch=0.06)
+           box_section(at, 0.10, 0.24, 0.16, cv=-0.14, ch=0.06) + box_section(at, 0.50, 0.25, 0.27, ch=0.06)
            + box_section(at, 1.0, 0.20, 0.22, ch=0.06), side=side)
     b.hull("Legs_ankle_cap_" + tag, part, shin, dark,
            box_section(at, 0.82, 0.24, 0.26, cv=-0.04, ch=0.08) + box_section(at, 0.95, 0.25, 0.36, cv=-0.08, ch=0.10)
@@ -528,25 +571,32 @@ def build_leg(b, side, tag):
     guard_top = KNEE + Vector((0, 0, 0.18))
     guard = limb_frame(guard_top, guard_top + (ANKLE - guard_top).normalized() * 2.12)
     b.hull("Legs_guard_core_" + tag, part, shin, dark,
-           box_section(guard, 0.03, 0.30, 0.32, ch=0.06) + box_section(guard, 0.62, 0.38, 0.44, cv=-0.04, ch=0.08),
+           box_section(guard, 0.03, 0.26, 0.16, cv=-0.14, ch=0.06) + box_section(guard, 0.62, 0.38, 0.44, cv=-0.04, ch=0.08),
            side=side)
     b.hull("Legs_guard_front_" + tag, part, shin, tan, [
         guard(0.26, -0.30, -0.50), guard(0.26, 0.30, -0.50), guard(0.36, -0.32, -0.56), guard(0.36, 0.32, -0.56),
         guard(0.60, -0.30, -0.52), guard(0.60, 0.30, -0.52), guard(0.70, 0.0, -0.42),
         guard(0.26, -0.30, -0.20), guard(0.26, 0.30, -0.20), guard(0.60, -0.30, -0.20), guard(0.60, 0.30, -0.20),
     ], side=side)
+    b.hull("Legs_calf_" + tag, part, shin, tan, [
+        guard(0.34, -0.34, 0.26), guard(0.34, 0.34, 0.26), guard(0.34, -0.30, 0.46), guard(0.34, 0.30, 0.46),
+        guard(0.42, -0.40, 0.26), guard(0.42, 0.40, 0.26), guard(0.42, -0.38, 0.56), guard(0.42, 0.38, 0.56),
+        guard(0.68, -0.28, 0.26), guard(0.68, 0.28, 0.26), guard(0.68, -0.26, 0.46), guard(0.68, 0.26, 0.46),
+    ], side=side)
+    b.hull("Legs_shin_strip_" + tag, part, shin, joint,
+           box_section(at, 0.45, 0.13, 0.06, cv=0.25) + box_section(at, 0.95, 0.11, 0.05, cv=0.20), side=side)
     for s, sign in ((0, 1), (1, -1)):
         b.hull("Legs_guard_side_%s%d" % (tag, s), part, shin, tan, [
-            guard(0.08, sign * 0.42, -0.14), guard(0.08, sign * 0.42, 0.26),
-            guard(0.18, sign * 0.58, -0.28), guard(0.18, sign * 0.58, 0.36),
+            guard(0.08, sign * 0.42, -0.14), guard(0.24, sign * 0.42, 0.26),
+            guard(0.18, sign * 0.58, -0.28), guard(0.30, sign * 0.58, 0.36),
             guard(0.50, sign * 0.58, -0.32), guard(0.50, sign * 0.58, 0.32),
             guard(0.65, sign * 0.42, -0.18), guard(0.65, sign * 0.42, 0.14),
-            guard(0.08, sign * 0.34, 0.1), guard(0.65, sign * 0.34, 0.0),
+            guard(0.24, sign * 0.34, 0.1), guard(0.65, sign * 0.34, 0.0),
         ], side=side)
 
     # Ankle: an octagon roller and a wide round guard on the outside.
     b.rings("Legs_ankle_" + tag, part, foot, joint, ANKLE - Vector((0.34, 0, 0)), (1, 0, 0),
-            [(0.0, 0.24), (0.68, 0.24)], sides=8, side=side)
+            [(0.0, 0.17), (0.68, 0.17)], sides=8, side=side)
     b.rings("Legs_ankle_guard_" + tag, part, foot, dark, ANKLE + Vector((0.20, 0, 0)), (1, 0, 0),
             [(0.0, 0.32), (0.14, 0.34), (0.19, 0.28)], sides=8, side=side)
     b.rings("Legs_ankle_guard_in_" + tag, part, foot, dark, ANKLE - Vector((0.20, 0, 0)), (-1, 0, 0),
@@ -575,8 +625,13 @@ def build_leg(b, side, tag):
     ], side=side)
     # Heel: a thin post under the ankle.
     b.hull("Legs_heel_" + tag, part, foot, dark, [
-        fp(-0.26, -0.30, 0.62), fp(0.26, -0.30, 0.62), fp(-0.26, -0.74, 0.64), fp(0.26, -0.74, 0.64),
-        fp(-0.18, -0.42, 0.0), fp(0.18, -0.42, 0.0), fp(-0.19, -0.78, 0.0), fp(0.19, -0.78, 0.0),
+        fp(-0.26, -0.30, 0.56), fp(0.26, -0.30, 0.56), fp(-0.27, -0.88, 0.54), fp(0.27, -0.88, 0.54),
+        fp(-0.30, -0.42, 0.0), fp(0.30, -0.42, 0.0), fp(-0.38, -0.94, 0.0), fp(0.38, -0.94, 0.0),
+    ], side=side)
+
+    b.hull("Legs_heel_tan_" + tag, part, foot, tan, [
+        fp(-0.23, -0.74, 0.53), fp(0.23, -0.74, 0.53), fp(-0.23, -0.92, 0.53), fp(0.23, -0.92, 0.53),
+        fp(-0.23, -0.74, 0.88), fp(0.23, -0.74, 0.88), fp(-0.20, -0.88, 0.88), fp(0.20, -0.88, 0.88),
     ], side=side)
 
     # Side skirt: the tan plate with a dark raised strip in front of a long blade.
@@ -590,6 +645,14 @@ def build_leg(b, side, tag):
                   Vector((1.51, -0.27, 5.00)), Vector((1.64, -0.10, 5.00))]
     b.hull("Skirt_side_strip_" + tag, part, "pelvis", dark,
            [c + plate_normal * 0.16 for c in strip_face] + [c - plate_normal * 0.02 for c in strip_face], side=side)
+    b.hull("Skirt_side_rear_tan_" + tag, part, "pelvis", tan, [
+        (1.50, 1.02, 4.80), (2.02, 1.05, 4.75), (1.95, 1.10, 3.88), (1.54, 1.06, 4.40),
+        (1.50, 0.87, 4.80), (2.02, 0.90, 4.75), (1.95, 0.98, 3.88), (1.54, 0.91, 4.40),
+    ], side=side)
+    b.hull("Skirt_side_rear_plate_" + tag, part, "pelvis", dark, [
+        (0.89, 0.72, 6.35), (1.06, 0.72, 6.35), (1.85, 1.12, 4.87), (1.33, 1.18, 4.74),
+        (0.89, 0.58, 6.35), (1.06, 0.58, 6.35), (1.85, 0.98, 4.87), (1.33, 1.03, 4.74),
+    ], side=side)
     wide_f, wide_r, wide_ridge = (1.60, 0.05, 4.60), (1.70, 1.00, 4.60), (2.05, 0.40, 4.60)
     wide_if, wide_ir = (1.45, 0.15, 4.60), (1.50, 0.88, 4.60)
     mid_f, mid_r, mid_ridge = (2.00, 0.25, 3.40), (2.20, 1.15, 3.40), (2.45, 0.70, 3.40)
@@ -621,9 +684,9 @@ def build_back_spike(b):
             (0.004, 0.56, 5.90), (0.34, 0.56, 5.90), (0.004, 0.62, 5.20), (0.45, 0.62, 5.20),
         ], side=side, bevel=0.0)
         b.hull("Skirt_back_tip_" + tag, part, "pelvis", "hly_armor", [
-            (0.004, 0.40, 5.18), (0.45, 0.40, 5.18), (0.004, 0.62, 5.18), (0.45, 0.62, 5.18),
-            (0.004, 0.70, 3.50), (0.40, 0.70, 3.50), (0.004, 0.90, 3.50), (0.40, 0.90, 3.50),
-            (0.004, 1.20, 2.50),
+            (0.004, 0.40, 5.18), (0.40, 0.40, 5.18), (0.004, 0.62, 5.18), (0.40, 0.62, 5.18),
+            (0.004, 0.72, 3.50), (0.28, 0.72, 3.50), (0.004, 0.92, 3.50), (0.28, 0.92, 3.50),
+            (0.004, 1.20, 2.24),
         ], side=side, bevel=0.0)
 
 
