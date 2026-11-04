@@ -13,6 +13,6 @@
 
 [resource]
 script = ExtResource("1")
-names = PackedStringArray("Leap Punch", "", "Flying Knee Punch Combo", "Hook", "Uppercut")
+names = PackedStringArray("", "", "Flying Knee Punch Combo", "Hook", "Uppercut")
 right = Array[ExtResource("m")]([ExtResource("r1"), null, ExtResource("r3"), ExtResource("r4"), ExtResource("r5")])
 left = Array[ExtResource("m")]([ExtResource("l1"), null, ExtResource("l3"), ExtResource("l4"), ExtResource("l5")])

@@ -41,6 +41,10 @@ extends Resource
 ## Share of the clip's crouch kept ("temper the landing by 80%"): when the body sits lower than the standing pose
 ## (the pose under the clip) it rises by the rest, and the legs bend less so the feet on the ground stay there.
 @export_range(0.0, 1.0) var crouch_share: float = 1.0
+## Pile Bunker clips (user request 2026-11-04, Shift+3: "cut the animation when the arm retracts after the release,
+## smooth the move to the neutral position"): seconds after the stake hits (or after the strike window on a miss) when
+## the clip stops and fades into the pose under it over blend_out x lower_time_scale. Below 0 = the clip plays to its end.
+@export var cut_after_hit: float = -1.0
 
 
 ## Play time, in seconds.

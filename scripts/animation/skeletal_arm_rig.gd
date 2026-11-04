@@ -153,6 +153,11 @@ extends SkeletonModifier3D
 @export var clip_max_out_deg: float = 60.0
 @export var clip_max_forward_deg: float = 50.0
 @export var clip_out_speed_deg: float = 240.0
+## The keep-off turn comes back down (toward no turn) at most this fast (degrees per second), and its target is smoothed
+## at this rate (1 / s): the raw target jumped between grid cells and to zero, and the arm chattered (user report
+## 2026-11-04: "the other arm is twitching while the other arm executes the pile bunker animation").
+@export var clip_release_speed_deg: float = 240.0
+@export var clip_target_smooth: float = 4.0
 @export_group("")
 @export_group("Moving arms")
 ## An arm that follows the animation keeps this part of the clip's raise to the side (the walk clips'
@@ -1143,7 +1148,8 @@ func _body_distance(point: Vector3) -> float:
 
 ## Melee clips: each arm the clip drives (right, left) turns out until its points keep clear of the chest, the
 ## pelvis and the legs (clip_keep_off). Call after the clip pose is set (a modifier after this one).
-func keep_clip_arms_off(drive_right: bool, drive_left: bool) -> void:
+## weight: the clip's blend weight now; the turn is scaled by it, so it fades out with the clip (no snap at the end).
+func keep_clip_arms_off(drive_right: bool, drive_left: bool, weight: float = 1.0) -> void:
 	if not clip_keep_off or _sides.size() < 2:
 		return
 	var legs := _leg_segments()
@@ -1152,6 +1158,7 @@ func keep_clip_arms_off(drive_right: bool, drive_left: bool) -> void:
 		var side := _sides[i] as Dictionary
 		if not (drive_right if right else drive_left):
 			side.clip_turn = Vector2.ZERO
+			side.clip_target = Vector2.ZERO
 			continue
 		var points := _keep_off_points(side)
 		var fore_pose := _skeleton.get_bone_global_pose(side.fore as int)
@@ -1162,7 +1169,7 @@ func keep_clip_arms_off(drive_right: bool, drive_left: bool) -> void:
 		var upper_pose := _skeleton.get_bone_global_pose(side.upper as int)
 		for corner: Vector3 in _armor_corners(side, right, "01", side.upper as int):
 			points.append(upper_pose * corner)
-		_push_clear(side, right, points, legs)
+		_push_clear(side, right, points, legs, weight)
 
 
 ## An arm armor's box corners in its bone's frame (from its rest vertices; cached on the side): the forearm armor
@@ -1203,7 +1210,7 @@ func _armor_corners(side: Dictionary, right: bool, part: String, bone_id: int) -
 ## clip_max_out_deg) and forward (about its side axis, up to clip_max_forward_deg), that keeps points clear of the body
 ## boxes and the leg lines (the forward turn costs a little more); none clears: the one that gets farthest. Each part
 ## changes at most clip_out_speed_deg per second.
-func _push_clear(side: Dictionary, right: bool, points: Array[Vector3], legs: Array) -> void:
+func _push_clear(side: Dictionary, right: bool, points: Array[Vector3], legs: Array, weight: float = 1.0) -> void:
 	var skin := _skeleton.global_transform
 	var shoulder := _skeleton.get_bone_global_pose(side.upper as int).origin
 	var back := _torso_back_axis()
@@ -1235,14 +1242,19 @@ func _push_clear(side: Dictionary, right: bool, points: Array[Vector3], legs: Ar
 					fallback = Vector2(deg_to_rad(o), deg_to_rad(f))
 		if best_cost == INF:
 			best = fallback
-	var step := deg_to_rad(clip_out_speed_deg) * _delta
+	var target: Vector2 = side.get("clip_target", Vector2.ZERO)
+	target = target.lerp(best, 1.0 - exp(-clip_target_smooth * _delta))
+	side.clip_target = target
+	var up := deg_to_rad(clip_out_speed_deg) * _delta
+	var down := deg_to_rad(clip_release_speed_deg) * _delta
 	var last: Vector2 = side.get("clip_turn", Vector2.ZERO)
-	var now := Vector2(clampf(best.x, last.x - step, last.x + step), clampf(best.y, last.y - step, last.y + step))
+	var now := Vector2(clampf(target.x, last.x - down, last.x + up), clampf(target.y, last.y - down, last.y + up))
 	side.clip_turn = now
-	if now.y > 0.0:
-		_turn_about_torso_side(side.upper as int, now.y)
-	if now.x > 0.0:
-		_turn_upper(side, right, now.x)
+	var shown := now * clampf(weight, 0.0, 1.0)
+	if shown.y > 0.0:
+		_turn_about_torso_side(side.upper as int, shown.y)
+	if shown.x > 0.0:
+		_turn_upper(side, right, shown.x)
 
 
 ## Turns the upper arm out (about the torso's forward axis at the shoulder) by the smallest angle up to max_deg that

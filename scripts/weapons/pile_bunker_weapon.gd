@@ -95,7 +95,8 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 ## nose touches something during the clip's strike window. No clip for the number = the coded punch.
 @export var clips: PileBunkerClips = null
 ## Which clip of clips this Pile Bunker plays (1 to 5). The player switches it in play with Shift + 1 to 5 (tests).
-@export_range(1, 5) var clip_number: int = 1
+## 3 since 2026-11-04 (user: "remove shift+1 animation", the leap punch; slots 1 and 2 are deleted).
+@export_range(1, 5) var clip_number: int = 3
 ## The clip's contact ray starts this far behind the nose, along the stakes (m).
 @export var clip_contact_back: float = 2.0
 
@@ -162,7 +163,8 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export_range(0.0, 1.0) var leap_swing_end: float = 0.95
 @export_range(0.0, 1.0) var leap_contact_start: float = 0.6
 ## The clips that leap (PileBunkerClips numbers). Other clips keep the charge glide and their own clip.
-@export var leap_clip_numbers: PackedInt32Array = PackedInt32Array([1])
+## Empty since 2026-11-04 (the leap punch was removed with slot 1); the leap code stays for a later clip.
+@export var leap_clip_numbers: PackedInt32Array = PackedInt32Array()
 
 @export_group("Charge")
 ## The charge goes toward the mech aim point (the blue ring) and stops this far from it (flat
@@ -514,6 +516,11 @@ func _update_clip(delta: float) -> void:
 	var time := _melee.external_time(self) if is_instance_valid(_melee) else -1.0
 	if has_fired:
 		_since_fire += delta
+		if clip.cut_after_hit >= 0.0 and _since_fire >= clip.cut_after_hit and time >= 0.0:
+			_melee.stop_external(self, true)
+	elif _clip_missed and clip.cut_after_hit >= 0.0 and time >= 0.0 and clip.strikes.size() > 0 \
+			and time >= clip.strikes[0].y + clip.cut_after_hit:
+		_melee.stop_external(self, true)
 	elif time >= 0.0 and clip.strikes.size() > 0:
 		var window := clip.strikes[0]
 		if time >= window.x and time <= window.y:

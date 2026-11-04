@@ -293,10 +293,11 @@ func is_external_busy(owner: Node) -> bool:
 	return _external == owner and (is_playing or is_fading())
 
 
-## Stops owner's external clip at once (the attack was cancelled).
-func stop_external(owner: Node) -> void:
+## Stops owner's external clip: at once (the attack was cancelled), or with fade the pose holds and fades into the pose
+## under it (a cut clip).
+func stop_external(owner: Node, fade: bool = false) -> void:
 	if _external == owner and is_playing:
-		_finish(false)
+		_finish(fade)
 
 
 ## The mouse button of a melee weapon was pressed: starts the first swing of a chain for the move key.
@@ -895,7 +896,7 @@ func _process_modification_with_delta(_delta: float) -> void:
 	_clamp_feet(skeleton)
 	# Part collisions (user request 2026-10-30): the arms the clip drives keep off the body and the legs.
 	if arm_rig != null:
-		arm_rig.keep_clip_arms_off(not keep_right, not keep_left)
+		arm_rig.keep_clip_arms_off(not keep_right, not keep_left, weight)
 	if arm_rig != null:
 		arm_rig.refresh_torso()
 
