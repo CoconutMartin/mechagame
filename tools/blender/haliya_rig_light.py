@@ -205,11 +205,9 @@ def piece_rule(name, joint, side, heads, source_joints, turns, drop):
         return "torso", "Core", move
     if joint == "pelvis" and name.startswith("Core_"):
         return "pelvis", "Legs", move
-    if name.startswith("Skirt_side"):
+    if name.startswith(("Skirt_side", "Skirt_rear")):
         return "skirt_side_" + tag, "Legs", move
-    if name.startswith("Skirt_rear"):
-        return "skirt_back_" + tag, "Legs", move
-    if name.startswith(("Skirt_back", "Skirt_hip")):
+    if name.startswith("Skirt_back"):
         return "pelvis", "Legs", move
     if name.startswith("Arm_sleeve"):
         return "sleeve_" + tag, "Arm_" + tag, move
@@ -516,7 +514,7 @@ def main():
     down = Vector((0, 0, -drop))
     sleeve_pivot = Vector((1.25, 0.25, 8.40 + arm_lift)) * scale + down
     skirt_pivot = Vector((1.05, 0.15, 6.30)) * scale + down
-    back_pivot = Vector((0.95, 0.84, 6.19)) * scale + down
+    back_pivot = Vector((0.30, 0.55, 5.90)) * scale + down
     front_pivot = Vector((0.75, -0.60, 5.75)) * scale + down
     edit_rig(rig, old, heads, lengths, source_joints, sleeve_pivot, skirt_pivot, back_pivot, front_pivot)
 

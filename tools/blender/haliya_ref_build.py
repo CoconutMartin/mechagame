@@ -29,6 +29,8 @@ ARM_LIFT = 0.30
 SHOULDER_BALL_RADIUS = 0.36
 ## Width (m) of the tan border around the dark plate on the side and rear skirts.
 SKIRT_COVER_BORDER = 0.20
+## Width (m) of the tan strap that joins the side and rear skirt plates.
+SKIRT_STRAP_WIDTH = 0.30
 ## Chamfer width (m) of the armor edges.
 BEVEL = 0.018
 
@@ -698,19 +700,27 @@ def build_leg(b, side, tag):
     # Side skirt: a flat plate pair outside the thigh and as wide as it.
     outline = [(-0.36, 6.50), (0.20, 6.50), (0.64, 5.00), (0.64, 4.20), (0.45, 3.36), (-0.70, 4.20), (-0.94, 5.10)]
     side_lean = 0.27
-    skirt_plates(b, "Skirt_side", part, tag, side, outline, side_lean,
-                 lambda w, z, height: (1.00 + side_lean * (6.50 - z) + height, w, z))
+
+    def side_place(w, z, height):
+        return (1.00 + side_lean * (6.50 - z) + height, w, z)
+    skirt_plates(b, "Skirt_side", part, tag, side, outline, side_lean, side_place)
     # Rear skirt: the same shape behind the thigh, as wide as the thigh seen from the back.
     rear_lean = 0.22
     rear_outline = [(0.45 + (y + 0.94) * 1.0 / 1.58, 3.36 + (z - 3.36) * 0.90) for y, z in outline]
-    skirt_plates(b, "Skirt_rear", part, tag, side, rear_outline, rear_lean,
-                 lambda w, z, height: (w, 0.84 + rear_lean * (6.19 - z) + height, z))
-    # Hip block: joins the tops of the side and rear plates at the hip. The plates turn about pivots inside it, so they stay joined.
-    b.hull("Skirt_hip_" + tag, part, "pelvis", dark, [
-        (0.90, -0.42, 6.60), (1.20, -0.42, 6.54), (1.22, -0.42, 6.14), (0.92, -0.42, 6.20),
-        (1.26, 0.50, 6.44), (1.26, 0.50, 6.00),
-        (0.76, 1.00, 6.42), (1.20, 1.00, 6.38), (1.20, 1.00, 5.92), (0.76, 1.00, 5.96),
-    ], side=side)
+
+    def rear_place(w, z, height):
+        return (w, 0.84 + rear_lean * (6.19 - z) + height, z)
+    skirt_plates(b, "Skirt_rear", part, tag, side, rear_outline, rear_lean, rear_place)
+    # Strap: a tan band as thick as the plates, from the top back edge of the side plate to the top outer edge of the
+    # rear plate. Its ends run into the plates, with the faces in the plates' faces, so no seam shows.
+    strap = []
+    for place, top, low in ((side_place, outline[1], outline[2]), (rear_place, rear_outline[1], rear_outline[2])):
+        down = (Vector(low) - Vector(top)).normalized()
+        for t in (0.0, SKIRT_STRAP_WIDTH):
+            w, z = Vector(top) + down * t
+            strap.append(place(w - 0.05, z, 0.0))
+            strap.append(place(w - 0.05, z, 0.10))
+    b.hull("Skirt_side_strap_" + tag, part, "pelvis", tan, strap, side=side)
 
 
 def build_back_spike(b):
