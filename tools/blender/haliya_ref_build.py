@@ -26,10 +26,12 @@ MODEL_SCALE = 0.95
 ## Height (m) the whole arm sits above the coordinates below: the shoulder rollers reach almost to the top of the traps.
 ARM_LIFT = 0.30
 ## Size of the whole head, about the bottom of the neck, so the neck stays seated in the chest.
-HEAD_SCALE = 0.84
+HEAD_SCALE = 0.756
 HEAD_SCALE_PIVOT = Vector((0.0, 0.0, 8.20))
 ## Height (m) the head sits above its seat: the neck grows by this much and shows between the chest and the jaw.
-NECK_LENGTH = 0.213
+NECK_LENGTH = 0.238
+## Width of the pauldrons seen from the front, against the coordinates in build_arm. They grow outward from their inner edge (x = 1.0).
+PAULDRON_WIDTH = 1.20
 ## Radius (m) of the shoulder ball, centered on the shoulder joint.
 SHOULDER_BALL_RADIUS = 0.36
 ## Width (m) of the tan border around the dark plate on the side and rear skirts.
@@ -504,8 +506,9 @@ def build_arm(b, side, tag):
     m1 = Vector((2.46, 0.98, 7.30))
     m2 = Vector((1.70, 0.92, 7.22))
     m3 = Vector((1.70, 0.10, 7.10))
+    pauldron = [a0, a1, a2, a3, a4, a5, front0, front1, low0, low1, low2, ridge, m0, m1, m2, m3]
     b.hull("Arm_sleeve_top_" + tag, part, upper, dark,
-           [a0, a1, a2, a3, a4, a5, front0, front1, low0, low1, low2, ridge, m0, m1, m2, m3], side=side)
+           [Vector((1.0 + (p.x - 1.0) * PAULDRON_WIDTH, p.y, p.z)) for p in pauldron], side=side)
 
     # Forearm guard: a plate on the outer face of the forearm, on its axis, wide at the elbow and narrow at the wrist.
     at = limb_frame(ELBOW, WRIST)
