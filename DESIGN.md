@@ -746,7 +746,8 @@ Haliya arm height (user 2026-11-05): the whole arm with its sleeve and blade sit
 shoulder joints reach almost to the top of the traps. The shoulder is a ball on the joint (`SHOULDER_BALL_RADIUS`), in a cup on the chest; the
 upper arm starts inside the ball, on the line to the elbow.
 The forearm blades are now small guards (user 2026-11-05): a plate on the outer face of each forearm, on its axis, wide at the elbow and narrow at the wrist,
-with no point. They differ from the pictures by request. In Jog they touch the sleeve tips.
+with no point. They differ from the pictures by request.
+The sleeves are now pauldrons (user 2026-11-05): a cap over the shoulder ball, wrapping its top, front and outer side, with a shorter point down and back.
 
 User rule: 3 rigs, light, medium (SGG `MechRig`) and heavy. All 3 play the same animations. Parts swap across all 3.
 

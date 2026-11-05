@@ -458,20 +458,24 @@ def build_arm(b, side, tag):
     b.hull("Arm_wrist_" + tag, part, fore, joint,
            box_section(at, 0.92, 0.17, 0.17, ch=0.05) + box_section(at, 1.06, 0.14, 0.14, ch=0.04), side=side)
 
-    # Sleeve: the large blade over the shoulder. The seam splits it across, two thirds out.
-    a0 = Vector((1.10, 0.35, 8.50))
-    a1 = Vector((1.70, 0.41, 8.60))
-    a2 = Vector((1.80, 0.84, 8.60))
-    a3 = Vector((1.14, 0.84, 8.40))
-    a4 = Vector((1.32, -0.23, 7.90))
-    a5 = Vector((1.36, 1.00, 7.70))
-    ridge = Vector((2.05, 0.35, 7.95))
-    m0 = Vector((2.10, -0.02, 7.30))
-    m1 = Vector((2.48, 1.18, 7.34))
-    m2 = Vector((1.70, 1.05, 7.20))
-    m3 = Vector((1.56, 0.12, 6.90))
-    tip = Vector((2.90, 1.51, 6.00))
-    b.hull("Arm_sleeve_top_" + tag, part, upper, dark, [a0, a1, a2, a3, a4, a5, ridge, m0, m1, m2, m3], side=side)
+    # Sleeve: a pauldron. The cap sits over the shoulder ball and wraps the top, front and outer side; the lower ball
+    # stays in view. The seam splits it across, and the point runs down and back.
+    a0 = Vector((1.04, 0.30, 8.36))
+    a1 = Vector((1.66, 0.38, 8.46))
+    a2 = Vector((1.84, 0.82, 8.30))
+    a3 = Vector((1.10, 0.74, 8.22))
+    a4 = Vector((1.06, -0.32, 8.18))
+    a5 = Vector((1.66, -0.36, 8.22))
+    front0 = Vector((1.20, -0.50, 7.86))
+    front1 = Vector((1.82, -0.52, 7.76))
+    ridge = Vector((2.00, 0.10, 8.02))
+    m0 = Vector((2.12, -0.16, 7.30))
+    m1 = Vector((2.46, 0.98, 7.30))
+    m2 = Vector((1.70, 0.92, 7.22))
+    m3 = Vector((1.70, 0.10, 7.10))
+    tip = Vector((2.70, 1.25, 6.30))
+    b.hull("Arm_sleeve_top_" + tag, part, upper, dark,
+           [a0, a1, a2, a3, a4, a5, front0, front1, ridge, m0, m1, m2, m3], side=side)
     b.hull("Arm_sleeve_tip_" + tag, part, upper, dark,
            [m0 + Vector((0.02, 0, -0.02)), m1 + Vector((0.02, 0, -0.02)),
             m2 + Vector((0.02, 0, -0.02)), m3 + Vector((0.02, 0, -0.02)), tip], side=side, bevel=0.012)
