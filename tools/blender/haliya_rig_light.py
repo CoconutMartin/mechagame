@@ -26,6 +26,11 @@ OUT_BLEND = os.path.join(ROOT, "models/haliya/haliya.blend")
 RIG = "MechRig"
 STAND_ACTION = "Haliya_Stand"
 CARRY_ACTION = "Haliya_Arm_Carry"
+LIFT_ACTION = "Haliya_Pelvis_Lift"
+## Part of each clip's crouch (the pelvis below its rest height) that Haliya takes out: the clips were made for longer legs.
+PELVIS_LIFT_PART = 0.9
+## The lift stops this far (m) before a leg is straight, so the feet stay on their clip paths.
+PELVIS_LIFT_LEG_MARGIN = 0.10
 SKIRT_ACTION = "Haliya_Skirt_Follow"
 ## The values of AccessoryBoneFollow in the game (scripts/animation/accessory_bone_follow.gd): part of the thigh's swing a skirt
 ## plate always follows, the extra part of the swing toward the plate, and the largest plate turn in degrees.
@@ -375,6 +380,62 @@ def skirt_turn(rest_dir, axis, push, angle):
     return turn
 
 
+def add_pelvis_lift(rig):
+    """Raises the pelvis under every clip, so all clips stay shared. An Action constraint moves the pelvis up by the value of a driver:
+    PELVIS_LIFT_PART of the clip's crouch, at most what each leg can reach. It reads only the keyed values, and a pelvis above its rest
+    height gets no lift, so the stance does not change. The game needs the same step on this rig (phase C)."""
+    ad = rig.animation_data
+    action = bpy.data.actions.new(LIFT_ACTION)
+    action.use_fake_user = True
+    ad.action = action
+    pelvis = rig.pose.bones["pelvis"]
+    pelvis.location = (0.0, 0.0, 0.0)
+    pelvis.keyframe_insert("location", frame=1)
+    pelvis.location = (0.0, 1.0, 0.0)  # the pelvis bone's +Y points up
+    pelvis.keyframe_insert("location", frame=2)
+    clear_pose(rig)
+    for layer in action.layers:
+        for strip in layer.strips:
+            for bag in strip.channelbags:
+                for curve in bag.fcurves:
+                    for key in curve.keyframe_points:
+                        key.interpolation = "LINEAR"
+    c = pelvis.constraints.new("ACTION")
+    c.name = "Pelvis lift"
+    c.action = action
+    c.action_slot = action.slots[0]
+    c.use_eval_time = True
+    c.frame_start = 1
+    c.frame_end = 2
+    c.mix_mode = "BEFORE_FULL"
+    driver = c.driver_add("eval_time").driver
+    driver.type = "SCRIPTED"
+
+    def read(name, path):
+        var = driver.variables.new()
+        var.name = name
+        var.type = "SINGLE_PROP"
+        var.targets[0].id = rig
+        var.targets[0].data_path = path
+
+    read("px", 'pose.bones["pelvis"].location[0]')
+    read("py", 'pose.bones["pelvis"].location[1]')
+    read("pz", 'pose.bones["pelvis"].location[2]')
+    room = []
+    bones = rig.data.bones
+    reach = bones["thigh_L"].length + bones["shin_L"].length - PELVIS_LIFT_LEG_MARGIN
+    for tag, _side in SIDES:
+        for i, axis in enumerate("xyz"):
+            read(axis + tag, 'pose.bones["foot_ctrl_%s"].location[%d]' % (tag, i))
+        # From the ankle to the hip: the pelvis bone's X, Y, Z are world X, Z, -Y; the foot control's are world -X, -Y, Z.
+        gap = bones["thigh_" + tag].head_local - bones["foot_ctrl_" + tag].head_local
+        room.append("sqrt(max(0,%.4f-pow(%.3f+px+x%s,2)-pow(%.3f-pz+y%s,2)))-(%.3f+py-z%s)" % (
+            reach * reach, gap.x, tag, gap.y, tag, gap.z, tag))
+    driver.expression = "max(0,min(%.3f*-py,%s,%s))" % (PELVIS_LIFT_PART, room[0], room[1])
+    assert len(driver.expression) < 256
+    bpy.context.view_layer.update()
+
+
 def bone_swing(rig, name):
     """The front and back swing of a bone now: the X turn from its rest, in the bone's own frame, as an Action constraint reads it."""
     pb = rig.pose.bones[name]
@@ -492,6 +553,7 @@ def build_stand(rig, source_joints, turns, drop):
     bpy.context.view_layer.update()
     stand_swings = {tag: bone_swing(rig, "thigh_" + tag) for tag, _side in SIDES}
     add_skirt_follow(rig, stand_swings)
+    add_pelvis_lift(rig)
     ad.action = action
     ad.action_slot = action.slots[0]
     return action
