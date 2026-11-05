@@ -750,7 +750,7 @@ with no point. They differ from the pictures by request.
 The sleeves are now pauldrons (user 2026-11-05): a cap that covers the shoulder ball on the top, front, back and outer side, with a shorter point down and back. It touches the chest.
 The tan side skirt is now a flat plate outside the thigh and as wide as it, at the old length (user 2026-11-05). The dark strip on it is gone: the user deleted it. A dark plate sits on top of it (`Skirt_side_cover`), with each edge parallel to the tan edge and an even tan border (`SKIRT_COVER_BORDER`). The user also deleted `Skirt_front_blade`.
 The same tan and dark pair sits behind each thigh (`Skirt_rear`, on the `skirt_back` bones). It replaces the rear blades and rear plates, which the user deleted.
-The same pair sits in front of each thigh (`Skirt_front`, on the `skirt_front` bones). The user also deleted the pauldron points (`Arm_sleeve_tip`) and the thigh panels (`Legs_thigh_panel`).
+A dark hip block on the pelvis (`Skirt_hip`) joins the tops of the side and rear plates; their pivots are inside it. A front pair was tried and the user deleted it (2026-11-06). The user also deleted the pauldron points (`Arm_sleeve_tip`) and the thigh panels (`Legs_thigh_panel`).
 Skirt swing in Blender (`Haliya_Skirt_Follow`, Action constraints on the skirt bones) copies the values of `AccessoryBoneFollow`, the game script that moves the plates. It counts from the stance and reads only the front and back swing. The game counts from the rest pose, so phase C must check the plates at the stance.
 
 User rule: 3 rigs, light, medium (SGG `MechRig`) and heavy. All 3 play the same animations. Parts swap across all 3.
@@ -778,7 +778,7 @@ Rules:
 Phases:
 - A. This plan.
 - B. Light rig in Blender on Haliya (`tools/blender/haliya_rig_light.py`, `models/haliya/haliya.blend`). Built 2026-11-05. Sleeves are
-  on `sleeve_L/R`, side, front and rear plates on `skirt_side`, `skirt_front` and `skirt_back_L/R`; the back center blade is on `pelvis`, thigh armor on the
+  on `sleeve_L/R`, side and rear plates on `skirt_side` and `skirt_back_L/R` (`skirt_front_L/R` are empty); the back center blade is on `pelvis`, thigh armor on the
   thighs. The arm limits are wider than on `MechRig` for the stand pose only.
 - C. Export the light parts; a tool writes their offsets; `SkeletalPartModels` sets the skeleton rest from the parts. Test Haliya on key 2.
 - D. Swap test: SGG arm on Haliya and Haliya arm on SGG; pelvis height scale; foot slide with other leg lengths.

@@ -209,9 +209,7 @@ def piece_rule(name, joint, side, heads, source_joints, turns, drop):
         return "skirt_side_" + tag, "Legs", move
     if name.startswith("Skirt_rear"):
         return "skirt_back_" + tag, "Legs", move
-    if name.startswith("Skirt_front"):
-        return "skirt_front_" + tag, "Legs", move
-    if name.startswith("Skirt_back"):
+    if name.startswith(("Skirt_back", "Skirt_hip")):
         return "pelvis", "Legs", move
     if name.startswith("Arm_sleeve"):
         return "sleeve_" + tag, "Arm_" + tag, move
@@ -519,7 +517,7 @@ def main():
     sleeve_pivot = Vector((1.25, 0.25, 8.40 + arm_lift)) * scale + down
     skirt_pivot = Vector((1.05, 0.15, 6.30)) * scale + down
     back_pivot = Vector((0.95, 0.84, 6.19)) * scale + down
-    front_pivot = Vector((0.95, -0.40, 6.25)) * scale + down
+    front_pivot = Vector((0.75, -0.60, 5.75)) * scale + down
     edit_rig(rig, old, heads, lengths, source_joints, sleeve_pivot, skirt_pivot, back_pivot, front_pivot)
 
     root = bpy.data.collections["Haliya_HLY101"]

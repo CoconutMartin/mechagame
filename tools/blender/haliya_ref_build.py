@@ -705,10 +705,12 @@ def build_leg(b, side, tag):
     rear_outline = [(0.45 + (y + 0.94) * 1.0 / 1.58, 3.36 + (z - 3.36) * 0.90) for y, z in outline]
     skirt_plates(b, "Skirt_rear", part, tag, side, rear_outline, rear_lean,
                  lambda w, z, height: (w, 0.84 + rear_lean * (6.19 - z) + height, z))
-    # Front skirt: the same shape in front of the thigh.
-    front_lean = 0.25
-    skirt_plates(b, "Skirt_front", part, tag, side, rear_outline, front_lean,
-                 lambda w, z, height: (w, -0.80 - front_lean * (6.19 - z) - height, z))
+    # Hip block: joins the tops of the side and rear plates at the hip. The plates turn about pivots inside it, so they stay joined.
+    b.hull("Skirt_hip_" + tag, part, "pelvis", dark, [
+        (0.90, -0.42, 6.60), (1.20, -0.42, 6.54), (1.22, -0.42, 6.14), (0.92, -0.42, 6.20),
+        (1.26, 0.50, 6.44), (1.26, 0.50, 6.00),
+        (0.76, 1.00, 6.42), (1.20, 1.00, 6.38), (1.20, 1.00, 5.92), (0.76, 1.00, 5.96),
+    ], side=side)
 
 
 def build_back_spike(b):
