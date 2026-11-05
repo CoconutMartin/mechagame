@@ -626,8 +626,8 @@ def build_leg(b, side, tag):
            side=side)
     # Shin column.
     b.hull("Legs_shin_" + tag, part, shin, dark,
-           box_section(at, 0.12, 0.20, 0.16, cv=-0.14, ch=0.06) + box_section(at, 0.50, 0.16, 0.22, ch=0.05)
-           + box_section(at, 1.0, 0.14, 0.20, ch=0.05), side=side)
+           box_section(at, 0.12, 0.27, 0.22, cv=-0.14, ch=0.07) + box_section(at, 0.50, 0.25, 0.32, ch=0.07)
+           + box_section(at, 1.0, 0.20, 0.27, ch=0.06), side=side)
     b.hull("Legs_ankle_cap_" + tag, part, shin, dark,
            box_section(at, 0.82, 0.24, 0.26, cv=-0.04, ch=0.08) + box_section(at, 0.95, 0.25, 0.46, cv=-0.14, ch=0.10)
            + box_section(at, 1.04, 0.22, 0.30, cv=-0.08, ch=0.10), side=side)
@@ -648,7 +648,7 @@ def build_leg(b, side, tag):
         guard(0.56, -0.24, 0.30), guard(0.56, 0.24, 0.30), guard(0.56, -0.22, 0.50), guard(0.56, 0.22, 0.50),
     ], side=side)
     b.hull("Legs_shin_strip_" + tag, part, shin, joint,
-           box_section(at, 0.45, 0.09, 0.05, cv=0.21) + box_section(at, 0.95, 0.08, 0.05, cv=0.19), side=side)
+           box_section(at, 0.45, 0.11, 0.05, cv=0.32) + box_section(at, 0.95, 0.10, 0.05, cv=0.27), side=side)
     for s, sign in ((0, 1), (1, -1)):
         b.hull("Legs_guard_side_%s%d" % (tag, s), part, shin, tan, [
             guard(0.24, sign * 0.42, 0.04), guard(0.07, sign * 0.42, 0.39), guard(0.26, sign * 0.42, 0.68),
