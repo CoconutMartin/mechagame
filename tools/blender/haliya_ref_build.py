@@ -36,6 +36,8 @@ PAULDRON_WIDTH = 1.20
 PAULDRON_TOP = 8.36
 ## Radius (m) of the shoulder ball, centered on the shoulder joint.
 SHOULDER_BALL_RADIUS = 0.36
+## Height scale (m) of the skirt plates: the tan face stands at 0.7 of it and the ridge of the dark plate at 1.65.
+SKIRT_BODY_HEIGHT = 0.20
 ## Width (m) of the tan border around the dark plate on the side and rear skirts.
 SKIRT_COVER_BORDER = 0.20
 ## Width (m) of the tan strap that joins the side and rear skirt plates.
@@ -567,17 +569,23 @@ def build_arm(b, side, tag):
 # ---------------------------------------------------------------- legs
 
 def skirt_plates(b, name, part, tag, side, outline, lean, place):
-    """A flat tan plate and a dark plate on top of it, with each edge parallel to the tan edge and an even tan border.
+    """A tan plate and a dark plate on top of it, with each edge parallel to the tan edge and an even tan border. The tan edge slopes up
+    to a raised face, the dark plate slopes up to a center ridge from the top edge to the point. All height goes outward, away from the thigh.
     The border is measured along the leaning plate, so the outline is stretched to the plate's own height for the inset."""
     stretch = math.sqrt(1.0 + lean * lean)
-    plate = []
-    for w, z in outline:
-        plate.append(place(w, z, 0.0))
-        plate.append(place(w, z, 0.10))
-    cover = []
-    for w, s in inset_outline([(w, z * stretch) for w, z in outline], SKIRT_COVER_BORDER):
-        cover.append(place(w, s / stretch, 0.08))
-        cover.append(place(w, s / stretch, 0.18))
+    stretched = [(w, z * stretch) for w, z in outline]
+    h = SKIRT_BODY_HEIGHT
+
+    def ring(points, height):
+        return [place(w, s / stretch, height) for w, s in points]
+
+    plate = ring(stretched, 0.0) + ring(stretched, 0.40 * h) + ring(inset_outline(stretched, 0.12), 0.70 * h)
+    corners = inset_outline(stretched, SKIRT_COVER_BORDER)
+    center = sum(corners, Vector((0.0, 0.0))) / len(corners)
+    inner = [c.lerp(center, 0.45) for c in corners]
+    top_middle = (inner[0] + inner[1]) / 2
+    cover = (ring(corners, 0.50 * h) + ring(corners, 0.95 * h) + ring(inner, 1.35 * h)
+             + ring([top_middle, inner[4]], 1.65 * h))
     b.hull(name + "_tan_" + tag, part, "pelvis", "hly_tan", plate, side=side)
     b.hull(name + "_cover_" + tag, part, "pelvis", "hly_armor", cover, side=side)
 
