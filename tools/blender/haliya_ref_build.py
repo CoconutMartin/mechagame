@@ -28,6 +28,8 @@ ARM_LIFT = 0.30
 ## Size of the whole head, about the bottom of the neck, so the neck stays seated in the chest.
 HEAD_SCALE = 0.70
 HEAD_SCALE_PIVOT = Vector((0.0, 0.0, 8.20))
+## Height (m) the head sits above its seat: the neck grows by this much and shows between the chest and the jaw.
+NECK_LENGTH = 0.45
 ## Radius (m) of the shoulder ball, centered on the shoulder joint.
 SHOULDER_BALL_RADIUS = 0.36
 ## Width (m) of the tan border around the dark plate on the side and rear skirts.
@@ -795,6 +797,14 @@ def build():
     for obj in bpy.data.collections["Head"].objects:
         if obj.type == "MESH":
             obj.data.transform(head_matrix)
+            if obj.name == "Head_neck":
+                # Only the top of the neck goes up, so the neck grows and stays seated.
+                middle = sum(v.co.z for v in obj.data.vertices) / len(obj.data.vertices)
+                for v in obj.data.vertices:
+                    if v.co.z > middle:
+                        v.co.z += NECK_LENGTH
+            else:
+                obj.data.transform(Matrix.Translation((0.0, 0.0, NECK_LENGTH)))
     build_core(b)
     for tag, s in (("L", 1), ("R", -1)):
         build_arm(b, s, tag)
