@@ -4,7 +4,7 @@ Run in Blender:
   p = r"D:/EMCMII/GitHub/mechagame/tools/blender/haliya_rig_light.py"; exec(open(p).read(), {"__file__": p, "__name__": "__main__"})
 It builds the model with haliya_ref_build.py, appends MechRig and its actions from the SGG file, and keeps every bone's rest
 rotation. Only bone offsets and lengths change, to Haliya's joints, so the same actions play. Limb meshes turn about their joints to
-the MechRig rest direction (A-pose) and bind rigidly to one bone each; their shape and size do not change. The action Haliya_Stand
+the MechRig rest direction (A-pose) and bind rigidly to one bone each; their shape and size do not change. An Action constraint brings the upper arms down to the stance under every clip. The action Haliya_Stand
 holds the stance of the pictures and is the action the file opens with. Saves models/haliya/haliya.blend.
 """
 import math
@@ -25,6 +25,7 @@ RIG_SOURCE = os.path.join(ROOT, "models/new_mech/new_mech_exploded.blend")
 OUT_BLEND = os.path.join(ROOT, "models/haliya/haliya.blend")
 RIG = "MechRig"
 STAND_ACTION = "Haliya_Stand"
+CARRY_ACTION = "Haliya_Arm_Carry"
 
 ## Size of the hand and finger bones against MechRig.
 HAND_SCALE = 0.78
@@ -324,6 +325,35 @@ def turn_bone(pb, turn):
     bpy.context.view_layer.update()
 
 
+def add_arm_carry(rig, turns):
+    """The clips hold the upper arm at the MechRig rest angle, out from the body. An Action constraint on each upper arm adds the turn
+    from that angle down to Haliya's stance under every clip, so all clips stay shared. The game needs the same value on the arm part."""
+    ad = rig.animation_data
+    action = bpy.data.actions.new(CARRY_ACTION)
+    action.use_fake_user = True
+    ad.action = action
+    for tag, _side in SIDES:
+        pb = rig.pose.bones["upper_arm_" + tag]
+        rest = pb.bone.matrix_local.to_3x3()
+        pb.matrix_basis = (rest.inverted() @ turns["upper_arm_" + tag].inverted().to_matrix() @ rest).to_4x4()
+        key_pose(pb, 1)
+    clear_pose(rig)
+    slot = action.slots[0]
+    for tag, _side in SIDES:
+        pb = rig.pose.bones["upper_arm_" + tag]
+        c = pb.constraints.new("ACTION")
+        c.name = "Arm carry"
+        c.action = action
+        c.action_slot = slot
+        c.use_eval_time = True
+        c.eval_time = 0.0
+        c.frame_start = 1
+        c.frame_end = 2
+        c.mix_mode = "BEFORE_FULL"
+        pb.constraints.move(len(pb.constraints) - 1, 0)
+    bpy.context.view_layer.update()
+
+
 def build_stand(rig, source_joints, turns, drop):
     """The stance of the pictures, keyed on every bone so that it clears any clip that played before it. The arms are FK on this rig
     (their IK influence is 0), the legs use their IK controls."""
@@ -339,6 +369,7 @@ def build_stand(rig, source_joints, turns, drop):
                     c.max_y = max(c.max_y, STAND_ARM_LIMIT)
                     c.min_z = min(c.min_z, -STAND_ARM_LIMIT)
                     c.max_z = max(c.max_z, STAND_ARM_LIMIT)
+    add_arm_carry(rig, turns)
     ad = rig.animation_data
     # The grip pose of the fingers, read from Hand_Grip.
     ad.action = bpy.data.actions["Hand_Grip"]
@@ -366,7 +397,6 @@ def build_stand(rig, source_joints, turns, drop):
         m = foot.bone.matrix_local.copy()
         m.translation = source_joints["foot_" + tag]
         foot.matrix = m
-        turn_bone(rig.pose.bones["upper_arm_" + tag], turns["upper_arm_" + tag].inverted())
         turn_bone(rig.pose.bones["forearm_" + tag], turns["forearm_" + tag].inverted())
         hand_ik = rig.pose.bones["hand_ik_" + tag]
         forearm = rig.pose.bones["forearm_" + tag]

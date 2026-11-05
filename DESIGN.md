@@ -777,6 +777,10 @@ Phases:
 - D. Swap test: SGG arm on Haliya and Haliya arm on SGG; pelvis height scale; foot slide with other leg lengths.
 - E. Heavy rig, when there is a heavy mech.
 
+Arm carry (user 2026-11-05, Haliya's arms in Walk): rest has the arms out, so a clip alone holds them about 48 degrees out. Each arm part has
+a carry turn, added under every clip at the shoulder: the clips stay shared. In Blender it is an Action constraint (`Haliya_Arm_Carry`). The game
+needs the same value in phase C (an `ArmPart` field and a step before the arm scripts).
+
 Known risks to test in phase C and D:
 - Clips bake IK for `MechRig` lengths, so other leg lengths can slide the feet a little.
 - Two-hand weapon poses and melee clips can reach differently with other arm lengths (`SkeletalArmRig` handles aim at runtime).
