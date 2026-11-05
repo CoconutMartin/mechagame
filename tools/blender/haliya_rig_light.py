@@ -4,7 +4,7 @@ Run in Blender:
   p = r"D:/EMCMII/GitHub/mechagame/tools/blender/haliya_rig_light.py"; exec(open(p).read(), {"__file__": p, "__name__": "__main__"})
 It builds the model with haliya_ref_build.py, appends MechRig and its actions from the SGG file, and keeps every bone's rest
 rotation. Only bone offsets and lengths change, to Haliya's joints, so the same actions play. Limb meshes turn about their joints to
-the MechRig rest direction (A-pose) and bind rigidly to one bone each; their shape and size do not change. An Action constraint brings the upper arms down to the stance under every clip. The action Haliya_Stand
+the MechRig rest direction (A-pose) and bind rigidly to one bone each; their shape and size do not change. An Action constraint brings the arms down to the stance under every clip. The action Haliya_Stand
 holds the stance of the pictures and is the action the file opens with. Saves models/haliya/haliya.blend.
 """
 import math
@@ -316,41 +316,40 @@ def key_pose(pb, frame):
         pb.keyframe_insert("rotation_euler", frame=frame)
 
 
-def turn_bone(pb, turn):
-    """Poses a bone at its current head, turned from its rest rotation by turn (armature space)."""
-    bpy.context.view_layer.update()
-    m = turn.to_matrix().to_4x4() @ pb.bone.matrix_local.to_3x3().to_4x4()
-    m.translation = pb.head
-    pb.matrix = m
-    bpy.context.view_layer.update()
-
-
 def add_arm_carry(rig, turns):
-    """The clips hold the upper arm at the MechRig rest angle, out from the body. An Action constraint on each upper arm adds the turn
+    """The clips hold the arm at the MechRig rest angles, out from the body. An Action constraint on each arm bone adds the turn
     from that angle down to Haliya's stance under every clip, so all clips stay shared. The game needs the same value on the arm part."""
     ad = rig.animation_data
     action = bpy.data.actions.new(CARRY_ACTION)
     action.use_fake_user = True
     ad.action = action
     for tag, _side in SIDES:
-        pb = rig.pose.bones["upper_arm_" + tag]
-        rest = pb.bone.matrix_local.to_3x3()
-        pb.matrix_basis = (rest.inverted() @ turns["upper_arm_" + tag].inverted().to_matrix() @ rest).to_4x4()
-        key_pose(pb, 1)
+        upper = rig.pose.bones["upper_arm_" + tag]
+        rest = upper.bone.matrix_local.to_3x3()
+        upper_turn = turns["upper_arm_" + tag].inverted().to_matrix()
+        upper.matrix_basis = (rest.inverted() @ upper_turn @ rest).to_4x4()
+        key_pose(upper, 1)
+        # The forearm hangs from the upper arm, so its own turn is what is left after the upper arm's.
+        fore = rig.pose.bones["forearm_" + tag]
+        rest = fore.bone.matrix_local.to_3x3()
+        fore_turn = upper_turn.inverted() @ turns["forearm_" + tag].inverted().to_matrix()
+        fore.matrix_basis = (rest.inverted() @ fore_turn @ rest).to_4x4()
+        key_pose(fore, 1)
     clear_pose(rig)
     slot = action.slots[0]
     for tag, _side in SIDES:
-        pb = rig.pose.bones["upper_arm_" + tag]
-        c = pb.constraints.new("ACTION")
-        c.name = "Arm carry"
-        c.action = action
-        c.action_slot = slot
-        c.use_eval_time = True
-        c.eval_time = 0.0
-        c.frame_start = 1
-        c.frame_end = 2
-        c.mix_mode = "BEFORE_FULL"
-        pb.constraints.move(len(pb.constraints) - 1, 0)
+        for bone in ("upper_arm_", "forearm_"):
+            pb = rig.pose.bones[bone + tag]
+            c = pb.constraints.new("ACTION")
+            c.name = "Arm carry"
+            c.action = action
+            c.action_slot = slot
+            c.use_eval_time = True
+            c.eval_time = 0.0
+            c.frame_start = 1
+            c.frame_end = 2
+            c.mix_mode = "BEFORE_FULL"
+            pb.constraints.move(len(pb.constraints) - 1, 0)
     bpy.context.view_layer.update()
 
 
@@ -397,7 +396,6 @@ def build_stand(rig, source_joints, turns, drop):
         m = foot.bone.matrix_local.copy()
         m.translation = source_joints["foot_" + tag]
         foot.matrix = m
-        turn_bone(rig.pose.bones["forearm_" + tag], turns["forearm_" + tag].inverted())
         hand_ik = rig.pose.bones["hand_ik_" + tag]
         forearm = rig.pose.bones["forearm_" + tag]
         m = turns["forearm_" + tag].inverted().to_matrix().to_4x4() @ hand_ik.bone.matrix_local.to_3x3().to_4x4()

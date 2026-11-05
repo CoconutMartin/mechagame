@@ -778,7 +778,7 @@ Phases:
 - E. Heavy rig, when there is a heavy mech.
 
 Arm carry (user 2026-11-05, Haliya's arms in Walk): rest has the arms out, so a clip alone holds them about 48 degrees out. Each arm part has
-a carry turn, added under every clip at the shoulder: the clips stay shared. In Blender it is an Action constraint (`Haliya_Arm_Carry`). The game
+carry turns for the upper arm and forearm, added under every clip: the clips stay shared. In Blender it is an Action constraint (`Haliya_Arm_Carry`). The game
 needs the same value in phase C (an `ArmPart` field and a step before the arm scripts).
 
 Known risks to test in phase C and D:
