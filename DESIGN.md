@@ -733,9 +733,12 @@ Back profile (user 2026-11-05, red line in "3d model side view.PNG"): the chest 
 plates and thigh backs have more depth and reach the line. Forefoot 25% smaller (`FOREFOOT_SCALE` 0.75).
 
 Side profile (user 2026-11-05, "Angular Graphite Mecha Side Profile.png"): this picture sets every depth along Y and the stance:
-deep chest and back, sleeves and blades far behind the body, knees and ankles behind the hips (ankle 0.74 m), a thigh front panel,
+deep chest and back, sleeves and blades far behind the body, a thigh front panel,
 a front blade, knee side plates dark at the front and tan at the back, a slanted heel post. The disc is a compromise between the
 pictures (radius 0.74; 0.65 in the front picture, about 0.84 in this one).
+
+Upright (user 2026-11-05, "still leaning forward"): knees 0.14 m and ankles 0.25 m behind the hips, arms 0.30 m. This overrides the
+side profile picture's stance (ankles 0.74 m). The middle of the back is one tan plate, nearly vertical, with a recessed waist.
 
 Three rigs (user 2026-11-05): parts swap across the light, medium and heavy rigs, and all 3 play the same animations. Not built.
 To design first: the same bone names and parent chain on all 3 rigs, how one animation plays on different bone lengths, and how
