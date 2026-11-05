@@ -12,7 +12,7 @@ extends SceneTree
 const MAP := "res://maps/urban_small/urban_small.tscn"
 ## Meshes per slot for SGG-101 (key 1). SGGv2 (out of the game since 2026-11-01) had head 7, core 10, arms 10, legs 33. HLY_MESHES: the Haliya build of 2026-10-31 (removed; LOADOUT=2 needs a key 2 loadout).
 const SGG_MESHES := {&"head": 2, &"core": 2, &"arm_left": 5, &"arm_right": 5, &"legs": 13}
-const HLY_MESHES := {&"head": 8, &"core": 13, &"arm_left": 27, &"arm_right": 27, &"legs": 36}
+const HLY_MESHES := {&"head": 26, &"core": 32, &"arm_left": 30, &"arm_right": 30, &"legs": 78}
 
 var _failures := 0
 
@@ -118,6 +118,7 @@ func _check_accessories(mech: Mech, skeleton: Skeleton3D) -> void:
 		await process_frame
 	skeleton.skeleton_updated.disconnect(measure)
 	Input.action_release(&"move_forward")
-	for bone_name: StringName in [&"skirt_front_L", &"skirt_front_R", &"skirt_back_L", &"skirt_back_R"]:
+	# Haliya wears all its plates on the side bones, with the swing baked into its clips.
+	for bone_name: StringName in [&"skirt_side_L", &"skirt_side_R"]:
 		_check(most[bone_name] > 3.0, "%s turns in the walk (largest %.1f deg)" % [bone_name, most[bone_name]])
 	print("skirt turns (deg): ", most)

@@ -4,6 +4,7 @@ extends SceneTree
 ## plays its own animations.
 ## Run from the project root:
 ##   godot --headless --path . --script res://tools/godot/build_sanggigilid.gd
+## MECH=haliya builds scenes/mech/haliya.tscn from Haliya's own rig file instead (DESIGN "Three rigs"); the rest of the mech is the same.
 ##
 ## It starts from the player mech scene and keeps its movement, input, aim and camera nodes; the
 ## part-built body (frame joints, parts, procedural animation, weapons, damage, falls) is removed and the
@@ -16,6 +17,7 @@ const SOURCE := "res://scenes/mech/mech_template.tscn"
 ## The standard rig with the animations (tools/blender/export_mech_parts.py). The part meshes come from the
 ## loadout's parts at run time (SkeletalPartModels, DESIGN "Swappable mech parts").
 const MODEL := "res://models/mechs/sgg/sgg_rig.glb"
+const HALIYA_MODEL := "res://models/mechs/haliya/haliya_rig.glb"
 ## Default parts (SGG-101) for the slots a loadout leaves empty.
 const DEFAULT_PARTS := {
 	"head": "res://data/parts/sanggigilid/sanggigilid_head.tres",
@@ -24,7 +26,15 @@ const DEFAULT_PARTS := {
 	"arm_right": "res://data/parts/sanggigilid/sanggigilid_arm_r.tres",
 	"legs": "res://data/parts/sanggigilid/sanggigilid_legs.tres",
 }
+const HALIYA_PARTS := {
+	"head": "res://data/parts/haliya/haliya_head.tres",
+	"core": "res://data/parts/haliya/haliya_core.tres",
+	"arm_left": "res://data/parts/haliya/haliya_arm_l.tres",
+	"arm_right": "res://data/parts/haliya/haliya_arm_r.tres",
+	"legs": "res://data/parts/haliya/haliya_legs.tres",
+}
 const OUT_SCENE := "res://scenes/mech/sanggigilid.tscn"
+const HALIYA_SCENE := "res://scenes/mech/haliya.tscn"
 ## Part HP and the bones of each part.
 const HIT_PARTS := "res://data/mechs/sanggigilid_hit_parts.tres"
 const HP_INDICATORS := "res://data/mechs/sanggigilid_hp_indicators.tres"
@@ -46,6 +56,7 @@ const SHIELD_HAND_REST := Vector3(-2.1, -0.82, -1.95)
 const SHIELD_POLE_REST := Vector3(-1.0, -0.6, 0.0)
 ## Weapons the mech starts with (WeaponMount): the gunner test loadout (key 1).
 const START_WEAPONS := "res://data/loadouts/sanggigilid_beam_rifle.tres"
+const HALIYA_WEAPONS := "res://data/loadouts/haliya_beam_rifle.tres"
 ## Bone used for the camera size (MechCameraRig looks for a ShoulderL node).
 const SHOULDER_BONE := "upper_arm_L"
 ## Where the aim ray starts on the body (chest, in front of the torso), m.
@@ -59,12 +70,15 @@ const BACK_SPEED := 0.8
 ## full run at boost speed.
 const PLAY_SPEEDS := [2.71, 4.6, WALK_SPEED, WALK_SPEED * 1.5]
 
+## True: this run builds Haliya (MECH=haliya).
+var _haliya := OS.get_environment("MECH") == "haliya"
+
 
 func _initialize() -> void:
 	var root := (load(SOURCE) as PackedScene).instantiate() as Mech
 	root.scene_file_path = ""
-	root.name = "Sanggigilid"
-	root.name_code = "SGG-101"  # Sagigilid (data/names/mech_names.tres).
+	root.name = "Haliya" if _haliya else "Sanggigilid"
+	root.name_code = "HLY-101" if _haliya else "SGG-101"  # Sagigilid (data/names/mech_names.tres).
 	root.walk_speed = WALK_SPEED
 	root.strafe_speed_multiplier = STRAFE_SPEED
 	root.back_speed_multiplier = BACK_SPEED
@@ -102,7 +116,7 @@ func _initialize() -> void:
 	root.add_child(visual)
 	root.move_child(visual, 1)
 	visual.owner = root
-	var model := (load(MODEL) as PackedScene).instantiate() as Node3D
+	var model := (load(HALIYA_MODEL if _haliya else MODEL) as PackedScene).instantiate() as Node3D
 	model.name = "Model"
 	model.rotation.y = PI  # the model faces +Z (glTF front); the mech faces -Z
 	visual.add_child(model)
@@ -119,8 +133,9 @@ func _initialize() -> void:
 	root.add_child(part_models)
 	part_models.owner = root
 	part_models.model = model
-	for slot: String in DEFAULT_PARTS:
-		part_models.set("default_" + slot, load(DEFAULT_PARTS[slot]))
+	var default_parts: Dictionary = HALIYA_PARTS if _haliya else DEFAULT_PARTS
+	for slot: String in default_parts:
+		part_models.set("default_" + slot, load(default_parts[slot]))
 	part_models.build()
 
 	var skeleton := model.find_child("Skeleton3D", true, false) as Skeleton3D
@@ -237,7 +252,7 @@ func _initialize() -> void:
 	root.add_child(joint_color)
 	joint_color.owner = root
 	joint_color.model = model
-	joint_color.mesh_names = PackedStringArray(BALL_JOINTS)
+	joint_color.mesh_names = PackedStringArray([] if _haliya else BALL_JOINTS)
 	# Textured like the joint connectors (their mean color is about 0.2 grey; the texture is about 0.55).
 	joint_color.color = Color(0.36, 0.365, 0.35)
 	joint_color.texture = load("res://assets/textures/ps1/joint_metal.png")
@@ -263,11 +278,13 @@ func _initialize() -> void:
 
 	# Skirt panels and sleeves (accessory bones) turn off the legs and with the arms; added last so it runs
 	# after every other skeleton modifier (each moves itself onto the skeleton in this order).
-	var accessories := AccessoryBoneFollow.new()
-	accessories.name = "AccessoryFollow"
-	visual.add_child(accessories)
-	accessories.owner = root
-	accessories.model = model
+	# Haliya's rig file already has the skirt swing baked into its clips, and its pauldrons stay level as a weapon platform.
+	if not _haliya:
+		var accessories := AccessoryBoneFollow.new()
+		accessories.name = "AccessoryFollow"
+		visual.add_child(accessories)
+		accessories.owner = root
+		accessories.model = model
 	part_models.loadout_holder = root.get_node("WeaponMount")
 	# First child: it builds the part meshes before Visual enters the tree.
 	root.move_child(part_models, 0)
@@ -282,8 +299,8 @@ func _initialize() -> void:
 	var packed := PackedScene.new()
 	var err := packed.pack(root)
 	if err == OK:
-		err = ResourceSaver.save(packed, OUT_SCENE)
-	print("BUILD scene ", OUT_SCENE, " ", error_string(err), " shoulder ", shoulder.position)
+		err = ResourceSaver.save(packed, HALIYA_SCENE if _haliya else OUT_SCENE)
+	print("BUILD scene ", HALIYA_SCENE if _haliya else OUT_SCENE, " ", error_string(err), " shoulder ", shoulder.position)
 	root.free()
 	quit()
 
@@ -450,7 +467,7 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	mount.name = "WeaponMount"
 	root.add_child(mount)
 	root.move_child(mount, 1)
-	mount.loadout = load(START_WEAPONS)
+	mount.loadout = load(HALIYA_WEAPONS if _haliya else START_WEAPONS)
 	mount.frame = torso
 	mount.weapon_controller = controller
 	mount.shoulder_mounts = shoulder_tops
@@ -514,7 +531,7 @@ func _add_hands(root: Mech, visual: Node3D, model: Node3D, health: MechHealth, h
 ## Wrist pin center in the forearm bone frame at rest: the center of the box around the forearm mesh's last
 ## WRIST_PIN_SLAB meters (the dark joint at the end of the forearm armor; there is no separate pin mesh).
 func _wrist_pin(skeleton: Skeleton3D, side: String, model: Node3D) -> Vector3:
-	var mesh := model.find_child("Arm_%s_02" % side, true, false) as MeshInstance3D
+	var mesh := model.find_child(("Arm_wrist_%s" if _haliya else "Arm_%s_02") % side, true, false) as MeshInstance3D
 	var hand_rest := skeleton.get_bone_global_rest(skeleton.find_bone("hand_" + side))
 	var to_hand := hand_rest.affine_inverse() * mesh.transform
 	var box := AABB()

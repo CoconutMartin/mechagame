@@ -64,8 +64,12 @@ HAND_SCALE = 0.78
 ## Size of the foot bone against MechRig.
 FOOT_SCALE = 0.8
 ## Width (m) of the finger and thumb pieces.
-FINGER_WIDTH = 0.13
-THUMB_WIDTH = 0.14
+FINGER_WIDTH = 0.16
+## How far a finger segment runs past each joint, as a part of its width.
+FINGER_OVERLAP = 0.35
+## Half thickness (m) of the palm block.
+PALM_THICK = 0.13
+THUMB_WIDTH = 0.17
 ## Arm limits (radians) on this rig, wide enough for the stand pose.
 STAND_ARM_LIMIT = math.radians(60.0)
 ## Height (m) the stand pose lowers the pelvis so the straight legs can reach the ground.
@@ -290,13 +294,17 @@ def add_hull(name, points, rig, bone, collection, material, bevel=0.012):
     return obj
 
 
-def bone_box(rig, bone, width):
+def bone_box(rig, bone, width, tip=False):
+    """A finger segment: it runs past both joints, so bent segments overlap with no gap. The last segment narrows to a blunt tip."""
     b = rig.data.bones[bone]
     m = b.matrix_local
     x = m.col[0].xyz.normalized()
     z = m.col[2].xyz.normalized()
+    along = (b.tail_local - b.head_local).normalized()
+    start = b.head_local - along * (width * FINGER_OVERLAP)
+    end = b.tail_local + along * (0.0 if tip else width * FINGER_OVERLAP)
     points = []
-    for c, w in ((b.head_local, width), (b.tail_local, width * 0.85)):
+    for c, w in ((start, width), (end, width * (0.8 if tip else 0.92))):
         for sx in (-0.5, 0.5):
             for sz in (-0.5, 0.5):
                 points.append(c + x * (w * sx) + z * (w * sz))
@@ -304,7 +312,7 @@ def bone_box(rig, bone, width):
 
 
 def build_hand(rig, side, tag):
-    """Palm and tan guard on the hand bone, one piece per finger bone: open at rest, Hand_Grip closes it."""
+    """Palm block, thumb mount and tan guard on the hand bone, one piece per finger bone: open at rest, Hand_Grip closes it."""
     collection = "Arm_" + tag
     hand = "hand_" + tag
     b = rig.data.bones[hand]
@@ -314,30 +322,34 @@ def build_hand(rig, side, tag):
     back = Vector((side, 0, 0))
     front = (roots[0] - roots[-1]).normalized()
     middle = (roots[0] + roots[-1]) * 0.5
+    half_width = (roots[0] - roots[-1]).length * 0.5 + FINGER_WIDTH * 0.5
     palm = []
-    for r in roots:
-        for s in (-0.14, 0.14):
-            palm.append(r + back * s + Vector((0, 0, 0.03)))
-    for s in (-0.14, 0.14):
-        for t in (-0.18, 0.18):
-            palm.append(wrist + (knuckles - wrist) * 0.10 + back * s + front * t)
-    thumb = rig.data.bones["thumb_01_" + tag].head_local
-    for s in (-0.06, 0.06):
-        palm.append(thumb + back * s)
+    for t in (-half_width, half_width):
+        for s in (-PALM_THICK, PALM_THICK):
+            palm.append(middle + front * t + back * s)
+            palm.append(wrist + (knuckles - wrist) * 0.05 + front * (t * 0.72) + back * s)
     add_hull("Arm_palm_" + tag, palm, rig, hand, collection, "hly_joint", 0.02)
+    thumb = rig.data.bones["thumb_01_" + tag].head_local
+    mount = []
+    for s in (-0.07, 0.07):
+        for t in (-0.07, 0.07):
+            mount.append(thumb + back * s + front * t)
+            mount.append(wrist + (knuckles - wrist) * 0.30 + back * s + front * (t + half_width * 0.45 * (1 if thumb.dot(front) > middle.dot(front) else -1)))
+    add_hull("Arm_palm_thumb_" + tag, mount, rig, hand, collection, "hly_joint", 0.02)
     guard = []
-    top = wrist + (knuckles - wrist) * 0.02
-    for s, reach in ((0.13, 0.0), (0.21, 0.03)):
-        for t in (-0.20, 0.20):
-            guard.append(top + back * s + front * t)
-        for t in (-0.27, 0.27):
-            guard.append(middle + back * (s + reach) + front * t + Vector((0, 0, 0.08)))
+    top = wrist + (knuckles - wrist) * 0.08
+    low = middle - (knuckles - wrist).normalized() * 0.02
+    for height, reach in ((PALM_THICK - 0.02, 0.0), (PALM_THICK + 0.06, 0.0)):
+        for t in (-0.72, 0.72):
+            guard.append(top + back * (height + reach) + front * (t * half_width))
+        for t in (-0.92, 0.92):
+            guard.append(low + back * (height + reach) + front * (t * half_width))
     add_hull("Arm_hand_guard_" + tag, guard, rig, hand, collection, "hly_tan", 0.02)
     for finger in ("index", "middle", "ring", "pinky", "thumb"):
         width = THUMB_WIDTH if finger == "thumb" else FINGER_WIDTH
         for i in (1, 2, 3):
             bone = "%s_%02d_%s" % (finger, i, tag)
-            add_hull("Arm_%s_%d_%s" % (finger, i, tag), bone_box(rig, bone, width), rig, bone, collection, "hly_joint")
+            add_hull("Arm_%s_%d_%s" % (finger, i, tag), bone_box(rig, bone, width, i == 3), rig, bone, collection, "hly_joint")
 
 
 def key_pose(pb, frame):

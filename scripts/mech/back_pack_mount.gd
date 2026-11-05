@@ -45,6 +45,8 @@ static func mount(target: Mech, loadout: Loadout) -> BackPackMount:
 	var holder := BackPackMount.new()
 	holder.name = "BackPackMount"
 	holder.mech = target
+	if loadout.core != null:
+		holder.mount_offset = loadout.core.back_pack_offset
 	target.add_child(holder)
 	holder._attach_model(skeleton, loadout.back_pack)
 	return holder
