@@ -667,17 +667,13 @@ def build_leg(b, side, tag):
         fp(-0.23, -0.72, 0.84), fp(0.23, -0.72, 0.84), fp(-0.20, -0.86, 0.84), fp(0.20, -0.86, 0.84),
     ], side=side)
 
-    # Side skirt: the tan plate with a dark raised strip in front of a long blade.
-    b.hull("Skirt_side_tan_" + tag, part, "pelvis", tan, [
-        (0.80, -0.25, 6.35), (1.15, -0.05, 6.50), (1.30, 0.15, 6.40),
-        (1.24, -0.42, 5.60), (1.66, 0.05, 5.30), (1.60, 0.30, 4.40), (1.70, 0.28, 3.95), (1.72, 0.85, 3.95), (1.78, 0.90, 3.36),
-        (1.05, 0.0, 6.20), (1.40, 0.12, 6.20), (1.55, 0.40, 4.60),
-    ], side=side)
-    plate_normal = Vector((0.55, -0.80, -0.20)).normalized()
-    strip_face = [Vector((1.20, -0.20, 5.90)), Vector((1.39, -0.03, 5.90)),
-                  Vector((1.51, -0.27, 5.00)), Vector((1.64, -0.10, 5.00))]
-    b.hull("Skirt_side_strip_" + tag, part, "pelvis", dark,
-           [c + plate_normal * 0.16 for c in strip_face] + [c - plate_normal * 0.02 for c in strip_face], side=side)
+    # Side skirt: a flat tan plate outside the thigh and as wide as it, in front of a long blade.
+    side_plate = []
+    for y, z in ((-0.36, 6.50), (0.20, 6.50), (-0.94, 5.10), (0.64, 5.00), (-0.70, 4.20), (0.64, 4.20), (0.45, 3.36)):
+        inner = 1.00 + 0.27 * (6.50 - z)
+        side_plate.append((inner, y, z))
+        side_plate.append((inner + 0.10, y, z))
+    b.hull("Skirt_side_tan_" + tag, part, "pelvis", tan, side_plate, side=side)
     b.hull("Skirt_side_rear_tan_" + tag, part, "pelvis", tan, [
         (1.50, 1.62, 4.80), (2.02, 1.58, 4.75), (1.95, 1.78, 3.88), (1.54, 1.68, 4.32),
         (1.50, 1.44, 4.80), (2.02, 1.40, 4.75), (1.95, 1.64, 3.88), (1.54, 1.52, 4.32),

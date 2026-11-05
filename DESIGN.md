@@ -748,6 +748,7 @@ upper arm starts inside the ball, on the line to the elbow.
 The forearm blades are now small guards (user 2026-11-05): a plate on the outer face of each forearm, on its axis, wide at the elbow and narrow at the wrist,
 with no point. They differ from the pictures by request.
 The sleeves are now pauldrons (user 2026-11-05): a cap that covers the shoulder ball on the top, front, back and outer side, with a shorter point down and back. It touches the chest.
+The tan side skirt is now a flat plate outside the thigh and as wide as it, at the old length (user 2026-11-05). The dark strip on it is gone: the user deleted it.
 
 User rule: 3 rigs, light, medium (SGG `MechRig`) and heavy. All 3 play the same animations. Parts swap across all 3.
 
