@@ -669,11 +669,19 @@ def build_leg(b, side, tag):
 
     # Side skirt: a flat tan plate outside the thigh and as wide as it, in front of a long blade.
     side_plate = []
+    side_cover = []
     for y, z in ((-0.36, 6.50), (0.20, 6.50), (-0.94, 5.10), (0.64, 5.00), (-0.70, 4.20), (0.64, 4.20), (0.45, 3.36)):
         inner = 1.00 + 0.27 * (6.50 - z)
         side_plate.append((inner, y, z))
         side_plate.append((inner + 0.10, y, z))
+        # A dark plate of the same shape on top of it: narrower, and a little shorter so the tan shows all around.
+        cover_y = -0.15 + (y + 0.15) * 0.55
+        cover_z = 3.60 + (z - 3.36) * 0.84
+        inner = 1.00 + 0.27 * (6.50 - cover_z)
+        side_cover.append((inner + 0.08, cover_y, cover_z))
+        side_cover.append((inner + 0.18, cover_y, cover_z))
     b.hull("Skirt_side_tan_" + tag, part, "pelvis", tan, side_plate, side=side)
+    b.hull("Skirt_side_cover_" + tag, part, "pelvis", dark, side_cover, side=side)
     b.hull("Skirt_side_rear_tan_" + tag, part, "pelvis", tan, [
         (1.50, 1.62, 4.80), (2.02, 1.58, 4.75), (1.95, 1.78, 3.88), (1.54, 1.68, 4.32),
         (1.50, 1.44, 4.80), (2.02, 1.40, 4.75), (1.95, 1.64, 3.88), (1.54, 1.52, 4.32),
@@ -706,11 +714,6 @@ def build_leg(b, side, tag):
 
 def build_back_spike(b):
     part = "Legs"
-    b.hull("Skirt_front_blade", part, "pelvis", "hly_armor", [
-        (-0.34, -0.95, 5.00), (0.34, -0.95, 5.00), (-0.34, -0.35, 5.00), (0.34, -0.35, 5.00),
-        (-0.26, -0.90, 3.50), (0.26, -0.90, 3.50), (-0.26, -0.40, 3.50), (0.26, -0.40, 3.50),
-        (0.0, -0.59, 2.36),
-    ], bevel=0.012)
     b.hull("Skirt_back_top", part, "pelvis", "hly_armor", [
         (-0.34, 0.34, 5.90), (0.34, 0.34, 5.90), (-0.45, 0.40, 5.20), (0.45, 0.40, 5.20),
         (-0.34, 0.56, 5.90), (0.34, 0.56, 5.90), (-0.45, 0.62, 5.20), (0.45, 0.62, 5.20),
