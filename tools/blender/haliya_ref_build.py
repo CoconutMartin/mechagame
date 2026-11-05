@@ -25,6 +25,8 @@ COLORS = {
 MODEL_SCALE = 0.95
 ## Height (m) the whole arm sits above the coordinates below: the shoulder rollers reach almost to the top of the traps.
 ARM_LIFT = 0.30
+## Radius (m) of the shoulder ball, centered on the shoulder joint.
+SHOULDER_BALL_RADIUS = 0.36
 ## Chamfer width (m) of the armor edges.
 BEVEL = 0.018
 
@@ -343,8 +345,8 @@ def build_core(b):
             (0.74, 0.10, 6.84), (0.84, -0.62, 7.12), (0.58, -0.40, 6.90), (0.58, 0.05, 6.88),
         ], side=side)
         # Shoulder socket on the side of the chest.
-        b.rings("Core_socket_" + tag, part, "torso", joint, Vector((0.90, 0.05, 7.75 + ARM_LIFT)), (1, 0, 0),
-                [(0.0, 0.26), (0.10, 0.30), (0.14, 0.24)], sides=16, side=side)
+        b.rings("Core_socket_" + tag, part, "torso", joint, Vector((0.82, SHOULDER.y, SHOULDER.z + ARM_LIFT)), (1, 0, 0),
+                [(0.0, 0.30), (0.08, 0.40), (0.20, 0.42), (0.24, 0.34)], sides=20, side=side)
         # Waist ribs: two rows of two blocks.
         for row, (z1, z0, w) in enumerate(((7.10, 6.90, 0.80), (6.86, 6.66, 0.66))):
             b.hull("Core_rib_front_%s%d" % (tag, row), part, "torso", joint, [
@@ -414,26 +416,26 @@ def build_arm(b, side, tag):
     hand = "hand_" + tag
 
     # Shoulder roller on the chest side.
-    b.rings("Arm_shoulder_" + tag, part, upper, joint, Vector((0.98, 0.05, 7.75)), (1, 0, 0),
-            [(0.0, 0.33), (0.05, 0.39), (0.20, 0.39), (0.24, 0.33), (0.28, 0.33), (0.31, 0.24), (0.31, 0.13)],
-            sides=20, side=side)
-
-    b.hull("Arm_shoulder_block_" + tag, part, upper, dark, [
-        (0.98, -0.20, 7.76), (0.98, 0.50, 7.76), (1.36, -0.15, 7.74), (1.36, 0.50, 7.74),
-        (0.98, -0.12, 7.14), (0.98, 0.50, 7.14), (1.42, -0.05, 7.20), (1.42, 0.50, 7.20),
-    ], side=side)
+    # Shoulder: a ball centered on the joint, so the arm turns in any direction with no gap.
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=14, radius=SHOULDER_BALL_RADIUS,
+                              matrix=Matrix.Translation(SHOULDER))
+    ball = b.finish("Arm_shoulder_" + tag, bm, part, upper, joint, side)
+    for poly in ball.data.polygons:
+        poly.use_smooth = True
 
     at = limb_frame(SHOULDER, ELBOW)
+    # The upper arm starts inside the ball, on the line from the shoulder to the elbow.
     b.hull("Arm_upper_core_" + tag, part, upper, joint,
-           box_section(at, 0.15, 0.22, 0.26) + box_section(at, 0.92, 0.20, 0.22), side=side)
+           box_section(at, 0.08, 0.20, 0.20, ch=0.05) + box_section(at, 0.92, 0.20, 0.22, ch=0.05), side=side)
     b.hull("Arm_upper_tan_" + tag, part, upper, tan,
-           box_section(at, 0.50, 0.19, 0.18, cu=0.02, cv=-0.10, ch=0.06)
-           + box_section(at, 0.68, 0.23, 0.21, cu=0.02, cv=-0.10, ch=0.07)
-           + box_section(at, 0.90, 0.23, 0.19, cu=0.02, cv=-0.10, ch=0.07), side=side)
+           box_section(at, 0.32, 0.20, 0.14, cv=-0.11, ch=0.05)
+           + box_section(at, 0.62, 0.25, 0.17, cv=-0.11, ch=0.06)
+           + box_section(at, 0.90, 0.23, 0.15, cv=-0.11, ch=0.06), side=side)
     b.hull("Arm_upper_back_" + tag, part, upper, tan,
-           box_section(at, 0.40, 0.21, 0.15, cu=0.02, cv=0.17, ch=0.05)
-           + box_section(at, 0.62, 0.24, 0.17, cu=0.02, cv=0.18, ch=0.05)
-           + box_section(at, 0.90, 0.21, 0.13, cu=0.02, cv=0.17, ch=0.05), side=side)
+           box_section(at, 0.32, 0.20, 0.14, cv=0.11, ch=0.05)
+           + box_section(at, 0.62, 0.25, 0.17, cv=0.11, ch=0.06)
+           + box_section(at, 0.90, 0.23, 0.15, cv=0.11, ch=0.06), side=side)
 
     # Elbow: a black roller between two blocks.
     b.rings("Arm_elbow_" + tag, part, fore, joint, ELBOW - Vector((0.22, 0, 0)), (1, 0, 0),
