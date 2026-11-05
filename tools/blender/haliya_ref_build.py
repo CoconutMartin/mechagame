@@ -476,21 +476,15 @@ def build_arm(b, side, tag):
            [m0 + Vector((0.02, 0, -0.02)), m1 + Vector((0.02, 0, -0.02)),
             m2 + Vector((0.02, 0, -0.02)), m3 + Vector((0.02, 0, -0.02)), tip], side=side, bevel=0.012)
 
-    # Forearm guard: a plate on the outer face of the forearm, its point just past the wrist.
+    # Forearm guard: a plate on the outer face of the forearm, on its axis, wide at the elbow and narrow at the wrist.
     at = limb_frame(ELBOW, WRIST)
-    g0 = at(0.10, 0.24, -0.12)
-    g1 = at(0.06, 0.24, 0.44)
-    g2 = at(0.14, 0.44, -0.08)
-    g3 = at(0.10, 0.44, 0.38)
-    g4 = at(0.80, 0.28, -0.16)
-    g5 = at(0.84, 0.28, 0.50)
-    g6 = at(0.80, 0.44, -0.10)
-    g7 = at(0.84, 0.44, 0.44)
-    g_tip = at(1.16, 0.40, 0.52)
-    b.hull("Arm_guard_top_" + tag, part, fore, dark, [g0, g1, g2, g3, g4, g5, g6, g7], side=side)
-    b.hull("Arm_guard_tip_" + tag, part, fore, dark, [
-        at(0.81, 0.28, -0.16), at(0.85, 0.28, 0.50), at(0.81, 0.44, -0.10), at(0.85, 0.44, 0.44), g_tip,
-    ], side=side, bevel=0.012)
+    guard = []
+    for t, half_width, inner, outer in ((0.20, 0.24, 0.20, 0.34), (0.30, 0.31, 0.22, 0.42),
+                                        (0.64, 0.27, 0.24, 0.42), (0.92, 0.15, 0.20, 0.34)):
+        for s in (-1, 1):
+            guard.append(at(t, inner, -0.02 + s * half_width))
+            guard.append(at(t, outer, -0.02 + s * (half_width - 0.06)))
+    b.hull("Arm_guard_" + tag, part, fore, dark, guard, side=side)
 
     # Hand: a closed fist, the back of the hand faces out, the fingers curl to the inside.
     c = WRIST + (WRIST - ELBOW).normalized() * 0.50
