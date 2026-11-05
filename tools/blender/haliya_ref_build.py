@@ -25,6 +25,9 @@ COLORS = {
 MODEL_SCALE = 0.95
 ## Height (m) the whole arm sits above the coordinates below: the shoulder rollers reach almost to the top of the traps.
 ARM_LIFT = 0.30
+## Size of the whole head, about the bottom of the neck, so the neck stays seated in the chest.
+HEAD_SCALE = 0.70
+HEAD_SCALE_PIVOT = Vector((0.0, 0.0, 8.20))
 ## Radius (m) of the shoulder ball, centered on the shoulder joint.
 SHOULDER_BALL_RADIUS = 0.36
 ## Width (m) of the tan border around the dark plate on the side and rear skirts.
@@ -785,6 +788,13 @@ def build():
         b.joint("foot_" + tag, "Legs", mirrored(ANKLE), "shin_" + tag)
 
     build_head(b)
+    # The meshes hold their points relative to the head joint.
+    bpy.context.view_layer.update()
+    pivot = HEAD_SCALE_PIVOT - b.joints["head"].matrix_world.translation
+    head_matrix = Matrix.Translation(pivot) @ Matrix.Scale(HEAD_SCALE, 4) @ Matrix.Translation(-pivot)
+    for obj in bpy.data.collections["Head"].objects:
+        if obj.type == "MESH":
+            obj.data.transform(head_matrix)
     build_core(b)
     for tag, s in (("L", 1), ("R", -1)):
         build_arm(b, s, tag)
