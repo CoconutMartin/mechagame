@@ -40,6 +40,8 @@ SHOULDER_BALL_RADIUS = 0.36
 SKIRT_COVER_BORDER = 0.20
 ## Width (m) of the tan strap that joins the side and rear skirt plates.
 SKIRT_STRAP_WIDTH = 0.30
+## Move of the tan rib from its place in the picture, up and in, so that it joins the chest shell.
+RIB_OFFSET = Vector((-0.10, 0.0, 0.30))
 ## Chamfer width (m) of the armor edges.
 BEVEL = 0.018
 
@@ -372,10 +374,11 @@ def build_core(b):
             (0.42, -0.50, 8.50), (0.79, -0.30, 8.42), (0.79, 0.08, 8.36), (0.45, 0.18, 8.47),
             (0.79, -0.30, 8.18), (0.79, 0.08, 8.14), (0.42, -0.50, 8.28), (0.42, 0.18, 8.24),
         ], side=side)
-        b.hull("Core_rib_" + tag, part, "torso", tan, [
+        # Tan rib under the chest shell: its top sinks into the shell, so it hangs from it with no gap.
+        b.hull("Core_rib_" + tag, part, "torso", tan, [Vector(p) + RIB_OFFSET for p in (
             (1.18, -0.42, 7.16), (1.18, 0.10, 7.12), (1.14, -0.42, 6.94), (1.14, 0.10, 6.90), (0.62, -0.76, 6.98), (0.68, -0.62, 6.84),
             (0.74, 0.10, 6.84), (0.84, -0.62, 7.12), (0.58, -0.40, 6.90), (0.58, 0.05, 6.88),
-        ], side=side)
+        )], side=side)
         # Shoulder socket on the side of the chest.
         b.rings("Core_socket_" + tag, part, "torso", joint, Vector((0.82, SHOULDER.y, SHOULDER.z + ARM_LIFT)), (1, 0, 0),
                 [(0.0, 0.30), (0.08, 0.40), (0.20, 0.42), (0.24, 0.34)], sides=20, side=side)
@@ -505,24 +508,6 @@ def build_arm(b, side, tag):
              pad(2.00, 1.00, 7.25), pad(1.58, 0.92, 7.22), pad(1.58, 0.10, 7.10), pad(1.04, 0.44, 7.34)]
     b.hull("Arm_sleeve_top_" + tag, part, upper, dark,
            [pad(x, y, PAULDRON_TOP) for x, y in top_ring] + [pad(x, y, band) for x, y in band_ring] + keel + under, side=side)
-
-    def face_plate(name, material, top_a, top_b, low_a, low_b, lift):
-        """A thin plate on a face of the cap, between the band and the keel. Its corners stand lift above the cap and its back sinks in:
-        the cap bulges between the corners, so a curved face needs more lift."""
-        corners = [top_a.lerp(low_a, 0.15), top_b.lerp(low_b, 0.15), low_b.lerp(top_b, 0.1), low_a.lerp(top_a, 0.1)]
-        normal = (corners[1] - corners[0]).cross(corners[3] - corners[0]).normalized()
-        if normal.dot(corners[0] - pad(1.5, 0.2, 7.7)) < 0:
-            normal = -normal
-        b.hull(name + tag, part, upper, material,
-               [c + normal * lift for c in corners] + [c - normal * 0.05 for c in corners], side=side, bevel=0.01)
-
-    # Tan plates that face the front and the side, and a dark plate that hangs below the outer keel.
-    face_plate("Arm_sleeve_trim_front_", tan, pad(1.20, -0.45, band), pad(1.58, -0.47, band), keel[0].lerp(keel[1], 0.27), keel[0].lerp(keel[1], 0.78), 0.03)
-    face_plate("Arm_sleeve_trim_side_", tan, pad(1.74, -0.33, band), pad(1.88, 0.22, band), keel[2].lerp(keel[3], 0.2), keel[2].lerp(keel[3], 0.8), 0.09)
-    b.hull("Arm_sleeve_lame_" + tag, part, upper, dark, [
-        pad(2.28, -0.18, 7.62), pad(2.40, 0.85, 7.62), pad(2.34, -0.05, 7.10), pad(2.44, 0.78, 7.08),
-        pad(2.10, -0.18, 7.62), pad(2.22, 0.85, 7.62), pad(2.16, -0.05, 7.10), pad(2.26, 0.78, 7.08),
-    ], side=side)
 
     # Forearm guard: a plate on the outer face of the forearm, on its axis, wide at the elbow and narrow at the wrist.
     at = limb_frame(ELBOW, WRIST)
