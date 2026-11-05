@@ -13,7 +13,7 @@ import sys
 
 import bpy
 import bmesh
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -26,6 +26,15 @@ OUT_BLEND = os.path.join(ROOT, "models/haliya/haliya.blend")
 RIG = "MechRig"
 STAND_ACTION = "Haliya_Stand"
 CARRY_ACTION = "Haliya_Arm_Carry"
+SKIRT_ACTION = "Haliya_Skirt_Follow"
+## The values of AccessoryBoneFollow in the game (scripts/animation/accessory_bone_follow.gd): part of the thigh's swing a skirt
+## plate always follows, the extra part of the swing toward the plate, and the largest plate turn in degrees.
+SKIRT_FOLLOW = 0.35
+SKIRT_PUSH_FOLLOW = 1.0
+SKIRT_MAX_TURN_DEG = 70.0
+## The swing of the thigh (degrees) that the skirt action covers, and the step between its keys.
+SKIRT_SWING_RANGE_DEG = 90
+SKIRT_SWING_STEP_DEG = 10
 
 ## Size of the hand and finger bones against MechRig.
 HAND_SCALE = 0.78
@@ -200,7 +209,9 @@ def piece_rule(name, joint, side, heads, source_joints, turns, drop):
         return "skirt_side_" + tag, "Legs", move
     if name.startswith("Skirt_rear"):
         return "skirt_back_" + tag, "Legs", move
-    if name.startswith(("Skirt_back", "Skirt_front")):
+    if name.startswith("Skirt_front"):
+        return "skirt_front_" + tag, "Legs", move
+    if name.startswith("Skirt_back"):
         return "pelvis", "Legs", move
     if name.startswith("Arm_sleeve"):
         return "sleeve_" + tag, "Arm_" + tag, move
@@ -355,6 +366,79 @@ def add_arm_carry(rig, turns):
     bpy.context.view_layer.update()
 
 
+def skirt_turn(rest_dir, axis, push, angle):
+    """The plate turn of AccessoryBoneFollow for a thigh swung by angle about axis (all in the armature's rest frame)."""
+    now = Matrix.Rotation(angle, 3, axis) @ rest_dir
+    move = now - rest_dir
+    toward = max(move.dot(push), 0.0)
+    target = (rest_dir + move * SKIRT_FOLLOW + push * toward * SKIRT_PUSH_FOLLOW).normalized()
+    turn = rest_dir.rotation_difference(target)
+    limit = math.radians(SKIRT_MAX_TURN_DEG)
+    if turn.angle > limit:
+        turn = Quaternion(turn.axis, limit)
+    return turn
+
+
+def bone_swing(rig, name):
+    """The front and back swing of a bone now: the X turn from its rest, in the bone's own frame, as an Action constraint reads it."""
+    pb = rig.pose.bones[name]
+    rest = pb.parent.bone.matrix_local.inverted() @ pb.bone.matrix_local
+    pose = pb.parent.matrix.inverted() @ pb.matrix
+    return (rest.inverted() @ pose).to_euler("XYZ").x
+
+
+def add_skirt_follow(rig, stand_swings):
+    """Shows in Blender what AccessoryBoneFollow does in the game: each skirt plate turns with its thigh. An Action constraint reads the
+    front and back swing of the thigh and picks the plate pose from a keyed action, so no clip changes. The stance is the zero here,
+    because the plates are modelled in the stance; the game counts from the rest pose (phase C)."""
+    ad = rig.animation_data
+    action = bpy.data.actions.new(SKIRT_ACTION)
+    action.use_fake_user = True
+    ad.action = action
+    swings = list(range(-SKIRT_SWING_RANGE_DEG, SKIRT_SWING_RANGE_DEG + 1, SKIRT_SWING_STEP_DEG))
+    plates = [bone + tag for tag, _side in SIDES for bone in ("skirt_front_", "skirt_side_", "skirt_back_")]
+    for name in plates:
+        pb = rig.pose.bones[name]
+        limb = rig.data.bones["thigh_" + name[-1]]
+        limb_rest = limb.matrix_local.to_3x3()
+        rest_dir = limb_rest.col[1].normalized()
+        axis = limb_rest.col[0].normalized()
+        # Push direction as in the game: from the thigh's line to the plate's middle, across the thigh. A plate bone with no child counts as 3 m long.
+        plate_rest = pb.bone.matrix_local.to_3x3()
+        across = pb.bone.head_local + plate_rest.col[1].normalized() * 1.5 - limb.head_local
+        across -= rest_dir * across.dot(rest_dir)
+        push = across.normalized()
+        stand = skirt_turn(rest_dir, axis, push, stand_swings[name[-1]]).inverted()
+        for i, swing in enumerate(swings):
+            turn = skirt_turn(rest_dir, axis, push, math.radians(swing)) @ stand
+            pb.matrix_basis = (plate_rest.inverted() @ turn.to_matrix() @ plate_rest).to_4x4()
+            key_pose(pb, i + 1)
+    clear_pose(rig)
+    for layer in action.layers:
+        for strip in layer.strips:
+            for bag in strip.channelbags:
+                for curve in bag.fcurves:
+                    for key in curve.keyframe_points:
+                        key.interpolation = "LINEAR"
+    slot = action.slots[0]
+    for name in plates:
+        pb = rig.pose.bones[name]
+        c = pb.constraints.new("ACTION")
+        c.name = "Skirt follow"
+        c.target = rig
+        c.subtarget = "thigh_" + name[-1]
+        c.action = action
+        c.action_slot = slot
+        c.transform_channel = "ROTATION_X"
+        c.target_space = "LOCAL"
+        c.min = -SKIRT_SWING_RANGE_DEG
+        c.max = SKIRT_SWING_RANGE_DEG
+        c.frame_start = 1
+        c.frame_end = len(swings)
+        c.mix_mode = "BEFORE_FULL"
+    bpy.context.view_layer.update()
+
+
 def build_stand(rig, source_joints, turns, drop):
     """The stance of the pictures, keyed on every bone so that it clears any clip that played before it. The arms are FK on this rig
     (their IK influence is 0), the legs use their IK controls."""
@@ -409,6 +493,11 @@ def build_stand(rig, source_joints, turns, drop):
     bpy.context.view_layer.update()
     for pb in rig.pose.bones:
         key_pose(pb, 1)
+    bpy.context.view_layer.update()
+    stand_swings = {tag: bone_swing(rig, "thigh_" + tag) for tag, _side in SIDES}
+    add_skirt_follow(rig, stand_swings)
+    ad.action = action
+    ad.action_slot = action.slots[0]
     return action
 
 
@@ -429,8 +518,8 @@ def main():
     down = Vector((0, 0, -drop))
     sleeve_pivot = Vector((1.25, 0.25, 8.40 + arm_lift)) * scale + down
     skirt_pivot = Vector((1.05, 0.15, 6.30)) * scale + down
-    back_pivot = Vector((0.30, 0.55, 5.90)) * scale + down
-    front_pivot = Vector((0.75, -0.60, 5.75)) * scale + down
+    back_pivot = Vector((0.95, 0.84, 6.19)) * scale + down
+    front_pivot = Vector((0.95, -0.40, 6.25)) * scale + down
     edit_rig(rig, old, heads, lengths, source_joints, sleeve_pivot, skirt_pivot, back_pivot, front_pivot)
 
     root = bpy.data.collections["Haliya_HLY101"]

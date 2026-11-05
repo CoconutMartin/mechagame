@@ -480,7 +480,7 @@ def build_arm(b, side, tag):
            box_section(at, 0.92, 0.17, 0.17, ch=0.05) + box_section(at, 1.06, 0.14, 0.14, ch=0.04), side=side)
 
     # Sleeve: a pauldron. The cap covers the shoulder ball on the top, front, back and outer side; the arm leaves
-    # from under it. The seam splits it across, and the point runs down and back.
+    # from under it.
     a0 = Vector((1.00, 0.30, 8.36))
     a1 = Vector((1.66, 0.38, 8.46))
     a2 = Vector((1.84, 0.82, 8.30))
@@ -497,12 +497,8 @@ def build_arm(b, side, tag):
     m1 = Vector((2.46, 0.98, 7.30))
     m2 = Vector((1.70, 0.92, 7.22))
     m3 = Vector((1.70, 0.10, 7.10))
-    tip = Vector((2.70, 1.25, 6.30))
     b.hull("Arm_sleeve_top_" + tag, part, upper, dark,
            [a0, a1, a2, a3, a4, a5, front0, front1, low0, low1, low2, ridge, m0, m1, m2, m3], side=side)
-    b.hull("Arm_sleeve_tip_" + tag, part, upper, dark,
-           [m0 + Vector((0.02, 0, -0.02)), m1 + Vector((0.02, 0, -0.02)),
-            m2 + Vector((0.02, 0, -0.02)), m3 + Vector((0.02, 0, -0.02)), tip], side=side, bevel=0.012)
 
     # Forearm guard: a plate on the outer face of the forearm, on its axis, wide at the elbow and narrow at the wrist.
     at = limb_frame(ELBOW, WRIST)
@@ -594,11 +590,6 @@ def build_leg(b, side, tag):
     b.hull("Legs_thigh_low_" + tag, part, thigh, dark, [
         (0.47, -0.78, 4.40), (1.08, -0.78, 4.32), (1.36, -0.38, 4.32), (0.60, -0.62, 3.50), (1.05, -0.62, 3.44),
         (1.34, -0.25, 3.46), (0.52, 0.76, 3.95), (1.40, 0.76, 3.93), (0.70, 0.50, 3.55), (1.28, 0.50, 3.55),
-    ], side=side)
-    b.hull("Legs_thigh_panel_" + tag, part, thigh, dark, [
-        (0.50, -0.80, 5.25), (1.02, -0.80, 5.22), (0.50, -1.12, 5.15), (1.02, -1.12, 5.12),
-        (0.52, -1.12, 3.95), (1.02, -1.12, 3.90), (0.60, -1.08, 3.50), (1.00, -1.08, 3.48), (0.80, -1.01, 3.05),
-        (0.52, -0.80, 3.95), (1.02, -0.80, 3.90),
     ], side=side)
     # Inner tan face of the thigh and the column under the block.
     b.hull("Legs_thigh_inner_" + tag, part, thigh, tan, [
@@ -714,6 +705,10 @@ def build_leg(b, side, tag):
     rear_outline = [(0.45 + (y + 0.94) * 1.0 / 1.58, 3.36 + (z - 3.36) * 0.90) for y, z in outline]
     skirt_plates(b, "Skirt_rear", part, tag, side, rear_outline, rear_lean,
                  lambda w, z, height: (w, 0.84 + rear_lean * (6.19 - z) + height, z))
+    # Front skirt: the same shape in front of the thigh.
+    front_lean = 0.25
+    skirt_plates(b, "Skirt_front", part, tag, side, rear_outline, front_lean,
+                 lambda w, z, height: (w, -0.80 - front_lean * (6.19 - z) - height, z))
 
 
 def build_back_spike(b):
