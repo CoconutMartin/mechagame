@@ -745,6 +745,8 @@ side profile picture's stance (ankles 0.74 m). The middle of the back is one tan
 Haliya arm height (user 2026-11-05): the whole arm with its sleeve and blade sits `ARM_LIFT` (0.30 m before scale) above the pictures, so the
 shoulder joints reach almost to the top of the traps. The shoulder is a ball on the joint (`SHOULDER_BALL_RADIUS`), in a cup on the chest; the
 upper arm starts inside the ball, on the line to the elbow.
+The forearm blades are now small guards (user 2026-11-05): a plate on the outer face of each forearm, its point just past the wrist. They differ from the
+pictures by request. In Jog and Slow_Run they touch the sleeve tips.
 
 User rule: 3 rigs, light, medium (SGG `MechRig`) and heavy. All 3 play the same animations. Parts swap across all 3.
 
