@@ -23,6 +23,8 @@ COLORS = {
 }
 ## Size of the whole mech against the coordinates below: Haliya is a light mech, a little smaller in frame.
 MODEL_SCALE = 0.95
+## Height (m) the whole arm sits above the coordinates below: the shoulder rollers reach almost to the top of the traps.
+ARM_LIFT = 0.30
 ## Chamfer width (m) of the armor edges.
 BEVEL = 0.018
 
@@ -341,7 +343,7 @@ def build_core(b):
             (0.74, 0.10, 6.84), (0.84, -0.62, 7.12), (0.58, -0.40, 6.90), (0.58, 0.05, 6.88),
         ], side=side)
         # Shoulder socket on the side of the chest.
-        b.rings("Core_socket_" + tag, part, "torso", joint, Vector((0.90, 0.05, 7.75)), (1, 0, 0),
+        b.rings("Core_socket_" + tag, part, "torso", joint, Vector((0.90, 0.05, 7.75 + ARM_LIFT)), (1, 0, 0),
                 [(0.0, 0.26), (0.10, 0.30), (0.14, 0.24)], sides=16, side=side)
         # Waist ribs: two rows of two blocks.
         for row, (z1, z0, w) in enumerate(((7.10, 6.90, 0.80), (6.86, 6.66, 0.66))):
@@ -775,6 +777,11 @@ def build():
         build_arm(b, s, tag)
         build_leg(b, s, tag)
     build_back_spike(b)
+    # The arm pieces are children of the upper arm joint, so moving it moves the whole arm.
+    for tag in ("L", "R"):
+        joint = b.joints["upper_arm_" + tag]
+        joint.matrix_world = Matrix.Translation(joint.matrix_world.translation + Vector((0, 0, ARM_LIFT)))
+        bpy.context.view_layer.update()
     apply_scale(b, MODEL_SCALE)
     return b
 

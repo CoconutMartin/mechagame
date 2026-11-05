@@ -742,6 +742,9 @@ side profile picture's stance (ankles 0.74 m). The middle of the back is one tan
 
 ## Three rigs (user request 2026-11-05)
 
+Haliya arm height (user 2026-11-05): the whole arm with its sleeve and blade sits `ARM_LIFT` (0.30 m before scale) above the pictures, so the
+shoulder rollers reach almost to the top of the traps.
+
 User rule: 3 rigs, light, medium (SGG `MechRig`) and heavy. All 3 play the same animations. Parts swap across all 3.
 
 Rules:

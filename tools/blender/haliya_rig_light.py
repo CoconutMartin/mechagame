@@ -385,7 +385,7 @@ def build_stand(rig, source_joints, turns, drop):
 def main():
     if bpy.context.object and bpy.context.object.mode != "OBJECT":
         bpy.ops.object.mode_set(mode="OBJECT")
-    run_build()
+    arm_lift = run_build()["ARM_LIFT"]
     bpy.context.view_layer.update()
     joint_names = ["pelvis", "torso", "head"] + [j + t for t in ("L", "R") for j in (
         "upper_arm_", "forearm_", "hand_", "thigh_", "shin_", "foot_")]
@@ -397,7 +397,7 @@ def main():
     old = bone_data(rig)
     heads, lengths, turns, drop = rig_targets(old, source_joints)
     down = Vector((0, 0, -drop))
-    sleeve_pivot = Vector((1.25, 0.25, 8.40)) * scale + down
+    sleeve_pivot = Vector((1.25, 0.25, 8.40 + arm_lift)) * scale + down
     skirt_pivot = Vector((1.05, 0.15, 6.30)) * scale + down
     back_pivot = Vector((0.30, 0.55, 5.90)) * scale + down
     front_pivot = Vector((0.75, -0.60, 5.75)) * scale + down
