@@ -29,7 +29,7 @@ ARM_LIFT = 0.30
 HEAD_SCALE = 0.70
 HEAD_SCALE_PIVOT = Vector((0.0, 0.0, 8.20))
 ## Height (m) the head sits above its seat: the neck grows by this much and shows between the chest and the jaw.
-NECK_LENGTH = 0.45
+NECK_LENGTH = 0.255
 ## Radius (m) of the shoulder ball, centered on the shoulder joint.
 SHOULDER_BALL_RADIUS = 0.36
 ## Width (m) of the tan border around the dark plate on the side and rear skirts.
