@@ -27,8 +27,8 @@ MODEL_SCALE = 0.95
 ARM_LIFT = 0.30
 ## Radius (m) of the shoulder ball, centered on the shoulder joint.
 SHOULDER_BALL_RADIUS = 0.36
-## Width (m) of the tan border around the dark plate on the side skirt.
-SIDE_COVER_BORDER = 0.20
+## Width (m) of the tan border around the dark plate on the side and rear skirts.
+SKIRT_COVER_BORDER = 0.20
 ## Chamfer width (m) of the armor edges.
 BEVEL = 0.018
 
@@ -555,6 +555,22 @@ def build_arm(b, side, tag):
 
 # ---------------------------------------------------------------- legs
 
+def skirt_plates(b, name, part, tag, side, outline, lean, place):
+    """A flat tan plate and a dark plate on top of it, with each edge parallel to the tan edge and an even tan border.
+    The border is measured along the leaning plate, so the outline is stretched to the plate's own height for the inset."""
+    stretch = math.sqrt(1.0 + lean * lean)
+    plate = []
+    for w, z in outline:
+        plate.append(place(w, z, 0.0))
+        plate.append(place(w, z, 0.10))
+    cover = []
+    for w, s in inset_outline([(w, z * stretch) for w, z in outline], SKIRT_COVER_BORDER):
+        cover.append(place(w, s / stretch, 0.08))
+        cover.append(place(w, s / stretch, 0.18))
+    b.hull(name + "_tan_" + tag, part, "pelvis", "hly_tan", plate, side=side)
+    b.hull(name + "_cover_" + tag, part, "pelvis", "hly_armor", cover, side=side)
+
+
 def build_leg(b, side, tag):
     part = "Legs"
     tan = "hly_tan"
@@ -688,53 +704,16 @@ def build_leg(b, side, tag):
         fp(-0.23, -0.72, 0.84), fp(0.23, -0.72, 0.84), fp(-0.20, -0.86, 0.84), fp(0.20, -0.86, 0.84),
     ], side=side)
 
-    # Side skirt: a flat tan plate outside the thigh and as wide as it, in front of a long blade.
-    lean = 0.27
+    # Side skirt: a flat plate pair outside the thigh and as wide as it.
     outline = [(-0.36, 6.50), (0.20, 6.50), (0.64, 5.00), (0.64, 4.20), (0.45, 3.36), (-0.70, 4.20), (-0.94, 5.10)]
-    side_plate = []
-    for y, z in outline:
-        inner = 1.00 + lean * (6.50 - z)
-        side_plate.append((inner, y, z))
-        side_plate.append((inner + 0.10, y, z))
-    # A dark plate on top of it: each edge parallel to the tan edge, with an even tan border. The border is
-    # measured along the leaning plate, so the outline is stretched to the plate's own height for the inset.
-    stretch = math.sqrt(1.0 + lean * lean)
-    side_cover = []
-    for y, s in inset_outline([(y, z * stretch) for y, z in outline], SIDE_COVER_BORDER):
-        z = s / stretch
-        inner = 1.00 + lean * (6.50 - z)
-        side_cover.append((inner + 0.08, y, z))
-        side_cover.append((inner + 0.18, y, z))
-    b.hull("Skirt_side_tan_" + tag, part, "pelvis", tan, side_plate, side=side)
-    b.hull("Skirt_side_cover_" + tag, part, "pelvis", dark, side_cover, side=side)
-    b.hull("Skirt_side_rear_tan_" + tag, part, "pelvis", tan, [
-        (1.50, 1.62, 4.80), (2.02, 1.58, 4.75), (1.95, 1.78, 3.88), (1.54, 1.68, 4.32),
-        (1.50, 1.44, 4.80), (2.02, 1.40, 4.75), (1.95, 1.64, 3.88), (1.54, 1.52, 4.32),
-    ], side=side)
-    b.hull("Skirt_side_rear_plate_" + tag, part, "pelvis", dark, [
-        (0.89, 0.86, 6.20), (1.06, 1.30, 6.20), (1.85, 1.60, 4.87), (1.33, 1.62, 4.74),
-        (0.89, 0.66, 6.20), (1.06, 1.10, 6.20), (1.85, 1.40, 4.87), (1.33, 1.40, 4.74),
-    ], side=side)
-    wide_f, wide_r, wide_ridge = (1.60, 0.90, 4.60), (1.70, 1.55, 4.60), (2.05, 1.45, 4.60)
-    wide_if, wide_ir = (1.45, 1.00, 4.60), (1.50, 1.45, 4.60)
-    mid_f, mid_r, mid_ridge = (2.00, 1.25, 3.40), (2.20, 2.05, 3.40), (2.45, 1.75, 3.40)
-    mid_if, mid_ir = (1.85, 1.35, 3.40), (2.02, 1.95, 3.40)
-
-    def low(p, dz):
-        return (p[0], p[1], p[2] + dz)
-
-    b.hull("Skirt_blade_top_" + tag, part, "pelvis", dark, [
-        (1.00, 0.60, 6.10), (1.10, 1.00, 6.10), (0.90, 0.68, 5.95), (1.00, 0.95, 5.95),
-        wide_f, wide_r, wide_ridge, wide_if, wide_ir,
-    ], side=side)
-    b.hull("Skirt_blade_mid_" + tag, part, "pelvis", dark, [
-        low(wide_f, -0.02), low(wide_r, -0.02), low(wide_ridge, -0.02), low(wide_if, -0.02), low(wide_ir, -0.02),
-        mid_f, mid_r, mid_ridge, mid_if, mid_ir,
-    ], side=side)
-    b.hull("Skirt_blade_tip_" + tag, part, "pelvis", dark, [
-        low(mid_f, -0.02), low(mid_r, -0.02), low(mid_ridge, -0.02), low(mid_if, -0.02), low(mid_ir, -0.02),
-        (2.75, 2.00, 1.53),
-    ], side=side, bevel=0.012)
+    side_lean = 0.27
+    skirt_plates(b, "Skirt_side", part, tag, side, outline, side_lean,
+                 lambda w, z, height: (1.00 + side_lean * (6.50 - z) + height, w, z))
+    # Rear skirt: the same shape behind the thigh, as wide as the thigh seen from the back.
+    rear_lean = 0.22
+    rear_outline = [(0.45 + (y + 0.94) * 1.0 / 1.58, 3.36 + (z - 3.36) * 0.90) for y, z in outline]
+    skirt_plates(b, "Skirt_rear", part, tag, side, rear_outline, rear_lean,
+                 lambda w, z, height: (w, 0.84 + rear_lean * (6.19 - z) + height, z))
 
 
 def build_back_spike(b):

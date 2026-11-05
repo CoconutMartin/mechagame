@@ -196,8 +196,10 @@ def piece_rule(name, joint, side, heads, source_joints, turns, drop):
         return "torso", "Core", move
     if joint == "pelvis" and name.startswith("Core_"):
         return "pelvis", "Legs", move
-    if name.startswith(("Skirt_side", "Skirt_blade")):
+    if name.startswith("Skirt_side"):
         return "skirt_side_" + tag, "Legs", move
+    if name.startswith("Skirt_rear"):
+        return "skirt_back_" + tag, "Legs", move
     if name.startswith(("Skirt_back", "Skirt_front")):
         return "pelvis", "Legs", move
     if name.startswith("Arm_sleeve"):
