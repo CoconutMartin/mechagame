@@ -27,10 +27,8 @@ RIG = "MechRig"
 STAND_ACTION = "Haliya_Stand"
 CARRY_ACTION = "Haliya_Arm_Carry"
 LIFT_ACTION = "Haliya_Pelvis_Lift"
-## Part of each clip's crouch (the pelvis below its rest height) that Haliya takes out: the clips were made for longer legs.
-PELVIS_LIFT_PART = 0.9
-## The lift stops this far (m) before a leg is straight, so the feet stay on their clip paths.
-PELVIS_LIFT_LEG_MARGIN = 0.10
+## Height (m) the pelvis rises while the mech moves: the clips were made for longer legs. One fixed value, so the clip's own bounce stays smooth.
+PELVIS_LIFT = 0.35
 LEAN_ACTION = "Haliya_Walk_Lean"
 ## Forward lean (degrees) while the mech moves, split over the pelvis and the torso. The stance and Idle stay upright.
 WALK_LEAN_PELVIS_DEG = 3.0
@@ -393,10 +391,25 @@ def linear_keys(action):
                         key.interpolation = "LINEAR"
 
 
+def add_moving_driver(rig, constraint, value):
+    """Drives the constraint to value while the mech moves. It reads the keyed crouch and the distance between the feet, and gives 0 in
+    the stance and in Idle and the full value in all the walk and run loops: the result stays constant through a loop, so it adds no shake."""
+    driver = constraint.driver_add("eval_time").driver
+    driver.type = "SCRIPTED"
+    for var_name, path in (("py", 'pose.bones["pelvis"].location[1]'),
+                           ("yL", 'pose.bones["foot_ctrl_L"].location[1]'), ("yR", 'pose.bones["foot_ctrl_R"].location[1]'),
+                           ("zL", 'pose.bones["foot_ctrl_L"].location[2]'), ("zR", 'pose.bones["foot_ctrl_R"].location[2]')):
+        var = driver.variables.new()
+        var.name = var_name
+        var.type = "SINGLE_PROP"
+        var.targets[0].id = rig
+        var.targets[0].data_path = path
+    driver.expression = "%.3f*max(0,min(1,max(-py-0.2,abs(yL-yR)-0.3,abs(zL-zR)-0.1)/0.2))" % value
+
+
 def add_pelvis_lift(rig):
-    """Raises the pelvis under every clip, so all clips stay shared. An Action constraint moves the pelvis up by the value of a driver:
-    PELVIS_LIFT_PART of the clip's crouch, at most what each leg can reach. It reads only the keyed values, and a pelvis above its rest
-    height gets no lift, so the stance does not change. The game needs the same step on this rig (phase C)."""
+    """Raises the pelvis by PELVIS_LIFT under every clip in which the mech moves, so all clips stay shared and the stance does not change.
+    The game needs the same step on this rig (phase C)."""
     ad = rig.animation_data
     action = bpy.data.actions.new(LIFT_ACTION)
     action.use_fake_user = True
@@ -416,31 +429,7 @@ def add_pelvis_lift(rig):
     c.frame_start = 1
     c.frame_end = 2
     c.mix_mode = "BEFORE_FULL"
-    driver = c.driver_add("eval_time").driver
-    driver.type = "SCRIPTED"
-
-    def read(name, path):
-        var = driver.variables.new()
-        var.name = name
-        var.type = "SINGLE_PROP"
-        var.targets[0].id = rig
-        var.targets[0].data_path = path
-
-    read("px", 'pose.bones["pelvis"].location[0]')
-    read("py", 'pose.bones["pelvis"].location[1]')
-    read("pz", 'pose.bones["pelvis"].location[2]')
-    room = []
-    bones = rig.data.bones
-    reach = bones["thigh_L"].length + bones["shin_L"].length - PELVIS_LIFT_LEG_MARGIN
-    for tag, _side in SIDES:
-        for i, axis in enumerate("xyz"):
-            read(axis + tag, 'pose.bones["foot_ctrl_%s"].location[%d]' % (tag, i))
-        # From the ankle to the hip: the pelvis bone's X, Y, Z are world X, Z, -Y; the foot control's are world -X, -Y, Z.
-        gap = bones["thigh_" + tag].head_local - bones["foot_ctrl_" + tag].head_local
-        room.append("sqrt(max(0,%.4f-pow(%.3f+px+x%s,2)-pow(%.3f-pz+y%s,2)))-(%.3f+py-z%s)" % (
-            reach * reach, gap.x, tag, gap.y, tag, gap.z, tag))
-    driver.expression = "max(0,min(%.3f*-py,%s,%s))" % (PELVIS_LIFT_PART, room[0], room[1])
-    assert len(driver.expression) < 256
+    add_moving_driver(rig, c, PELVIS_LIFT)
     bpy.context.view_layer.update()
 
 
@@ -471,17 +460,7 @@ def add_walk_lean(rig):
         c.frame_end = 2
         c.mix_mode = "BEFORE_FULL"
         rig.pose.bones[name].constraints.move(len(rig.pose.bones[name].constraints) - 1, 0)
-        driver = c.driver_add("eval_time").driver
-        driver.type = "SCRIPTED"
-        for var_name, path in (("py", 'pose.bones["pelvis"].location[1]'),
-                               ("yL", 'pose.bones["foot_ctrl_L"].location[1]'), ("yR", 'pose.bones["foot_ctrl_R"].location[1]'),
-                               ("zL", 'pose.bones["foot_ctrl_L"].location[2]'), ("zR", 'pose.bones["foot_ctrl_R"].location[2]')):
-            var = driver.variables.new()
-            var.name = var_name
-            var.type = "SINGLE_PROP"
-            var.targets[0].id = rig
-            var.targets[0].data_path = path
-        driver.expression = "max(0,min(1,max(-py-0.2,abs(yL-yR)-0.3,abs(zL-zR)-0.1)/0.2))"
+        add_moving_driver(rig, c, 1.0)
     bpy.context.view_layer.update()
 
 
