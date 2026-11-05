@@ -490,28 +490,39 @@ def build_arm(b, side, tag):
     b.hull("Arm_wrist_" + tag, part, fore, joint,
            box_section(at, 0.92, 0.17, 0.17, ch=0.05) + box_section(at, 1.06, 0.14, 0.14, ch=0.04), side=side)
 
-    # Sleeve: a pauldron. The cap covers the shoulder ball on the top, front, back and outer side; the arm leaves
-    # from under it.
-    # The top is one flat face at PAULDRON_TOP.
-    a0 = Vector((1.00, 0.30, PAULDRON_TOP))
-    a1 = Vector((1.66, 0.38, PAULDRON_TOP))
-    a2 = Vector((1.84, 0.82, PAULDRON_TOP))
-    a3 = Vector((1.04, 0.74, PAULDRON_TOP))
-    a4 = Vector((1.00, -0.40, PAULDRON_TOP))
-    a5 = Vector((1.66, -0.44, PAULDRON_TOP))
-    front0 = Vector((1.00, -0.54, 7.66))
-    front1 = Vector((1.82, -0.56, 7.66))
-    low0 = Vector((1.04, -0.50, 7.34))
-    low1 = Vector((1.76, -0.50, 7.28))
-    low2 = Vector((1.04, 0.44, 7.34))
-    ridge = Vector((2.00, 0.10, 8.02))
-    m0 = Vector((2.12, -0.16, 7.30))
-    m1 = Vector((2.46, 0.98, 7.30))
-    m2 = Vector((1.70, 0.92, 7.22))
-    m3 = Vector((1.70, 0.10, 7.10))
-    pauldron = [a0, a1, a2, a3, a4, a5, front0, front1, low0, low1, low2, ridge, m0, m1, m2, m3]
+    # Sleeve: a pauldron. The top is one flat face at PAULDRON_TOP, a platform for a shoulder weapon, on a short straight
+    # band. Below the band the sides flare to a keel around the front, outer side and back, then come in under it.
+    # The cap covers the shoulder ball, and the arm leaves from under it.
+    def pad(x, y, z):
+        return Vector((1.0 + (x - 1.0) * PAULDRON_WIDTH, y, z))
+
+    band = PAULDRON_TOP - 0.12
+    top_ring = [(1.00, -0.40), (1.66, -0.44), (1.86, 0.30), (1.86, 0.82), (1.04, 0.74), (1.00, 0.30)]
+    band_ring = [(1.00, -0.44), (1.70, -0.48), (1.90, 0.30), (1.90, 0.86), (1.04, 0.78), (1.00, 0.30)]
+    keel = [pad(1.00, -0.60, 7.80), pad(1.75, -0.66, 7.80), pad(2.35, -0.20, 7.85), pad(2.46, 0.50, 7.85),
+            pad(2.27, 1.05, 7.85), pad(1.06, 0.92, 7.80)]
+    under = [pad(1.04, -0.50, 7.34), pad(1.65, -0.48, 7.30), pad(2.18, -0.10, 7.25), pad(2.42, 0.60, 7.25),
+             pad(2.00, 1.00, 7.25), pad(1.58, 0.92, 7.22), pad(1.58, 0.10, 7.10), pad(1.04, 0.44, 7.34)]
     b.hull("Arm_sleeve_top_" + tag, part, upper, dark,
-           [Vector((1.0 + (p.x - 1.0) * PAULDRON_WIDTH, p.y, p.z)) for p in pauldron], side=side)
+           [pad(x, y, PAULDRON_TOP) for x, y in top_ring] + [pad(x, y, band) for x, y in band_ring] + keel + under, side=side)
+
+    def face_plate(name, material, top_a, top_b, low_a, low_b, lift):
+        """A thin plate on a face of the cap, between the band and the keel. Its corners stand lift above the cap and its back sinks in:
+        the cap bulges between the corners, so a curved face needs more lift."""
+        corners = [top_a.lerp(low_a, 0.15), top_b.lerp(low_b, 0.15), low_b.lerp(top_b, 0.1), low_a.lerp(top_a, 0.1)]
+        normal = (corners[1] - corners[0]).cross(corners[3] - corners[0]).normalized()
+        if normal.dot(corners[0] - pad(1.5, 0.2, 7.7)) < 0:
+            normal = -normal
+        b.hull(name + tag, part, upper, material,
+               [c + normal * lift for c in corners] + [c - normal * 0.05 for c in corners], side=side, bevel=0.01)
+
+    # Tan plates that face the front and the side, and a dark plate that hangs below the outer keel.
+    face_plate("Arm_sleeve_trim_front_", tan, pad(1.20, -0.45, band), pad(1.58, -0.47, band), keel[0].lerp(keel[1], 0.27), keel[0].lerp(keel[1], 0.78), 0.03)
+    face_plate("Arm_sleeve_trim_side_", tan, pad(1.74, -0.33, band), pad(1.88, 0.22, band), keel[2].lerp(keel[3], 0.2), keel[2].lerp(keel[3], 0.8), 0.09)
+    b.hull("Arm_sleeve_lame_" + tag, part, upper, dark, [
+        pad(2.28, -0.18, 7.62), pad(2.40, 0.85, 7.62), pad(2.34, -0.05, 7.10), pad(2.44, 0.78, 7.08),
+        pad(2.10, -0.18, 7.62), pad(2.22, 0.85, 7.62), pad(2.16, -0.05, 7.10), pad(2.26, 0.78, 7.08),
+    ], side=side)
 
     # Forearm guard: a plate on the outer face of the forearm, on its axis, wide at the elbow and narrow at the wrist.
     at = limb_frame(ELBOW, WRIST)
