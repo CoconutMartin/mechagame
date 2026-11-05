@@ -27,6 +27,8 @@ MODEL_SCALE = 0.95
 ARM_LIFT = 0.30
 ## Radius (m) of the shoulder ball, centered on the shoulder joint.
 SHOULDER_BALL_RADIUS = 0.36
+## Width (m) of the tan border around the dark plate on the side skirt.
+SIDE_COVER_BORDER = 0.20
 ## Chamfer width (m) of the armor edges.
 BEVEL = 0.018
 
@@ -159,6 +161,25 @@ def limb_frame(a, b):
     def at(t, u, v):
         return a + along * (t * length) + out * u + back * v
     return at
+
+
+def inset_outline(points, border):
+    """Moves each edge of a convex 2D outline inward by border. Returns the new corners, each from its two edges."""
+    corners = [Vector(p) for p in points]
+    center = sum(corners, Vector((0.0, 0.0))) / len(corners)
+    edges = []
+    for i, a in enumerate(corners):
+        along = (corners[(i + 1) % len(corners)] - a).normalized()
+        inward = Vector((-along.y, along.x))
+        if inward.dot(center - a) < 0:
+            inward = -inward
+        edges.append((a + inward * border, along))
+    result = []
+    for i, (p, d) in enumerate(edges):
+        q, e = edges[i - 1]
+        t = (q - p).cross(e) / d.cross(e)
+        result.append(p + d * t)
+    return result
 
 
 def box_section(at, t, half_u, half_v, cu=0.0, cv=0.0, ch=0.0):
@@ -668,18 +689,22 @@ def build_leg(b, side, tag):
     ], side=side)
 
     # Side skirt: a flat tan plate outside the thigh and as wide as it, in front of a long blade.
+    lean = 0.27
+    outline = [(-0.36, 6.50), (0.20, 6.50), (0.64, 5.00), (0.64, 4.20), (0.45, 3.36), (-0.70, 4.20), (-0.94, 5.10)]
     side_plate = []
-    side_cover = []
-    for y, z in ((-0.36, 6.50), (0.20, 6.50), (-0.94, 5.10), (0.64, 5.00), (-0.70, 4.20), (0.64, 4.20), (0.45, 3.36)):
-        inner = 1.00 + 0.27 * (6.50 - z)
+    for y, z in outline:
+        inner = 1.00 + lean * (6.50 - z)
         side_plate.append((inner, y, z))
         side_plate.append((inner + 0.10, y, z))
-        # A dark plate of the same shape on top of it: narrower, and a little shorter so the tan shows all around.
-        cover_y = -0.15 + (y + 0.15) * 0.55
-        cover_z = 3.60 + (z - 3.36) * 0.84
-        inner = 1.00 + 0.27 * (6.50 - cover_z)
-        side_cover.append((inner + 0.08, cover_y, cover_z))
-        side_cover.append((inner + 0.18, cover_y, cover_z))
+    # A dark plate on top of it: each edge parallel to the tan edge, with an even tan border. The border is
+    # measured along the leaning plate, so the outline is stretched to the plate's own height for the inset.
+    stretch = math.sqrt(1.0 + lean * lean)
+    side_cover = []
+    for y, s in inset_outline([(y, z * stretch) for y, z in outline], SIDE_COVER_BORDER):
+        z = s / stretch
+        inner = 1.00 + lean * (6.50 - z)
+        side_cover.append((inner + 0.08, y, z))
+        side_cover.append((inner + 0.18, y, z))
     b.hull("Skirt_side_tan_" + tag, part, "pelvis", tan, side_plate, side=side)
     b.hull("Skirt_side_cover_" + tag, part, "pelvis", dark, side_cover, side=side)
     b.hull("Skirt_side_rear_tan_" + tag, part, "pelvis", tan, [
