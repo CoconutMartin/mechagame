@@ -3,7 +3,9 @@ extends Control
 ## Draws the crosshair where the mech torso aims (user request 2026-10-14): two brackets "[ ]" with
 ## the distance to the target above the right one. The brackets show the target's average part HP:
 ## green (full), orange (half), red (low); white when the target has no HP (ground, buildings) or is
-## farther than the active weapon's max range.
+## farther than the active weapon's max range. Green (optimal_color, user request 2026-11-04: "crosshair should turn
+## green if any weapon is in optimal range") while the aimed point is inside the optimal range of at least one
+## equipped weapon that can still fire (is_in_optimal_range); it replaces the HP color.
 ## The ring and the (hidden) crosshair sit above the screen center (MechAim.screen_offset_up).
 ## The ring is placed from the torso angle, not from a 3D hit point, so camera shake,
 ## body bob, and the physics frame rate do not make it jitter. MechAim aims the shots at what the
@@ -23,6 +25,13 @@ var weapons: WeaponController
 @export var color: Color = Color(0.9, 0.95, 0.95, 0.9)
 @export var status_colors: Gradient
 @export var distance_font_size: int = 16
+## Color of the brackets and the distance while the aimed point is in the optimal range of any usable weapon.
+@export var optimal_color: Color = Color(0.2, 1.0, 0.35, 0.95)
+## False: no optimal range cue (the brackets keep the HP color).
+@export var optimal_cue: bool = true
+## True: melee weapons (fists, hammer, pile bunker) count too, with their lunge plus reach as the optimal range (27 m for a
+## fist, so a bare fist would keep the brackets green at most fights). Off: only guns, beams and missiles.
+@export var optimal_cue_melee: bool = false
 @export var crosshair_color: Color = Color(1.0, 0.9, 0.3, 0.9)
 @export var crosshair_size: float = 6.0
 ## Draw the camera crosshair (yellow dot). Hidden since 4c (user request).
@@ -43,6 +52,8 @@ var _stability: MechStability = null
 ## The weapon the range check uses: the active one, else the last active one (user rule 2026-10-16:
 ## one weapon fires at a time).
 var _range_weapon: MechWeapon = null
+## True while the aimed point is in the optimal range of a usable weapon (the brackets are green).
+var in_optimal_range: bool = false
 
 
 func _ready() -> void:
@@ -70,7 +81,38 @@ func _process(_delta: float) -> void:
 	if reach > 0.0 and _distance > reach:
 		_status = -1.0
 		_stability = null
+	in_optimal_range = optimal_cue and _distance >= 0.0 and is_in_optimal_range(_distance)
 	queue_redraw()
+
+
+## True when the distance (m) is inside the optimal range of at least one equipped weapon that can fire: a hand weapon the
+## hands hold or a back weapon, not a shield, not empty, not overheated. A weapon on cool down or reload still counts
+## (the cue would flicker between shots). Melee weapons only with optimal_cue_melee. See optimal_range_of.
+func is_in_optimal_range(distance: float) -> bool:
+	if weapons == null or distance < 0.0:
+		return false
+	for weapon: MechWeapon in [weapons.right_weapon, weapons.left_weapon, weapons.back_left, weapons.back_right]:
+		if weapon == null or not is_instance_valid(weapon) or weapon.data == null:
+			continue
+		if weapon.data.kind == WeaponData.Kind.SHIELD or (weapon.is_melee() and not optimal_cue_melee):
+			continue
+		if (not weapon.is_melee() and weapon.is_empty()) or (weapon.uses_heat() and weapon.overheated):
+			continue
+		var back := weapon == weapons.back_left or weapon == weapons.back_right
+		if not back and not weapons.holds(weapon):
+			continue
+		if distance <= optimal_range_of(weapon):
+			return true
+	return false
+
+
+## Optimal range (m) of a weapon: WeaponData.effective_range_m (full damage up to it); a weapon with no falloff
+## (effective_range_m 0) is at full damage up to range_m, so that is its optimal range; a melee weapon: lunge plus reach.
+static func optimal_range_of(weapon: MechWeapon) -> float:
+	var data := weapon.data
+	if weapon.is_melee():
+		return data.lunge_distance + data.slash_reach
+	return data.effective_range_m if data.effective_range_m > 0.0 else data.range_m
 
 
 ## Max range (meters) of the active weapon, or of the last active one (the right weapon before any
@@ -140,6 +182,8 @@ func _draw() -> void:
 		return
 	var p := _screen_position
 	var tint := status_colors.sample(_status) if _status >= 0.0 else color
+	if in_optimal_range:
+		tint = optimal_color
 	var view := get_viewport_rect().size
 	var half := Vector2(view.x * half_size.x, view.y * half_size.y)
 	var tick := half.x * tick_share

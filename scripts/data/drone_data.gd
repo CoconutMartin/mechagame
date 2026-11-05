@@ -10,8 +10,9 @@ extends Resource
 ## back, unless the recall mod). It can be shot down.
 
 @export_group("Lock")
-## Lock range from the mech (m).
-@export var lock_range_m: float = 160.0
+## Lock range from the mech (m; user 2026-11-04: 50). No lock beyond it, and a lock that goes beyond it is dropped.
+## The AI drone tactics use the same value.
+@export var lock_range_m: float = 50.0
 ## Half angle of the lock box around the mech aim (degrees).
 @export var lock_box_deg: float = 8.0
 ## Seconds to lock a target.
@@ -138,9 +139,16 @@ extends Resource
 @export var shift_arrive: float = 0.1
 @export var shift_max_s: float = 0.5
 ## Quick hop after a burst (user 2026-11-03: "drone move distance = 1 meter, quick movements, maximum flight during
-## this movement is 0.5 sec"; 2026-11-04: "increase drone hop by 1.5 meters", 2.5 m): the drone moves this far (m) to one side, up or down, with a clear path and the target
-## still in sight. 0 = pick a new firing place shift_distance_min away instead.
-@export var shift_hop: float = 2.5
+## this movement is 0.5 sec"; 2026-11-04: "increase drone hop by 1.5 meters" (2.5 m); 2026-11-04: "increase by 2 meters, make placements more random"): the drone moves
+## about this far (m) in a random direction, with a clear path and the target still in sight. Mean length; the real length is random
+## from shift_hop_min to shift_hop_max. 0 = pick a new firing place shift_distance_min away instead.
+@export var shift_hop: float = 4.5
+@export var shift_hop_min: float = 3.5
+@export var shift_hop_max: float = 5.5
+## Random hop directions tried before the half hops: the angle is random in the plane across the line of sight (0 = right, 90 = up),
+## plus a random part of the line of sight itself (forward or back, up to this share of the length).
+@export var shift_hop_tries: int = 10
+@export_range(0.0, 1.0) var shift_hop_depth: float = 0.3
 ## Part of the speed kept at the end of a hop (0 = a dead stop, 1 = it coasts on).
 @export_range(0.0, 1.0) var shift_stop_keep: float = 0.15
 ## Distance from the target's lock point (m), random in this range (inside the gun's 20 m range, user rule).

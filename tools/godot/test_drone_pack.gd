@@ -2,7 +2,7 @@ extends SceneTree
 ## Drone Pack test (2026-10-31, user picture and rules). Model: the pack is in the garage catalog (1 aux slot, no
 ## bonus) and holds 6 drones, 3 stacked on one axle per side (Drone1..3 left, outer first; Drone4..6 right). Each
 ## Drone<n> holds its disc meshes and a DroneMuzzle on the rim (the port, user 2026-11-02), sits on DroneDock<n>,
-## and no mech mesh point is inside a disc at rest. Flight (user rules): T locks a dummy 100 m ahead; the release
+## and no mech mesh point is inside a disc at rest. Flight (user rules): T locks a dummy 40 m ahead (60 m: no lock); the release
 ## launches a pair. In the open the pair takes both flanks and flies like a saucer (the disc level, leaning at most
 ## 15 degrees), reaches a firing place within 20 m that sees the dummy, fires 3 bursts with the port facing the
 ## dummy, moves to a new place after each burst (3 bursts = 3 position changes, user 2026-11-02, replaces "does not
@@ -283,18 +283,27 @@ func _flight_tests(mech: Mech) -> void:
 	flat = flat.normalized()
 	var right := flat.cross(Vector3.UP)
 	var start := mech.global_position
-	# 1. Open: a dummy 100 m ahead, locked with T.
-	var dummy := _dummy(start + flat * 100.0)
+	# 1. Open: a dummy 60 m ahead does not lock (lock range 50 m, user 2026-11-04); one 40 m ahead locks with T.
+	_check(launcher.data.lock_range_m == 50.0, "lock range is 50 m (%.1f)" % launcher.data.lock_range_m)
+	var far_dummy := _dummy(start + flat * 60.0)
 	await _frames(5)
 	var event := InputEventAction.new()
 	event.action = &"drone_launch"
 	event.pressed = true
 	Input.parse_input_event(event)
+	await _frames(60)
+	_check(launcher.locked == null and launcher.locking == null, "a dummy 60 m ahead does not lock (lock range 50 m)")
+	_check(launcher.target_out_of_range(), "the launcher reports the 60 m dummy as out of range")
+	var status0 := root.find_child("DroneStatus", true, false) as DroneStatus
+	_check(status0 != null and status0.text.contains("OUT OF RANGE"), "status line shows OUT OF RANGE: %s" % (status0.text if status0 != null else "none"))
+	far_dummy.free()
+	var dummy := _dummy(start + flat * 40.0)
+	await _frames(5)
 	for i in 120:
 		await _frames(1)
 		if launcher.locked != null:
 			break
-	_check(launcher.locked == dummy, "holding T locks the dummy 100 m ahead")
+	_check(launcher.locked == dummy, "holding T locks the dummy 40 m ahead")
 	var status := root.find_child("DroneStatus", true, false) as DroneStatus
 	_check(status != null and status.text.contains("6/6"), "status line: %s" % (status.text if status != null else "none"))
 	if launcher.locked != dummy:
@@ -328,15 +337,15 @@ func _flight_tests(mech: Mech) -> void:
 		for a in places.size():
 			for b in range(a + 1, places.size()):
 				spread = spread and (places[a] as Vector3).distance_to(places[b]) > 0.5
-		# Quick 2.5 m hops (user 2026-11-03, 2026-11-04): each next place about shift_hop from the one before.
+		# Quick 4.5 m hops (3.5 to 5.5 m, random direction) (user 2026-11-03, 2026-11-04): each next place about shift_hop from the one before.
 		var hops := true
 		var hop_list: Array[String] = []
 		for a in range(1, places.size()):
 			var hop := (places[a] as Vector3).distance_to(places[a - 1])
 			hop_list.append("%.2f" % hop)
-			hops = hops and hop > 1.5 and hop < 3.5
+			hops = hops and hop > 3.0 and hop < 6.5
 		_check(spread, "open: drone %d fires its 3 bursts from 3 different places (%d)" % [k, places.size()])
-		_check(hops, "open: drone %d hops about 2.5 m between bursts (%s m)" % [k, ", ".join(hop_list)])
+		_check(hops, "open: drone %d hops about 4.5 m between bursts (%s m)" % [k, ", ".join(hop_list)])
 		_check(r[13] <= 20.0, "open: drone %d fires every burst from within 20 m (%.1f m)" % [k, r[13]])
 		_check(r[10] <= 16.0, "open: drone %d has the port facing the dummy at each burst (%.1f degrees)" % [k, r[10]])
 		_check(r[11] <= 15.0, "open: drone %d leans at most 15 degrees (%.1f)" % [k, r[11]])
@@ -467,8 +476,8 @@ func _ai_tests(player: Mech) -> void:
 	var enemy := spawner.mech
 	var launcher := DroneLauncher.find(enemy)
 	_check(launcher != null and launcher.docked_count() == 6, "the AI enemy has the Drone Pack and 6 drones")
-	# Bring the player into the enemy's sight, 80 m in front of it.
-	player.global_position = enemy.global_position - enemy.global_basis.z * 80.0
+	# Bring the player into the enemy's sight, 40 m in front of it.
+	player.global_position = enemy.global_position - enemy.global_basis.z * 40.0
 	player.velocity = Vector3.ZERO
 	var tactics := enemy.find_child("AIDroneTactics", true, false) as AIDroneTactics
 	var launched_at_player := false

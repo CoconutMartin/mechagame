@@ -107,6 +107,30 @@ const IMPACT := preload("res://scenes/effects/impact_spark.tscn")
 @export var clip_aim_max_deg: float = 40.0
 @export var clip_aim_lead: float = 0.25
 @export var clip_aim_release: float = 0.25
+## A clip cut with the lowest sole higher than this (m) above the ground ends in the soft landing (MeleeAttack.cut_landing_height).
+@export var clip_landing_air_m: float = 0.5
+@export_subgroup("Body turn")
+## Turn the mech toward the crosshair during the clip (user request 2026-11-04: "turn the mech towards the target"), so
+## the stake reaches the target when the clip's travel or the mech's heading at the release carries the nose off the
+## line. The punching shoulder turns to face the aim line (SkeletalMeleeAnimation moves the clip's travel along with the
+## heading). The body takes the heading error beyond clip_turn_arm_deg, the arm aim above takes the rest. 0 = no body
+## turn. Fastest turn (deg/s):
+@export var clip_turn_speed_deg: float = 180.0
+## How fast the turn speed changes (deg/s per s).
+@export var clip_turn_accel_deg: float = 900.0
+## Turn speed per degree of error (deg/s per deg), up to clip_turn_speed_deg.
+@export var clip_turn_gain: float = 8.0
+## The error (deg) left to the arm aim.
+@export var clip_turn_arm_deg: float = 5.0
+## The body turns at most this far (deg) from its heading at the start of the clip.
+@export var clip_turn_max_deg: float = 80.0
+## The body turn comes in over this many seconds before the strike window, holds through it and ends at the hit (or
+## clip_aim_release seconds after the window).
+@export var clip_turn_lead: float = 0.4
+## The mech turns toward the aim line (from the mech at the clip start to the crosshair point) at this distance (m)
+## from the mech at most, or toward the crosshair point when that is nearer. A crosshair point far away would otherwise
+## leave a mech that slid sideways with the clip's travel facing parallel to the line and not onto it.
+@export var clip_turn_range: float = 14.0
 
 @export_group("Model")
 ## The parts in the model (paths from the weapon root): the stake that slides out, the nose (front of
@@ -221,6 +245,15 @@ var _saved_target: Node3D
 var _since_fire: float = 0.0
 ## True when the clip's strike window ended with no hit.
 var _clip_missed: bool = false
+## The body turn of the clip: speed now (rad/s) and the sum so far (rad).
+var _turn_velocity: float = 0.0
+var _turn_total: float = 0.0
+## The punching shoulder's side offset from the mech center at the clip start (m, right positive).
+var _shoulder_side: float = 0.0
+## The aim line noted at the clip start (flat): origin, unit direction and length to the crosshair point.
+var _aim_line_origin := Vector3.ZERO
+var _aim_line_dir := Vector3.FORWARD
+var _aim_line_length: float = 0.0
 ## Fall height (m) of the soft landing due when the cut clip has faded (0 = none).
 var _landing_due: float = 0.0
 ## Drill spin now (0 to 1 of spin_speed_deg) and its angle (radians).
@@ -491,6 +524,10 @@ func _start_clip() -> bool:
 	_release_arm()
 	_since_fire = 0.0
 	_clip_missed = false
+	_turn_velocity = 0.0
+	_turn_total = 0.0
+	_note_aim_line()
+	_shoulder_side = _shoulder_offset()
 	_next(State.CLIP)
 	return true
 
@@ -524,6 +561,7 @@ func _update_clip(delta: float) -> void:
 	_twist = move_toward(_twist, 0.0, absf(punch_twist_deg) * delta * guard_speed)
 	var clip := punch_clip()
 	var time := _melee.external_time(self) if is_instance_valid(_melee) else -1.0
+	_turn_body(delta, clip, time)
 	if has_fired:
 		_since_fire += delta
 		if clip.cut_after_hit >= 0.0 and _since_fire >= clip.cut_after_hit and time >= 0.0:
@@ -546,10 +584,91 @@ func _update_clip(delta: float) -> void:
 		_end_clip()
 
 
+## Turns the whole mech (Mech.set_heading, the way SkeletalMeleeAnimation turns toward its target) so the punching
+## shoulder faces the aim line. The clip's travel direction stays as it was (the clip's own root motion). The nose line
+## is not chased: it swings with the arm, and the arm aim (clip_aim) takes what the body leaves.
+func _turn_body(delta: float, clip: MeleeAttack, time: float) -> void:
+	if clip_turn_speed_deg <= 0.0:
+		return
+	var speed := deg_to_rad(clip_turn_speed_deg)
+	var desired := 0.0
+	if not has_fired and time >= 0.0 and clip.strikes.size() > 0:
+		var window := clip.strikes[0]
+		var weight := smoothstep(window.x - clip_turn_lead, window.x, time) \
+				* (1.0 - smoothstep(window.y, window.y + clip_aim_release, time))
+		var error := _heading_error()
+		var body := signf(error) * maxf(absf(error) - deg_to_rad(clip_turn_arm_deg), 0.0)
+		desired = clampf(body * clip_turn_gain, -speed, speed) * weight
+	_turn_velocity = move_toward(_turn_velocity, desired, deg_to_rad(clip_turn_accel_deg) * delta)
+	var limit := deg_to_rad(clip_turn_max_deg)
+	var step := clampf(_turn_total + _turn_velocity * delta, -limit, limit) - _turn_total
+	if is_zero_approx(step):
+		return
+	_turn_total += step
+	var mech := controller.mech
+	mech.set_heading(wrapf(mech.rotation.y + step, -PI, PI))
+
+
+## Yaw (rad, left positive) the mech must turn for the punching shoulder to face the turn point: the heading toward
+## the point, plus the angle the shoulder's side offset makes at that distance.
+func _heading_error() -> float:
+	var mech := controller.mech
+	var to_point := _flat(_turn_point() - mech.global_position)
+	var distance := to_point.length()
+	if distance < 1.0:
+		return 0.0
+	var desired := _yaw_of(to_point) + asin(clampf(_shoulder_side / distance, -0.5, 0.5))
+	return wrapf(desired - mech.rotation.y, -PI, PI)
+
+
+## How far the upper arm bone of this hand is to the mech's right of its center (m, negative = left).
+func _shoulder_offset() -> float:
+	var skeleton := _bone_attach.get_parent() as Skeleton3D if is_instance_valid(_bone_attach) else null
+	if skeleton == null:
+		return -2.1 if is_left else 2.1
+	var bone := skeleton.find_bone("upper_arm_L" if is_left else "upper_arm_R")
+	if bone < 0:
+		return -2.1 if is_left else 2.1
+	var local := controller.mech.global_transform.affine_inverse() * (skeleton.global_transform * skeleton.get_bone_global_pose(bone).origin)
+	return local.x
+
+
+## Notes the aim line when the clip starts, flat: from the mech to the crosshair point (where the lunge ran to). The body
+## turn keeps to this line while the clip plays, so a mech that slides sideways with the clip's travel turns back onto
+## it. (The live crosshair point jumps with the camera and the aim shake, and a line through the live mech center
+## would slide along with it.)
+func _note_aim_line() -> void:
+	_aim_line_origin = _flat(controller.mech.global_position)
+	var along := _flat(controller.mech_aim.aim_point) - _aim_line_origin
+	_aim_line_length = along.length()
+	_aim_line_dir = along / _aim_line_length if _aim_line_length > 0.5 else _flat(-controller.mech.global_basis.z).normalized()
+	if _aim_line_length <= 0.5:
+		_aim_line_length = clip_turn_range
+
+
+## The point the body turn aims the nose at: on the noted aim line, clip_turn_range ahead of the mech's nearest point on
+## that line, or the crosshair point when that is nearer.
+func _turn_point() -> Vector3:
+	var foot := _aim_line_origin + _aim_line_dir * (_flat(controller.mech.global_position) - _aim_line_origin).dot(_aim_line_dir)
+	var reach := clampf(_aim_line_length - (foot - _aim_line_origin).dot(_aim_line_dir), 0.0, clip_turn_range)
+	return foot + _aim_line_dir * reach
+
+
+func _flat(v: Vector3) -> Vector3:
+	v.y = 0.0
+	return v
+
+
+## Heading (Node3D rotation.y) that faces along the flat vector v.
+func _yaw_of(v: Vector3) -> float:
+	return atan2(-v.x, -v.z)
+
+
 ## Cuts the clip (MeleeAttack.cut_after_hit): it fades into the pose under it, with a soft landing when it was cut in
 ## the air (cut_landing_height).
 func _cut_clip(clip: MeleeAttack) -> void:
-	_landing_due = clip.cut_landing_height
+	# Only a mech in the air lands (clip 3 hits before it leaves the ground when the target is near).
+	_landing_due = clip.cut_landing_height if _melee.lowest_sole_height() > clip_landing_air_m else 0.0
 	_melee.stop_external(self, true, _landing_due > 0.0)
 
 
@@ -565,6 +684,11 @@ func _end_clip() -> void:
 		ik.target = _saved_target
 	_pose_weight = 0.0
 	state = State.IDLE
+
+
+## SkeletalMeleeAnimation asks: the clip's travel turns with the mech while the body turn is on.
+func clip_travel_follows_heading() -> bool:
+	return clip_turn_speed_deg > 0.0 and state == State.CLIP
 
 
 ## Grip the arm IK should hold while the punch clip has the arm (WeaponController.fist_hang_target: the arm rig

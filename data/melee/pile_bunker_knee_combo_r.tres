@@ -8,7 +8,7 @@
 script = ExtResource("1")
 animation = ExtResource("2")
 travel = ExtResource("3")
-strikes = PackedVector2Array(0.6, 3.3)
+strikes = PackedVector2Array(0.42, 1.35)
 damage = PackedFloat32Array(0)
 blend_in = 0.15
 blend_out = 0.22

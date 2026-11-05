@@ -3,7 +3,9 @@ extends SceneTree
 ## points inside the chest hull (Torso mesh, one convex hull per bone) at rest (the neck hollow, the baseline) and while the
 ## player aims down (PITCH, default -30) and fires: a one-hand gun (heavy_rifle) and the Beam Rifle in the sniping stance.
 ## Prints the largest count per case. Exit code 1 when a case has more than the baseline plus 10 percent.
-## Environment: DISABLE=1 turns HeadSteady off (the old head), PITCH (degrees).
+## Environment: DISABLE=1 turns HeadSteady off (the old head), PITCH (degrees), DOWN, UP and TILT (degrees: override
+## HeadSteady.parallel_max_down_deg, parallel_max_up_deg and parallel_neck_tilt_deg, to find the limits that keep the head out of the chest),
+## CASES (comma list of rest, heavy_rifle, smg, auto_cannon, beam_rifle, beam_sniper; default rest, heavy_rifle and beam_rifle).
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/test_head_clip.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
@@ -33,9 +35,12 @@ func _run() -> void:
 			node.process_mode = Node.PROCESS_MODE_DISABLED
 			node.visible = false
 	var pitch := float(OS.get_environment("PITCH")) if OS.get_environment("PITCH") != "" else -30.0
-	await _case(switcher, "rest", "", 0.0)
-	await _case(switcher, "heavy_rifle aim down", "heavy_rifle", pitch)
-	await _case(switcher, "beam_rifle aim down", "beam_rifle", pitch)
+	var cases := (OS.get_environment("CASES") if OS.get_environment("CASES") != "" else "rest,heavy_rifle,beam_rifle").split(",", false)
+	for case_name in cases:
+		if case_name == "rest":
+			await _case(switcher, "rest", "", 0.0)
+		else:
+			await _case(switcher, "%s aim down" % case_name, case_name, pitch)
 	print("RESULT: %d failures" % _failures)
 	quit(1 if _failures > 0 else 0)
 
@@ -51,6 +56,13 @@ func _case(switcher: LoadoutSwitcher, label: String, weapon: String, pitch: floa
 	var steady := player.find_child("HeadSteady", true, false) as SkeletonModifier3D
 	if steady != null and OS.has_environment("DISABLE"):
 		steady.active = false
+	if steady is SkeletalHeadSteady:
+		if OS.get_environment("DOWN") != "":
+			(steady as SkeletalHeadSteady).parallel_max_down_deg = float(OS.get_environment("DOWN"))
+		if OS.get_environment("UP") != "":
+			(steady as SkeletalHeadSteady).parallel_max_up_deg = float(OS.get_environment("UP"))
+		if OS.get_environment("TILT") != "":
+			(steady as SkeletalHeadSteady).parallel_neck_tilt_deg = float(OS.get_environment("TILT"))
 	var rig := player.get_node("CameraRig") as MechCameraRig
 	if weapon != "":
 		Input.action_press("aim")

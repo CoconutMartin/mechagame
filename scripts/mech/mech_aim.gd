@@ -148,6 +148,13 @@ func kick_aim(up_deg: float = -1.0, side_deg: float = -1.0, jitter_scale: float 
 		camera_rig.free_aim.kick(up_deg, side_deg, jitter_scale)
 
 
+## A gentle automatic return after the last kick_aim: the crosshair comes back by share of that kick (0.7 = 70%) over about
+## time seconds, after delay seconds. The player corrects the rest. Call it right after kick_aim (FreeAim.return_last_kick).
+func return_last_kick(share: float, time: float, delay: float = 0.0) -> void:
+	if camera_rig != null and camera_rig.free_aim != null:
+		camera_rig.free_aim.return_last_kick(share, time, delay)
+
+
 ## A small push on the aim, in degrees, added every physics frame by a weapon that fires for a long time (the charged
 ## beam drifts and jitters while it fires). It is a kick: it moves the crosshair like a shot's recoil, it stays where it
 ## is put and the player pulls it back with the mouse. Signed, unlike kick_aim (the side of a kick is random there).
