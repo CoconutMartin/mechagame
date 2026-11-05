@@ -1,13 +1,14 @@
-[gd_resource type="Resource" script_class="ArmPart" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="ArmPart" format=3]
 
-[ext_resource type="Script" path="res://scripts/data/arm_part.gd" id="script"]
 [ext_resource type="PackedScene" path="res://models/mechs/sgg/sgg_arm_r.glb" id="model"]
+[ext_resource type="Script" path="res://scripts/data/arm_part.gd" id="script"]
 
 [resource]
 script = ExtResource("script")
+hand_transform = Transform3D(-0.02708321, -0.003906738, 0.99962556, 0.002130106, 0.9999899, 0.0039661266, -0.99963105, 0.0022367388, -0.02707459, -0.39304653, -0.05262259, -0.08699451)
+wrist_pin = Vector3(-0.11221123, 1.7995515, -0.08058679)
+hand_shift = Vector3(-0.39304653, -0.05262259, -0.08699451)
 display_name = "SGG-101 Arm (R)"
 weight_t = 5.0
 hp = 600.0
-recoil_control = 1.0
-melee_bonus = 1.0
 scene = ExtResource("model")

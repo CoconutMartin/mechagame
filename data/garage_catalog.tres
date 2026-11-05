@@ -1,6 +1,11 @@
 [gd_resource type="Resource" script_class="GarageCatalog" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/garage_catalog.gd" id="script"]
+[ext_resource type="Resource" path="res://data/parts/haliya/haliya_head.tres" id="hly_head"]
+[ext_resource type="Resource" path="res://data/parts/haliya/haliya_core.tres" id="hly_core"]
+[ext_resource type="Resource" path="res://data/parts/haliya/haliya_arm_l.tres" id="hly_arm_l"]
+[ext_resource type="Resource" path="res://data/parts/haliya/haliya_arm_r.tres" id="hly_arm_r"]
+[ext_resource type="Resource" path="res://data/parts/haliya/haliya_legs.tres" id="hly_legs"]
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_head.tres" id="r0"]
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_core.tres" id="r1"]
 [ext_resource type="Resource" path="res://data/parts/sanggigilid/sanggigilid_arm_l.tres" id="r2"]
@@ -57,11 +62,11 @@
 
 [resource]
 script = ExtResource("script")
-heads = Array[HeadPart]([ExtResource("r0")])
-cores = Array[CorePart]([ExtResource("r1")])
-arms_left = Array[ArmPart]([ExtResource("r2")])
-arms_right = Array[ArmPart]([ExtResource("r3")])
-legs = Array[LegPart]([ExtResource("r4")])
+heads = Array[HeadPart]([ExtResource("r0"), ExtResource("hly_head")])
+cores = Array[CorePart]([ExtResource("r1"), ExtResource("hly_core")])
+arms_left = Array[ArmPart]([ExtResource("r2"), ExtResource("hly_arm_l")])
+arms_right = Array[ArmPart]([ExtResource("r3"), ExtResource("hly_arm_r")])
+legs = Array[LegPart]([ExtResource("r4"), ExtResource("hly_legs")])
 boosters = Array[BoosterPart]([ExtResource("r5")])
 generators = Array[GeneratorPart]([ExtResource("r6")])
 back_packs = Array[BackPackPart]([ExtResource("backpack_ammo"), ExtResource("backpack_missile"), ExtResource("backpack_boost"), ExtResource("backpack_quad"), ExtResource("backpack_belt"), ExtResource("backpack_power"), ExtResource("backpack_field"), ExtResource("backpack_jet"), ExtResource("backpack_drone")])

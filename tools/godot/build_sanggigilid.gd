@@ -57,6 +57,9 @@ const SHIELD_POLE_REST := Vector3(-1.0, -0.6, 0.0)
 ## Weapons the mech starts with (WeaponMount): the gunner test loadout (key 1).
 const START_WEAPONS := "res://data/loadouts/sanggigilid_beam_rifle.tres"
 const HALIYA_WEAPONS := "res://data/loadouts/haliya_beam_rifle.tres"
+## Haliya's push part (AccessoryBoneFollow): the skirts clear the bent thigh of the aim stance; the pauldrons only swing, with no push, so a held rifle does not lift them like wings.
+const SKIRT_PUSH := 2.0
+const PAD_PUSH := 0.0
 ## Bone used for the camera size (MechCameraRig looks for a ShoulderL node).
 const SHOULDER_BONE := "upper_arm_L"
 ## Where the aim ray starts on the body (chest, in front of the torso), m.
@@ -252,7 +255,7 @@ func _initialize() -> void:
 	root.add_child(joint_color)
 	joint_color.owner = root
 	joint_color.model = model
-	joint_color.mesh_names = PackedStringArray([] if _haliya else BALL_JOINTS)
+	joint_color.mesh_names = PackedStringArray(BALL_JOINTS)
 	# Textured like the joint connectors (their mean color is about 0.2 grey; the texture is about 0.55).
 	joint_color.color = Color(0.36, 0.365, 0.35)
 	joint_color.texture = load("res://assets/textures/ps1/joint_metal.png")
@@ -278,13 +281,21 @@ func _initialize() -> void:
 
 	# Skirt panels and sleeves (accessory bones) turn off the legs and with the arms; added last so it runs
 	# after every other skeleton modifier (each moves itself onto the skeleton in this order).
-	# Haliya's rig file already has the skirt swing baked into its clips, and its pauldrons stay level as a weapon platform.
-	if not _haliya:
-		var accessories := AccessoryBoneFollow.new()
-		accessories.name = "AccessoryFollow"
-		visual.add_child(accessories)
-		accessories.owner = root
-		accessories.model = model
+	var accessories := AccessoryBoneFollow.new()
+	accessories.name = "AccessoryFollow"
+	visual.add_child(accessories)
+	accessories.owner = root
+	accessories.model = model
+	if _haliya:
+		# All skirt plates ride the side bones. Skirts and pauldrons were modelled in Haliya_Stand, so the follow counts from that pose,
+		# and it runs after the aim stance and the kneel, so the plates follow those poses too.
+		accessories.follows = {&"skirt_side_L": &"thigh_L", &"skirt_side_R": &"thigh_R",
+				&"sleeve_L": &"upper_arm_L", &"sleeve_R": &"upper_arm_R"}
+		accessories.push_by_plate = {&"skirt_side_L": SKIRT_PUSH, &"skirt_side_R": SKIRT_PUSH, &"sleeve_L": PAD_PUSH, &"sleeve_R": PAD_PUSH}
+		var stand := (model.find_child("AnimationPlayer", true, false) as AnimationPlayer).get_animation(&"Haliya_Stand")
+		for limb: StringName in accessories.follows.values():
+			var track := stand.find_track(NodePath("MechRig/Skeleton3D:" + limb), Animation.TYPE_ROTATION_3D)
+			accessories.limb_zero[limb] = stand.rotation_track_interpolate(track, 0.0)
 	part_models.loadout_holder = root.get_node("WeaponMount")
 	# First child: it builds the part meshes before Visual enters the tree.
 	root.move_child(part_models, 0)

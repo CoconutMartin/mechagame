@@ -1,13 +1,13 @@
 class_name LoadoutSwitcher
 extends Node
-## Test tool (until the garage in Phase 5): keys 1 to 4 rebuild the player mech with another
-## loadout at the same place. The debug HUD follows the new mech. PlayerRespawner uses rebuild().
+## Rebuilds the player mech with another loadout at the same place. The garage and PlayerRespawner use rebuild(); no number key
+## picks a mech (user 2026-11-06). The debug HUD follows the new mech.
 
 signal mech_changed(new_mech: Mech)
 
 ## Mech scene for loadouts without their own mech_scene.
 @export var mech_scene: PackedScene
-## Loadouts for keys 1, 2, 3, 4.
+## Loadouts the test tools switch to (tools/godot).
 @export var loadouts: Array[Loadout] = []
 @export var mech: Mech
 @export var hud: Node
@@ -34,26 +34,19 @@ func _mark_player(player: Mech) -> void:
 	player.add_to_group(&"lockable")
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	# Shift + a number picks the Pile Bunker clip (PileBunkerWeapon), not a loadout.
-	if event is InputEventKey and (event as InputEventKey).shift_pressed:
-		return
-	for i in loadouts.size():
-		if event.is_action_pressed("loadout_%d" % (i + 1)):
-			switch_to(loadouts[i])
-
-
 func switch_to(loadout: Loadout) -> void:
 	rebuild(loadout, mech.global_transform)
 
 
-## Replaces the player mech with a new one built from loadout, at place. A loadout with its own mech
-## scene uses that scene, the others use mech_scene. A part-built mech scene gets the loadout in its
+## Replaces the player mech with a new one built from loadout, at place. The legs part picks the mech scene (its rig);
+## else the loadout's own mech scene, else mech_scene. A part-built mech scene gets the loadout in its
 ## MechAssembler; a rigged mech scene (the new mech) gets it in its WeaponMount (weapons only).
 func rebuild(loadout: Loadout, place: Transform3D) -> void:
 	var parent := mech.get_parent()
 	var index := mech.get_index()
 	var scene := loadout.mech_scene if loadout.mech_scene != null else mech_scene
+	if loadout.legs != null and not loadout.legs.mech_scene_path.is_empty():
+		scene = load(loadout.legs.mech_scene_path) as PackedScene
 	var new_mech := scene.instantiate() as Mech
 	var builder := loadout_node(new_mech)
 	if builder != null:

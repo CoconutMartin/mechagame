@@ -17,10 +17,14 @@ extends SkeletonModifier3D
 	&"skirt_back_L": &"thigh_L", &"skirt_back_R": &"thigh_R",
 	&"sleeve_L": &"upper_arm_L", &"sleeve_R": &"upper_arm_R",
 }
+## Limb bone -> its local rotation in the pose the plates were modelled in (a stand pose). A limb not listed counts from its rest.
+@export var limb_zero: Dictionary = {}
 ## Part of the limb's swing the plate always follows.
 @export_range(0.0, 1.0) var follow: float = 0.35
 ## Extra part of the swing toward the plate (the limb pushes the plate away).
 @export_range(0.0, 2.0) var push_follow: float = 1.0
+## Plate bone -> its own push_follow (a plate not listed uses push_follow).
+@export var push_by_plate: Dictionary = {}
 ## Largest plate turn, in degrees.
 @export_range(0.0, 120.0) var max_turn_deg: float = 70.0
 
@@ -46,7 +50,7 @@ func _setup() -> void:
 		# Push direction: from the limb's line to the plate's middle, across the limb (parent rest frame).
 		var plate_rest := skeleton.get_bone_rest(plate)
 		var limb_rest := skeleton.get_bone_rest(limb)
-		var limb_dir := _bone_dir(skeleton, limb, limb_rest)
+		var limb_dir := _zero_dir(skeleton, limb)
 		var plate_mid := plate_rest.origin + _bone_dir(skeleton, plate, plate_rest) * 0.5 * _bone_length(skeleton, plate)
 		var across := plate_mid - limb_rest.origin
 		across -= limb_dir * across.dot(limb_dir)
@@ -63,16 +67,25 @@ func _process_modification_with_delta(_delta: float) -> void:
 		var limb: int = pair[1]
 		var push: Vector3 = pair[2]
 		# Both bones have the same parent: their local poses share one frame.
-		var rest_dir := _bone_dir(skeleton, limb, skeleton.get_bone_rest(limb))
+		var rest_dir := _zero_dir(skeleton, limb)
 		var now_dir := _bone_dir(skeleton, limb, skeleton.get_bone_pose(limb))
 		var move := now_dir - rest_dir
 		var toward := maxf(move.dot(push), 0.0)
-		var target := (rest_dir + move * follow + push * toward * push_follow).normalized()
+		var push_part: float = push_by_plate.get(skeleton.get_bone_name(plate), push_follow)
+		var target := (rest_dir + move * follow + push * toward * push_part).normalized()
 		var turn := Quaternion(rest_dir, target) if not rest_dir.is_equal_approx(target) else Quaternion.IDENTITY
 		if turn.get_angle() > limit:
 			turn = Quaternion.IDENTITY.slerp(turn, limit / turn.get_angle())
 		var rest := skeleton.get_bone_rest(plate)
 		skeleton.set_bone_pose_rotation(plate, turn * rest.basis.get_rotation_quaternion())
+
+
+## The limb's direction in its parent's frame in the pose that means no plate turn.
+func _zero_dir(skeleton: Skeleton3D, limb: int) -> Vector3:
+	var zero: Variant = limb_zero.get(skeleton.get_bone_name(limb))
+	if zero is Quaternion:
+		return ((zero as Quaternion) * Vector3.UP).normalized()
+	return _bone_dir(skeleton, limb, skeleton.get_bone_rest(limb))
 
 
 ## Bone direction (head to tail) in its parent's frame for a local transform: the bone points along its +Y.

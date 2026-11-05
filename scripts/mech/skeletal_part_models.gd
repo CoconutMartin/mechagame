@@ -9,11 +9,20 @@ extends Node
 ## It works in _enter_tree, before the other nodes of the mech are in the tree, so every node that reads
 ## the meshes in _ready (SkeletalHitboxes, skins, HP indicators, MechHandControl) sees the new parts.
 ## Keep this node before Visual in the mech's children (build_sanggigilid.gd puts it first).
+## A part brings its joints (DESIGN "Three rigs"): the legs pick the mech scene, and the core and arms here set the bone offsets of
+## the skeleton from their own rig, so a part of another rig keeps its size. The clips then keep only their rotations on those bones.
 
 ## Slot names: the Loadout properties of the part slots, in build order.
 const SLOTS: Array[StringName] = [&"head", &"core", &"arm_left", &"arm_right", &"legs"]
 ## Mesh meta: the slot the mesh came from.
 const SLOT_META := &"mech_part_slot"
+## Bones whose offset comes from the core's rig.
+const CORE_BONES: Array[StringName] = [&"torso", &"head", &"upper_arm_L", &"upper_arm_R"]
+## Bones whose offset comes from the arm's rig (with the side added).
+const ARM_BONES: Array[String] = ["forearm_", "hand_", "sleeve_", "grip_", "index_01_", "index_02_", "index_03_", "middle_01_", "middle_02_",
+		"middle_03_", "ring_01_", "ring_02_", "ring_03_", "pinky_01_", "pinky_02_", "pinky_03_", "thumb_01_", "thumb_02_", "thumb_03_"]
+## An offset this close (m) to the skeleton's own counts as the same.
+const SAME_OFFSET := 0.001
 
 ## The rigged model (rig file, its Skeleton3D is found inside).
 @export var model: Node3D
@@ -53,6 +62,7 @@ func build() -> void:
 	for slot in SLOTS:
 		var part := get_part(loadout, slot)
 		meshes_by_slot[slot] = _add_part(skeleton, part, slot) if part != null else []
+		_set_hand(part as ArmPart, slot)
 
 
 ## The part in a slot: the loadout's, else the default.
@@ -71,6 +81,7 @@ func _add_part(skeleton: Skeleton3D, part: PartData, slot: StringName) -> Array[
 		push_error("SkeletalPartModels: part %s has no Skeleton3D" % part.display_name)
 		source.free()
 		return added
+	_set_offsets(skeleton, source_skeleton, _slot_bones(slot))
 	for child in source_skeleton.get_children():
 		var mesh := child as MeshInstance3D
 		if mesh == null:
@@ -84,3 +95,64 @@ func _add_part(skeleton: Skeleton3D, part: PartData, slot: StringName) -> Array[
 		added.append(mesh)
 	source.free()
 	return added
+
+
+func _slot_bones(slot: StringName) -> Array[StringName]:
+	var bones: Array[StringName] = []
+	if slot == &"core":
+		bones = CORE_BONES.duplicate()
+	elif slot == &"arm_left" or slot == &"arm_right":
+		var side := "L" if slot == &"arm_left" else "R"
+		for bone in ARM_BONES:
+			bones.append(StringName(bone + side))
+	return bones
+
+
+## Copies the part rig's bone offsets onto the mech skeleton. Rest rotations are the same on every rig.
+func _set_offsets(skeleton: Skeleton3D, source: Skeleton3D, bones: Array[StringName]) -> void:
+	var changed := false
+	for bone_name in bones:
+		var bone := skeleton.find_bone(bone_name)
+		var from := source.find_bone(bone_name)
+		if bone < 0 or from < 0:
+			continue
+		var offset := source.get_bone_rest(from).origin
+		var rest := skeleton.get_bone_rest(bone)
+		if rest.origin.distance_to(offset) < SAME_OFFSET:
+			continue
+		rest.origin = offset
+		skeleton.set_bone_rest(bone, rest)
+		skeleton.set_bone_pose_position(bone, offset)
+		changed = true
+	if changed:
+		_drop_position_tracks(bones)
+
+
+## The clips' position tracks hold the offsets of the rig they were baked on: without them these bones keep the part's offsets.
+func _drop_position_tracks(bones: Array[StringName]) -> void:
+	var player := model.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if player == null:
+		return
+	for clip in player.get_animation_list():
+		var animation := player.get_animation(clip)
+		for track in range(animation.get_track_count() - 1, -1, -1):
+			if animation.track_get_type(track) == Animation.TYPE_POSITION_3D \
+					and StringName(animation.track_get_path(track).get_subname(0)) in bones:
+				animation.remove_track(track)
+
+
+## An arm part's jointed hand place, measured on its own rig (tools/godot/write_arm_hand_data.gd).
+func _set_hand(part: ArmPart, slot: StringName) -> void:
+	if part == null or part.wrist_pin == Vector3.ZERO or not (slot == &"arm_left" or slot == &"arm_right"):
+		return
+	var control := get_parent().get_node_or_null("MechHandControl") as MechHandControl
+	if control == null:
+		return
+	if slot == &"arm_right":
+		control.hand_right.transform = part.hand_transform
+		control.wrist_pin_right = part.wrist_pin
+		control.hand_shift_right = part.hand_shift
+	else:
+		control.hand_left.transform = part.hand_transform
+		control.wrist_pin_left = part.wrist_pin
+		control.hand_shift_left = part.hand_shift

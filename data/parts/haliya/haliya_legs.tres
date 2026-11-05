@@ -15,3 +15,4 @@ jump_height = 10.0
 turn_speed_deg = 124.0
 turn_speed_standing_deg = 62.0
 scene = ExtResource("model")
+mech_scene_path = "res://scenes/mech/haliya.tscn"

@@ -1,13 +1,16 @@
-[gd_resource type="Resource" script_class="ArmPart" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="ArmPart" format=3]
 
-[ext_resource type="Script" path="res://scripts/data/arm_part.gd" id="script"]
 [ext_resource type="PackedScene" path="res://models/mechs/haliya/haliya_arm_r.glb" id="model"]
+[ext_resource type="Script" path="res://scripts/data/arm_part.gd" id="script"]
 
 [resource]
 script = ExtResource("script")
+recoil_control = 0.95
+melee_bonus = 1.1
+hand_transform = Transform3D(-0.027083592, -0.0039065205, 0.99962556, 0.0021300465, 0.99999, 0.0039652716, -0.9996309, 0.0022366866, -0.027075022, -0.27559152, -0.005805064, -0.0019986448)
+wrist_pin = Vector3(-0.01362133, 1.4367228, -0.0077145696)
+hand_shift = Vector3(-0.27559152, -0.005805064, -0.0019986448)
 display_name = "HLY-101 Arm (R)"
 weight_t = 4.0
 hp = 480.0
-recoil_control = 0.95
-melee_bonus = 1.1
 scene = ExtResource("model")

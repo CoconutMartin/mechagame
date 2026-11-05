@@ -16,3 +16,7 @@ enum LegType { BIPED, REVERSE_JOINT, TANK, QUAD }
 @export var turn_speed_standing_deg: float = 38.7
 ## Forward lean of the upper body while walking, in degrees (0 = upright). Full at walk speed.
 @export var walk_lean_deg: float = 0.0
+
+## The mech scene with these legs' rig: its leg lengths and clips (empty: the switcher's default scene). A path, because the scene's
+## start loadout holds these legs and two resources cannot load each other.
+@export_file("*.tscn") var mech_scene_path: String = ""
