@@ -32,6 +32,8 @@ HEAD_SCALE_PIVOT = Vector((0.0, 0.0, 8.20))
 NECK_LENGTH = 0.238
 ## Width of the pauldrons seen from the front, against the coordinates in build_arm. They grow outward from their inner edge (x = 1.0).
 PAULDRON_WIDTH = 1.20
+## Height of the flat top of the pauldrons, against the coordinates in build_arm.
+PAULDRON_TOP = 8.36
 ## Radius (m) of the shoulder ball, centered on the shoulder joint.
 SHOULDER_BALL_RADIUS = 0.36
 ## Width (m) of the tan border around the dark plate on the side and rear skirts.
@@ -490,12 +492,13 @@ def build_arm(b, side, tag):
 
     # Sleeve: a pauldron. The cap covers the shoulder ball on the top, front, back and outer side; the arm leaves
     # from under it.
-    a0 = Vector((1.00, 0.30, 8.36))
-    a1 = Vector((1.66, 0.38, 8.46))
-    a2 = Vector((1.84, 0.82, 8.30))
-    a3 = Vector((1.04, 0.74, 8.22))
-    a4 = Vector((1.00, -0.40, 8.18))
-    a5 = Vector((1.66, -0.44, 8.22))
+    # The top is one flat face at PAULDRON_TOP.
+    a0 = Vector((1.00, 0.30, PAULDRON_TOP))
+    a1 = Vector((1.66, 0.38, PAULDRON_TOP))
+    a2 = Vector((1.84, 0.82, PAULDRON_TOP))
+    a3 = Vector((1.04, 0.74, PAULDRON_TOP))
+    a4 = Vector((1.00, -0.40, PAULDRON_TOP))
+    a5 = Vector((1.66, -0.44, PAULDRON_TOP))
     front0 = Vector((1.00, -0.54, 7.66))
     front1 = Vector((1.82, -0.56, 7.66))
     low0 = Vector((1.04, -0.50, 7.34))
