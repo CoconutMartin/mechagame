@@ -11,11 +11,12 @@ Check "Reminders for the user" in DESIGN.md. Remind the user of each open item w
 ## Mech scope (user rule, updated 2026-11-05)
 
 The game has 3 rigs: light, medium and heavy. Every mech uses one of them. All 3 rigs play the same animations, and
-parts swap across all 3 rigs (DESIGN "Swappable mech parts"). A mech's parts are files on its rig.
+parts swap across all 3 rigs (DESIGN "Three rigs"): same bones and rest rotations, only offsets differ. A mech's parts are files on its rig.
 
 - Medium: SGG-101 Sagigilid (in-game name since 2026-10-14; files and code keep the old name "sanggigilid"). Rig
   `MechRig`, scene `scenes/mech/sanggigilid.tscn`, built by `tools/godot/build_sanggigilid.gd`. The only mech in the game now.
-- Light: Haliya HLY-101. Model `models/haliya/haliya.blend`, built by `tools/blender/haliya_ref_build.py`. No rig yet, not in the game.
+- Light: Haliya HLY-101. Model built by `tools/blender/haliya_ref_build.py`; rigged by `tools/blender/haliya_rig_light.py` into
+  `models/haliya/haliya.blend`. In Blender only, not in the game yet.
 - Heavy: no mech and no rig yet.
 
 Mech names: `docs/mech_names.md`.
