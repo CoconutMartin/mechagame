@@ -31,6 +31,10 @@ LIFT_ACTION = "Haliya_Pelvis_Lift"
 PELVIS_LIFT_PART = 0.9
 ## The lift stops this far (m) before a leg is straight, so the feet stay on their clip paths.
 PELVIS_LIFT_LEG_MARGIN = 0.10
+LEAN_ACTION = "Haliya_Walk_Lean"
+## Forward lean (degrees) while the mech moves, split over the pelvis and the torso. The stance and Idle stay upright.
+WALK_LEAN_PELVIS_DEG = 3.0
+WALK_LEAN_TORSO_DEG = 3.0
 SKIRT_ACTION = "Haliya_Skirt_Follow"
 ## The values of AccessoryBoneFollow in the game (scripts/animation/accessory_bone_follow.gd): part of the thigh's swing a skirt
 ## plate always follows, the extra part of the swing toward the plate, and the largest plate turn in degrees.
@@ -380,6 +384,15 @@ def skirt_turn(rest_dir, axis, push, angle):
     return turn
 
 
+def linear_keys(action):
+    for layer in action.layers:
+        for strip in layer.strips:
+            for bag in strip.channelbags:
+                for curve in bag.fcurves:
+                    for key in curve.keyframe_points:
+                        key.interpolation = "LINEAR"
+
+
 def add_pelvis_lift(rig):
     """Raises the pelvis under every clip, so all clips stay shared. An Action constraint moves the pelvis up by the value of a driver:
     PELVIS_LIFT_PART of the clip's crouch, at most what each leg can reach. It reads only the keyed values, and a pelvis above its rest
@@ -394,12 +407,7 @@ def add_pelvis_lift(rig):
     pelvis.location = (0.0, 1.0, 0.0)  # the pelvis bone's +Y points up
     pelvis.keyframe_insert("location", frame=2)
     clear_pose(rig)
-    for layer in action.layers:
-        for strip in layer.strips:
-            for bag in strip.channelbags:
-                for curve in bag.fcurves:
-                    for key in curve.keyframe_points:
-                        key.interpolation = "LINEAR"
+    linear_keys(action)
     c = pelvis.constraints.new("ACTION")
     c.name = "Pelvis lift"
     c.action = action
@@ -433,6 +441,47 @@ def add_pelvis_lift(rig):
             reach * reach, gap.x, tag, gap.y, tag, gap.z, tag))
     driver.expression = "max(0,min(%.3f*-py,%s,%s))" % (PELVIS_LIFT_PART, room[0], room[1])
     assert len(driver.expression) < 256
+    bpy.context.view_layer.update()
+
+
+def add_walk_lean(rig):
+    """Leans the body forward under every clip in which the mech moves. A driver reads the keyed crouch and the distance between the
+    feet: it gives 0 in the stance and in Idle and 1 in all the walk and run clips, so no clip changes. The game needs the same step (phase C)."""
+    ad = rig.animation_data
+    action = bpy.data.actions.new(LEAN_ACTION)
+    action.use_fake_user = True
+    ad.action = action
+    leans = {"pelvis": WALK_LEAN_PELVIS_DEG, "torso": WALK_LEAN_TORSO_DEG}
+    for frame in (1, 2):
+        for name, degrees in leans.items():
+            pb = rig.pose.bones[name]
+            rest = pb.bone.matrix_local.to_3x3()
+            turn = Matrix.Rotation(math.radians(degrees if frame == 2 else 0.0), 3, "X")  # +X tips the top toward -Y, the front
+            pb.matrix_basis = (rest.inverted() @ turn @ rest).to_4x4()
+            key_pose(pb, frame)
+    clear_pose(rig)
+    linear_keys(action)
+    for name in leans:
+        c = rig.pose.bones[name].constraints.new("ACTION")
+        c.name = "Walk lean"
+        c.action = action
+        c.action_slot = action.slots[0]
+        c.use_eval_time = True
+        c.frame_start = 1
+        c.frame_end = 2
+        c.mix_mode = "BEFORE_FULL"
+        rig.pose.bones[name].constraints.move(len(rig.pose.bones[name].constraints) - 1, 0)
+        driver = c.driver_add("eval_time").driver
+        driver.type = "SCRIPTED"
+        for var_name, path in (("py", 'pose.bones["pelvis"].location[1]'),
+                               ("yL", 'pose.bones["foot_ctrl_L"].location[1]'), ("yR", 'pose.bones["foot_ctrl_R"].location[1]'),
+                               ("zL", 'pose.bones["foot_ctrl_L"].location[2]'), ("zR", 'pose.bones["foot_ctrl_R"].location[2]')):
+            var = driver.variables.new()
+            var.name = var_name
+            var.type = "SINGLE_PROP"
+            var.targets[0].id = rig
+            var.targets[0].data_path = path
+        driver.expression = "max(0,min(1,max(-py-0.2,abs(yL-yR)-0.3,abs(zL-zR)-0.1)/0.2))"
     bpy.context.view_layer.update()
 
 
@@ -471,12 +520,7 @@ def add_skirt_follow(rig, stand_swings):
             pb.matrix_basis = (plate_rest.inverted() @ turn.to_matrix() @ plate_rest).to_4x4()
             key_pose(pb, i + 1)
     clear_pose(rig)
-    for layer in action.layers:
-        for strip in layer.strips:
-            for bag in strip.channelbags:
-                for curve in bag.fcurves:
-                    for key in curve.keyframe_points:
-                        key.interpolation = "LINEAR"
+    linear_keys(action)
     slot = action.slots[0]
     for name in plates:
         pb = rig.pose.bones[name]
@@ -554,6 +598,7 @@ def build_stand(rig, source_joints, turns, drop):
     stand_swings = {tag: bone_swing(rig, "thigh_" + tag) for tag, _side in SIDES}
     add_skirt_follow(rig, stand_swings)
     add_pelvis_lift(rig)
+    add_walk_lean(rig)
     ad.action = action
     ad.action_slot = action.slots[0]
     return action
