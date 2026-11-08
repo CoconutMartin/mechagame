@@ -18,6 +18,9 @@ no tearing). The bones keep the standard names and rest places (SGG-101, the joi
 Run headless (Blender 5.2, or pip bpy 5.2.2):
   python tools/blender/export_mech_parts.py -- models/new_mech/new_mech_exploded.blend sgg models/mechs/sgg [all|rig|parts]
 Without arguments after "--" it uses the open file, prefix "sgg", <blend folder>/parts and "all".
+Haliya HLY-101 (since 2026-11-08 on the SGG skeleton): export haliya.blend (light rig) into models/mechs/haliya/source_light_rig,
+then run tools/godot/refit_haliya_parts.gd (parts on the SGG offsets, waist, neck and ankle pieces) and
+tools/godot/make_haliya_rig.gd (haliya_rig.glb: SGG clips with Haliya's arm carry and walk lean), which write models/mechs/haliya.
 "rig" writes only the rig file, "parts" only the part files. The rig gets the accessory bones of the joint standard
 (mech_rig_standard.py) before the export; the .blend is not saved.
 """

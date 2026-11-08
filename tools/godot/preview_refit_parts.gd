@@ -1,5 +1,7 @@
 extends SceneTree
 ## PREVIEW ONLY (user request 2026-11-08: "align skeleton with SGG's ... show me before and after and seek confirmation").
+## Since the refit (tools/godot/refit_haliya_parts.gd, which uses the library part of this script) haliya_rig.glb has the SGG offsets,
+## so the tool part of this script maps SGG onto SGG; the pictures it made are in docs/hly_refit_preview_*.png.
 ## Re-skins the Haliya (HLY-101) part meshes onto the SGG-101 skeleton and renders HLY now / HLY refit / SGG side by side.
 ## It changes no game data. Run it with a window (needs a renderer, so xvfb on a server):
 ##   xvfb-run -a -s "-screen 0 1600x900x24" godot --path . --rendering-driver opengl3 --resolution 1600x900 --script res://tools/godot/preview_refit_parts.gd

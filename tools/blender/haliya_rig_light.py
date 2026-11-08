@@ -6,6 +6,8 @@ It builds the model with haliya_ref_build.py, appends MechRig and its actions fr
 rotation. Only bone offsets and lengths change, to Haliya's joints, so the same actions play. Limb meshes turn about their joints to
 the MechRig rest direction (A-pose) and bind rigidly to one bone each; their shape and size do not change. An Action constraint brings the arms down to the stance under every clip. The action Haliya_Stand
 holds the stance of the pictures and is the action the file opens with. Saves models/haliya/haliya.blend.
+Since 2026-11-08 the game parts are on the SGG skeleton: this light rig is the source, exported to
+models/mechs/haliya/source_light_rig, and tools/godot/refit_haliya_parts.gd and make_haliya_rig.gd make the game files from it.
 """
 import math
 import os
