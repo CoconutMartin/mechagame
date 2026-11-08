@@ -12,6 +12,8 @@ extends SceneTree
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/test_clip_self.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
+## MECH=haliya runs the test on Haliya (tools/godot/test_mech_choice.gd).
+const MechChoice := preload("res://tools/godot/test_mech_choice.gd")
 const BUNKER := "res://data/weapons/pile_bunker.tres"
 const LAYER := 1 << 19
 const MAX_POINTS := 0
@@ -51,7 +53,7 @@ func _run() -> void:
 
 
 func _case(switcher: LoadoutSwitcher, case: String) -> void:
-	var loadout := switcher.current_loadout.duplicate() as Loadout
+	var loadout := MechChoice.apply(switcher.current_loadout.duplicate() as Loadout)
 	loadout.weapon_left = null
 	loadout.weapon_right = load(BUNKER) if case.begins_with("pb") else null
 	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))

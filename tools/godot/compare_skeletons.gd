@@ -6,6 +6,10 @@ extends SceneTree
 ## differs and the bones whose rest rotation differs.
 ##   OUT=/tmp/skeletons.json godot --headless --path . --script res://tools/godot/compare_skeletons.gd
 
+## Two bone offsets closer than this (m) count as the same.
+const OFFSET_TOLERANCE := 0.001
+
+
 func _initialize() -> void:
 	var a := OS.get_environment("A") if OS.has_environment("A") else "res://models/mechs/sgg/sgg_rig.glb"
 	var b := OS.get_environment("B") if OS.has_environment("B") else "res://models/mechs/haliya/haliya_rig.glb"
@@ -31,8 +35,13 @@ func _initialize() -> void:
 		var angle := rad_to_deg(qa.angle_to(qb))
 		if angle > 0.5:
 			rot_differ.append("%s %.1f" % [name, angle])
+	var offset_differ := []
+	for name: String in ba:
+		if bb.has(name) and _v(ba[name].offset).distance_to(_v(bb[name].offset)) > OFFSET_TOLERANCE:
+			offset_differ.append("%s %.3f" % [name, _v(ba[name].offset).distance_to(_v(bb[name].offset))])
 	print("parents differ: %s" % [parents_differ])
 	print("rest rotations differ (deg): %s" % [rot_differ])
+	print("offsets differ (m, more than %.3f): %d %s" % [OFFSET_TOLERANCE, offset_differ.size(), offset_differ])
 	print("wrote ", out)
 	quit()
 

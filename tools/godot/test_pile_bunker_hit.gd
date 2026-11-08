@@ -9,6 +9,8 @@ extends SceneTree
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/test_pile_bunker_hit.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
+## MECH=haliya runs the test on Haliya (tools/godot/test_mech_choice.gd).
+const MechChoice := preload("res://tools/godot/test_mech_choice.gd")
 const MECH_SCENE := "res://scenes/mech/sanggigilid.tscn"
 var BUNKER := OS.get_environment("BUNKER") if OS.has_environment("BUNKER") else "res://data/weapons/pile_bunker.tres"
 const POWER_FRAMES := 60
@@ -57,7 +59,7 @@ func _play(map: Node, switcher: LoadoutSwitcher, case: Array) -> void:
 	# "BR" / "BL": a Pile Bunker in both hands, the right or the left one attacks.
 	var both := side.begins_with("B")
 	side = side.right(1)
-	var loadout := switcher.current_loadout.duplicate() as Loadout
+	var loadout := MechChoice.apply(switcher.current_loadout.duplicate() as Loadout)
 	loadout.weapon_right = load(BUNKER) if side == "R" or both else null
 	loadout.weapon_left = load(BUNKER) if side == "L" or both else null
 	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))

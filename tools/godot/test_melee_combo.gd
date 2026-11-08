@@ -9,6 +9,8 @@ extends SceneTree
 ## Environment: COMBO_ONLY (part of a case name, for example "fist"), COMBO_DISTANCE (m, default 8).
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
+## MECH=haliya runs the test on Haliya (tools/godot/test_mech_choice.gd).
+const MechChoice := preload("res://tools/godot/test_mech_choice.gd")
 const MECH_SCENE := "res://scenes/mech/sanggigilid.tscn"
 const HAMMER := "res://data/weapons/hammer.tres"
 const BATON := "res://data/weapons/baton.tres"
@@ -85,7 +87,7 @@ func _run() -> void:
 
 func _play(map: Node, switcher: LoadoutSwitcher, case: Array, distance: float) -> void:
 	var weapon: String = case[1]
-	var loadout := switcher.current_loadout.duplicate() as Loadout
+	var loadout := MechChoice.apply(switcher.current_loadout.duplicate() as Loadout)
 	loadout.weapon_left = null
 	match weapon:
 		"baton":

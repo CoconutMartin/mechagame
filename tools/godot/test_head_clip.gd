@@ -9,6 +9,8 @@ extends SceneTree
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/test_head_clip.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
+## MECH=haliya runs the test on Haliya (tools/godot/test_mech_choice.gd).
+const MechChoice := preload("res://tools/godot/test_mech_choice.gd")
 const LAYER := 1 << 19
 
 var _failures := 0
@@ -46,7 +48,7 @@ func _run() -> void:
 
 
 func _case(switcher: LoadoutSwitcher, label: String, weapon: String, pitch: float) -> void:
-	var loadout := switcher.current_loadout.duplicate() as Loadout
+	var loadout := MechChoice.apply(switcher.current_loadout.duplicate() as Loadout)
 	loadout.weapon_left = null
 	loadout.weapon_right = load("res://data/weapons/%s.tres" % weapon) as WeaponData if weapon != "" else null
 	switcher.rebuild(loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))

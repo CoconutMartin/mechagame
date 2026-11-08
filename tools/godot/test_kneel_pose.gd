@@ -12,6 +12,8 @@ extends SceneTree
 ##   godot --headless --path . --fixed-fps 60 --script res://tools/godot/test_kneel_pose.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
+## MECH=haliya runs the test on Haliya (tools/godot/test_mech_choice.gd).
+const MechChoice := preload("res://tools/godot/test_mech_choice.gd")
 const MIN_Y := -0.12
 const GROUND_TOL := 0.2
 const MIN_DROP := 2.0
@@ -56,7 +58,7 @@ func _run() -> void:
 
 func _case(switcher: LoadoutSwitcher, label: String, aim: bool) -> void:
 	print("== ", label)
-	switcher.rebuild(switcher.current_loadout.duplicate() as Loadout, Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
+	switcher.rebuild(MechChoice.apply(switcher.current_loadout.duplicate() as Loadout), Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)))
 	await _frames(60)
 	_player = switcher.mech
 	_skeleton = _player.find_child("Skeleton3D", true, false) as Skeleton3D

@@ -11,6 +11,8 @@ extends SceneTree
 ##   godot --headless --path . --script res://tools/godot/test_weapon_hands.gd
 
 const MAP := "res://maps/urban_small/urban_small.tscn"
+## MECH=haliya runs the test on Haliya (tools/godot/test_mech_choice.gd).
+const MechChoice := preload("res://tools/godot/test_mech_choice.gd")
 const AUTO_CANNON := "res://data/weapons/auto_cannon.tres"
 const HAMMER := "res://data/weapons/hammer.tres"
 const SHIELD := "res://data/weapons/small_shield.tres"
@@ -89,7 +91,7 @@ func _run() -> void:
 
 ## Builds the player mech again with this right hand weapon and an empty left hand.
 func _build(right_path: String, left_path: String = "") -> void:
-	var loadout := _switcher.current_loadout.duplicate() as Loadout
+	var loadout := MechChoice.apply(_switcher.current_loadout.duplicate() as Loadout)
 	loadout.weapon_right = load(right_path) as WeaponData
 	loadout.weapon_left = load(left_path) as WeaponData if left_path != "" else null
 	_switcher.current_loadout = loadout

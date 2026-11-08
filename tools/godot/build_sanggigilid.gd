@@ -4,7 +4,8 @@ extends SceneTree
 ## plays its own animations.
 ## Run from the project root:
 ##   godot --headless --path . --script res://tools/godot/build_sanggigilid.gd
-## MECH=haliya builds scenes/mech/haliya.tscn from Haliya's own rig file instead (DESIGN "Three rigs"); the rest of the mech is the same.
+## MECH=haliya builds scenes/mech/haliya.tscn from Haliya's own rig file instead (DESIGN "Three rigs"; since 2026-11-08 on the SGG
+## skeleton, with Haliya's arm carry and walk lean in its clips: tools/godot/make_haliya_rig.gd); the rest of the mech is the same.
 ##
 ## It starts from the player mech scene and keeps its movement, input, aim and camera nodes; the
 ## part-built body (frame joints, parts, procedural animation, weapons, damage, falls) is removed and the
@@ -60,6 +61,12 @@ const HALIYA_WEAPONS := "res://data/loadouts/haliya_beam_rifle.tres"
 ## Haliya's push part (AccessoryBoneFollow): the skirts clear the bent thigh of the aim stance; the pauldrons only swing, with no push, so a held rifle does not lift them like wings.
 const SKIRT_PUSH := 2.0
 const PAD_PUSH := 0.0
+## Haliya's plate pivots (skeleton space at rest, m): its own pivots, moved with the shoulder and hip joints onto the SGG skeleton
+## (tools/godot/refit_haliya_parts.gd); the skeleton keeps the SGG accessory bone heads, so both mechs have one skeleton.
+const HALIYA_PLATE_PIVOTS := {
+	&"sleeve_L": Vector3(1.3163, 8.8557, -0.2824), &"sleeve_R": Vector3(-1.3231, 8.8592, -0.2261),
+	&"skirt_side_L": Vector3(1.4855, 5.8925, -0.1425), &"skirt_side_R": Vector3(-1.5412, 5.8925, -0.1425),
+}
 ## Bone used for the camera size (MechCameraRig looks for a ShoulderL node).
 const SHOULDER_BONE := "upper_arm_L"
 ## Where the aim ray starts on the body (chest, in front of the torso), m.
@@ -292,6 +299,7 @@ func _initialize() -> void:
 		accessories.follows = {&"skirt_side_L": &"thigh_L", &"skirt_side_R": &"thigh_R",
 				&"sleeve_L": &"upper_arm_L", &"sleeve_R": &"upper_arm_R"}
 		accessories.push_by_plate = {&"skirt_side_L": SKIRT_PUSH, &"skirt_side_R": SKIRT_PUSH, &"sleeve_L": PAD_PUSH, &"sleeve_R": PAD_PUSH}
+		accessories.pivot_by_plate = HALIYA_PLATE_PIVOTS.duplicate()
 		var stand := (model.find_child("AnimationPlayer", true, false) as AnimationPlayer).get_animation(&"Haliya_Stand")
 		for limb: StringName in accessories.follows.values():
 			var track := stand.find_track(NodePath("MechRig/Skeleton3D:" + limb), Animation.TYPE_ROTATION_3D)

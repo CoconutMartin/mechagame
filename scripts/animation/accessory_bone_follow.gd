@@ -25,10 +25,13 @@ extends SkeletonModifier3D
 @export_range(0.0, 2.0) var push_follow: float = 1.0
 ## Plate bone -> its own push_follow (a plate not listed uses push_follow).
 @export var push_by_plate: Dictionary = {}
+## Plate bone -> the point it turns about, in skeleton space at rest (m). A plate not listed turns about its bone head. A mech whose
+## plates hang from other points than the standard bone heads (Haliya on the SGG skeleton) keeps its own pivots this way.
+@export var pivot_by_plate: Dictionary = {}
 ## Largest plate turn, in degrees.
 @export_range(0.0, 120.0) var max_turn_deg: float = 70.0
 
-## [plate bone, limb bone, push direction in the parent bone's rest frame].
+## [plate bone, limb bone, push direction in the parent bone's rest frame, pivot in the parent bone's rest frame or null].
 var _pairs: Array = []
 
 
@@ -51,10 +54,15 @@ func _setup() -> void:
 		var plate_rest := skeleton.get_bone_rest(plate)
 		var limb_rest := skeleton.get_bone_rest(limb)
 		var limb_dir := _zero_dir(skeleton, limb)
-		var plate_mid := plate_rest.origin + _bone_dir(skeleton, plate, plate_rest) * 0.5 * _bone_length(skeleton, plate)
+		var pivot: Variant = null
+		if pivot_by_plate.has(plate_name):
+			var parent := skeleton.get_bone_parent(plate)
+			pivot = skeleton.get_bone_global_rest(parent).affine_inverse() * (pivot_by_plate[plate_name] as Vector3)
+		var head: Vector3 = plate_rest.origin if pivot == null else pivot
+		var plate_mid := head + _bone_dir(skeleton, plate, plate_rest) * 0.5 * _bone_length(skeleton, plate)
 		var across := plate_mid - limb_rest.origin
 		across -= limb_dir * across.dot(limb_dir)
-		_pairs.append([plate, limb, across.normalized()])
+		_pairs.append([plate, limb, across.normalized(), pivot])
 
 
 func _process_modification_with_delta(_delta: float) -> void:
@@ -78,6 +86,10 @@ func _process_modification_with_delta(_delta: float) -> void:
 			turn = Quaternion.IDENTITY.slerp(turn, limit / turn.get_angle())
 		var rest := skeleton.get_bone_rest(plate)
 		skeleton.set_bone_pose_rotation(plate, turn * rest.basis.get_rotation_quaternion())
+		if pair[3] != null:
+			# Turn about the pivot: the bone head swings around it.
+			var pivot: Vector3 = pair[3]
+			skeleton.set_bone_pose_position(plate, pivot + turn * (rest.origin - pivot))
 
 
 ## The limb's direction in its parent's frame in the pose that means no plate turn.

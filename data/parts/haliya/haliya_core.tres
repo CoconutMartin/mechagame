@@ -10,5 +10,5 @@ weight_t = 14.0
 hp = 1250.0
 energy_capacity = 110.0
 torso_turn_speed_deg = 160.0
-back_pack_offset = Vector3(0, 7.25, 1.12)
+back_pack_offset = Vector3(0, 7.89, 1.137)
 scene = ExtResource("model")
