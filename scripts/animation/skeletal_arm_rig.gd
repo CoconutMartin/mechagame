@@ -352,7 +352,6 @@ func _setup() -> void:
 		_sides.append(side)
 
 
-## The upper arm bone's global rest turned about the shoulder so the armor block's top face is flat.
 ## A skinned mesh's place at rest (vertex space to skeleton space): its bind pose on the bone. A part from another rig, or an arm on a
 ## core moved to another waist socket (SkeletalPartModels), is measured where it is drawn. On a pure mech it is the mesh transform.
 func _drawn_rest(mesh: MeshInstance3D, bone: int) -> Transform3D:
@@ -364,6 +363,7 @@ func _drawn_rest(mesh: MeshInstance3D, bone: int) -> Transform3D:
 	return mesh.transform
 
 
+## The upper arm bone's global rest turned about the shoulder so the armor block's top face is flat.
 func _flat_rest(bone: int, armor: MeshInstance3D) -> Transform3D:
 	var rest := _skeleton.get_bone_global_rest(bone).orthonormalized()
 	if armor == null:
