@@ -52,9 +52,10 @@ const TORSO_MARKERS := ["LeftHand", "LeftHandRest", "LeftHandRaised", "AimAnchor
 ## the user's arm drawing (2026-10-12, tools/mech_gen/arm_poses.py): the elbow under the flat shoulder
 ## block (about (-2.10, 1.10, -0.03)), bent 45 deg forward, forearm 2.71 m to the palm.
 const FREE_LEFT_HAND := Vector3(-2.1, -0.82, -1.95)
-## Haliya's relaxed left hand (torso space): where its Walk clip holds the palm on average (grip_L from the left shoulder, mean of the
-## clip; user 2026-11-08: the walking arms are the neutral arms). The right one is its mirror.
-const HALIYA_FREE_LEFT_HAND := Vector3(-1.970, -0.669, -0.121)
+## Haliya's relaxed left hand (torso space): where its Walk clip holds the palm on average (-1.97, -0.669, -0.121; user 2026-11-08: the
+## walking arms are the neutral arms), 0.28 m further out and 0.18 m forward so the hands clear the skirts (test_clip_self rest). The
+## right one is its mirror. Same as ArmPart.relaxed_hand of Haliya's arms.
+const HALIYA_FREE_LEFT_HAND := Vector3(-2.25, -0.669, -0.3)
 ## Shield hand before a shield's own place (WeaponData.shield_hand) is set.
 const SHIELD_HAND_REST := Vector3(-2.1, -0.82, -1.95)
 ## Shield elbow directions (ShieldPose): out and down (the rig tucks the elbow anyway).
