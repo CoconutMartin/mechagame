@@ -1,6 +1,7 @@
 extends SceneTree
 ## Swaps parts between SGG and Haliya the way the garage does (LoadoutSwitcher.rebuild with a mixed loadout) and checks that the legs pick the
-## mech scene, that the core and arm offsets come from their parts, and that a mixed mech stands and walks. SWAP_OUT=<folder> also saves pictures
+## mech scene, that the core and arm offsets come from their parts, that the core's waist ball sits on the legs' waist socket (DESIGN "Waist ball
+## joint": at rest and in walk; SGG's white ball mesh with it), and that a mixed mech stands and walks. SWAP_OUT=<folder> also saves pictures
 ## (run with a window). Prints "RESULT: <n> failures"; exit code 1 on a failure. Headless:
 ##   godot --headless --path . --script res://tools/godot/test_garage_swap.gd
 
@@ -64,15 +65,40 @@ func _run() -> void:
 			var want := rig.get_bone_rest(rig.find_bone(bone_name)).origin
 			_check(got.distance_to(want) < 0.002, "%s: %s offset from its part (%.3f m off)" % [mix, bone_name, got.distance_to(want)])
 			source.free()
+		var core := load(FOLDERS[mix[1]] + "core.tres") as CorePart
+		var legs := load(FOLDERS[mix[4]] + "legs.tres") as LegPart
+		var torso_rest := skeleton.get_bone_rest(skeleton.find_bone(&"torso")).origin
+		_check(torso_rest.distance_to(legs.waist_socket) < 0.002, "%s: torso offset is the legs' waist socket (%.3f m off)" % [mix, torso_rest.distance_to(legs.waist_socket)])
+		_check_waist(skeleton, core, legs, mix, "rest")
 		await _picture(mech, mix, "stand")
 		Input.action_press(&"move_forward")
 		await _frames(60)
+		_check_waist(skeleton, core, legs, mix, "walk")
 		await _picture(mech, mix, "walk")
 		Input.action_release(&"move_forward")
 		await _frames(20)
 		_check(is_instance_valid(mech) and mech.global_position.y > -1.0 and mech.global_position.y < 3.0, "%s: walks on the ground" % mix)
 	print("RESULT: %d failures" % _failures)
 	quit(1 if _failures > 0 else 0)
+
+
+## The waist ball (core) on the waist socket (legs) in the current pose, and SGG's ball mesh (Waist_Joint) drawn on it.
+func _check_waist(skeleton: Skeleton3D, core: CorePart, legs: LegPart, mix: String, state: String) -> void:
+	var ball := skeleton.get_bone_global_pose(skeleton.find_bone(&"torso")) * core.waist_ball
+	var socket := skeleton.get_bone_global_pose(skeleton.find_bone(&"pelvis")) * legs.waist_socket
+	_check(ball.distance_to(socket) < 0.03, "%s %s: waist ball on the legs' socket (%.3f m off)" % [mix, state, ball.distance_to(socket)])
+	var mesh := skeleton.get_node_or_null(^"Waist_Joint") as MeshInstance3D
+	if mesh == null or mesh.skin == null:
+		return
+	var drawn := Vector3.ZERO
+	for i in mesh.skin.get_bind_count():
+		if mesh.skin.get_bind_name(i) == &"torso" or mesh.skin.get_bind_name(i) == &"pelvis":
+			var bone := skeleton.find_bone(mesh.skin.get_bind_name(i))
+			var arrays := mesh.mesh.surface_get_arrays(0)
+			var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
+			if bones.size() > 0 and bones[0] == i:
+				drawn = skeleton.get_bone_global_pose(bone) * mesh.skin.get_bind_pose(i) * mesh.get_aabb().get_center()
+	_check(drawn.distance_to(socket) < 0.03, "%s %s: SGG waist ball mesh on the socket (%.3f m off)" % [mix, state, drawn.distance_to(socket)])
 
 
 func _picture(mech: Mech, mix: String, state: String) -> void:

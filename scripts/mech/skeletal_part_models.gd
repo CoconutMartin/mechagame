@@ -11,6 +11,8 @@ extends Node
 ## Keep this node before Visual in the mech's children (build_sanggigilid.gd puts it first).
 ## A part brings its joints (DESIGN "Three rigs"): the legs pick the mech scene, and the core and arms here set the bone offsets of
 ## the skeleton from their own rig, so a part of another rig keeps its size. The clips then keep only their rotations on those bones.
+## The torso bone is the exception: it sits on the legs' waist socket (the hip ball joint, DESIGN "Waist ball joint"), so a core on
+## another mech's legs neither floats above the pelvis nor sinks into it.
 
 ## Slot names: the Loadout properties of the part slots, in build order.
 const SLOTS: Array[StringName] = [&"head", &"core", &"arm_left", &"arm_right", &"legs"]
@@ -38,6 +40,9 @@ const SAME_OFFSET := 0.001
 
 ## Part meshes by slot name (after the build).
 var meshes_by_slot: Dictionary = {}
+## Move of the torso at rest (skeleton space, m) from the place on the core's own rig to the legs' waist socket. Zero on a pure mech.
+## Things placed in mech space from core data (the back pack) add it.
+var torso_shift := Vector3.ZERO
 var _built := false
 
 
@@ -63,6 +68,7 @@ func build() -> void:
 		var part := get_part(loadout, slot)
 		meshes_by_slot[slot] = _add_part(skeleton, part, slot) if part != null else []
 		_set_hand(part as ArmPart, slot)
+	_join_waist(skeleton, get_part(loadout, &"core") as CorePart, get_part(loadout, &"legs") as LegPart)
 
 
 ## The part in a slot: the loadout's, else the default.
@@ -139,6 +145,54 @@ func _drop_position_tracks(bones: Array[StringName]) -> void:
 			if animation.track_get_type(track) == Animation.TYPE_POSITION_3D \
 					and StringName(animation.track_get_path(track).get_subname(0)) in bones:
 				animation.remove_track(track)
+
+
+## Puts the core's waist ball on the legs' waist socket (user 2026-11-08: "The torso should be joined at the hip 'ball joint'"). Same
+## rig on both: the torso keeps its offset. Head and arms ride the torso bone, so they move with it.
+func _join_waist(skeleton: Skeleton3D, core: CorePart, legs: LegPart) -> void:
+	var bone := skeleton.find_bone(&"torso")
+	if core == null or legs == null or legs.waist_socket == Vector3.ZERO or bone < 0:
+		return
+	var rest := skeleton.get_bone_rest(bone)
+	var origin := legs.waist_socket - rest.basis * core.waist_ball
+	if rest.origin.distance_to(origin) < SAME_OFFSET:
+		return
+	var parent := skeleton.get_bone_parent(bone)
+	var parent_basis := skeleton.get_bone_global_rest(parent).basis if parent >= 0 else Basis.IDENTITY
+	torso_shift = parent_basis * (origin - rest.origin)
+	rest.origin = origin
+	skeleton.set_bone_rest(bone, rest)
+	skeleton.set_bone_pose_position(bone, origin)
+	var moved: Array[StringName] = [&"torso"]
+	_drop_position_tracks(moved)
+	for mesh: MeshInstance3D in meshes_by_slot.get(&"core", []):
+		_bind_to_torso(mesh)
+
+
+## A core mesh skinned to the pelvis (SGG's white waist ball) follows the torso instead, so the ball stays on the waist joint. The ball is
+## centered on the torso's turn point: it looks the same when the torso turns.
+func _bind_to_torso(mesh: MeshInstance3D) -> void:
+	var skin := mesh.skin
+	if skin == null:
+		return
+	var torso := -1
+	for i in skin.get_bind_count():
+		if skin.get_bind_name(i) == &"torso":
+			torso = i
+	if torso < 0:
+		return
+	var copy: Skin = null
+	for i in skin.get_bind_count():
+		if skin.get_bind_name(i) != &"pelvis":
+			continue
+		if copy == null:
+			# The skin resource is shared with the part scene: change a copy.
+			copy = skin.duplicate() as Skin
+		copy.set_bind_name(i, &"torso")
+		copy.set_bind_bone(i, skin.get_bind_bone(torso))
+		copy.set_bind_pose(i, skin.get_bind_pose(torso))
+	if copy != null:
+		mesh.skin = copy
 
 
 ## An arm part's jointed hand place, measured on its own rig (tools/godot/write_arm_hand_data.gd).

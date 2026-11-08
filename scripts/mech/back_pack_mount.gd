@@ -46,10 +46,18 @@ static func mount(target: Mech, loadout: Loadout) -> BackPackMount:
 	holder.name = "BackPackMount"
 	holder.mech = target
 	if loadout.core != null:
-		holder.mount_offset = loadout.core.back_pack_offset
+		holder.mount_offset = loadout.core.back_pack_offset + _torso_shift(target, skeleton)
 	target.add_child(holder)
 	holder._attach_model(skeleton, loadout.back_pack)
 	return holder
+
+
+## The torso's move from its place on the core's own rig to the legs' waist socket, in mech space (zero on a pure mech).
+static func _torso_shift(target: Mech, skeleton: Skeleton3D) -> Vector3:
+	var parts := target.get_node_or_null(^"PartModels") as SkeletalPartModels
+	if parts == null:
+		return Vector3.ZERO
+	return (target.global_transform.affine_inverse() * skeleton.global_transform).basis * parts.torso_shift
 
 
 func _attach_model(skeleton: Skeleton3D, pack_data: BackPackPart) -> void:

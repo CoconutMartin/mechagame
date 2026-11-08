@@ -68,10 +68,20 @@ func _meshes_by_bone() -> Dictionary:
 		if bone < 0:
 			continue
 		var list: Array = found.get(bone, [])
-		list.append(box)
+		list.append(_rest_box(mesh, bone, box))
 		found[bone] = list
 		mesh_bones[mesh] = bone
 	return found
+
+
+## A mesh's box where the skeleton draws it at rest. The skin's bind pose puts the mesh on its bone: a part from another rig, or a core on
+## another mech's waist socket (SkeletalPartModels), is drawn away from its vertex place. On a pure mech the two are the same.
+func _rest_box(mesh: MeshInstance3D, bone: int, box: AABB) -> AABB:
+	var bone_name := skeleton.get_bone_name(bone)
+	for i in mesh.skin.get_bind_count():
+		if mesh.skin.get_bind_name(i) == bone_name:
+			return skeleton.get_bone_global_rest(bone) * mesh.skin.get_bind_pose(i) * mesh.get_aabb()
+	return box
 
 
 ## Turns a part mesh's skinned position this frame back to its rest position (mesh space): rest x pose

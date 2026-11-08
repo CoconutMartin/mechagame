@@ -283,8 +283,9 @@ func _setup() -> void:
 		var flat_turn := flat_rest * _skeleton.get_bone_global_rest(bone).orthonormalized().affine_inverse()
 		var box := AABB()
 		var vertices: PackedVector3Array = armor.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var drawn := _drawn_rest(armor, bone)
 		for v in vertices.size():
-			var point := to_mech * flat_turn * armor.transform * vertices[v]
+			var point := to_mech * flat_turn * drawn * vertices[v]
 			box = AABB(point, Vector3.ZERO) if v == 0 else box.expand(point)
 		var top := Vector3(box.get_center().x, box.end.y + shoulder_mount_gap, box.get_center().z)
 		shoulder_mounts[i].position = top - torso_rest.origin
@@ -295,7 +296,7 @@ func _setup() -> void:
 		var bone := _skeleton.find_bone(body_mesh_bones[i])
 		if mesh == null or mesh.mesh == null or bone < 0:
 			continue
-		var to_bone := _skeleton.get_bone_global_rest(bone).affine_inverse() * mesh.transform
+		var to_bone := _skeleton.get_bone_global_rest(bone).affine_inverse() * _drawn_rest(mesh, bone)
 		var vertices: PackedVector3Array = mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 		var box := AABB()
 		for v in vertices.size():
@@ -352,6 +353,17 @@ func _setup() -> void:
 
 
 ## The upper arm bone's global rest turned about the shoulder so the armor block's top face is flat.
+## A skinned mesh's place at rest (vertex space to skeleton space): its bind pose on the bone. A part from another rig, or an arm on a
+## core moved to another waist socket (SkeletalPartModels), is measured where it is drawn. On a pure mech it is the mesh transform.
+func _drawn_rest(mesh: MeshInstance3D, bone: int) -> Transform3D:
+	if mesh.skin != null:
+		var bone_name := _skeleton.get_bone_name(bone)
+		for i in mesh.skin.get_bind_count():
+			if mesh.skin.get_bind_name(i) == bone_name:
+				return _skeleton.get_bone_global_rest(bone) * mesh.skin.get_bind_pose(i)
+	return mesh.transform
+
+
 func _flat_rest(bone: int, armor: MeshInstance3D) -> Transform3D:
 	var rest := _skeleton.get_bone_global_rest(bone).orthonormalized()
 	if armor == null:
