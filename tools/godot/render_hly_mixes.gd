@@ -1,6 +1,6 @@
 extends SceneTree
 ## Pictures of mixed mechs after the Haliya legs-only refit (user choice 2026-11-08): parts of SGG-101 and HLY-101 put together as the
-## garage does it (SkeletalPartModels: the legs bring the rig, the core and arms set their bone offsets from their own part rig).
+## garage does it (SkeletalPartModels: the legs bring the rig, the core and arms set their bone offsets from their own part rig, the torso sits\n## on the legs' waist socket).
 ## Needs a renderer, so xvfb on a server:
 ##   xvfb-run -a -s "-screen 0 1600x900x24" godot --path . --rendering-driver opengl3 --resolution 1600x900 --script res://tools/godot/render_hly_mixes.gd
 ## Env: OUT_DIR (default docs), NAME (file prefix, default hly_legs_aligned_mixes), POSE ("rest" or "Clip:time", from the legs' rig).
@@ -54,55 +54,30 @@ func _initialize() -> void:
 	quit()
 
 
-## The legs' rig with the parts' meshes; the core and arm bones take the offsets of their part rigs, as SkeletalPartModels does.
+## The legs' rig with the parts' meshes, put on by SkeletalPartModels itself (part offsets, the waist ball joint), as in the garage.
 func _add_mix(mix: Array, index: int, pose: String) -> void:
 	var mechs: Array = mix[1]
 	var rig := (load(RIGS[mechs[4]]) as PackedScene).instantiate()
-	var skeleton := rig.find_child("Skeleton3D", true, false) as Skeleton3D
-	for child in skeleton.get_children():
-		skeleton.remove_child(child)
-		child.free()
 	var player := rig.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	var holder := Node3D.new()
+	holder.name = "Mix%d" % index
+	holder.add_child(rig)
+	var parts := SkeletalPartModels.new()
+	parts.name = "PartModels"
+	parts.model = rig
 	for p in PART_NAMES.size():
 		var mech: String = mechs[p]
-		var scene := (load("res://models/mechs/%s/%s_%s.glb" % [mech, mech, PART_NAMES[p]]) as PackedScene).instantiate()
-		var source := scene.find_child("Skeleton3D", true, false) as Skeleton3D
-		var bones: Array[StringName] = []
-		if PART_NAMES[p] == "core":
-			bones = SkeletalPartModels.CORE_BONES.duplicate()
-		elif PART_NAMES[p].begins_with("arm"):
-			for bone in SkeletalPartModels.ARM_BONES:
-				bones.append(StringName(bone + ("L" if PART_NAMES[p] == "arm_l" else "R")))
-		var changed := false
-		for bone_name in bones:
-			var bone := skeleton.find_bone(bone_name)
-			var from := source.find_bone(bone_name)
-			if bone < 0 or from < 0:
-				continue
-			var rest := skeleton.get_bone_rest(bone)
-			var offset := source.get_bone_rest(from).origin
-			if rest.origin.distance_to(offset) > SkeletalPartModels.SAME_OFFSET:
-				rest.origin = offset
-				skeleton.set_bone_rest(bone, rest)
-				skeleton.set_bone_pose_position(bone, offset)
-				changed = true
-		if changed and player != null:
-			_drop_position_tracks(player, bones)
-		for mi in source.get_children():
-			if mi is MeshInstance3D:
-				source.remove_child(mi)
-				mi.owner = null
-				skeleton.add_child(mi)
-				(mi as MeshInstance3D).skeleton = NodePath("..")
-		scene.free()
+		var folder := "sanggigilid" if mech == "sgg" else mech
+		var slot: String = ["head", "core", "arm_left", "arm_right", "legs"][p]
+		parts.set("default_" + slot, load("res://data/parts/%s/%s_%s.tres" % [folder, folder, PART_NAMES[p]]))
+	holder.add_child(parts)
+	parts.build()
+	parts.set("_built", true)
 	if pose != "rest" and player != null:
 		var clip := pose.get_slice(":", 0)
 		player.play(clip)
 		player.seek(float(pose.get_slice(":", 1)) if pose.contains(":") else 0.0, true)
 		player.pause()
-	var holder := Node3D.new()
-	holder.name = "Mix%d" % index
-	holder.add_child(rig)
 	holder.position = Vector3((index - (MIXES.size() - 1) * 0.5) * ROW_SPACING, 0, 0)
 	root.add_child(holder)
 	_mechs.append(holder)

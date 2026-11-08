@@ -47,6 +47,13 @@ Be concise when explaining unless asked for further clarification.
 Use ASD-STE100 Simplified Technical English (STE) for chat replies. Also consider ELI18 and TLDR.
 Apart from that: silence is gold.
 
+## Godot in cloud sessions (user rule, 2026-11-08)
+
+The user allows Claude to download and install Godot 4.7.2 in every session, without asking again:
+`https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip`,
+unzip into `/tmp/claude-0/godot`, link `/usr/local/bin/godot`, then `git lfs pull` and `godot --headless --path . --import`.
+Run the tests and tools with it.
+
 ## Agents and model routing
 
 Follow the routing policy in AGENTS.md (imported below). Subagent definitions are in `.claude/agents/`.
