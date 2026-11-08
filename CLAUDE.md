@@ -16,8 +16,9 @@ parts swap across all 3 rigs (DESIGN "Three rigs"): same bones and rest rotation
 - Medium: SGG-101 Sagigilid (in-game name since 2026-10-14; files and code keep the old name "sanggigilid"). Rig
   `MechRig`, scene `scenes/mech/sanggigilid.tscn`, built by `tools/godot/build_sanggigilid.gd`. The default mech. No mech is on a number key (user 2026-11-06).
 - Light: Haliya HLY-101. Model built by `tools/blender/haliya_ref_build.py`; rigged by `tools/blender/haliya_rig_light.py` into
-  `models/haliya/haliya.blend`; exported to `models/mechs/haliya/source_light_rig/`, then refit onto the SGG skeleton (same offsets
-  since 2026-11-08) by `tools/godot/refit_haliya_parts.gd` and `make_haliya_rig.gd` into `models/mechs/haliya/`. In the game through the garage (the legs part picks its scene `scenes/mech/haliya.tscn`, built with `MECH=haliya` on `build_sanggigilid.gd`).
+  `models/haliya/haliya.blend`; exported to `models/mechs/haliya/source_light_rig/`, then refit by `tools/godot/refit_haliya_parts.gd`
+  and `make_haliya_rig.gd` into `models/mechs/haliya/`: since 2026-11-08 SGG's leg chain, Haliya's own offsets above the pelvis
+  (DESIGN "HLY refit, legs only"). Do not export from Blender straight into `models/mechs/haliya/`. In the game through the garage (the legs part picks its scene `scenes/mech/haliya.tscn`, built with `MECH=haliya` on `build_sanggigilid.gd`).
 - Heavy: no mech and no rig yet.
 
 Mech names: `docs/mech_names.md`.
