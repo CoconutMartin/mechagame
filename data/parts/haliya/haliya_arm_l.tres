@@ -11,6 +11,6 @@ hand_transform = Transform3D(-0.04733395, -0.0011859484, -0.9988783, 0.034174964
 wrist_pin = Vector3(0.012077332, 1.432931, -0.0022516996)
 hand_shift = Vector3(0.27462548, -0.010449878, 0.01114637)
 display_name = "HLY-101 Arm (L)"
-weight_t = 2.7600000000000002
+weight_t = 2.76
 hp = 480.0
 scene = ExtResource("model")
