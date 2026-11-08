@@ -97,19 +97,27 @@ func _head_in_chest(skeleton: Skeleton3D) -> int:
 	for bone in skeleton.get_bone_count():
 		poses.append(skeleton.global_transform * skeleton.get_bone_global_pose(bone))
 	var head_points := PackedVector3Array()
-	var chest: Dictionary = {}
+	# Chest hulls: the SGG Torso mesh, one per bone; on a mech made of many pieces (Haliya: Head_*, Core_* on the torso bone)
+	# one per piece.
+	var chest: Array[PackedVector3Array] = []
+	var torso_bone := skeleton.find_bone("torso")
 	for node in skeleton.get_children():
 		var mesh := node as MeshInstance3D
 		if mesh == null or mesh.skin == null or not mesh.visible:
 			continue
-		if String(mesh.name) == "Head_001":
+		var mesh_name := String(mesh.name)
+		if mesh_name == "Head_001" or mesh_name.begins_with("Head_"):
 			for points: PackedVector3Array in _posed(skeleton, mesh, poses).values():
 				head_points.append_array(points)
-		elif String(mesh.name) == "Torso":
-			chest = _posed(skeleton, mesh, poses)
+		elif mesh_name == "Torso":
+			for points: PackedVector3Array in _posed(skeleton, mesh, poses).values():
+				chest.append(points)
+		elif mesh_name.begins_with("Core_"):
+			var posed := _posed(skeleton, mesh, poses)
+			if posed.has(torso_bone):
+				chest.append(posed[torso_bone])
 	var bodies: Array[StaticBody3D] = []
-	for bone: int in chest:
-		var points: PackedVector3Array = chest[bone]
+	for points: PackedVector3Array in chest:
 		if points.size() < 4:
 			continue
 		var body := StaticBody3D.new()

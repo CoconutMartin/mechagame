@@ -181,7 +181,8 @@ func _measure() -> Dictionary:
 		if mesh == null or mesh.skin == null or not mesh.visible or mesh.mesh == null:
 			continue
 		var name := String(mesh.name)
-		if not (name.begins_with("Leg_") or name.begins_with("Pelvis") or name.begins_with("Torso")):
+		# SGG body meshes (Leg_, Pelvis, Torso) and Haliya's (Legs_, Core_: legs, pelvis and torso pieces).
+		if not (name.begins_with("Leg_") or name.begins_with("Pelvis") or name.begins_with("Torso") or name.begins_with("Legs_") or name.begins_with("Core_")):
 			continue
 		var arrays := mesh.mesh.surface_get_arrays(0)
 		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]

@@ -18,6 +18,13 @@ const BUNKER := "res://data/weapons/pile_bunker.tres"
 const LAYER := 1 << 19
 const MAX_POINTS := 0
 const BODY := ["Torso", "Pelvis", "Leg_L_01", "Leg_R_01", "Leg_R_02", "Leg_L_02", "Leg_R_03", "Head_001"]
+## A mech made of many pieces (Haliya): each piece is its own hull, named after the SGG part of its bone (_piece_label). Its
+## arms also count against these parts.
+const PIECE_BODY_EXTRA := ["Leg_L_03", "Skirt"]
+## Bone -> SGG part name, for the pieces of a mech made of many pieces.
+const PIECE_PARTS := {"torso": "Torso", "pelvis": "Pelvis", "head": "Head_001", "thigh_L": "Leg_L_01", "thigh_R": "Leg_R_01",
+		"shin_L": "Leg_L_02", "shin_R": "Leg_R_02", "foot_L": "Leg_L_03", "foot_R": "Leg_R_03", "upper_arm_L": "Arm_L_01",
+		"upper_arm_R": "Arm_R_01", "forearm_L": "Arm_L_02", "forearm_R": "Arm_R_02"}
 
 var _failures := 0
 ## The head's points in the chest hull at rest (the neck hollow), taken off the other cases.
@@ -131,6 +138,20 @@ func _self_clip(player: Mech, skeleton: Skeleton3D, bunker: PileBunkerWeapon) ->
 				for i in 8:
 					points.append(m.global_transform * (aabb.get_center().lerp(aabb.get_endpoint(i), 0.8)))
 		hand_points[side] = points
+	# Pieces of a mech made of many pieces get the name of their SGG part; their points are gathered under it.
+	var labels := {}
+	for mesh_name: String in per_mesh:
+		labels[mesh_name] = _piece_label(mesh_name, per_mesh[mesh_name], skeleton)
+	var by_label := {}
+	for mesh_name: String in per_mesh:
+		var label: String = labels[mesh_name]
+		if label == mesh_name:
+			continue
+		if not by_label.has(label):
+			by_label[label] = PackedVector3Array()
+		var gathered: PackedVector3Array = by_label[label]
+		gathered.append_array(_all(per_mesh[mesh_name]))
+		by_label[label] = gathered
 	# Hulls: one per body mesh and bone.
 	var bodies: Array[StaticBody3D] = []
 	var names := {}
@@ -149,7 +170,7 @@ func _self_clip(player: Mech, skeleton: Skeleton3D, bunker: PileBunkerWeapon) ->
 			body.add_child(shape)
 			root.add_child(body)
 			bodies.append(body)
-			names[body.get_rid()] = [mesh_name, String(skeleton.get_bone_name(bone))]
+			names[body.get_rid()] = [labels[mesh_name], String(skeleton.get_bone_name(bone)), labels[mesh_name] != mesh_name]
 	await physics_frame
 	var space := skeleton.get_world_3d().direct_space_state
 	var query := PhysicsPointQueryParameters3D.new()
@@ -159,19 +180,23 @@ func _self_clip(player: Mech, skeleton: Skeleton3D, bunker: PileBunkerWeapon) ->
 		for p in points:
 			query.position = p
 			for hit in space.intersect_point(query, 8):
-				var info: Array = names.get(hit.rid, ["?", "?"])
-				if not allowed.call(info[0], info[1]):
+				var info: Array = names.get(hit.rid, ["?", "?", false])
+				if not allowed.call(info[0], info[1]) and not (info[2] and points_of_body(info[0], allowed)):
 					continue
 				var key := "%s <- %s" % [label, info[0]]
 				found[key] = int(found.get(key, 0)) + 1
 	# Head against the chest.
 	if per_mesh.has("Head_001"):
 		test.call("head", _all(per_mesh["Head_001"]), func(m: String, _b: String) -> bool: return m == "Torso")
+	elif by_label.has("Head_001"):
+		test.call("head", by_label["Head_001"], func(m: String, _b: String) -> bool: return m == "Torso")
 	# Arms and hands against the body, legs and head.
 	for side in ["R", "L"]:
 		for part in [["upper_" + side, "Arm_%s_01" % side], ["fore_" + side, "Arm_%s_02" % side]]:
 			if per_mesh.has(part[1]):
 				test.call(part[0], _all(per_mesh[part[1]]), func(m: String, _b: String) -> bool: return m in BODY)
+			elif by_label.has(part[1]):
+				test.call(part[0], by_label[part[1]], func(m: String, _b: String) -> bool: return m in BODY)
 		test.call("hand_" + side, hand_points[side], func(m: String, _b: String) -> bool: return m in BODY)
 	# The Pile Bunker against everything but its own forearm and hand.
 	if bunker != null and is_instance_valid(bunker.get_model()):
@@ -190,6 +215,32 @@ func _self_clip(player: Mech, skeleton: Skeleton3D, bunker: PileBunkerWeapon) ->
 	for body in bodies:
 		body.free()
 	return found
+
+
+## The extra body parts of a mech made of many pieces count for the arm and hand tests (callable allowed is m in BODY).
+func points_of_body(label: String, allowed: Callable) -> bool:
+	return label in PIECE_BODY_EXTRA and allowed.call("Torso", "")
+
+
+## A piece's SGG part name from the bone with most of its points (Arm_shoulder_* is the ball in the chest socket, left out).
+## An SGG mesh (merged part) keeps its own name.
+func _piece_label(mesh_name: String, per_bone: Dictionary, skeleton: Skeleton3D) -> String:
+	if mesh_name in BODY or mesh_name.begins_with("Arm_L_0") or mesh_name.begins_with("Arm_R_0") or mesh_name == "Leg_L_03" \
+			or mesh_name.contains("Joint"):
+		return mesh_name
+	if not (mesh_name.begins_with("Core_") or mesh_name.begins_with("Legs_") or mesh_name.begins_with("Head_")
+			or mesh_name.begins_with("Arm_") or mesh_name.begins_with("Skirt_")):
+		return mesh_name
+	if mesh_name.begins_with("Arm_shoulder"):
+		return "Arm_ball"
+	var best := -1
+	for bone: int in per_bone:
+		if best < 0 or (per_bone[bone] as PackedVector3Array).size() > (per_bone[best] as PackedVector3Array).size():
+			best = bone
+	var bone_name := String(skeleton.get_bone_name(best))
+	if bone_name.begins_with("skirt_"):
+		return "Skirt"
+	return PIECE_PARTS.get(bone_name, mesh_name)
 
 
 ## Mesh vertices posed by their strongest bone: {bone: PackedVector3Array}.
