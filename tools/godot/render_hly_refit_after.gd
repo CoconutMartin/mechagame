@@ -1,11 +1,11 @@
 extends SceneTree
-## Before and after pictures of the Haliya HLY-101 refit onto the SGG-101 skeleton (user decision 2026-11-08): HLY before (the
-## light-rig export in models/mechs/haliya/source_light_rig), HLY after (models/mechs/haliya) and SGG, side by side, plus
-## close-ups of the new waist, neck and ankle pieces. Needs a renderer, so xvfb on a server:
+## Before and after pictures of the Haliya HLY-101 refit with its legs aligned to SGG-101 (user choice 2026-11-08, "Legs only"):
+## HLY original (the light-rig export in models/mechs/haliya/source_light_rig), HLY legs aligned (models/mechs/haliya) and SGG, side
+## by side, plus close-ups of the hips and the ankles (original and legs aligned). Needs a renderer, so xvfb on a server:
 ##   xvfb-run -a -s "-screen 0 1600x900x24" godot --path . --rendering-driver opengl3 --resolution 1600x900 --script res://tools/godot/render_hly_refit_after.gd
 ## Env: POSE = "rest" (default), or a clip and time ("Haliya_Stand", "Walk:0.5"; each mech plays it from its own rig file, HLY
-## before from its old rig); OUT_DIR (default docs); NAME (file prefix, default hly_refit_after); ONLY = "row" or "closeup".
-## Writes <NAME>_front.png, _side.png, _back34.png and <NAME>_closeup_waist.png, _neck.png, _ankle.png.
+## original from its old rig); OUT_DIR (default docs); NAME (file prefix, default hly_legs_aligned); ONLY = "row" or "closeup".
+## Writes <NAME>_front.png, _side.png, _back34.png and <NAME>_closeup_hips.png, _ankle.png.
 
 const Refit := preload("res://tools/godot/preview_refit_parts.gd")
 const Parts := preload("res://tools/godot/refit_haliya_parts.gd")
@@ -19,7 +19,7 @@ const VIEW_HEIGHT := 13.2
 const ROW_SPACING := 8.0
 ## View yaw (degrees) of the mechs for front, side and the 3/4 back picture.
 const VIEWS: Dictionary = {"front": 0.0, "side": 90.0, "back34": 145.0}
-const ROW_NAMES: Array[String] = ["HLY before", "HLY after", "SGG"]
+const ROW_NAMES: Array[String] = ["HLY original", "HLY legs aligned", "SGG"]
 
 var _camera: Camera3D
 var _label: Label
@@ -30,7 +30,7 @@ var _skeletons: Array[Skeleton3D] = []
 
 func _initialize() -> void:
 	var out_dir := OS.get_environment("OUT_DIR") if OS.has_environment("OUT_DIR") else ProjectSettings.globalize_path("res://docs")
-	var prefix := OS.get_environment("NAME") if OS.has_environment("NAME") else "hly_refit_after"
+	var prefix := OS.get_environment("NAME") if OS.has_environment("NAME") else "hly_legs_aligned"
 	var pose := OS.get_environment("POSE") if OS.has_environment("POSE") else "rest"
 	var only := OS.get_environment("ONLY")
 	if DisplayServer.get_name() == "headless":
@@ -214,8 +214,7 @@ func _render_closeups(out_dir: String, prefix: String) -> void:
 	_set_row_labels(false)
 	# [name, title, bone, offset in the mech's frame (m), view height (m)].
 	var regions := [
-		["waist", "Waist (pelvis to chest)", "pelvis", Vector3(0, 0.55, 0), 3.4],
-		["neck", "Neck (chest to head)", "head", Vector3(0, -0.45, 0), 3.0],
+		["hips", "Hips (pelvis, skirts, thighs)", "pelvis", Vector3(0, -0.6, 0), 4.6],
 		["ankle", "Ankle (left foot)", "foot_L", Vector3(0, -0.35, 0), 2.6],
 	]
 	var cells := [["front", 0.0], ["side", 90.0], ["3/4 back", 145.0]]

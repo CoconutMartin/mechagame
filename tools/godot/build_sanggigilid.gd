@@ -4,8 +4,9 @@ extends SceneTree
 ## plays its own animations.
 ## Run from the project root:
 ##   godot --headless --path . --script res://tools/godot/build_sanggigilid.gd
-## MECH=haliya builds scenes/mech/haliya.tscn from Haliya's own rig file instead (DESIGN "Three rigs"; since 2026-11-08 on the SGG
-## skeleton, with Haliya's arm carry and walk lean in its clips: tools/godot/make_haliya_rig.gd); the rest of the mech is the same.
+## MECH=haliya builds scenes/mech/haliya.tscn from Haliya's own rig file instead (DESIGN "Three rigs"; since 2026-11-08 with the SGG
+## leg chain and Haliya's own offsets above the pelvis, with Haliya's arm carry and walk lean in its clips: tools/godot/make_haliya_rig.gd);
+## the rest of the mech is the same.
 ##
 ## It starts from the player mech scene and keeps its movement, input, aim and camera nodes; the
 ## part-built body (frame joints, parts, procedural animation, weapons, damage, falls) is removed and the
@@ -61,12 +62,13 @@ const HALIYA_WEAPONS := "res://data/loadouts/haliya_beam_rifle.tres"
 ## Haliya's push part (AccessoryBoneFollow): the skirts clear the bent thigh of the aim stance; the pauldrons only swing, with no push, so a held rifle does not lift them like wings.
 const SKIRT_PUSH := 2.0
 const PAD_PUSH := 0.0
-## Haliya's plate pivots (skeleton space at rest, m): its own pivots, moved with the shoulder and hip joints onto the SGG skeleton
-## (tools/godot/refit_haliya_parts.gd); the skeleton keeps the SGG accessory bone heads, so both mechs have one skeleton.
-const HALIYA_PLATE_PIVOTS := {
-	&"sleeve_L": Vector3(1.3163, 8.8557, -0.2824), &"sleeve_R": Vector3(-1.3231, 8.8592, -0.2261),
-	&"skirt_side_L": Vector3(1.4855, 5.8925, -0.1425), &"skirt_side_R": Vector3(-1.5412, 5.8925, -0.1425),
-}
+## Haliya's plate pivots (AccessoryBoneFollow.pivot_by_plate, skeleton space at rest, m). Empty: since the legs-only refit
+## (2026-11-08) Haliya's rig has its own skirt and pauldron bone heads again, and each plate turns about its bone head.
+const HALIYA_PLATE_PIVOTS := {}
+## Haliya's neck tilt limit (degrees) while the head is parallel to the barrel (SkeletalHeadSteady.parallel_neck_tilt_deg, 7 on SGG):
+## Haliya's own short neck sits close to the spine plate, so at 7 the back of the head goes into it in the Beam Rifle sniping stance
+## aimed down (tools/godot/test_head_clip.gd: 72 points against 64 at rest; 5 gives 68, 3 and 4 give 64).
+const HALIYA_PARALLEL_NECK_TILT_DEG := 4.0
 ## Bone used for the camera size (MechCameraRig looks for a ShoulderL node).
 const SHOULDER_BONE := "upper_arm_L"
 ## Where the aim ray starts on the body (chest, in front of the torso), m.
@@ -452,6 +454,8 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	head_steady.mech = root
 	head_steady.weapon_pose = weapon_pose
 	head_steady.weapons = root.get_node("WeaponController") as WeaponController
+	if _haliya:
+		head_steady.parallel_neck_tilt_deg = HALIYA_PARALLEL_NECK_TILT_DEG
 	weapon_pose.aim_anchor = torso.get_node("AimAnchor")
 	var bounce := WeaponBounce.new()
 	bounce.name = "WeaponBounce"

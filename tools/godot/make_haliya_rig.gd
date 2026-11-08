@@ -1,17 +1,21 @@
 extends SceneTree
-## Writes Haliya HLY-101's rig file models/mechs/haliya/haliya_rig.glb on the SGG-101 skeleton (user decision 2026-11-08, DESIGN
-## "HLY refit decision"): the SGG rig (same bones, offsets and rest rotations) with the SGG clips and only the steps Haliya still
-## needs on top of them, baked into the clips as the Blender rig did (tools/blender/haliya_rig_light.py):
+## Writes Haliya HLY-101's rig file models/mechs/haliya/haliya_rig.glb on the legs-aligned rest (user choice 2026-11-08, "Legs only";
+## tools/godot/haliya_legs_aligned_rest.gd: the SGG-101 leg chain, Haliya's own offsets everywhere else, SGG bone names and rest
+## rotations): the SGG rig with that rest and the SGG clips, with only the steps Haliya still needs on top of them, baked into the
+## clips as the Blender rig did (tools/blender/haliya_rig_light.py):
+##   offsets     the clips' position keys move by the change of the bone's rest offset (the torso sits on Haliya's short waist, the foot
+##               controls and knee poles stand in at Haliya's hip width), so the keyed moves stay the same;
 ##   arm carry   the arms come down from the A-pose of the clips to Haliya's stance (the turns of the old Haliya_Arm_Carry action),
-##               plus ARM_CARRY_OUT_DEG out from the body, because the hips and skirts are now at the wider SGG hip width;
+##               plus ARM_CARRY_OUT_DEG out from the body (0: Haliya has its own hip width again);
 ##   walk lean   the pelvis and the torso lean forward while the mech moves (driver of Haliya_Walk_Lean: keyed crouch and the
 ##               distance between the foot controls); the thighs turn back by the pelvis lean, so the feet stay where the clip has them.
-## Dropped: the pelvis lift (the legs now have the SGG length the clips were made for) and the baked skirt swing (AccessoryBoneFollow
+## Dropped: the pelvis lift (the legs have the SGG length the clips were made for) and the baked skirt swing (AccessoryBoneFollow
 ## turns the plates in the game). The clip Haliya_Stand holds the stance for looking and is the zero of the plate follow.
 ##   godot --headless --path . --script res://tools/godot/make_haliya_rig.gd
 ## Then import (godot --headless --path . --import): the tool also copies the clip import settings (loop modes) of sgg_rig.glb.
 
 const Parts := preload("res://tools/godot/refit_haliya_parts.gd")
+const Rest := preload("res://tools/godot/haliya_legs_aligned_rest.gd")
 const SGG_RIG := "res://models/mechs/sgg/sgg_rig.glb"
 const OLD_RIG := "res://models/mechs/haliya/source_light_rig/haliya_rig.glb"
 const OUT := "res://models/mechs/haliya/haliya_rig.glb"
@@ -22,9 +26,9 @@ const CARRY_REFERENCE := &"Hand_Grip"
 const SKELETON_PATH := "MechRig/Skeleton3D:"
 ## Arm carry: the bones it turns.
 const CARRY_BONES: Array[String] = ["upper_arm_L", "forearm_L", "upper_arm_R", "forearm_R"]
-## Extra turn (degrees) of the upper arm out from the body, on top of the old carry: the SGG hips are 0.5 m wider each side, the
-## shoulders only 0.13 m, so the hands would touch the skirts.
-const ARM_CARRY_OUT_DEG := 4.0
+## Extra turn (degrees) of the upper arm out from the body, on top of the old carry. 4 on the SGG hip width (full refit); 0 since the
+## legs-only refit, where the hips, skirts and arms are Haliya's own again.
+const ARM_CARRY_OUT_DEG := 0.0
 ## Walk lean (degrees) at the pelvis and the torso, as WALK_LEAN_PELVIS_DEG and WALK_LEAN_TORSO_DEG in haliya_rig_light.py.
 const WALK_LEAN_PELVIS_DEG := 3.0
 const WALK_LEAN_TORSO_DEG := 3.0
@@ -36,10 +40,12 @@ func _initialize() -> void:
 	var player := rig.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	var old := Parts.load_glb(OLD_RIG)
 	var old_player := old.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	var offsets := Rest.apply(skeleton, Rest.skeleton_of(old))
 	var carry := _carry_turns(skeleton, old_player.get_animation(CARRY_REFERENCE), player.get_animation(CARRY_REFERENCE))
 	var library := AnimationLibrary.new()
 	for clip in player.get_animation_list():
 		var animation := player.get_animation(clip).duplicate(true) as Animation
+		_move_position_keys(animation, offsets)
 		_add_carry(animation, skeleton, carry)
 		_add_lean(animation, skeleton)
 		library.add_animation(clip, animation)
@@ -77,6 +83,18 @@ func _carry_turns(skeleton: Skeleton3D, old_clip: Animation, sgg_clip: Animation
 		var out := Quaternion(Vector3.BACK, deg_to_rad(ARM_CARRY_OUT_DEG) * sign)  # about +Z (the mech front): +X (left) turns up
 		turns[bone] = parent.inverse() * out * parent * (turns[bone] as Quaternion)
 	return turns
+
+
+## Every position key moves by the change of its bone's rest offset (bone -> new rest offset minus the SGG one).
+func _move_position_keys(animation: Animation, offsets: Dictionary) -> void:
+	for t in animation.get_track_count():
+		if animation.track_get_type(t) != Animation.TYPE_POSITION_3D:
+			continue
+		var change: Vector3 = offsets.get(String(animation.track_get_path(t).get_subname(0)), Vector3.ZERO)
+		if change.is_zero_approx():
+			continue
+		for k in animation.track_get_key_count(t):
+			animation.track_set_key_value(t, k, (animation.track_get_key_value(t, k) as Vector3) + change)
 
 
 ## The carry before every key of the arm rotation tracks.
@@ -145,7 +163,7 @@ func _lean_summary(animation: Animation, skeleton: Skeleton3D) -> String:
 
 
 ## The stance for looking (and the zero of the plate follow): the rotations of the old Haliya_Stand, which already hold the old carry,
-## plus the extra outward turn. No position keys: the bones keep the SGG offsets and the pelvis its rest height.
+## plus the extra outward turn. No position keys: the bones keep the rest offsets and the pelvis its rest height.
 func _stand(old_stand: Animation, skeleton: Skeleton3D, turns: Dictionary) -> Animation:
 	var stand := Animation.new()
 	stand.length = old_stand.length
