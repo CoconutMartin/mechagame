@@ -43,6 +43,8 @@ var meshes_by_slot: Dictionary = {}
 ## Move of the torso at rest (skeleton space, m) from the place on the core's own rig to the legs' waist socket. Zero on a pure mech.
 ## Things placed in mech space from core data (the back pack) add it.
 var torso_shift := Vector3.ZERO
+## Arm slot -> the shoulder (upper arm bone) place at rest on the arm part's own rig, skeleton space.
+var _arm_rig_shoulders: Dictionary = {}
 var _built := false
 
 
@@ -68,7 +70,9 @@ func build() -> void:
 		var part := get_part(loadout, slot)
 		meshes_by_slot[slot] = _add_part(skeleton, part, slot) if part != null else []
 		_set_hand(part as ArmPart, slot)
+		_set_relaxed_hand(part as ArmPart, slot)
 	_join_waist(skeleton, get_part(loadout, &"core") as CorePart, get_part(loadout, &"legs") as LegPart)
+	_join_shoulders(skeleton)
 
 
 ## The part in a slot: the loadout's, else the default.
@@ -88,6 +92,9 @@ func _add_part(skeleton: Skeleton3D, part: PartData, slot: StringName) -> Array[
 		source.free()
 		return added
 	_set_offsets(skeleton, source_skeleton, _slot_bones(slot))
+	var upper := source_skeleton.find_bone(_upper_arm(slot))
+	if upper >= 0:
+		_arm_rig_shoulders[slot] = source_skeleton.get_bone_global_rest(upper).origin
 	for child in source_skeleton.get_children():
 		var mesh := child as MeshInstance3D
 		if mesh == null:
@@ -166,31 +173,56 @@ func _join_waist(skeleton: Skeleton3D, core: CorePart, legs: LegPart) -> void:
 	var moved: Array[StringName] = [&"torso"]
 	_drop_position_tracks(moved)
 	for mesh: MeshInstance3D in meshes_by_slot.get(&"core", []):
-		_bind_to_torso(mesh)
+		_rebind(mesh, &"pelvis", &"torso")
 
 
-## A core mesh skinned to the pelvis (SGG's white waist ball) follows the torso instead, so the ball stays on the waist joint. The ball is
-## centered on the torso's turn point: it looks the same when the torso turns.
-func _bind_to_torso(mesh: MeshInstance3D) -> void:
+## The upper arm bone of an arm slot ("" for the other slots).
+func _upper_arm(slot: StringName) -> String:
+	if slot == &"arm_left":
+		return "upper_arm_L"
+	if slot == &"arm_right":
+		return "upper_arm_R"
+	return ""
+
+
+## An arm part skinned to the torso at its shoulder (SGG's shoulder ball) follows its upper arm instead when the shoulder is not where the
+## arm's own rig has it (another core, or the torso on another waist): the ball stays on the shoulder joint, so the arm does not float
+## away from the body (user report 2026-11-08: "HLY body + SGG arms = disconnected and floating arms"). The ball is centered on the
+## shoulder's turn point: it looks the same when the arm turns.
+func _join_shoulders(skeleton: Skeleton3D) -> void:
+	for slot: StringName in _arm_rig_shoulders:
+		var bone := skeleton.find_bone(_upper_arm(slot))
+		if bone < 0:
+			continue
+		var own: Vector3 = _arm_rig_shoulders[slot]
+		if skeleton.get_bone_global_rest(bone).origin.distance_to(own) < SAME_OFFSET:
+			continue
+		for mesh: MeshInstance3D in meshes_by_slot.get(slot, []):
+			_rebind(mesh, &"torso", StringName(_upper_arm(slot)))
+
+
+## Moves a mesh's skin binds from one bone to another (with the other bone's bind pose), so those vertices follow the other bone. Used
+## for the joint balls (SGG's waist ball onto the torso, the shoulder balls onto the upper arms).
+func _rebind(mesh: MeshInstance3D, from: StringName, to: StringName) -> void:
 	var skin := mesh.skin
 	if skin == null:
 		return
-	var torso := -1
+	var target := -1
 	for i in skin.get_bind_count():
-		if skin.get_bind_name(i) == &"torso":
-			torso = i
-	if torso < 0:
+		if skin.get_bind_name(i) == to:
+			target = i
+	if target < 0:
 		return
 	var copy: Skin = null
 	for i in skin.get_bind_count():
-		if skin.get_bind_name(i) != &"pelvis":
+		if skin.get_bind_name(i) != from:
 			continue
 		if copy == null:
 			# The skin resource is shared with the part scene: change a copy.
 			copy = skin.duplicate() as Skin
-		copy.set_bind_name(i, &"torso")
-		copy.set_bind_bone(i, skin.get_bind_bone(torso))
-		copy.set_bind_pose(i, skin.get_bind_pose(torso))
+		copy.set_bind_name(i, to)
+		copy.set_bind_bone(i, skin.get_bind_bone(target))
+		copy.set_bind_pose(i, skin.get_bind_pose(target))
 	if copy != null:
 		mesh.skin = copy
 
@@ -210,3 +242,35 @@ func _set_hand(part: ArmPart, slot: StringName) -> void:
 		control.hand_left.transform = part.hand_transform
 		control.wrist_pin_left = part.wrist_pin
 		control.hand_shift_left = part.hand_shift
+
+
+## An arm part's neutral arm (ArmPart.neutral_turn) on the arm rig and its relaxed hand place (ArmPart.relaxed_hand) on the mech's hang
+## markers, so a part on another mech's legs hangs as on its own (user report 2026-11-08: SGG arms on the HLY body).
+func _set_relaxed_hand(part: ArmPart, slot: StringName) -> void:
+	if part == null or not (slot == &"arm_left" or slot == &"arm_right"):
+		return
+	var rig := get_parent().find_child("ArmRig", true, false) as SkeletalArmRig
+	if rig != null and not part.neutral_turn.is_equal_approx(Quaternion.IDENTITY):
+		if slot == &"arm_left":
+			rig.neutral_turn_left = part.neutral_turn
+		else:
+			rig.neutral_turn_right = part.neutral_turn
+	if part.relaxed_hand == Vector3.ZERO:
+		return
+	var controller := get_parent().get_node_or_null("WeaponController") as WeaponController
+	if controller == null:
+		return
+	var left := controller.free_left_hand
+	if left == null:
+		left = get_parent().find_child("LeftHandRelaxed", true, false) as Node3D
+	if left == null:
+		return
+	if slot == &"arm_left":
+		left.position = part.relaxed_hand
+		return
+	if controller.free_right_hand == null:
+		var right := Marker3D.new()
+		right.name = "RightHandRelaxed"
+		left.get_parent().add_child(right)
+		controller.free_right_hand = right
+	controller.free_right_hand.position = Vector3(-part.relaxed_hand.x, part.relaxed_hand.y, part.relaxed_hand.z)

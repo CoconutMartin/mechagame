@@ -52,6 +52,9 @@ const TORSO_MARKERS := ["LeftHand", "LeftHandRest", "LeftHandRaised", "AimAnchor
 ## the user's arm drawing (2026-10-12, tools/mech_gen/arm_poses.py): the elbow under the flat shoulder
 ## block (about (-2.10, 1.10, -0.03)), bent 45 deg forward, forearm 2.71 m to the palm.
 const FREE_LEFT_HAND := Vector3(-2.1, -0.82, -1.95)
+## Haliya's relaxed left hand (torso space): where its Walk clip holds the palm on average (grip_L from the left shoulder, mean of the
+## clip; user 2026-11-08: the walking arms are the neutral arms). The right one is its mirror.
+const HALIYA_FREE_LEFT_HAND := Vector3(-1.970, -0.669, -0.121)
 ## Shield hand before a shield's own place (WeaponData.shield_hand) is set.
 const SHIELD_HAND_REST := Vector3(-2.1, -0.82, -1.95)
 ## Shield elbow directions (ShieldPose): out and down (the rig tucks the elbow anyway).
@@ -483,7 +486,7 @@ func _add_weapon_rig(root: Mech, visual: Node3D, model: Node3D, weapon_animation
 	controller.animate_free_left_arm = true
 	var relaxed := Marker3D.new()
 	relaxed.name = "LeftHandRelaxed"
-	relaxed.position = FREE_LEFT_HAND
+	relaxed.position = HALIYA_FREE_LEFT_HAND if _haliya else FREE_LEFT_HAND
 	torso.add_child(relaxed)
 	controller.free_left_hand = relaxed
 	var mount := SkeletalWeaponMount.new()

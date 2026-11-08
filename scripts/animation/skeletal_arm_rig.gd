@@ -100,6 +100,11 @@ extends SkeletonModifier3D
 @export var shoulder_mounts: Array[Node3D] = []
 @export var shoulder_armor_meshes: PackedStringArray = ["Arm_L_01", "Arm_R_01"]
 @export var shoulder_mount_gap: float = 0.15
+## Neutral arm turns (user request 2026-11-08: "Make HLY walking arms position as neutral arms position"): the upper arm's local
+## turn (left, right) of the neutral arm of an arm with no flat shoulder block mesh (shoulder_armor_meshes). SkeletalPartModels sets them
+## from the arm parts (ArmPart.neutral_turn). Identity, or an arm with that block: the flat block.
+@export var neutral_turn_left: Quaternion = Quaternion.IDENTITY
+@export var neutral_turn_right: Quaternion = Quaternion.IDENTITY
 ## Elbows stay as near as the hand target lets them to their neutral place (under the flat shoulder
 ## block): the elbow turns around the shoulder-to-hand line. Off: the IK elbow directions (poles) decide.
 @export var tuck_elbows: bool = true
@@ -321,6 +326,10 @@ func _setup() -> void:
 				if i < shoulder_armor_meshes.size() else null
 		var flat_rest := _flat_rest(side.upper, armor)
 		var parent_rest := _skeleton.get_bone_global_rest(_skeleton.get_bone_parent(side.upper)).orthonormalized()
+		# An arm with a flat shoulder block (SGG's, also on another mech's legs) keeps the flat block.
+		var neutral_turn := neutral_turn_left if i == 0 else neutral_turn_right
+		if armor == null and not neutral_turn.is_equal_approx(Quaternion.IDENTITY):
+			flat_rest = Transform3D(parent_rest.basis * Basis(neutral_turn.normalized()), flat_rest.origin)
 		side.flat_local = (parent_rest.basis.inverse() * flat_rest.basis).get_rotation_quaternion()
 		side.flat_dir = parent_rest.basis.inverse() * (flat_rest.basis \
 				* _skeleton.get_bone_global_rest(side.upper).basis.orthonormalized().inverse() * (p_elbow - p_shoulder)).normalized()

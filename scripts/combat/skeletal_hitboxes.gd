@@ -20,7 +20,7 @@ var mesh_bones: Dictionary = {}
 var _attachments: Dictionary = {}
 ## Top bone name per Mesh resource, kept for the whole game: reading a mesh's vertex arrays takes
 ## about 6 ms, and a respawn (user report 2026-10-18: a freeze each time the enemy died) read all of them again. The key holds the
-## skin too: a garage mix gives SGG's waist ball a skin copy bound to the torso (SkeletalPartModels._bind_to_torso).
+## skin too: a garage mix gives SGG's joint balls a skin copy bound to another bone (SkeletalPartModels._rebind).
 static var _top_bone_names: Dictionary = {}
 
 

@@ -10,6 +10,14 @@ extends PartData
 ## in torso space, meters (x right, y up, -z forward). For mechs whose hands hang far from the
 ## standard hold place; 0 = the place in the weapon data.
 @export var hold_offset: Vector3 = Vector3.ZERO
+## Relaxed hand place (an empty or fist hand at its hang), torso space, meters, for the left side; a right arm takes the mirror
+## (x negated). Each arm brings its own: the place depends on the arm's lengths and its neutral arm (user 2026-11-08). 0 = the mech
+## scene's own marker (WeaponController.free_left_hand).
+@export var relaxed_hand: Vector3 = Vector3.ZERO
+## Neutral arm: the upper arm's local turn (in its parent bone's frame) the arm swings from, for an arm with no flat shoulder block
+## (SkeletalArmRig.neutral_turn_*). Haliya: the mean of its Walk clip (tools/godot/write_arm_neutral_data.gd; user 2026-11-08: "Make HLY
+## walking arms position as neutral arms position"). Identity: the flat shoulder block, or the rest pose.
+@export var neutral_turn: Quaternion = Quaternion.IDENTITY
 
 @export_group("Jointed hand")
 ## Written by tools/godot/write_arm_hand_data.gd, measured on this part's rig (zero: the mech scene's own values stay).

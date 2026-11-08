@@ -70,10 +70,12 @@ func _run() -> void:
 		var torso_rest := skeleton.get_bone_rest(skeleton.find_bone(&"torso")).origin
 		_check(torso_rest.distance_to(legs.waist_socket) < 0.002, "%s: torso offset is the legs' waist socket (%.3f m off)" % [mix, torso_rest.distance_to(legs.waist_socket)])
 		_check_waist(skeleton, core, legs, mix, "rest")
+		_check_shoulders(skeleton, mix, "rest")
 		await _picture(mech, mix, "stand")
 		Input.action_press(&"move_forward")
 		await _frames(60)
 		_check_waist(skeleton, core, legs, mix, "walk")
+		_check_shoulders(skeleton, mix, "walk")
 		await _picture(mech, mix, "walk")
 		Input.action_release(&"move_forward")
 		await _frames(20)
@@ -99,6 +101,22 @@ func _check_waist(skeleton: Skeleton3D, core: CorePart, legs: LegPart, mix: Stri
 			if bones.size() > 0 and bones[0] == i:
 				drawn = skeleton.get_bone_global_pose(bone) * mesh.skin.get_bind_pose(i) * mesh.get_aabb().get_center()
 	_check(drawn.distance_to(socket) < 0.03, "%s %s: SGG waist ball mesh on the socket (%.3f m off)" % [mix, state, drawn.distance_to(socket)])
+
+
+
+## SGG's shoulder ball meshes (Arm_L/R_Shoulder_Joint) drawn on their shoulder joint (upper arm bone) in the current pose (user report
+## 2026-11-08: "HLY body + SGG arms = disconnected and floating arms").
+func _check_shoulders(skeleton: Skeleton3D, mix: String, state: String) -> void:
+	for side in ["L", "R"]:
+		var mesh := skeleton.get_node_or_null(NodePath("Arm_%s_Shoulder_Joint" % side)) as MeshInstance3D
+		if mesh == null or mesh.skin == null:
+			continue
+		var bones: PackedInt32Array = mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_BONES]
+		var bind := bones[0]
+		var bone := skeleton.find_bone(mesh.skin.get_bind_name(bind))
+		var drawn := skeleton.get_bone_global_pose(bone) * mesh.skin.get_bind_pose(bind) * mesh.get_aabb().get_center()
+		var joint := skeleton.get_bone_global_pose(skeleton.find_bone("upper_arm_" + side)).origin
+		_check(drawn.distance_to(joint) < 0.03, "%s %s: SGG %s shoulder ball on the shoulder joint (%.3f m off)" % [mix, state, side, drawn.distance_to(joint)])
 
 
 func _picture(mech: Mech, mix: String, state: String) -> void:
